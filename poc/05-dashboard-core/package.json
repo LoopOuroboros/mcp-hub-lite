@@ -1,0 +1,19 @@
+{
+  "name": "dashboard-core-poc",
+  "version": "0.1.0",
+  "description": "POC: Dashboard核心功能验证",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/dashboard-test.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx src/dashboard-test.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

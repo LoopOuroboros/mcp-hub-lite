@@ -1,0 +1,17 @@
+{
+  "name": "direct-search-poc",
+  "version": "0.1.0",
+  "description": "POC: DirectSearch performance validation",
+  "type": "module",
+  "scripts": {
+    "test": "node src/performance-test.js",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3"
+  }
+}
