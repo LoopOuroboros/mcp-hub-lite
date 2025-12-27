@@ -3,9 +3,13 @@ import { configManager } from '../config/config.manager.js';
 import { logger } from '../utils/logger.js';
 import { mcpConnectionManager } from '../services/mcp-connection.manager.js';
 import { streamingGateway } from '../services/streaming-gateway.service.js';
+import { PidManager } from './pid.manager.js';
 
 export async function runServer(options: { stdio?: boolean, port?: number, host?: string } = {}) {
   try {
+    // Write PID
+    PidManager.writePid();
+    
     const isStdio = options.stdio || false;
 
     if (isStdio) {

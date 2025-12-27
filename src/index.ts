@@ -59,6 +59,62 @@ program
   });
 
 program
+  .command('stop')
+  .description('Stop the running MCP Hub Lite server')
+  .action(() => {
+    const pid = PidManager.getPid();
+    if (!pid) {
+      console.error('No running server found (PID file missing).');
+      return;
+    }
+    
+    try {
+      console.log(`Stopping server (PID: ${pid})...`);
+      process.kill(pid, 'SIGTERM');
+      console.log('Stop signal sent.');
+      // Optionally wait for it to disappear
+    } catch (error: any) {
+      if (error.code === 'ESRCH') {
+        console.error('Server process not found (stale PID file?). Cleaning up...');
+        PidManager.removePid();
+      } else {
+        console.error('Failed to stop server:', error.message);
+      }
+    }
+  });
+
+program
+  .command('restart')
+  .description('Restart the MCP Hub Lite server')
+  .action(async () => {
+    // 1. Stop
+    const pid = PidManager.getPid();
+    if (pid) {
+        try {
+            console.log(`Stopping server (PID: ${pid})...`);
+            process.kill(pid, 'SIGTERM');
+            // Simple wait loop
+            let tries = 0;
+            while (PidManager.isRunning() && tries < 10) {
+                await new Promise(r => setTimeout(r, 500));
+                tries++;
+            }
+        } catch (error: any) {
+             if (error.code !== 'ESRCH') console.error('Error stopping:', error.message);
+        }
+    }
+    
+    // 2. Start
+    console.log('Starting server...');
+    // We can't easily spawn a new detached process from here without more complex logic (like spawn detached).
+    // But usually 'restart' in this context implies 'run start'.
+    // However, if we are running in terminal, we might want to just run the server function.
+    // If the user expects background restart, that's different.
+    // Given 'start' is blocking, 'restart' here will just run it in the current process.
+    await runServer();
+  });
+
+program
   .command('ui')
   .description('Open the Web UI')
   .action(async () => {
