@@ -77,6 +77,14 @@ export class ConfigManager {
     };
     this.saveConfig(newConfig);
   }
+
+  public updateServer(serverId: string, updates: Partial<GlobalConfig['servers'][0]>) {
+    const newConfig = {
+      ...this.config,
+      servers: this.config.servers.map((s) => (s.id === serverId ? { ...s, ...updates } : s))
+    };
+    this.saveConfig(newConfig);
+  }
 }
 
 export const configManager = new ConfigManager();
