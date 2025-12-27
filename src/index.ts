@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { runServer } from './server/runner.js';
 import { configManager } from './config/config.manager.js';
+import { PidManager } from './server/pid.manager.js';
 
 const program = new Command();
 
