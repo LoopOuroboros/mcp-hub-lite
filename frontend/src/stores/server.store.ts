@@ -10,8 +10,24 @@ export interface McpServer {
   enabled: boolean;
 }
 
+export interface ServerStatus {
+  connected: boolean;
+  error?: string;
+  lastCheck: number;
+  toolsCount: number;
+}
+
+export interface McpTool {
+  name: string;
+  description?: string;
+  inputSchema: any;
+  serverId: string;
+}
+
 export const useServerStore = defineStore('server', () => {
   const servers = ref<McpServer[]>([]);
+  const serverStatuses = ref<Record<string, ServerStatus>>({});
+  const tools = ref<McpTool[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -22,10 +38,25 @@ export const useServerStore = defineStore('server', () => {
       const response = await fetch('/api/servers');
       if (!response.ok) throw new Error('Failed to fetch servers');
       servers.value = await response.json();
+      await fetchStatus();
     } catch (err: any) {
       error.value = err.message;
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const response = await fetch('/api/mcp/status');
+      if (response.ok) {
+        const data = await response.json();
+        data.forEach((item: any) => {
+          serverStatuses.value[item.id] = item.status;
+        });
+      }
+    } catch (e) {
+      console.error('Failed to fetch status', e);
     }
   }
 
@@ -56,6 +87,7 @@ export const useServerStore = defineStore('server', () => {
       });
       if (!response.ok) throw new Error('Failed to delete server');
       servers.value = servers.value.filter(s => s.id !== id);
+      delete serverStatuses.value[id];
     } catch (err: any) {
       error.value = err.message;
     } finally {
@@ -63,12 +95,48 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
+  async function connectServer(id: string) {
+    try {
+        await fetch(`/api/mcp/servers/${id}/connect`, { method: 'POST' });
+        await fetchStatus();
+    } catch (e: any) {
+        error.value = e.message;
+    }
+  }
+
+  async function disconnectServer(id: string) {
+    try {
+        await fetch(`/api/mcp/servers/${id}/disconnect`, { method: 'POST' });
+        await fetchStatus();
+    } catch (e: any) {
+        error.value = e.message;
+    }
+  }
+
+  async function searchTools(query: string) {
+    try {
+        const response = await fetch(`/api/tools/search?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+             const results = await response.json();
+             tools.value = results.map((r: any) => r.tool);
+        }
+    } catch (e: any) {
+        error.value = e.message;
+    }
+  }
+
   return {
     servers,
+    serverStatuses,
+    tools,
     loading,
     error,
     fetchServers,
+    fetchStatus,
     addServer,
-    removeServer
+    removeServer,
+    connectServer,
+    disconnectServer,
+    searchTools
   };
 });

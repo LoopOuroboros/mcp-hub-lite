@@ -9,6 +9,8 @@ export const McpServerConfigSchema = z.object({
   enabled: z.boolean().default(true)
 });
 
+export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+
 export const GlobalConfigSchema = z.object({
   servers: z.array(McpServerConfigSchema).default([]),
   port: z.number().int().positive().default(3000),

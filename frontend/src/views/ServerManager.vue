@@ -17,8 +17,23 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Actions">
+      <el-table-column label="Connection">
         <template #default="scope">
+           <el-tag v-if="isConnected(scope.row.id)" type="success">Connected</el-tag>
+           <el-tag v-else-if="hasError(scope.row.id)" type="danger" :title="getError(scope.row.id)">Error</el-tag>
+           <el-tag v-else type="info">Disconnected</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="Actions" width="250">
+        <template #default="scope">
+          <el-button 
+            size="small" 
+            :type="isConnected(scope.row.id) ? 'warning' : 'success'" 
+            @click="handleConnection(scope.row)"
+            :loading="store.loading"
+          >
+            {{ isConnected(scope.row.id) ? 'Disconnect' : 'Connect' }}
+          </el-button>
           <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">Delete</el-button>
         </template>
       </el-table-column>
@@ -83,6 +98,23 @@ const handleSubmit = async () => {
   form.command = '';
   form.argsStr = '';
 };
+
+function isConnected(id: string) {
+    return store.serverStatuses[id]?.connected || false;
+}
+function hasError(id: string) {
+     return !!store.serverStatuses[id]?.error;
+}
+function getError(id: string) {
+     return store.serverStatuses[id]?.error;
+}
+async function handleConnection(server: any) {
+    if (isConnected(server.id)) {
+        await store.disconnectServer(server.id);
+    } else {
+        await store.connectServer(server.id);
+    }
+}
 </script>
 
 <style scoped>
@@ -94,5 +126,10 @@ const handleSubmit = async () => {
 }
 .mb-4 {
     margin-bottom: 1rem;
+}
+.error-text {
+    color: red;
+    font-size: 12px;
+    margin-top: 4px;
 }
 </style>
