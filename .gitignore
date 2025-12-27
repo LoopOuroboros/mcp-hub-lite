@@ -62,6 +62,8 @@ coverage/
 
 # MCP Hub specific
 .mcp-hub.json
+mcp-hub-config.json
+test-config.json
 !sample.mcp-hub.json
 *.backup
 *.bak
