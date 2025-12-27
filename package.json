@@ -8,6 +8,7 @@
     "mcp-hub-lite": "./dist/index.js"
   },
   "scripts": {
+    "start": "node dist/index.js start",
     "dev": "vite",
     "build": "run-p type-check build:client build:server",
     "build:client": "vite build",

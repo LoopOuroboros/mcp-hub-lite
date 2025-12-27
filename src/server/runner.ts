@@ -1,0 +1,43 @@
+import { buildApp } from '../app.js';
+import { configManager } from '../config/config.manager.js';
+import { logger } from '../utils/logger.js';
+import { mcpConnectionManager } from '../services/mcp-connection.manager.js';
+import { streamingGateway } from '../services/streaming-gateway.service.js';
+
+export async function runServer(options: { stdio?: boolean, port?: number, host?: string } = {}) {
+  try {
+    const isStdio = options.stdio || false;
+
+    if (isStdio) {
+        logger.setUseStderr(true);
+        logger.info('Starting in MCP Gateway mode (stdio)...');
+    }
+
+    const app = isStdio ? null : await buildApp();
+    const config = configManager.getConfig();
+    
+    // Override config with options if provided
+    const host = options.host || config.host;
+    const port = options.port || config.port;
+
+    // Auto-connect to enabled servers
+    logger.info('Initializing server connections...');
+    const servers = config.servers.filter(s => s.enabled);
+    for (const server of servers) {
+        // Connect in background to not block startup
+        mcpConnectionManager.connect(server).catch(err => {
+            logger.error(`Failed to auto-connect to ${server.name}:`, err);
+        });
+    }
+
+    if (isStdio) {
+        await streamingGateway.start();
+    } else {
+        await app!.listen({ port, host });
+        logger.info(`MCP Hub Lite Server running at http://${host}:${port}`);
+    }
+  } catch (err) {
+    logger.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
