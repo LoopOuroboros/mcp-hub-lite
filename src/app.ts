@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import { serverRoutes } from './api/routes/server.routes.js';
 import { mcpRoutes } from './api/routes/mcp.routes.js';
+import { healthRoutes } from './api/routes/health.routes.js';
+import { connectionRoutes } from './api/routes/connection.routes.js';
 
 export async function buildApp() {
   const fastify = Fastify({
