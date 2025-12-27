@@ -68,6 +68,37 @@ npm run test:integration
 npm run test:contract
 ```
 
+## CLI 命令
+
+MCP-HUB-LITE 提供了一个命令行界面来管理服务。
+
+```bash
+# 启动服务
+npm start
+# 或
+node dist/index.js start
+
+# 查看状态
+node dist/index.js status
+
+# 列出所有服务器
+node dist/index.js list
+
+# 打开 Web 界面
+node dist/index.js ui
+
+# 帮助
+node dist/index.js --help
+```
+
+## API 端点
+
+- `GET /api/servers`: 获取服务器列表
+- `GET /api/connections`: 获取服务器连接状态
+- `GET /health`: 健康检查
+- `POST /api/connections/:id/connect`: 连接指定服务器
+- `POST /api/connections/:id/disconnect`: 断开指定服务器
+
 ## 配置
 
 MCP-HUB-LITE 使用 `.mcp-hub.json` 文件进行配置。你可以通过以下方式指定配置文件：
