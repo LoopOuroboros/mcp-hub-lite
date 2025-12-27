@@ -147,6 +147,24 @@ class McpConnectionManager {
   public getClient(serverId: string): Client | undefined {
       return this.clients.get(serverId);
   }
+
+  public async callTool(serverId: string, toolName: string, args: any): Promise<any> {
+    const client = this.clients.get(serverId);
+    if (!client) {
+      throw new Error(`Server ${serverId} not connected`);
+    }
+    
+    try {
+        const result = await client.callTool({
+            name: toolName,
+            arguments: args
+        });
+        return result;
+    } catch (error) {
+        logger.error(`Failed to call tool ${toolName} on server ${serverId}:`, error);
+        throw error;
+    }
+  }
 }
 
 export const mcpConnectionManager = new McpConnectionManager();

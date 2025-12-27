@@ -2,9 +2,14 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export class Logger {
   private level: LogLevel = 'info';
+  private useStderr: boolean = false;
 
   constructor(level: LogLevel = 'info') {
     this.level = level;
+  }
+  
+  public setUseStderr(use: boolean) {
+      this.useStderr = use;
   }
 
   private shouldLog(messageLevel: LogLevel): boolean {
@@ -14,13 +19,21 @@ export class Logger {
 
   debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      console.debug(`[DEBUG] ${message}`, ...args);
+      if (this.useStderr) {
+          console.error(`[DEBUG] ${message}`, ...args);
+      } else {
+          console.debug(`[DEBUG] ${message}`, ...args);
+      }
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      console.info(`[INFO] ${message}`, ...args);
+      if (this.useStderr) {
+          console.error(`[INFO] ${message}`, ...args);
+      } else {
+          console.info(`[INFO] ${message}`, ...args);
+      }
     }
   }
 
