@@ -1,10 +1,10 @@
 <template>
   <div class="tool-explorer">
     <div class="header">
-      <h2>Tool Explorer</h2>
+      <h2>{{ $t('tools.title') }}</h2>
       <el-input
         v-model="searchQuery"
-        placeholder="Search tools..."
+        :placeholder="$t('tools.searchPlaceholder')"
         class="search-input"
         @input="handleSearch"
       >
@@ -23,7 +23,7 @@
     />
 
     <div v-if="store.tools.length === 0" class="empty-state">
-      <el-empty description="No tools found. Connect servers to see tools." />
+      <el-empty :description="$t('tools.noTools')" />
     </div>
 
     <div v-else class="tools-grid">
@@ -35,9 +35,9 @@
           </div>
         </template>
         <div class="tool-body">
-          <p class="tool-description">{{ tool.description || 'No description' }}</p>
+          <p class="tool-description">{{ tool.description || $t('tools.noDescription') }}</p>
           <el-collapse>
-            <el-collapse-item title="Schema">
+            <el-collapse-item :title="$t('tools.schema')">
               <pre class="schema-view">{{ JSON.stringify(tool.inputSchema, null, 2) }}</pre>
             </el-collapse-item>
           </el-collapse>
@@ -51,6 +51,7 @@
 import { ref, onMounted } from 'vue';
 import { useServerStore } from '../stores/server.store';
 import { Search } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
 
 const store = useServerStore();
 const searchQuery = ref('');
@@ -99,16 +100,12 @@ onMounted(() => {
 .tool-description {
   color: #666;
   margin-bottom: 10px;
-  min-height: 40px;
 }
 .schema-view {
   background: #f5f7fa;
   padding: 10px;
   border-radius: 4px;
   font-size: 12px;
-  overflow: auto;
-}
-.mb-4 {
-  margin-bottom: 16px;
+  overflow-x: auto;
 }
 </style>

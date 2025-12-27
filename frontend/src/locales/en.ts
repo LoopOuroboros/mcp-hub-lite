@@ -1,0 +1,41 @@
+export default {
+  app: {
+    title: 'MCP Hub Lite',
+    servers: 'Servers',
+    tools: 'Tools'
+  },
+  server: {
+    title: 'Server Management',
+    add: 'Add Server',
+    name: 'Name',
+    command: 'Command',
+    args: 'Args',
+    status: 'Status',
+    connection: 'Connection',
+    actions: 'Actions',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    error: 'Error',
+    connect: 'Connect',
+    disconnect: 'Disconnect',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    deleteConfirm: 'Are you sure you want to delete this server?',
+    placeholder: {
+      args: 'Space separated arguments'
+    }
+  },
+  tools: {
+    title: 'Tool Explorer',
+    searchPlaceholder: 'Search tools...',
+    noTools: 'No tools found. Connect servers to see tools.',
+    noDescription: 'No description',
+    schema: 'Schema'
+  },
+  common: {
+    language: 'Language'
+  }
+}

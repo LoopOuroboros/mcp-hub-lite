@@ -3,12 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/server/src/index.js",
   "bin": {
-    "mcp-hub-lite": "./dist/index.js"
+    "mcp-hub-lite": "./dist/server/src/index.js"
   },
   "scripts": {
-    "start": "node dist/index.js start",
+    "start": "node dist/server/src/index.js start",
+    "stop": "node dist/server/src/index.js stop",
+    "restart": "node dist/server/src/index.js restart",
+    "status": "node dist/server/src/index.js status",
+    "list": "node dist/server/src/index.js list",
     "dev": "vite",
     "build": "run-p type-check build:client build:server",
     "build:client": "vite build",
@@ -27,6 +31,7 @@
     "fastify": "^5.6.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
+    "vue-i18n": "^11.2.7",
     "vue-router": "^4.6.4",
     "zod": "^4.2.1"
   },

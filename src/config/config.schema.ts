@@ -13,7 +13,7 @@ export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 
 export const GlobalConfigSchema = z.object({
   servers: z.array(McpServerConfigSchema).default([]),
-  port: z.number().int().positive().default(3000),
+  port: z.number().int().positive().default(7788),
   host: z.string().default('localhost'),
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info')
 });

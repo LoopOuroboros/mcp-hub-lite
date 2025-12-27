@@ -3,6 +3,9 @@ import { Command } from 'commander';
 import { runServer } from './server/runner.js';
 import { configManager } from './config/config.manager.js';
 import { PidManager } from './server/pid.manager.js';
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 const program = new Command();
 
@@ -17,7 +20,32 @@ program
   .option('--stdio', 'Run in stdio mode for MCP protocol')
   .option('-p, --port <number>', 'Port to run on')
   .option('-h, --host <string>', 'Host to bind to')
+  .option('-f, --foreground', 'Run in foreground (blocking)')
   .action(async (options) => {
+    // Daemon mode by default unless --foreground or --stdio is specified
+    if (!options.foreground && !options.stdio) {
+      const args = [process.argv[1], 'start', '--foreground'];
+      if (options.port) args.push('--port', options.port);
+      if (options.host) args.push('--host', options.host);
+
+      const logFile = path.join(process.cwd(), 'mcp-hub.log');
+      const errFile = path.join(process.cwd(), 'mcp-hub.error.log');
+      const out = fs.openSync(logFile, 'a');
+      const err = fs.openSync(errFile, 'a');
+
+      console.log(`Starting server in background...`);
+      console.log(`Logs: ${logFile}`);
+
+      const subprocess = spawn(process.argv[0], args, {
+        detached: true,
+        stdio: ['ignore', out, err]
+      });
+      
+      subprocess.unref();
+      console.log(`Server started (PID: ${subprocess.pid})`);
+      process.exit(0);
+    }
+
     await runServer({
       stdio: options.stdio,
       port: options.port ? parseInt(options.port) : undefined,
@@ -47,7 +75,7 @@ program
   .description('Show system status')
   .action(async () => {
     const config = configManager.getConfig();
-    const url = `http://${config.host}:${config.port}/api/connections`;
+    const url = `http://${config.host}:${config.port}/api/mcp/status`;
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -106,13 +134,29 @@ program
     }
     
     // 2. Start
-    console.log('Starting server...');
-    // We can't easily spawn a new detached process from here without more complex logic (like spawn detached).
-    // But usually 'restart' in this context implies 'run start'.
-    // However, if we are running in terminal, we might want to just run the server function.
-    // If the user expects background restart, that's different.
-    // Given 'start' is blocking, 'restart' here will just run it in the current process.
-    await runServer();
+    
+    // Get the path to the executable (node) and the script (dist/index.js)
+    const args = ['start'];
+    
+    // Check if we are running from node or binary
+    const isNode = process.argv[0].endsWith('node') || process.argv[0].endsWith('node.exe');
+    
+    const childArgs = isNode ? [process.argv[1], ...args] : [...args];
+    
+    try {
+        const child = spawn(process.argv[0], childArgs, {
+            detached: false,
+            stdio: 'inherit',
+            cwd: process.cwd() // Ensure we run in same directory
+        });
+        
+        child.on('close', (code) => {
+           process.exit(code || 0);
+        });
+    } catch (e: any) {
+        console.error('Failed to restart server:', e.message);
+        process.exit(1);
+    }
   });
 
 program

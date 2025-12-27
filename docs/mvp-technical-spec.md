@@ -2151,7 +2151,6 @@ mcp-hub-lite/
 │   └── integration/
 ├── .mcp-hub.json                  # 配置文件（示例）
 ├── logs/                          # 日志文件
-├── backups/                       # 配置备份
 ├── specs/                         # 需求规范
 ├── .claude/                       # AI 助手配置
 └── README.md

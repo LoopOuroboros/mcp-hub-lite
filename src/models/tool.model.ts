@@ -16,4 +16,5 @@ export interface McpTool {
   description?: string;
   inputSchema: McpToolSchema;
   serverId: string;
+  tags?: string[];
 }

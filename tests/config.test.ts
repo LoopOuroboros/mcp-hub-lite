@@ -51,7 +51,7 @@ describe('ConfigManager', () => {
     const manager = new ConfigManager(TEST_CONFIG_PATH);
     const config = manager.getConfig();
     
-    expect(config.port).toBe(3000);
+    expect(config.port).toBe(7788);
     expect(config.servers).toEqual([]);
     expect(fs.existsSync(TEST_CONFIG_PATH)).toBe(true);
   });
@@ -84,7 +84,7 @@ describe('ConfigManager', () => {
     const manager = new ConfigManager(TEST_CONFIG_PATH);
     const config = manager.getConfig();
 
-    expect(config.port).toBe(3000); // Default
+    expect(config.port).toBe(7788); // Default
   });
 
   it('should override with environment variables', () => {
