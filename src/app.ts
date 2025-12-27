@@ -21,6 +21,8 @@ export async function buildApp() {
 
   fastify.register(serverRoutes);
   fastify.register(mcpRoutes);
+  fastify.register(healthRoutes);
+  fastify.register(connectionRoutes);
 
   return fastify;
 }

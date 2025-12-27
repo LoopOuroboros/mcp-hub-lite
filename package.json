@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-hub-lite": "./dist/index.js"
+  },
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check build:client build:server",
