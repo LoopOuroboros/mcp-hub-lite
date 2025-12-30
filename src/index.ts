@@ -28,8 +28,12 @@ program
       if (options.port) args.push('--port', options.port);
       if (options.host) args.push('--host', options.host);
 
-      const logFile = path.join(process.cwd(), 'mcp-hub.log');
-      const errFile = path.join(process.cwd(), 'mcp-hub.error.log');
+      const logDir = path.join(process.cwd(), 'logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      const logFile = path.join(logDir, 'mcp-hub.log');
+      const errFile = path.join(logDir, 'mcp-hub.error.log');
       const out = fs.openSync(logFile, 'a');
       const err = fs.openSync(errFile, 'a');
 

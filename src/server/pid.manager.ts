@@ -2,11 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger.js';
 
-const PID_FILE = path.join(process.cwd(), '.mcp-hub.pid');
+const configDir = path.join(process.cwd(), 'config');
+const PID_FILE = path.join(configDir, '.mcp-hub.pid');
 
 export class PidManager {
   public static writePid(): void {
     try {
+      // Ensure config directory exists
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
       fs.writeFileSync(PID_FILE, process.pid.toString(), 'utf8');
       
       // Cleanup on exit
