@@ -64,13 +64,18 @@ program
     const config = configManager.getConfig();
     const url = `http://${config.host}:${config.port}/api/servers`;
     try {
-        const response = await fetch(url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const servers = await response.json();
         console.table(servers);
+        process.exit(0);
     } catch (error: any) {
         console.error('Failed to list servers:', error.message);
         console.error('Is the server running?');
+        process.exit(1);
     }
   });
 
@@ -81,13 +86,18 @@ program
     const config = configManager.getConfig();
     const url = `http://${config.host}:${config.port}/api/mcp/status`;
     try {
-        const response = await fetch(url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const status = await response.json();
         console.table(status);
+        process.exit(0);
     } catch (error: any) {
         console.error('Failed to get status:', error.message);
         console.error('Is the server running?');
+        process.exit(1);
     }
   });
 
@@ -98,20 +108,25 @@ program
     const pid = PidManager.getPid();
     if (!pid) {
       console.error('No running server found (PID file missing).');
-      return;
+      process.exit(1);
     }
-    
+
     try {
       console.log(`Stopping server (PID: ${pid})...`);
       process.kill(pid, 'SIGTERM');
       console.log('Stop signal sent.');
-      // Optionally wait for it to disappear
+      // Wait a bit for signal to process
+      setTimeout(() => {
+        process.exit(0);
+      }, 100);
     } catch (error: any) {
       if (error.code === 'ESRCH') {
         console.error('Server process not found (stale PID file?). Cleaning up...');
         PidManager.removePid();
+        process.exit(0);
       } else {
         console.error('Failed to stop server:', error.message);
+        process.exit(1);
       }
     }
   });
@@ -136,24 +151,24 @@ program
              if (error.code !== 'ESRCH') console.error('Error stopping:', error.message);
         }
     }
-    
+
     // 2. Start
-    
+
     // Get the path to the executable (node) and the script (dist/index.js)
     const args = ['start'];
-    
+
     // Check if we are running from node or binary
     const isNode = process.argv[0].endsWith('node') || process.argv[0].endsWith('node.exe');
-    
+
     const childArgs = isNode ? [process.argv[1], ...args] : [...args];
-    
+
     try {
         const child = spawn(process.argv[0], childArgs, {
             detached: false,
             stdio: 'inherit',
             cwd: process.cwd() // Ensure we run in same directory
         });
-        
+
         child.on('close', (code) => {
            process.exit(code || 0);
         });
@@ -172,7 +187,15 @@ program
     console.log(`Opening Web UI at ${url}...`);
     const { exec } = await import('child_process');
     const start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
-    exec(`${start} ${url}`);
+    exec(`${start} ${url}`, (error) => {
+      if (error) {
+        console.error('Failed to open browser:', error.message);
+        process.exit(1);
+      } else {
+        console.log('Browser opened successfully');
+        process.exit(0);
+      }
+    });
   });
 
 
