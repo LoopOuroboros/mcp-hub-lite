@@ -1,0 +1,1198 @@
+openapi: 3.1.0
+info:
+  title: MCP Hub Lite API
+  version: 1.0.0
+  description: |
+    MCP Hub Lite 轻量级MCP网关系统 REST API 契约。
+
+    ## 概述
+    本API契约定义了前端Dashboard与后端网关之间的完整交互规范，包括：
+    - 系统健康检查
+    - 服务器管理（列表、详情、搜索）
+    - CMD标准响应格式
+    - 完整的错误处理机制
+
+    ## 协议特性
+    - 支持分页查询和过滤
+    - 标准CMD响应格式（双轨错误码设计）
+    - JSON-RPC 2.0兼容
+    - MCP协议特定扩展支持
+  contact:
+    name: MCP Hub Lite Team
+    url: https://github.com/mcp-hub-lite
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: 开发环境
+  - url: https://api.mcp-hub-lite.com
+    description: 生产环境
+
+# =============================================================================
+# 全局标签定义
+# =============================================================================
+tags:
+  - name: Health
+    description: 健康检查相关接口
+    externalDocs:
+      description: 健康检查文档
+      url: https://docs.mcp-hub-lite.com/health-check
+  - name: Servers
+    description: MCP服务器管理接口
+    externalDocs:
+      description: 服务器管理文档
+      url: https://docs.mcp-hub-lite.com/servers
+  - name: Search
+    description: 服务器搜索接口
+    externalDocs:
+      description: 搜索功能文档
+      url: https://docs.mcp-hub-lite.com/search
+
+# =============================================================================
+# 全局参数定义
+# =============================================================================
+parameters:
+  # 分页查询参数 - 页码
+  PageParam:
+    in: query
+    name: page
+    description: 页码，从1开始
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+      default: 1
+    example: 1
+
+  # 分页查询参数 - 每页数量
+  LimitParam:
+    in: query
+    name: limit
+    description: 每页记录数量
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 100
+      default: 20
+    example: 20
+
+  # 搜索查询参数
+  QueryParam:
+    in: query
+    name: q
+    description: 搜索关键词，支持模糊匹配服务器名称和描述
+    required: false
+    schema:
+      type: string
+      minLength: 1
+      maxLength: 100
+    example: "数据库"
+
+  # 标签过滤参数
+  TagsParam:
+    in: query
+    name: tags
+    description: |
+      标签过滤，多个标签用逗号分隔。
+      格式：tag1:value1,tag2:value2
+    required: false
+    schema:
+      type: string
+      maxLength: 200
+    example: "category:database,environment:production"
+
+  # 请求ID参数（用于请求追踪）
+  RequestIdParam:
+    in: header
+    name: X-Request-ID
+    description: 客户端生成的请求ID，用于日志追踪
+    required: false
+    schema:
+      type: string
+      format: uuid
+    example: "req-550e8400-e29b-41d4-a716-446655440000"
+
+# =============================================================================
+# 数据模型定义
+# =============================================================================
+
+components:
+  # ----------------------------------------------------------------------
+  # 响应模型
+  # ----------------------------------------------------------------------
+  schemas:
+    # ------------------
+    # 基础响应模型
+    # ------------------
+
+    # CMD基础响应
+    CMDBaseResponse:
+      type: object
+      description: CMD标准响应格式_基础版
+      properties:
+        code:
+          type: integer
+          description: 响应状态码
+          example: 200
+        message:
+          type: string
+          description: 响应消息
+          example: "success"
+        timestamp:
+          type: string
+          format: date-time
+          description: 响应时间戳
+          example: "2025-12-16T10:30:00.000Z"
+        requestId:
+          type: string
+          format: uuid
+          description: 请求ID，用于追踪
+          example: "req-550e8400-e29b-41d4-a716-446655440000"
+      required:
+        - code
+        - message
+        - timestamp
+
+    # CMD成功响应
+    CMDSuccess:
+      type: object
+      description: CMD标准响应格式_成功版
+      allOf:
+        - $ref: '#/components/schemas/CMDBaseResponse'
+        - type: object
+          properties:
+            code:
+              type: integer
+              enum: [200, 201, 204]
+            data:
+              type: object
+              description: 响应数据载荷
+              nullable: true
+          required:
+            - code
+            - data
+
+    # CMD错误响应
+    CMDError:
+      type: object
+      description: CMD标准响应格式_错误版（采用双轨错误码设计）
+      allOf:
+        - $ref: '#/components/schemas/CMDBaseResponse'
+        - type: object
+          properties:
+            code:
+              type: integer
+              description: |
+                错误码（双轨设计）：
+                - 200-299：操作成功
+                - 1000-1999：系统级错误（ 인프라故障、运行时错误）
+                - 2000-2999：安全错误（认证、授权）
+                - 3000-3999：业务错误（业务规则验证）
+                - -32000到-32768：MCP标准JSON-RPC错误
+                - -32800到-32899：MCP特定错误
+                - 6000-6999：MCP Hub Lite网关错误
+              example: 3004
+            data:
+              type: null
+              description: 错误响应中data为null
+              nullable: false
+            error:
+              type: object
+              description: 详细错误信息
+              properties:
+                category:
+                  type: string
+                  enum: [SYSTEM, SECURITY, BUSINESS, API, MCP_PROTOCOL]
+                  description: 错误分类
+                  example: "BUSINESS"
+                severity:
+                  type: string
+                  enum: [FATAL, ERROR, WARN, INFO]
+                  description: 错误严重程度
+                  example: "ERROR"
+                stack:
+                  type: string
+                  description: 错误堆栈（开发环境提供）
+                  example: "Error: 验证失败\n    at..."
+                  nullable: true
+                context:
+                  type: object
+                  description: 错误上下文信息
+                  additionalProperties: true
+                  example:
+                    resourceId: "server-001"
+                    operation: "fetch"
+                  nullable: true
+                httpStatus:
+                  type: integer
+                  description: HTTP状态码（兼容性）
+                  example: 404
+          required:
+            - category
+            - severity
+
+    # ------------------
+    # 服务器相关模型
+    # ------------------
+
+    # 服务器状态枚举
+    ServerStatus:
+      type: string
+      enum: [online, offline, error, starting, stopping]
+      description: MCP服务器状态
+      example: "online"
+
+    # 服务器统计信息
+    ServerStatistics:
+      type: object
+      description: MCP服务器性能统计
+      properties:
+        latencyMs:
+          type: number
+          format: float
+          minimum: 0
+          description: 平均延迟（毫秒）
+          example: 45.6
+        toolCount:
+          type: integer
+          minimum: 0
+          description: 可用工具数量
+          example: 15
+        uptimeSeconds:
+          type: integer
+          minimum: 0
+          description: 运行时间（秒）
+          example: 86400
+        lastCallTimestamp:
+          type: string
+          format: date-time
+          description: 最后一次调用时间
+          example: "2025-12-16T11:29:59.000Z"
+      required:
+        - latencyMs
+        - toolCount
+        - uptimeSeconds
+
+    # MCP服务器模型
+    Server:
+      type: object
+      description: MCP服务器信息模型
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 服务器唯一标识符
+          example: "srv-550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: 服务器显示名称
+          minLength: 1
+          maxLength: 100
+          example: "MySQL数据库工具"
+        description:
+          type: string
+          description: 服务器详细描述
+          maxLength: 500
+          nullable: true
+          example: "提供MySQL数据库查询和管理功能"
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+        tags:
+          type: object
+          description: 服务器标签（键值对形式）
+          additionalProperties:
+            type: string
+          example:
+            category: "database"
+            environment: "production"
+            version: "8.0"
+        lastSeen:
+          type: string
+          format: date-time
+          description: 最后活跃时间
+          example: "2025-12-16T10:29:59.000Z"
+        statistics:
+          $ref: '#/components/schemas/ServerStatistics'
+          nullable: true
+        endpoint:
+          type: string
+          format: uri
+          description: MCP服务器连接端点
+          example: "stdio://localhost:3001"
+          nullable: true
+        version:
+          type: string
+          description: MCP服务器版本
+          maxLength: 50
+          example: "1.2.3"
+          nullable: true
+        mcpVersion:
+          type: string
+          description: 支持的MCP协议版本
+          maxLength: 20
+          example: "2025-11-25"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2025-12-15T08:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: "2025-12-16T10:30:00.000Z"
+      required:
+        - id
+        - name
+        - status
+        - lastSeen
+        - createdAt
+        - updatedAt
+
+    # 服务器列表响应
+    ServerListResponse:
+      type: object
+      description: 获取服务器列表响应
+      allOf:
+        - $ref: '#/components/schemas/CMDSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                servers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Server'
+                  description: 服务器列表
+                pagination:
+                  type: object
+                  properties:
+                    page:
+                      type: integer
+                      description: 当前页码
+                      example: 1
+                    limit:
+                      type: integer
+                      description: 每页数量
+                      example: 20
+                    total:
+                      type: integer
+                      description: 总记录数
+                      example: 100
+                    totalPages:
+                      type: integer
+                      description: 总页数
+                      example: 5
+                  required:
+                    - page
+                    - limit
+                    - total
+                    - totalPages
+              required:
+                - servers
+                - pagination
+
+    # 服务器详情响应
+    ServerDetailResponse:
+      type: object
+      description: 获取服务器详情响应
+      allOf:
+        - $ref: '#/components/schemas/CMDSuccess'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/Server'
+                - type: object
+                  properties:
+                    # 详情中可能包含的额外信息
+                    detailedMetrics:
+                      type: object
+                      description: 详细指标信息
+                      additionalProperties: true
+                      nullable: true
+                    recentCalls:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          timestamp:
+                            type: string
+                            format: date-time
+                          method:
+                            type: string
+                          durationMs:
+                            type: number
+                      description: 最近调用记录
+                      nullable: true
+
+    # ------------------
+    # 搜索相关模型
+    # ------------------
+
+    # 搜索查询参数
+    SearchQuery:
+      type: object
+      description: 搜索查询参数
+      properties:
+        query:
+          type: string
+          description: 搜索关键词
+          minLength: 1
+          maxLength: 100
+          example: "数据库"
+        tags:
+          type: object
+          description: 标签过滤条件
+          additionalProperties:
+            type: string
+          example:
+            category: "database"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: 返回结果数量限制
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+          description: 跳过记录数（分页用）
+        sortBy:
+          type: string
+          enum: [name, lastSeen, status, createdAt]
+          default: "lastSeen"
+          description: 排序字段
+        sortOrder:
+          type: string
+          enum: [asc, desc]
+          default: "desc"
+          description: 排序方向
+      required:
+        - query
+
+    # 搜索结果项
+    SearchResult:
+      type: object
+      description: 搜索结果单项
+      properties:
+        server:
+          $ref: '#/components/schemas/Server'
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: 匹配分数（0-1，1为完全匹配）
+          example: 0.95
+        matchedFields:
+          type: array
+          items:
+            type: string
+          description: 匹配的字段名列表
+          example: ["name", "description"]
+      required:
+        - server
+        - score
+
+    # 搜索响应
+    SearchResponse:
+      type: object
+      description: 搜索结果响应
+      allOf:
+        - $ref: '#/components/schemas/CMDSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SearchResult'
+                  description: 搜索结果列表
+                total:
+                  type: integer
+                  minimum: 0
+                  description: 匹配的结果总数
+                  example: 25
+                took:
+                  type: integer
+                  description: 搜索耗时（毫秒）
+                  example: 32
+                query:
+                  $ref: '#/components/schemas/SearchQuery'
+              required:
+                - results
+                - total
+                - took
+
+    # ------------------
+    # 健康检查模型
+    # ------------------
+
+    # 健康状态枚举
+    HealthStatus:
+      type: string
+      enum: [healthy, degraded, unhealthy]
+      description: 系统健康状态
+      example: "healthy"
+
+    # 健康检查组件状态
+    ComponentHealth:
+      type: object
+      description: 系统组件健康状态
+      properties:
+        name:
+          type: string
+          description: 组件名称
+          example: "database"
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        responseTime:
+          type: number
+          format: float
+          minimum: 0
+          description: 响应时间（毫秒）
+          example: 15.3
+        lastCheck:
+          type: string
+          format: date-time
+          description: 最后检查时间
+          example: "2025-12-16T10:30:00.000Z"
+        message:
+          type: string
+          description: 状态说明
+          example: "连接正常"
+      required:
+        - name
+        - status
+        - responseTime
+        - lastCheck
+
+    # 健康检查响应
+    HealthResponse:
+      type: object
+      description: 系统健康检查响应
+      allOf:
+        - $ref: '#/components/schemas/CMDSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/HealthStatus'
+                  description: 总体健康状态
+                uptime:
+                  type: integer
+                  minimum: 0
+                  description: 系统运行时间（秒）
+                  example: 86400
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: 检查时间戳
+                  example: "2025-12-16T10:30:00.000Z"
+                version:
+                  type: string
+                  description: 系统版本
+                  example: "1.0.0"
+                components:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ComponentHealth'
+                  description: 各组件健康状态详情
+              required:
+                - status
+                - uptime
+                - timestamp
+
+    # ------------------
+    # 错误响应模型
+    # ------------------
+
+    # 标准错误响应（示例）
+    ErrorResponse:
+      type: object
+      description: 标准错误响应格式示例
+      allOf:
+        - $ref: '#/components/schemas/CMDError'
+      example:
+        code: 3004
+        message: "服务器不存在"
+        data: null
+        timestamp: "2025-12-16T10:30:00.000Z"
+        requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+        error:
+          category: "BUSINESS"
+          severity: "ERROR"
+          context:
+            serverId: "srv-550e8400-e29b-41d4-a716-446655440000"
+
+# =============================================================================
+# API端点定义
+# =============================================================================
+
+paths:
+  # ----------------------------------------------------------------------
+  # 健康检查端点
+  # ----------------------------------------------------------------------
+
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: 系统健康检查
+      description: |
+        获取MCP Hub Lite系统的健康状态和基本系统信息。
+
+        此接口用于：
+        - 系统运行状态监控
+        - 负载均衡器健康检查
+        - 运维监控大盘数据源
+        - 容器编排健康探针
+
+        响应包含总体状态和各组件的详细健康信息。
+      operationId: getHealth
+      parameters:
+        - $ref: '#/parameters/RequestIdParam'
+      responses:
+        '200':
+          description: 系统健康状态正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                code: 200
+                message: "系统运行正常"
+                data:
+                  status: "healthy"
+                  uptime: 86400
+                  timestamp: "2025-12-16T10:30:00.000Z"
+                  version: "1.0.0"
+                  components:
+                    - name: "database"
+                      status: "healthy"
+                      responseTime: 15.3
+                      lastCheck: "2025-12-16T10:30:00.000Z"
+                      message: "连接正常"
+                    - name: "cache"
+                      status: "healthy"
+                      responseTime: 5.1
+                      lastCheck: "2025-12-16T10:30:00.000Z"
+                      message: "响应正常"
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+        '503':
+          description: 系统当前不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 1005
+                message: "数据库连接失败"
+                data: null
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+                error:
+                  category: "SYSTEM"
+                  severity: "FATAL"
+                  context:
+                    error: "ECONNREFUSED"
+                    host: "localhost"
+                    port: 5432
+                  httpStatus: 503
+
+  # ----------------------------------------------------------------------
+  # 服务器管理端点
+  # ----------------------------------------------------------------------
+
+  /api/servers:
+    get:
+      tags:
+        - Servers
+      summary: 获取服务器列表
+      description: |
+        获取所有MCP服务器的列表，支持分页和过滤查询。
+
+        支持的查询参数：
+        - **分页控制**：`page`和`limit`用于结果分页
+        - **状态过滤**：`status`可以按服务器状态过滤
+        - **标签过滤**：`tags`可以按指定标签过滤
+        - **排序功能**：按不同字段排序返回
+
+        返回数据包含服务器基本信息和统计指标，用于Dashboard展示。
+      operationId: getServers
+      parameters:
+        - $ref: '#/parameters/PageParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: status
+          in: query
+          description: 服务器状态过滤
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ServerStatus'
+          style: form
+          explode: false
+          example: ["online", "error"]
+        - $ref: '#/parameters/TagsParam'
+        - name: sortBy
+          in: query
+          description: 排序字段
+          required: false
+          schema:
+            type: string
+            enum: [lastSeen, name, status, createdAt]
+            default: "lastSeen"
+          example: "lastSeen"
+        - name: sortOrder
+          in: query
+          description: 排序方向
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: "desc"
+          example: "desc"
+        - $ref: '#/parameters/RequestIdParam'
+      responses:
+        '200':
+          description: 成功获取服务器列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerListResponse'
+              example:
+                code: 200
+                message: "获取服务器列表成功"
+                data:
+                  servers:
+                    - id: "srv-001"
+                      name: "MySQL数据库工具"
+                      description: "提供MySQL数据库查询和管理功能"
+                      status: "online"
+                      tags:
+                        category: "database"
+                        environment: "production"
+                      lastSeen: "2025-12-16T11:29:59.000Z"
+                      statistics:
+                        latencyMs: 45.6
+                        toolCount: 15
+                        uptimeSeconds: 86400
+                        lastCallTimestamp: "2025-12-16T11:29:59.000Z"
+                      version: "1.2.3"
+                      mcpVersion: "2025-11-25"
+                      createdAt: "2025-12-15T08:00:00.000Z"
+                      updatedAt: "2025-12-16T10:30:00.000Z"
+                    - id: "srv-002"
+                      name: "Redis缓存工具"
+                      description: "Redis缓存管理工具"
+                      status: "error"
+                      tags:
+                        category: "cache"
+                        environment: "production"
+                      lastSeen: "2025-12-16T09:15:20.000Z"
+                      statistics:
+                        latencyMs: 0
+                        toolCount: 0
+                        uptimeSeconds: 0
+                        lastCallTimestamp: null
+                      version: "2.0.0"
+                      mcpVersion: "2025-11-25"
+                      createdAt: "2025-12-15T08:30:00.000Z"
+                      updatedAt: "2025-12-16T09:15:20.000Z"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 100
+                    totalPages: 5
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 4001
+                message: "无效的页码参数"
+                data: null
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+                error:
+                  category: "API"
+                  severity: "ERROR"
+                  context:
+                    parameter: "page"
+                    value: 0
+                    minValue: 1
+                  httpStatus: 400
+
+  /api/servers/{serverId}:
+    get:
+      tags:
+        - Servers
+      summary: 获取服务器详情
+      description: |
+        根据服务器ID获取详细的MCP服务器信息。
+
+        返回的详情信息包括：
+        - 服务器基本信息和配置
+        - 实时性能统计指标
+        - 最近调用记录（如果有）
+        - 详细的技术栈信息
+
+        **注意**：此接口返回比列表接口更详细的数据。
+      operationId: getServerById
+      parameters:
+        - name: serverId
+          in: path
+          description: 服务器唯一标识符
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "srv-550e8400-e29b-41d4-a716-446655440000"
+        - $ref: '#/parameters/RequestIdParam'
+      responses:
+        '200':
+          description: 成功获取服务器详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerDetailResponse'
+              example:
+                code: 200
+                message: "获取服务器详情成功"
+                data:
+                  id: "srv-550e8400-e29b-41d4-a716-446655440000"
+                  name: "MySQL数据库工具"
+                  description: "提供MySQL数据库查询和管理功能，包括CRUD操作、数据备份和性能监控"
+                  status: "online"
+                  tags:
+                    category: "database"
+                    environment: "production"
+                    version: "8.0"
+                  lastSeen: "2025-12-16T11:29:59.000Z"
+                  statistics:
+                    latencyMs: 45.6
+                    toolCount: 15
+                    uptimeSeconds: 86400
+                    lastCallTimestamp: "2025-12-16T11:29:59.000Z"
+                  endpoint: "stdio://localhost:3001"
+                  version: "1.2.3"
+                  mcpVersion: "2025-11-25"
+                  createdAt: "2025-12-15T08:00:00.000Z"
+                  updatedAt: "2025-12-16T10:30:00.000Z"
+                  detailedMetrics:
+                    cpuUsage: 15.3
+                    memoryUsage: 128.5
+                    connectionCount: 5
+                  recentCalls:
+                    - timestamp: "2025-12-16T11:15:30.000Z"
+                      method: "tools/call"
+                      durationMs: 45
+                    - timestamp: "2025-12-16T11:10:15.000Z"
+                      method: "tools/list"
+                      durationMs: 12
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+        '404':
+          description: 服务器不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 3004
+                message: "服务器不存在"
+                data: null
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+                error:
+                  category: "BUSINESS"
+                  severity: "ERROR"
+                  context:
+                    serverId: "srv-550e8400-e29b-41d4-a716-446655440000"
+                    availableIds: ["srv-001", "srv-002"]
+                  httpStatus: 404
+
+  # ----------------------------------------------------------------------
+  # 搜索端点
+  # ----------------------------------------------------------------------
+
+  /api/servers/search:
+    get:
+      tags:
+        - Search
+      summary: 搜索服务器
+      description: |
+        根据关键词搜索MCP服务器，支持模糊匹配和标签过滤。
+
+        搜索特性：
+        - **关键词匹配**：对服务器名称、描述等信息进行模糊匹配
+        - **标签过滤**：按标签键值对过滤结果
+        - **相关性排序**：按匹配分数排序
+        - **分页支持**：可限制返回结果数量
+        - **性能优化**：使用专门的搜索引擎（如Elasticsearch）
+
+        搜索支持多字段匹配：
+        - 服务器名称（权重最高）
+        - 服务器描述
+        - 标签键值
+      operationId: searchServers
+      parameters:
+        - $ref: '#/parameters/QueryParam'
+        - $ref: '#/parameters/TagsParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: offset
+          in: query
+          description: 跳过记录数（用于分页）
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+        - name: sortBy
+          in: query
+          description: 排序字段
+          required: false
+          schema:
+            type: string
+            enum: [score, lastSeen, name, createdAt]
+            default: "score"
+          example: "score"
+        - name: sortOrder
+          in: query
+          description: 排序方向
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: "desc"
+          example: "desc"
+        - name: minScore
+          in: query
+          description: 最小匹配分数过滤（0-1）
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+            default: 0.1
+          example: 0.3
+        - $ref: '#/parameters/RequestIdParam'
+      responses:
+        '200':
+          description: 成功搜索服务器
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                code: 200
+                message: "搜索完成"
+                data:
+                  results:
+                    - server:
+                        id: "srv-001"
+                        name: "MySQL数据库工具"
+                        description: "提供MySQL数据库查询和管理功能"
+                        status: "online"
+                        tags:
+                          category: "database"
+                          environment: "production"
+                        lastSeen: "2025-12-16T11:29:59.000Z"
+                        statistics:
+                          latencyMs: 45.6
+                          toolCount: 15
+                          uptimeSeconds: 86400
+                          lastCallTimestamp: "2025-12-16T11:29:59.000Z"
+                        version: "1.2.3"
+                        mcpVersion: "2025-11-25"
+                        createdAt: "2025-12-15T08:00:00.000Z"
+                        updatedAt: "2025-12-16T10:30:00.000Z"
+                      score: 0.95
+                      matchedFields:
+                        - "name"
+                        - "description"
+                        - "tags.category"
+                    - server:
+                        id: "srv-003"
+                        name: "PostgreSQL管理器"
+                        description: "PostgreSQL数据库管理工具"
+                        status: "online"
+                        tags:
+                          category: "database"
+                          environment: "staging"
+                        lastSeen: "2025-12-16T10:45:10.000Z"
+                        statistics:
+                          latencyMs: 38.2
+                          toolCount: 12
+                          uptimeSeconds: 43200
+                          lastCallTimestamp: "2025-12-16T11:20:33.000Z"
+                        version: "1.0.5"
+                        mcpVersion: "2025-11-25"
+                        createdAt: "2025-12-14T14:20:00.000Z"
+                        updatedAt: "2025-12-16T10:45:10.000Z"
+                      score: 0.82
+                      matchedFields:
+                        - "name"
+                        - "tags.category"
+                  total: 25
+                  took: 32
+                  query:
+                    query: "数据库"
+                    tags: {}
+                    limit: 10
+                    offset: 0
+                    sortBy: "score"
+                    sortOrder: "desc"
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: 搜索参数无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 4002
+                message: "搜索关键词长度不能超过100个字符"
+                data: null
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+                error:
+                  category: "API"
+                  severity: "ERROR"
+                  context:
+                    field: "query"
+                    maxLength: 100
+                    actualLength: 150
+                  httpStatus: 400
+
+  # ----------------------------------------------------------------------
+  # 添加服务器端点（保留，但不在MVP范围内）
+  # ----------------------------------------------------------------------
+
+  /api/servers:
+    post:
+      tags:
+        - Servers
+      summary: 添加服务器（已预留，当前版本暂未实现）
+      description: |
+        添加新的MCP服务器配置。
+
+        **注意**：此接口已在契约中预留，但当前MVP版本暂不实现。
+        计划在后续版本中提供以下功能：
+        - 动态添加MCP服务器配置
+        - 服务器配置验证
+        - 批量导入支持
+        - 配置模板功能
+
+        当前版本如需添加服务器，请参考系统配置文件：
+        `config/servers.json`
+      operationId: addServer
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 服务器配置（预留）
+              example:
+                name: "新增数据库工具"
+                description: "预留接口，暂未实现"
+                endpoint: "stdio://localhost:3002"
+                tags:
+                  category: "database"
+      responses:
+        '501':
+          description: 功能尚未实现
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 5012
+                message: "添加服务器功能尚未在当前版本中实现"
+                data: null
+                timestamp: "2025-12-16T10:30:00.000Z"
+                requestId: "req-550e8400-e29b-41d4-a716-446655440000"
+                error:
+                  category: "BUSINESS"
+                  severity: "INFO"
+                  context:
+                    hint: "请参考 config/servers.json 手动配置"
+                  httpStatus: 501
+
+# =============================================================================
+# 扩展配置
+# =============================================================================
+
+# =============================================================================
+# 安全配置
+# =============================================================================
+
+# 当前版本暂不需要认证，如果需要可以开启以下配置：
+# security:
+#   - BearerAuth: []
+
+# components:
+#   securitySchemes:
+#     BearerAuth:
+#       type: http
+#       scheme: bearer
+#       bearerFormat: JWT
+#       description: JWT认证令牌（预留，当前版本未启用）
+
+# =============================================================================
+# 响应头定义
+# =============================================================================
+
+# components:
+#   headers:
+#     X-Total-Count:
+#       description: 总记录数
+#       schema:
+#         type: integer
+#         example: 100
+#     X-Page:
+#       description: 当前页码
+#       schema:
+#         type: integer
+#         example: 1
+#     X-Limit:
+#       description: 每页数量
+#       schema:
+#         type: integer
+#         example: 20
+
+# =============================================================================
+# 回调定义（预留）
+# # =============================================================================
+
+# 当前版本不涉及 webhook/回调功能，如需可在此处定义
+
+# =============================================================================
+# 外部文档链接
+# =============================================================================
+
+# externalDocs:
+#   description: MCP Hub Lite API 完整文档
+#   url: https://docs.mcp-hub-lite.com/

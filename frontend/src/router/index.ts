@@ -1,13 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ServerManager from '../views/ServerManager.vue';
-import ToolExplorer from '../views/ToolExplorer.vue';
+import ToolSearch from '../views/ToolSearch.vue';
+import Dashboard from '../views/Dashboard.vue';
+import Settings from '../views/Settings.vue';
+import About from '../views/About.vue';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
-      redirect: '/servers'
+      name: 'Dashboard',
+      component: Dashboard
     },
     {
       path: '/servers',
@@ -16,8 +20,18 @@ const router = createRouter({
     },
     {
       path: '/tools',
-      name: 'ToolExplorer',
-      component: ToolExplorer
+      name: 'ToolSearch',
+      component: ToolSearch
+    },
+    {
+      path: '/settings',
+      name: 'Settings',
+      component: Settings
+    },
+    {
+      path: '/about',
+      name: 'About',
+      component: About
     }
   ]
 });

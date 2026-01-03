@@ -1,0 +1,449 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-hub.dev/schema/config-schema.json",
+  "title": "MCP-HUB-LITE Configuration Schema",
+  "description": "统一配置文件格式规范，作为所有配置文档的唯一数据源",
+  "type": "object",
+  "required": ["version", "port", "host", "mcpServers"],
+  "envConfigPath": {
+    "description": "可通过环境变量 MCP_HUB_CONFIG_PATH 自定义配置文件路径",
+    "default": "~/.mcp-hub/config.json"
+  },
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "配置文件版本号",
+      "examples": ["1.0.0"],
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "配置描述",
+      "maxLength": 500
+    },
+    "port": {
+      "type": "integer",
+      "description": "统一端口号（Dashboard、API、MCP协议共用）",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 7788
+    },
+    "host": {
+      "type": "string",
+      "description": "服务主机地址",
+      "default": "localhost",
+      "examples": ["localhost", "127.0.0.1", "0.0.0.0"]
+    },
+    "gateway": {
+      "type": "object",
+      "description": "网关配置",
+      "properties": {
+        "proxyTimeout": {
+          "type": "integer",
+          "description": "代理请求超时时间（毫秒）",
+          "minimum": 0,
+          "maximum": 60000,
+          "default": 100,
+          "examples": [100]
+        },
+        "rateLimit": {
+          "type": "object",
+          "description": "速率限制配置",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "是否启用速率限制",
+              "default": true
+            },
+            "maxRequests": {
+              "type": "integer",
+              "description": "每个时间窗口最大请求数",
+              "minimum": 1,
+              "default": 100,
+              "examples": [100]
+            },
+            "windowMs": {
+              "type": "integer",
+              "description": "时间窗口大小（毫秒）",
+              "minimum": 1000,
+              "default": 60000,
+              "examples": [60000]
+            }
+          },
+          "required": ["enabled"]
+        },
+        "circuitBreakerConfig": {
+          "type": "object",
+          "description": "断路器配置",
+          "properties": {
+            "failureThreshold": {
+              "type": "integer",
+              "description": "触发断路器的失败次数阈值",
+              "minimum": 1,
+              "default": 5,
+              "examples": [5]
+            },
+            "resetTimeout": {
+              "type": "integer",
+              "description": "断路器重置超时（毫秒）",
+              "minimum": 1000,
+              "default": 30000,
+              "examples": [30000]
+            },
+            "monitoringPeriod": {
+              "type": "integer",
+              "description": "监控周期（毫秒）",
+              "minimum": 1000,
+              "default": 60000,
+              "examples": [60000]
+            }
+          },
+          "required": ["failureThreshold", "resetTimeout", "monitoringPeriod"]
+        }
+      },
+      "required": ["proxyTimeout"]
+    },
+    "mcpServers": {
+      "type": "array",
+      "description": "MCP服务器配置列表",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "endpoint"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "服务器唯一标识符",
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "name": {
+            "type": "string",
+            "description": "服务器显示名称",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "description": "服务器描述",
+            "maxLength": 500
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "服务器端点URL（HTTP-Stream协议）",
+            "format": "uri",
+            "examples": ["http://localhost:3000", "https://api.example.com/mcp"]
+          },
+          "transport": {
+            "type": "string",
+            "enum": ["http-stream"],
+            "description": "传输协议类型（统一使用HTTP-Stream，由Gateway负责协议转换）",
+            "default": "http-stream"
+          },
+          "tags": {
+            "type": "object",
+            "description": "服务器标签分类（结构化键值对）",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "examples": [
+              {
+                "env": "production",
+                "category": "database",
+                "function": "mysql",
+                "priority": "high"
+              }
+            ]
+          },
+          "config": {
+            "type": "object",
+            "description": "服务器特定配置",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {
+            "id": "vector-store",
+            "name": "Vector Store Server",
+            "endpoint": "http://localhost:3000",
+            "description": "向量存储服务",
+            "tags": {
+              "env": "production",
+              "category": "database",
+              "function": "vector-store",
+              "priority": "high"
+            },
+            "config": {
+              "timeout": 30000
+            }
+          }
+        ]
+      }
+    },
+    "processManagement": {
+      "type": "object",
+      "description": "进程管理全局配置",
+      "properties": {
+        "managedMode": {
+          "type": "string",
+          "enum": ["npx", "uvx", "direct"],
+          "description": "进程管理模式",
+          "default": "npx",
+          "examples": ["npx"],
+          "note": "npx：使用npx启动Node.js MCP服务器；uvx：使用uvx启动Python MCP服务器；direct：直接管理现有进程"
+        },
+        "crashDetection": {
+          "type": "boolean",
+          "description": "是否启用崩溃检测",
+          "default": true
+        },
+        "watchdog": {
+          "type": "boolean",
+          "description": "是否启用看门狗监控",
+          "default": true
+        },
+        "maxRestarts": {
+          "type": "integer",
+          "description": "最大重启次数",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "restartDelayMs": {
+          "type": "integer",
+          "description": "重启间隔（毫秒）",
+          "minimum": 0,
+          "default": 5000
+        },
+        "healthCheckInterval": {
+          "type": "integer",
+          "description": "健康检查间隔（毫秒）",
+          "minimum": 1000,
+          "default": 30000
+        }
+      },
+      "required": ["managedMode"]
+    },
+    "language": {
+      "type": "object",
+      "description": "语言设置配置",
+      "properties": {
+        "current": {
+          "type": "string",
+          "enum": ["zh-CN", "en-US"],
+          "description": "当前选择的语言",
+          "default": "zh-CN"
+        },
+        "autoDetect": {
+          "type": "boolean",
+          "description": "是否自动检测浏览器语言",
+          "default": true
+        },
+        "fallback": {
+          "type": "string",
+          "enum": ["zh-CN", "en-US"],
+          "description": "回退语言",
+          "default": "zh-CN"
+        }
+      },
+      "required": ["current"]
+    },
+    "backup": {
+      "type": "object",
+      "description": "备份配置（参考约束 MGMT-001 最大备份版本数）",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "是否启用备份功能",
+          "default": true
+        },
+        "autoBackup": {
+          "type": "boolean",
+          "description": "是否启用自动备份",
+          "default": true,
+          "note": "当修改配置时自动创建备份文件"
+        },
+        "maxVersions": {
+          "type": "integer",
+          "description": "最大备份版本数（MGMT-001约束，最大7版本）",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 7,
+          "constraintReference": "MGMT-001"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "备份文件命名模式",
+          "default": ".mcp-hub.json.{timestamp}.bak",
+          "pattern": "\\.mcp-hub\\.json\\.\\{timestamp\\}\\.bak"
+        }
+      },
+      "required": ["enabled", "maxVersions"]
+    },
+    "logging": {
+      "type": "object",
+      "description": "日志配置（参考约束 MGMT-003 日志轮转大小）",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["info", "warn", "error", "debug"],
+          "description": "日志级别",
+          "default": "info"
+        },
+        "rotation": {
+          "type": "object",
+          "description": "日志轮转设置",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "是否启用日志轮转",
+              "default": true
+            },
+            "maxSize": {
+              "type": "string",
+              "description": "最大日志文件大小（MGMT-003约束，默认100MB）",
+              "default": "100MB",
+              "pattern": "^\\d+(KB|MB|GB)$",
+              "constraintReference": "MGMT-003"
+            },
+            "maxAge": {
+              "type": "string",
+              "description": "最大保留时间",
+              "default": "7d",
+              "pattern": "^\\d+(h|d|w)$"
+            },
+            "compress": {
+              "type": "boolean",
+              "description": "是否压缩旧日志文件",
+              "default": true
+            }
+          },
+          "required": ["enabled"]
+        }
+      },
+      "required": ["level"]
+    },
+    "security": {
+      "type": "object",
+      "description": "安全配置（参考约束 SEC-001 访问控制）",
+      "properties": {
+        "allowedNetworks": {
+          "type": "array",
+          "description": "允许访问的网络地址列表（SEC-001约束，仅本地网络）",
+          "items": {
+            "type": "string",
+            "examples": ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"],
+            "description": "IP地址或 CIDR 网络段"
+          },
+          "default": ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"],
+          "constraintReference": "SEC-001"
+        },
+        "maxConcurrentConnections": {
+          "type": "integer",
+          "description": "最大并发连接数",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        },
+        "connectionTimeout": {
+          "type": "integer",
+          "description": "连接创建超时（毫秒，TO-002约束，默认30秒）",
+          "minimum": 1000,
+          "default": 30000,
+          "constraintReference": "TO-002"
+        },
+        "idleConnectionTimeout": {
+          "type": "integer",
+          "description": "空闲连接超时（毫秒，TO-003约束，默认5分钟）",
+          "minimum": 30000,
+          "default": 300000,
+          "constraintReference": "TO-003"
+        },
+        "maxConnections": {
+          "type": "integer",
+          "description": "最大连接总数",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        }
+      },
+      "required": ["allowedNetworks"]
+    }
+  },
+  "additionalProperties": false,
+  "constraintReferences": {
+    "description": "此配置文件中引用的约束ID，对应 constraints.json 中的定义"
+  },
+  "examples": [
+    {
+      "version": "1.0.0",
+      "description": "MCP-HUB-LITE 配置文件 - 作为 MCP 服务器网关的统一配置入口",
+      "port": 7788,
+      "host": "localhost",
+      "gateway": {
+        "proxyTimeout": 100,
+        "rateLimit": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 60000
+        },
+        "circuitBreakerConfig": {
+          "failureThreshold": 5,
+          "resetTimeout": 30000,
+          "monitoringPeriod": 60000
+        }
+      },
+      "mcpServers": [],
+      "processManagement": {
+        "managedMode": "npx",
+        "crashDetection": true,
+        "watchdog": true,
+        "maxRestarts": 3,
+        "restartDelayMs": 5000,
+        "healthCheckInterval": 30000
+      },
+      "language": {
+        "current": "zh-CN",
+        "autoDetect": true,
+        "fallback": "zh-CN"
+      },
+      "backup": {
+        "enabled": true,
+        "autoBackup": true,
+        "maxVersions": 7,
+        "pattern": ".mcp-hub.json.{timestamp}.bak"
+      },
+      "logging": {
+        "level": "info",
+        "rotation": {
+          "enabled": true,
+          "maxSize": "100MB",
+          "maxAge": "7d",
+          "compress": true
+        }
+      },
+      "security": {
+        "allowedNetworks": [
+          "127.0.0.1",
+          "192.168.0.0/16",
+          "10.0.0.0/8",
+          "172.16.0.0/12"
+        ],
+        "maxConcurrentConnections": 50,
+        "connectionTimeout": 30000,
+        "idleConnectionTimeout": 300000,
+        "maxConnections": 50
+      },
+      "constraints": {
+        "description": "约束配置引用",
+        "performance": {
+          "gatewayLatency": "100ms",
+          "searchResponseTime": "500ms",
+          "languageSwitchTime": "500ms"
+        },
+        "reliability": {
+          "uptime": "7x24小时"
+        }
+      }
+    }
+  ]
+}

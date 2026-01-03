@@ -1,5 +1,4 @@
-import { ConfigManager, configManager } from '../config/config.manager.js';
-import { McpServerConfig } from '../config/config.schema.js';
+import { ConfigManager, configManager, McpServerConfig } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
 
 export class HubManagerService {
@@ -14,34 +13,34 @@ export class HubManagerService {
   }
 
   getServerById(id: string): McpServerConfig | undefined {
-    return this.configManager.getServers().find(s => s.id === id);
+    return this.configManager.getServers().find((s: any) => s.id === id);
   }
 
-  addServer(server: McpServerConfig): McpServerConfig {
-    this.configManager.addServer(server);
+  async addServer(server: McpServerConfig): Promise<McpServerConfig> {
+    await this.configManager.addServer(server);
     logger.info(`Server added: ${server.name} (${server.id})`);
     return server;
   }
 
-  updateServer(id: string, updates: Partial<McpServerConfig>): McpServerConfig | null {
+  async updateServer(id: string, updates: Partial<McpServerConfig>): Promise<McpServerConfig | null> {
     const existing = this.getServerById(id);
     if (!existing) {
       logger.warn(`Attempted to update non-existent server: ${id}`);
       return null;
     }
 
-    this.configManager.updateServer(id, updates);
+    await this.configManager.updateServer(id, updates);
     logger.info(`Server updated: ${id}`);
     return this.getServerById(id) || null;
   }
 
-  removeServer(id: string): boolean {
+  async removeServer(id: string): Promise<boolean> {
     const existing = this.getServerById(id);
     if (!existing) {
       return false;
     }
-    
-    this.configManager.removeServer(id);
+
+    await this.configManager.removeServer(id);
     logger.info(`Server removed: ${id}`);
     return true;
   }

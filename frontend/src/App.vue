@@ -5,8 +5,11 @@
         <h1>{{ $t('app.title') }}</h1>
       </div>
       <el-menu mode="horizontal" :router="true" :default-active="$route.path" class="nav-menu">
+        <el-menu-item index="/">{{ $t('dashboard.title', 'Dashboard') }}</el-menu-item>
         <el-menu-item index="/servers">{{ $t('app.servers') }}</el-menu-item>
         <el-menu-item index="/tools">{{ $t('app.tools') }}</el-menu-item>
+        <el-menu-item index="/settings">Settings</el-menu-item>
+        <el-menu-item index="/about">About</el-menu-item>
       </el-menu>
       <div class="lang-switch">
         <el-dropdown @command="handleLangChange">

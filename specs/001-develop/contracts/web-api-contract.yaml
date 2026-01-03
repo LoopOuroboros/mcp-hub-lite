@@ -1,0 +1,883 @@
+openapi: 3.0.0
+info:
+  title: MCP-HUB-LITE Web API
+  description: API contract for MCP-HUB-LITE web dashboard and management functions
+  version: 1.0.0
+  license:
+    name: MIT
+    url: http://github.com/gruntjs/grunt/blob/master/LICENSE-MIT
+servers:
+  - url: http://localhost:7788
+    description: Development server
+  - url: https://localhost:7788
+    description: Production server
+
+paths:
+  /api/servers:
+    get:
+      summary: Get all configured MCP servers
+      description: Retrieve a list of all configured MCP servers with their status and details
+      parameters:
+        - name: tag
+          in: query
+          description: Filter servers by tag (e.g., env:prod or category:db)
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of servers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  servers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Server'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Add a new MCP server
+      description: Add a new MCP server to the configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Server'
+      responses:
+        '201':
+          description: Server added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/Server'
+        '400':
+          description: Invalid server configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/servers/{serverId}:
+    get:
+      summary: Get server details
+      description: Retrieve detailed information about a specific MCP server
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          description: ID of the server to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/Server'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update server configuration
+      description: Update the configuration of an existing MCP server
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          description: ID of the server to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Server'
+      responses:
+        '200':
+          description: Server updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/Server'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Remove server
+      description: Remove an MCP server from the configuration
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          description: ID of the server to remove
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/servers/{serverId}/start:
+    post:
+      summary: Start managed server
+      description: Start a managed MCP server process
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          description: ID of the server to start
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/Server'
+        '400':
+          description: Server cannot be started (not configured for managed process)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to start server process
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/servers/{serverId}/stop:
+    post:
+      summary: Stop managed server
+      description: Stop a managed MCP server process
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          description: ID of the server to stop
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server stopped successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/Server'
+        '400':
+          description: Server cannot be stopped (not configured for managed process)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to stop server process
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /web/search:
+    get:
+      summary: Search tools across all servers
+      description: Search for tools by name or description across all connected MCP servers
+      parameters:
+        - name: q
+          in: query
+          description: Search query string for tool names and descriptions
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: Filter results by tag (e.g., env:prod or category:db)
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results to return (default 20)
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Offset for pagination
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tool'
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        value:
+                          type: string
+                        count:
+                          type: integer
+                    description: Tag counts for faceted search
+                  totalCount:
+                    type: integer
+                    description: Total number of matching tools
+                  query:
+                    type: string
+                    description: The search query that was used
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/settings/language:
+    get:
+      summary: Get current language settings
+      description: Retrieve the current language configuration
+      responses:
+        '200':
+          description: Current language settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  language:
+                    $ref: '#/components/schemas/LanguageSettings'
+    put:
+      summary: Update language settings
+      description: Update the language preference for the interface
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LanguageSettings'
+      responses:
+        '200':
+          description: Language settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  language:
+                    $ref: '#/components/schemas/LanguageSettings'
+        '400':
+          description: Invalid language settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/config:
+    get:
+      summary: Get system configuration
+      description: Retrieve the complete system configuration
+      responses:
+        '200':
+          description: System configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfig'
+    put:
+      summary: Update system configuration
+      description: Update the system configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemConfig'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfig'
+        '400':
+          description: Invalid configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/config/validate:
+    post:
+      summary: Validate configuration
+      description: Validate configuration without applying changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemConfig'
+      responses:
+        '200':
+          description: Configuration validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    description: Whether the configuration is valid
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    description: List of validation errors if valid is false
+
+  /api/config/export:
+    get:
+      summary: Export configuration
+      description: Export the current configuration as a downloadable file
+      parameters:
+        - name: format
+          in: query
+          description: Export format (json or yaml)
+          required: false
+          schema:
+            type: string
+            enum: [json, yaml]
+            default: json
+      responses:
+        '200':
+          description: Configuration file export
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/SystemConfig'
+
+  /api/config/import:
+    put:
+      summary: Import configuration
+      description: Import configuration from an uploaded file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemConfig'
+      responses:
+        '200':
+          description: Configuration imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfig'
+        '400':
+          description: Invalid configuration file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/config/backups:
+    get:
+      summary: Get available backups
+      description: Retrieve list of available configuration backups
+      responses:
+        '200':
+          description: List of available backups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BackupInfo'
+    post:
+      summary: Create a new backup
+      description: Create a new configuration backup manually
+      responses:
+        '200':
+          description: Backup created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupInfo'
+        '500':
+          description: Failed to create backup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/config/backups/{backupId}/restore:
+    put:
+      summary: Restore from backup
+      description: Restore configuration from a specific backup
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: ID of the backup to restore
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuration restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfig'
+        '404':
+          description: Backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to restore backup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dashboard/overview:
+    get:
+      summary: Get dashboard overview
+      description: Retrieve system overview information for the dashboard
+      responses:
+        '200':
+          description: Dashboard overview data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverCount:
+                    type: integer
+                    description: Total number of configured servers
+                  onlineServerCount:
+                    type: integer
+                    description: Number of online servers
+                  toolCount:
+                    type: integer
+                    description: Total number of tools across all servers
+                  tagCount:
+                    type: integer
+                    description: Total number of unique tags
+                  systemStats:
+                    $ref: '#/components/schemas/SystemStats'
+
+  /api/dashboard/metrics:
+    get:
+      summary: Get dashboard metrics
+      description: Retrieve system performance metrics for the dashboard
+      responses:
+        '200':
+          description: Dashboard metrics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+
+  /api/dashboard/recent:
+    get:
+      summary: Get recent activity
+      description: Retrieve recent system activity and events
+      responses:
+        '200':
+          description: Recent activity data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recentActivities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityLog'
+
+components:
+  schemas:
+    Server:
+      type: object
+      required:
+        - id
+        - name
+        - endpoint
+        - transport
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the server
+        name:
+          type: string
+          description: Display name for the server
+          maxLength: 100
+        description:
+          type: string
+          description: Server description
+        endpoint:
+          type: string
+          format: uri
+          description: MCP server endpoint URL
+        transport:
+          type: string
+          enum: [http-stream]
+          description: Protocol transport type (MCP-HUB-LITE Lite版本仅支持 http-stream)
+        status:
+          type: string
+          enum: [online, offline, error, starting, stopping]
+          description: Current server status (简化状态，无degraded)
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          description: Tags for categorization (e.g., {"env": "prod", "category": "database"})
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+          description: Available tools on this server
+        config:
+          type: object
+          description: Server connection configuration
+        managedProcess:
+          $ref: '#/components/schemas/ManagedProcessConfig'
+          description: Process management configuration if locally managed
+        pid:
+          type: integer
+          nullable: true
+          description: Process ID if locally managed
+        cpuUsage:
+          type: number
+          description: Current CPU usage percentage
+          minimum: 0
+          maximum: 100
+        memoryUsage:
+          type: number
+          description: Current memory usage in MB
+          minimum: 0
+        uptime:
+          type: integer
+          description: Server uptime in seconds
+        lastHeartbeat:
+          type: string
+          format: date-time
+          description: Timestamp of last successful communication
+        healthCheckUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Health check endpoint
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: Server capabilities
+
+    ManagedProcessConfig:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+          description: Command to start the process
+        args:
+          type: array
+          items:
+            type: string
+          description: Arguments to pass to the process
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: Environment variables for the process
+        timeout:
+          type: integer
+          description: Process timeout in seconds
+          default: 30
+
+    Tool:
+      type: object
+      required:
+        - id
+        - name
+        - serverId
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the tool (serverId:toolName)
+        name:
+          type: string
+          description: Tool name
+          maxLength: 100
+        description:
+          type: string
+          description: Tool description
+        serverId:
+          type: string
+          description: ID of the parent MCP server
+        inputSchema:
+          type: object
+          description: JSON schema describing tool inputs
+        outputSchema:
+          type: object
+          description: JSON schema describing tool outputs
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: Tool capabilities or tags
+        status:
+          type: string
+          enum: [available, unavailable, degraded, error]
+          description: Current availability status
+        callCount:
+          type: integer
+          description: Number of times tool has been called
+        avgCallDuration:
+          type: integer
+          description: Average call duration in milliseconds
+        errorCount:
+          type: integer
+          description: Number of call errors
+        deprecated:
+          type: boolean
+          description: Whether the tool is deprecated
+
+    LanguageSettings:
+      type: object
+      required:
+        - currentLanguage
+      properties:
+        currentLanguage:
+          type: string
+          enum: [zh-CN, en-US]
+          description: Currently selected language
+        browserDetection:
+          type: string
+          enum: [zh-CN, en-US]
+          nullable: true
+          description: Language detected from browser
+        userPreference:
+          type: string
+          enum: [zh-CN, en-US]
+          nullable: true
+          description: User's language preference
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last updated timestamp
+        autoDetect:
+          type: boolean
+          description: Whether to auto-detect language
+        fallbackLanguage:
+          type: string
+          description: Fallback language
+
+    SystemConfig:
+      type: object
+      properties:
+        version:
+          type: string
+          description: Configuration schema version
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Server'
+          description: List of configured servers
+        settings:
+          type: object
+          properties:
+            language:
+              $ref: '#/components/schemas/LanguageSettings'
+            logging:
+              type: object
+              properties:
+                level:
+                  type: string
+                  enum: [error, warn, info, debug]
+                  default: info
+          description: System settings
+        gateway:
+          type: object
+          properties:
+            proxyTimeout:
+              type: integer
+              default: 30000
+              description: Timeout for proxy requests in milliseconds
+            rateLimit:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  default: true
+                maxRequests:
+                  type: integer
+                  default: 100
+                windowMs:
+                  type: integer
+                  default: 60000
+          description: Gateway configuration
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        code:
+          type: integer
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details
+
+    BackupInfo:
+      type: object
+      required:
+        - id
+        - timestamp
+        - size
+      properties:
+        id:
+          type: string
+          description: Unique backup identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: When the backup was created
+        size:
+          type: integer
+          description: Size of the backup in bytes
+        description:
+          type: string
+          description: Optional backup description
+
+    SystemStats:
+      type: object
+      properties:
+        memoryUsage:
+          type: number
+          description: Current memory usage in MB
+        cpuUsage:
+          type: number
+          description: Current CPU usage percentage
+        uptime:
+          type: integer
+          description: System uptime in seconds
+        activeConnections:
+          type: integer
+          description: Number of active connections
+
+    SystemMetrics:
+      type: object
+      properties:
+        requestsPerSecond:
+          type: number
+          description: Average requests per second
+        responseTime:
+          type: number
+          description: Average response time in milliseconds
+        errorRate:
+          type: number
+          description: Error rate percentage
+        activeUsers:
+          type: integer
+          description: Number of active users
+
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique log identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: When the activity occurred
+        type:
+          type: string
+          enum: [server-start, server-stop, config-change, tool-call, search, error]
+          description: Type of activity
+        description:
+          type: string
+          description: Description of the activity
+        userId:
+          type: string
+          nullable: true
+          description: User who performed the action
+        metadata:
+          type: object
+          description: Additional activity metadata

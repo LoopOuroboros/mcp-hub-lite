@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Fastify from 'fastify';
-import { serverRoutes } from '../src/api/routes/server.routes.js';
+import { webServerRoutes } from '../src/api/web/servers.js';
 import { hubManager } from '../src/services/hub-manager.service.js';
 
 // Mock hubManager
@@ -19,7 +19,7 @@ describe('Server API Routes', () => {
 
   beforeEach(async () => {
     app = Fastify();
-    app.register(serverRoutes);
+    app.register(webServerRoutes);
     await app.ready();
     vi.clearAllMocks();
   });
@@ -34,7 +34,7 @@ describe('Server API Routes', () => {
 
     const response = await app.inject({
       method: 'GET',
-      url: '/api/servers'
+      url: '/web/servers'
     });
 
     expect(response.statusCode).toBe(200);
@@ -55,7 +55,7 @@ describe('Server API Routes', () => {
 
     const response = await app.inject({
       method: 'POST',
-      url: '/api/servers',
+      url: '/web/servers',
       payload: newServer
     });
 
@@ -71,7 +71,7 @@ describe('Server API Routes', () => {
 
     const response = await app.inject({
       method: 'POST',
-      url: '/api/servers',
+      url: '/web/servers',
       payload: invalidServer
     });
 

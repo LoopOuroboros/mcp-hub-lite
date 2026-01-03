@@ -1,9 +1,9 @@
 import { buildApp } from '../app.js';
-import { configManager } from '../config/config.manager.js';
+import { configManager } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
-import { mcpConnectionManager } from '../services/mcp-connection.manager.js';
-import { streamingGateway } from '../services/streaming-gateway.service.js';
-import { PidManager } from './pid.manager.js';
+import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
+import { gateway } from '../services/gateway.service.js';
+import { PidManager } from './pid-manager.js';
 
 export async function runServer(options: { stdio?: boolean, port?: number, host?: string } = {}) {
   try {
@@ -26,7 +26,7 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...');
-    const servers = config.servers.filter(s => s.enabled);
+    const servers = config.servers.filter((s: any) => s.enabled);
     for (const server of servers) {
         // Connect in background to not block startup
         mcpConnectionManager.connect(server).catch(err => {
@@ -35,7 +35,7 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
     }
 
     if (isStdio) {
-        await streamingGateway.start();
+        await gateway.start();
     } else {
         await app!.listen({ port, host });
         logger.info(`MCP Hub Lite Server running at http://${host}:${port}`);

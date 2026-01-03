@@ -10,6 +10,7 @@ dist/
 build/
 out/
 coverage/
+config/
 
 # Environment files
 .env
@@ -78,7 +79,6 @@ process-logs/
 
 # GitHub Spec Kit
 .specify/
-specs/
 
 # Analysis Docs
 docs/kaizen/

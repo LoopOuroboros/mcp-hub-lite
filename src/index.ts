@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { runServer } from './server/runner.js';
-import { configManager } from './config/config.manager.js';
-import { PidManager } from './server/pid.manager.js';
+import { configManager } from './config/config-manager.js';
+import { PidManager } from './server/pid-manager.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { LogRotator } from './utils/log-rotator.js';
 
 const program = new Command();
 
@@ -29,20 +30,20 @@ program
       if (options.host) args.push('--host', options.host);
 
       const logDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-      }
-      const logFile = path.join(logDir, 'mcp-hub.log');
-      const errFile = path.join(logDir, 'mcp-hub.error.log');
-      const out = fs.openSync(logFile, 'a');
-      const err = fs.openSync(errFile, 'a');
+      const logRotator = new LogRotator(logDir, 'mcp-hub');
+
+      // Rotate old logs before starting
+      logRotator.rotateLogs();
+
+      const logFile = logRotator.getCurrentLogFilePath();
+      const logStream = fs.openSync(logFile, 'a');
 
       console.log(`Starting server in background...`);
       console.log(`Logs: ${logFile}`);
 
       const subprocess = spawn(process.argv[0], args, {
         detached: true,
-        stdio: ['ignore', out, err]
+        stdio: ['ignore', logStream, logStream]
       });
       
       subprocess.unref();
@@ -62,7 +63,7 @@ program
   .description('List all managed MCP servers')
   .action(async () => {
     const config = configManager.getConfig();
-    const url = `http://${config.host}:${config.port}/api/servers`;
+    const url = `http://${config.host}:${config.port}/web/servers`;
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -84,21 +85,68 @@ program
   .description('Show system status')
   .action(async () => {
     const config = configManager.getConfig();
-    const url = `http://${config.host}:${config.port}/api/mcp/status`;
-    try {
+    const pid = PidManager.getPid();
+    const isRunning = PidManager.isRunning();
+
+    // ANSI color codes
+    const colors = {
+      reset: '\x1b[0m',
+      bold: '\x1b[1m',
+      cyan: '\x1b[36m',
+      green: '\x1b[32m',
+      red: '\x1b[31m',
+      yellow: '\x1b[33m',
+      blue: '\x1b[34m'
+    };
+
+    // Display basic system info
+    console.log(`${colors.bold}MCP Hub Lite - System Status${colors.reset}`);
+    console.log('============================');
+    console.log(`${colors.cyan}Process ID:${colors.reset} ${isRunning ? pid : 'Not running'}`);
+    console.log(`${colors.cyan}Port:${colors.reset} ${config.port}`);
+    console.log(`${colors.cyan}Host:${colors.reset} ${config.host}`);
+    console.log(`${colors.cyan}Status:${colors.reset} ${isRunning ? `${colors.green}Running${colors.reset}` : `${colors.red}Stopped${colors.reset}`}`);
+    console.log('');
+
+    // Display MCP connection example
+    console.log(`${colors.bold}MCP Integration:${colors.reset}`);
+    console.log('================');
+    console.log(`${colors.yellow}Endpoint:${colors.reset} http://${config.host}:${config.port}/mcp`);
+    console.log(`${colors.yellow}Transport:${colors.reset} HTTP-Stream`);
+    console.log('');
+    const mcpClientConfig = {
+      "name": "MCP Hub Lite",
+      "transport": "http-stream",
+      "endpoint": `http://${config.host}:${config.port}/mcp`
+    };
+    console.log(JSON.stringify(mcpClientConfig, null, 2));
+    console.log('');
+
+    // Try to fetch server list if running
+    if (isRunning) {
+      try {
+        const url = `http://${config.host}:${config.port}/web/servers`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const status = await response.json();
-        console.table(status);
-        process.exit(0);
-    } catch (error: any) {
-        console.error('Failed to get status:', error.message);
-        console.error('Is the server running?');
-        process.exit(1);
+        const servers = await response.json() as any[];
+
+        if (servers.length > 0) {
+          console.log(`${colors.bold}Managed MCP Servers:${colors.reset}`);
+          console.log('===================');
+          console.table(servers);
+        } else {
+          console.log('No managed MCP servers configured.');
+        }
+      } catch (error: any) {
+        console.error('Warning: Failed to fetch server list:', error.message);
+      }
+    } else {
+      console.log('Server is not running. Start it with: npm run start');
     }
+
+    process.exit(0);
   });
 
 program

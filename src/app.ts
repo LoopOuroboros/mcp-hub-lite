@@ -1,7 +1,12 @@
 import Fastify from 'fastify';
-import { serverRoutes } from './api/routes/server.routes.js';
-import { mcpRoutes } from './api/routes/mcp.routes.js';
-import { healthRoutes } from './api/routes/health.routes.js';
+// MCP Protocol Routes
+import { mcpGatewayRoutes } from './api/mcp/gateway.js';
+
+// Web API Routes
+import { webServerRoutes } from './api/web/servers.js';
+import { webSearchRoutes } from './api/web/search.js';
+import { webHealthRoutes } from './api/web/health.js';
+import { webMcpStatusRoutes } from './api/web/mcp-status.js';
 
 export async function buildApp() {
   const fastify = Fastify({
@@ -20,9 +25,11 @@ export async function buildApp() {
       done();
   });
 
-  fastify.register(serverRoutes);
-  fastify.register(mcpRoutes);
-  fastify.register(healthRoutes);
+  fastify.register(mcpGatewayRoutes);
+  fastify.register(webServerRoutes);
+  fastify.register(webSearchRoutes);
+  fastify.register(webHealthRoutes);
+  fastify.register(webMcpStatusRoutes);
 
   return fastify;
 }

@@ -35,7 +35,7 @@ export const useServerStore = defineStore('server', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch('/api/servers');
+      const response = await fetch('/web/servers');
       if (!response.ok) throw new Error('Failed to fetch servers');
       servers.value = await response.json();
       await fetchStatus();
@@ -48,7 +48,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function fetchStatus() {
     try {
-      const response = await fetch('/api/mcp/status');
+      const response = await fetch('/web/mcp/status');
       if (response.ok) {
         const data = await response.json();
         data.forEach((item: any) => {
@@ -63,7 +63,7 @@ export const useServerStore = defineStore('server', () => {
   async function addServer(server: McpServer) {
     loading.value = true;
     try {
-      const response = await fetch('/api/servers', {
+      const response = await fetch('/web/servers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(server)
@@ -82,7 +82,7 @@ export const useServerStore = defineStore('server', () => {
   async function removeServer(id: string) {
     loading.value = true;
     try {
-      const response = await fetch(`/api/servers/${id}`, {
+      const response = await fetch(`/web/servers/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete server');
@@ -97,7 +97,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function connectServer(id: string) {
     try {
-        await fetch(`/api/mcp/servers/${id}/connect`, { method: 'POST' });
+        await fetch(`/web/mcp/servers/${id}/connect`, { method: 'POST' });
         await fetchStatus();
     } catch (e: any) {
         error.value = e.message;
@@ -106,7 +106,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function disconnectServer(id: string) {
     try {
-        await fetch(`/api/mcp/servers/${id}/disconnect`, { method: 'POST' });
+        await fetch(`/web/mcp/servers/${id}/disconnect`, { method: 'POST' });
         await fetchStatus();
     } catch (e: any) {
         error.value = e.message;
@@ -115,7 +115,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function searchTools(query: string) {
     try {
-        const response = await fetch(`/api/tools/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/web/search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
              const results = await response.json();
              tools.value = results.map((r: any) => r.tool);

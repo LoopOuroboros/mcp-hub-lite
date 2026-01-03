@@ -1,0 +1,127 @@
+{
+  "esmModuleSystemV1": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-11",
+    "description": "ESM模块系统规则定义 - 约束驱动自动化管理",
+    "constraints": {
+      "syntaxRules": {
+        "rule001_importExportOnly": {
+          "id": "R001",
+          "category": "syntax-rules",
+          "title": "强制使用ES Module语法",
+          "severity": "error",
+          "description": "禁止使用CommonJS语法，必须使用import/export",
+          "example": {
+            "correct": "import { readFile } from 'node:fs/promises';\nexport function createServer() { ... }",
+            "incorrect": "const fs = require('fs');\nmodule.exports = { createServer };"
+          },
+          "eslintRule": "no-require-imports",
+          "rationale": "确保代码使用现代ESM规范，提升构建性能"
+        },
+        "rule002_explicitExtensions": {
+          "id": "R002",
+          "category": "syntax-rules",
+          "title": "显式文件扩展名",
+          "severity": "error",
+          "description": "导入本地模块时必须显式包含文件扩展名",
+          "example": {
+            "correct": "import config from './config.json';\nimport { handler } from './handler.ts';",
+            "incorrect": "import config from './config';\nimport { handler } from './handler';"
+          },
+          "eslintRule": "import/extensions",
+          "exception": "Node.js内置模块和npm包可省略扩展名"
+        },
+        "rule003_unifiedPathSeparator": {
+          "id": "R003",
+          "category": "syntax-rules",
+          "title": "统一导入路径分隔符",
+          "severity": "error",
+          "description": "导入路径统一使用正斜杠 /，禁止使用反斜杠",
+          "example": {
+            "correct": "import { utils } from './utils/helper.ts';",
+            "incorrect": "import { utils } from '.\\utils\\helper.ts';"
+          },
+          "rationale": "确保跨平台兼容性，Windows用户特别注意"
+        }
+      },
+      "typeSafety": {
+        "rule004_typesOnlyImport": {
+          "id": "R004",
+          "category": "type-safety",
+          "title": "类型导入隔离",
+          "severity": "warning",
+          "description": "仅导入类型时使用import type语法",
+          "example": {
+            "correct": "import type { Config } from './types';\nimport { Logger } from './logger';",
+            "incorrect": "import { Config } from './types'; // 当仅用作类型时"
+          },
+          "eslintRule": "@typescript-eslint/consistent-type-imports",
+          "benefits": [
+            "禁止类型在运行时引入，减少Bundle大小",
+            "提升Tree-shaking效果",
+            "TypeScript 5.0+原生支持"
+          ]
+        },
+        "rule005_namedExportsPriority": {
+          "id": "R005",
+          "category": "type-safety",
+          "title": "命名导出优先",
+          "severity": "suggestion",
+          "description": "优先使用命名导出，避免默认导出除非单值模块",
+          "example": {
+            "correct": "export interface Config { ... }\nexport function create() { ... }",
+            "caution": "export default class McpGateway { ... } // 仅单一值时"
+          },
+          "rationale": "命名导出更易重构和Tree-shaking，IDE自动完成支持更好"
+        }
+      },
+      "advancedFeatures": {
+        "rule006_dynamicImport": {
+          "id": "R006",
+          "category": "advanced-features",
+          "title": "动态导入时机",
+          "severity": "suggestion",
+          "description": "大型模块或按需加载时使用动态import()",
+          "example": {
+            "correct": "if (process.env.NODE_ENV === 'production') {\n  const heavy = await import('./heavy-module.ts');\n}",
+            "note": "仅在必要时使用，配合代码分割效果最佳"
+          }
+        },
+        "rule007_pathAlias": {
+          "id": "R007",
+          "category": "advanced-features",
+          "title": "路径别名规范",
+          "severity": "warning",
+          "description": "使用路径别名时保持命名一致性和可读性",
+          "example": {
+            "correct": "import { User } from '@/types/user.ts';",
+            "config": "tsconfig.json paths: { \"@/*\": [\"src/*\"] }"
+          },
+          "namingRules": [
+            "使用@作为根路径别名",
+            "子路径使用@/类型/*格式",
+            "避免多层嵌套别名"
+          ]
+        }
+      },
+      "testingConventions": {
+        "rule008_testFileConventions": {
+          "id": "R008",
+          "category": "testing-conventions",
+          "title": "测试文件ESM规范",
+          "severity": "error",
+          "description": "测试文件中遵循以下ESM规范",
+          "example": {
+            "correct": "import type { McpGateway } from '@/gateway/index.ts';\nimport { describe, test } from '@jest/globals';",
+            "incorrect": "const { describe, test } = require('@jest/globals');"
+          },
+          "tddIntegration": {
+            "redPhase": "编写测试时使用ESM原生import语句",
+            "greenPhase": "编写实现时不使用__dirname/__filename",
+            "refactorPhase": "优化时通过import type分离类型定义"
+          }
+        }
+      }
+    }
+  }
+}

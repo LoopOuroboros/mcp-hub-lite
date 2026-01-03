@@ -1,6 +1,8 @@
 import { createI18n } from 'vue-i18n';
-import en from './locales/en';
-import zh from './locales/zh';
+
+// Load JSON files from public directory
+const en = await fetch('/locales/en.json').then(res => res.json());
+const zh = await fetch('/locales/zh.json').then(res => res.json());
 
 const i18n = createI18n({
   legacy: false,
