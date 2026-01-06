@@ -4,7 +4,7 @@
  */
 
 import { buildApp } from '../app.js';
-import { PidManager } from '../server/pid-manager.js';
+import { PidManager } from '../pid/manager.js';
 import { hubManager } from '../services/hub-manager.service.js';
 
 interface ServerOptions {

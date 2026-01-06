@@ -65,7 +65,9 @@ export const useConfigStore = defineStore('config', () => {
         body: JSON.stringify(newConfig)
       });
       if (!response.ok) throw new Error('Failed to update configuration');
-      config.value = await response.json();
+      const result = await response.json();
+      // 重新获取配置确保同步
+      await fetchConfig();
     } catch (err: any) {
       error.value = err.message;
       throw err;
@@ -76,9 +78,17 @@ export const useConfigStore = defineStore('config', () => {
 
   async function exportConfig() {
     try {
-      const response = await fetch('/web/config/export');
+      const response = await fetch('/web/config/export', {
+        method: 'POST'
+      });
       if (!response.ok) throw new Error('Failed to export configuration');
-      return await response.json();
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mcp-hub-config.json';
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (err: any) {
       error.value = err.message;
       throw err;
@@ -95,7 +105,9 @@ export const useConfigStore = defineStore('config', () => {
         body: JSON.stringify(configData)
       });
       if (!response.ok) throw new Error('Failed to import configuration');
-      config.value = await response.json();
+      const result = await response.json();
+      // 重新获取配置确保同步
+      await fetchConfig();
     } catch (err: any) {
       error.value = err.message;
       throw err;

@@ -15,59 +15,52 @@
     </div>
 
     <el-alert
-      v-if="store.error"
-      :title="store.error"
+      v-if="toolStore.error"
+      :title="toolStore.error"
       type="error"
       show-icon
       class="mb-4"
     />
 
-    <div v-if="store.tools.length === 0" class="empty-state">
+    <div v-if="toolStore.tools.length === 0" class="empty-state">
       <el-empty :description="$t('tools.noTools')" />
     </div>
 
     <div v-else class="tools-grid">
-      <el-card v-for="tool in store.tools" :key="tool.name + tool.serverId" class="tool-card">
-        <template #header>
-          <div class="tool-header">
-            <span class="tool-name">{{ tool.name }}</span>
-            <el-tag size="small">{{ getServerName(tool.serverId) }}</el-tag>
-          </div>
-        </template>
-        <div class="tool-body">
-          <p class="tool-description">{{ tool.description || $t('tools.noDescription') }}</p>
-          <el-collapse>
-            <el-collapse-item :title="$t('tools.schema')">
-              <pre class="schema-view">{{ JSON.stringify(tool.inputSchema, null, 2) }}</pre>
-            </el-collapse-item>
-          </el-collapse>
-        </div>
-      </el-card>
+      <ToolCard
+        v-for="tool in toolStore.tools"
+        :key="tool.name + tool.serverId"
+        :tool="tool"
+        :server-name="getServerName(tool.serverId)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useToolStore } from '../stores/tool.store';
 import { useServerStore } from '../stores/server.store';
 import { Search } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
+import ToolCard from '../components/ToolCard.vue';
 
-const store = useServerStore();
+const toolStore = useToolStore();
+const serverStore = useServerStore();
 const searchQuery = ref('');
 
 function handleSearch() {
-  store.searchTools(searchQuery.value);
+  toolStore.searchTools(searchQuery.value);
 }
 
 function getServerName(id: string) {
-  const server = store.servers.find(s => s.id === id);
+  const server = serverStore.servers.find(s => s.id === id);
   return server ? server.name : id;
 }
 
 onMounted(() => {
-  store.fetchServers(); // Ensure servers are loaded for names
-  store.searchTools('');
+  serverStore.fetchServers(); // Ensure servers are loaded for names
+  toolStore.fetchAllTools();
 });
 </script>
 
@@ -88,24 +81,5 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
-}
-.tool-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.tool-name {
-  font-weight: bold;
-}
-.tool-description {
-  color: #666;
-  margin-bottom: 10px;
-}
-.schema-view {
-  background: #f5f7fa;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  overflow-x: auto;
 }
 </style>

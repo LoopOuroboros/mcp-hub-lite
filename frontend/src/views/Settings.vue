@@ -1,38 +1,38 @@
 <template>
   <div class="settings">
     <div class="card">
-      <h2>Settings</h2>
+      <h2>{{ $t('settings.title') }}</h2>
 
       <div class="setting-group">
-        <h3>General</h3>
+        <h3>{{ $t('settings.general.title') }}</h3>
 
         <div class="setting-item">
-          <label for="language">{{ $t('common.language') }}</label>
+          <label for="language">{{ $t('settings.general.language') }}</label>
           <select id="language" v-model="selectedLanguage" @change="changeLanguage">
-            <option value="en">English</option>
-            <option value="zh">中文</option>
+            <option value="en">{{ $t('settings.languages.en') }}</option>
+            <option value="zh">{{ $t('settings.languages.zh') }}</option>
           </select>
         </div>
       </div>
 
       <div class="setting-group">
-        <h3>Server Configuration</h3>
+        <h3>{{ $t('settings.serverConfig.title') }}</h3>
 
         <div class="setting-item">
-          <label for="autoConnect">Auto-connect on startup</label>
+          <label for="autoConnect">{{ $t('settings.serverConfig.autoConnect') }}</label>
           <input type="checkbox" id="autoConnect" v-model="autoConnect" @change="saveAutoConnect">
         </div>
       </div>
 
       <div class="setting-group">
-        <h3>Export/Import</h3>
+        <h3>{{ $t('settings.exportImport.title') }}</h3>
 
         <div class="setting-item">
           <button @click="exportConfig" class="button button--primary">
-            Export Configuration
+            {{ $t('settings.exportImport.exportButton') }}
           </button>
           <button @click="importConfig" class="button" style="margin-left: 10px;">
-            Import Configuration
+            {{ $t('settings.exportImport.importButton') }}
           </button>
         </div>
       </div>
@@ -44,7 +44,7 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const selectedLanguage = ref(locale.value);
 const autoConnect = ref(false);
 
@@ -75,7 +75,7 @@ const exportConfig = async () => {
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Export failed:', error);
-    alert('Failed to export configuration');
+    alert(t('settings.exportImport.exportFailed'));
   }
 };
 
@@ -98,11 +98,11 @@ const importConfig = () => {
       });
 
       if (!response.ok) throw new Error('Failed to import config');
-      alert('Configuration imported successfully!');
+      alert(t('settings.exportImport.importSuccess'));
       location.reload();
     } catch (error) {
       console.error('Import failed:', error);
-      alert('Failed to import configuration. Please check the file format.');
+      alert(t('settings.exportImport.importFailed'));
     }
   };
   input.click();

@@ -27,7 +27,6 @@ export interface McpTool {
 export const useServerStore = defineStore('server', () => {
   const servers = ref<McpServer[]>([]);
   const serverStatuses = ref<Record<string, ServerStatus>>({});
-  const tools = ref<McpTool[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -113,22 +112,9 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
-  async function searchTools(query: string) {
-    try {
-        const response = await fetch(`/web/search?q=${encodeURIComponent(query)}`);
-        if (response.ok) {
-             const results = await response.json();
-             tools.value = results.map((r: any) => r.tool);
-        }
-    } catch (e: any) {
-        error.value = e.message;
-    }
-  }
-
   return {
     servers,
     serverStatuses,
-    tools,
     loading,
     error,
     fetchServers,
@@ -136,7 +122,6 @@ export const useServerStore = defineStore('server', () => {
     addServer,
     removeServer,
     connectServer,
-    disconnectServer,
-    searchTools
+    disconnectServer
   };
 });

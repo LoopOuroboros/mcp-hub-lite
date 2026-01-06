@@ -5,7 +5,15 @@
     "tools": "Tools"
   },
   "dashboard": {
-    "title": "Dashboard"
+    "title": "Dashboard",
+    "welcome": "Welcome to MCP Hub Lite - A lightweight MCP (Model Context Protocol) gateway system.",
+    "quickActions": "Quick Actions",
+    "status": {
+      "allConnected": "All Connected",
+      "partiallyConnected": "Partially Connected",
+      "disconnected": "Disconnected",
+      "unknown": "Unknown"
+    }
   },
   "server": {
     "title": "Server Management",
@@ -27,6 +35,12 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "deleteConfirm": "Are you sure you want to delete this server?",
+    "manualInput": "Manual Input",
+    "jsonImport": "JSON Import",
+    "pasteJson": "Paste server config JSON here",
+    "parseAndFill": "Parse & Fill",
+    "parseError": "JSON Parse Error: {msg}",
+    "noServerFound": "No valid server config found in JSON",
     "placeholder": {
       "args": "Space separated arguments"
     }
@@ -37,6 +51,59 @@
     "noTools": "No tools found. Connect servers to see tools.",
     "noDescription": "No description",
     "schema": "Schema"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "title": "General",
+      "language": "Language"
+    },
+    "serverConfig": {
+      "title": "Server Configuration",
+      "autoConnect": "Auto-connect on startup"
+    },
+    "exportImport": {
+      "title": "Export/Import",
+      "exportButton": "Export Configuration",
+      "importButton": "Import Configuration",
+      "exportFailed": "Failed to export configuration",
+      "importSuccess": "Configuration imported successfully!",
+      "importFailed": "Failed to import configuration. Please check the file format."
+    },
+    "languages": {
+      "en": "English",
+      "zh": "中文"
+    }
+  },
+  "about": {
+    "title": "About MCP Hub Lite",
+    "overview": {
+      "title": "Overview",
+      "description": "MCP Hub Lite is a lightweight MCP (Model Context Protocol) gateway system designed for independent developers. It provides a simple and efficient way to manage multiple MCP servers and tools through a unified interface."
+    },
+    "features": {
+      "title": "Features",
+      "item1": "Manage multiple MCP servers",
+      "item2": "Discover and explore MCP tools",
+      "item3": "Simple configuration management",
+      "item4": "Lightweight single-process architecture",
+      "item5": "Web-based dashboard interface",
+      "item6": "Command-line interface with 6 core commands"
+    },
+    "architecture": {
+      "title": "Architecture",
+      "description": "Built with Vue 3, TypeScript, and Fastify, MCP Hub Lite follows a simplified single-process architecture that eliminates unnecessary complexity while maintaining essential functionality."
+    },
+    "version": {
+      "title": "Version Information",
+      "mcpHubLite": "MCP Hub Lite",
+      "vue": "Vue",
+      "nodejs": "Node.js"
+    },
+    "license": {
+      "title": "License",
+      "type": "MIT License"
+    }
   },
   "common": {
     "language": "Language"

@@ -2,7 +2,7 @@
   <div class="dashboard">
     <div class="card">
       <h2>{{ $t('app.title') }}</h2>
-      <p>Welcome to MCP Hub Lite - A lightweight MCP (Model Context Protocol) gateway system.</p>
+      <p>{{ $t('dashboard.welcome') }}</p>
     </div>
 
     <div class="stats-grid">
@@ -22,7 +22,7 @@
     </div>
 
     <div class="quick-actions">
-      <h3>Quick Actions</h3>
+      <h3>{{ $t('dashboard.quickActions') }}</h3>
       <div class="actions-grid">
         <router-link to="/servers" class="action-button">
           {{ $t('server.title') }}
@@ -31,7 +31,7 @@
           {{ $t('tools.title') }}
         </router-link>
         <router-link to="/settings" class="action-button">
-          Settings
+          {{ $t('settings.title') }}
         </router-link>
       </div>
     </div>
@@ -39,12 +39,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useServerStore } from '@/stores/server.store';
+import { useToolStore } from '@/stores/tool.store';
 
+const { t } = useI18n();
 const serverStore = useServerStore();
+const toolStore = useToolStore();
+
 const servers = computed(() => serverStore.servers);
-const totalTools = computed(() => serverStore.tools.length);
+const totalTools = computed(() => toolStore.tools.length);
+
+onMounted(() => {
+  serverStore.fetchServers();
+  toolStore.fetchAllTools();
+});
 
 const getOverallStatus = () => {
   if (servers.value.length === 0) return 'disconnected';
@@ -61,10 +71,10 @@ const getOverallStatus = () => {
 const getOverallStatusText = () => {
   const status = getOverallStatus();
   switch (status) {
-    case 'connected': return 'All Connected';
-    case 'partial': return 'Partially Connected';
-    case 'disconnected': return 'Disconnected';
-    default: return 'Unknown';
+    case 'connected': return t('dashboard.status.allConnected');
+    case 'partial': return t('dashboard.status.partiallyConnected');
+    case 'disconnected': return t('dashboard.status.disconnected');
+    default: return t('dashboard.status.unknown');
   }
 };
 </script>

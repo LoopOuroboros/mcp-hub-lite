@@ -5,7 +5,15 @@
     "tools": "工具"
   },
   "dashboard": {
-    "title": "仪表板"
+    "title": "仪表板",
+    "welcome": "欢迎使用 MCP Hub Lite - 轻量级 MCP（模型上下文协议）网关系统。",
+    "quickActions": "快捷操作",
+    "status": {
+      "allConnected": "全部已连接",
+      "partiallyConnected": "部分已连接",
+      "disconnected": "未连接",
+      "unknown": "未知"
+    }
   },
   "server": {
     "title": "服务器管理",
@@ -27,6 +35,12 @@
     "cancel": "取消",
     "confirm": "确认",
     "deleteConfirm": "确定要删除此服务器吗？",
+    "manualInput": "手动输入",
+    "jsonImport": "JSON 导入",
+    "pasteJson": "请粘贴服务器配置 JSON",
+    "parseAndFill": "解析并填充",
+    "parseError": "JSON 解析失败：{msg}",
+    "noServerFound": "未在 JSON 中找到有效的服务器配置",
     "placeholder": {
       "args": "参数之间用空格分隔"
     }
@@ -37,6 +51,59 @@
     "noTools": "未找到工具。连接服务器以查看工具。",
     "noDescription": "无描述",
     "schema": "Schema"
+  },
+  "settings": {
+    "title": "设置",
+    "general": {
+      "title": "通用",
+      "language": "语言"
+    },
+    "serverConfig": {
+      "title": "服务器配置",
+      "autoConnect": "启动时自动连接"
+    },
+    "exportImport": {
+      "title": "导出/导入",
+      "exportButton": "导出配置",
+      "importButton": "导入配置",
+      "exportFailed": "导出配置失败",
+      "importSuccess": "配置导入成功！",
+      "importFailed": "导入配置失败。请检查文件格式。"
+    },
+    "languages": {
+      "en": "English",
+      "zh": "中文"
+    }
+  },
+  "about": {
+    "title": "关于 MCP Hub Lite",
+    "overview": {
+      "title": "概述",
+      "description": "MCP Hub Lite 是一个为独立开发者设计的轻量级 MCP（模型上下文协议）网关系统。它提供了一个简单高效的方式来通过统一界面管理多个 MCP 服务器和工具。"
+    },
+    "features": {
+      "title": "功能特性",
+      "item1": "管理多个 MCP 服务器",
+      "item2": "发现和探索 MCP 工具",
+      "item3": "简单的配置管理",
+      "item4": "轻量级单进程架构",
+      "item5": "基于 Web 的仪表板界面",
+      "item6": "提供 6 个核心命令的命令行界面"
+    },
+    "architecture": {
+      "title": "架构",
+      "description": "使用 Vue 3、TypeScript 和 Fastify 构建，MCP Hub Lite 遵循简化的单进程架构，在保持核心功能的同时消除了不必要的复杂性。"
+    },
+    "version": {
+      "title": "版本信息",
+      "mcpHubLite": "MCP Hub Lite",
+      "vue": "Vue",
+      "nodejs": "Node.js"
+    },
+    "license": {
+      "title": "许可证",
+      "type": "MIT 许可证"
+    }
   },
   "common": {
     "language": "语言"

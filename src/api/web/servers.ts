@@ -26,7 +26,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   fastify.post('/web/servers', async (request, reply) => {
     try {
       const body = McpServerConfigSchema.parse(request.body);
-      const newServer = hubManager.addServer(body);
+      const newServer = await hubManager.addServer(body);
       return reply.code(201).send(newServer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -43,7 +43,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       const partialSchema = McpServerConfigSchema.partial().omit({ id: true });
       const body = partialSchema.parse(request.body);
 
-      const updatedServer = hubManager.updateServer(request.params.id, body);
+      const updatedServer = await hubManager.updateServer(request.params.id, body);
 
       if (!updatedServer) {
         return reply.code(404).send({ error: 'Server not found' });

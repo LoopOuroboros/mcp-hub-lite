@@ -1,57 +1,51 @@
 <template>
   <div class="about">
     <div class="card">
-      <h2>About MCP Hub Lite</h2>
+      <h2>{{ $t('about.title') }}</h2>
 
       <div class="info-section">
-        <h3>Overview</h3>
-        <p>
-          MCP Hub Lite is a lightweight MCP (Model Context Protocol) gateway system designed for independent developers.
-          It provides a simple and efficient way to manage multiple MCP servers and tools through a unified interface.
-        </p>
+        <h3>{{ $t('about.overview.title') }}</h3>
+        <p>{{ $t('about.overview.description') }}</p>
       </div>
 
       <div class="info-section">
-        <h3>Features</h3>
+        <h3>{{ $t('about.features.title') }}</h3>
         <ul>
-          <li>Manage multiple MCP servers</li>
-          <li>Discover and explore MCP tools</li>
-          <li>Simple configuration management</li>
-          <li>Lightweight single-process architecture</li>
-          <li>Web-based dashboard interface</li>
-          <li>Command-line interface with 6 core commands</li>
+          <li>{{ $t('about.features.item1') }}</li>
+          <li>{{ $t('about.features.item2') }}</li>
+          <li>{{ $t('about.features.item3') }}</li>
+          <li>{{ $t('about.features.item4') }}</li>
+          <li>{{ $t('about.features.item5') }}</li>
+          <li>{{ $t('about.features.item6') }}</li>
         </ul>
       </div>
 
       <div class="info-section">
-        <h3>Architecture</h3>
-        <p>
-          Built with Vue 3, TypeScript, and Fastify, MCP Hub Lite follows a simplified single-process architecture
-          that eliminates unnecessary complexity while maintaining essential functionality.
-        </p>
+        <h3>{{ $t('about.architecture.title') }}</h3>
+        <p>{{ $t('about.architecture.description') }}</p>
       </div>
 
       <div class="info-section">
-        <h3>Version Information</h3>
+        <h3>{{ $t('about.version.title') }}</h3>
         <div class="version-info">
           <div class="version-item">
-            <span class="label">MCP Hub Lite:</span>
+            <span class="label">{{ $t('about.version.mcpHubLite') }}:</span>
             <span class="value">0.0.1</span>
           </div>
           <div class="version-item">
-            <span class="label">Vue:</span>
+            <span class="label">{{ $t('about.version.vue') }}:</span>
             <span class="value">{{ vueVersion }}</span>
           </div>
           <div class="version-item">
-            <span class="label">Node.js:</span>
+            <span class="label">{{ $t('about.version.nodejs') }}:</span>
             <span class="value">{{ nodeVersion }}</span>
           </div>
         </div>
       </div>
 
       <div class="info-section">
-        <h3>License</h3>
-        <p>MIT License</p>
+        <h3>{{ $t('about.license.title') }}</h3>
+        <p>{{ $t('about.license.type') }}</p>
       </div>
     </div>
   </div>

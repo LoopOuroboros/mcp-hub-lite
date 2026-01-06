@@ -13,6 +13,7 @@
     "restart": "node dist/server/src/index.js restart",
     "status": "node dist/server/src/index.js status",
     "list": "node dist/server/src/index.js list",
+    "ui": "node dist/server/src/index.js ui",
     "dev": "vite",
     "build": "run-p type-check build:client build:server",
     "build:client": "vite build",
@@ -25,6 +26,7 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.frontend.json --composite false"
   },
   "dependencies": {
+    "@fastify/static": "^9.0.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "commander": "^14.0.2",
     "element-plus": "^2.13.0",

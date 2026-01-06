@@ -10,6 +10,10 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/dashboard'
+    },
+    {
+      path: '/dashboard',
       name: 'Dashboard',
       component: Dashboard
     },

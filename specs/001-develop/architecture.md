@@ -16,18 +16,19 @@ MCP Hub Lite 是一个轻量级的 MCP (Model Context Protocol) 网关系统。
    - 单一包结构：通过package.json的bin字段提供全局命令
 
 2. **进程管理与服务发现**
-   - PID文件管理：`~/.mcp-hub-lite/pids/`目录存储服务进程ID
+   - PID文件管理：`config/` 目录存储服务进程ID（.mcp-hub.pid）
    - 服务状态检测：读取PID文件确定服务是否运行
    - 进程生命周期：支持启动、停止、重启、状态检查操作
+   - PID模块独立：`src/pid/` 提供独立的PID管理功能
 
 3. **Vue3前端集成**
    - 前端源码：`frontend/`目录包含Vue3组件和页面
-   - 构建产出：Vite构建生成静态资源到`public/assets/`目录
-   - 构建脚本：`build/copy.assets.js`负责将构建后的前端资源复制到`public/assets/`
+   - 构建产出：Vite构建生成静态资源到`dist/client/`目录
    - 服务端集成：Fastify作为静态文件服务器提供Vue3 UI
-   - 路由管理：SPA路由通过History API实现客户端路由
-   - 国际化支持：`frontend/public/locales/`目录包含语言文件
+   - 路由管理：SPA路由通过Vue Router实现客户端路由
+   - 国际化支持：`frontend/src/locales/`目录包含语言文件
    - 状态管理：使用Pinia管理前端状态，包括服务器、工具、配置和国际化状态
+   - 公共组件：提供ToolCard和StatusBadge等可复用组件
 
 4. **模块化组织**
 
@@ -52,12 +53,12 @@ MCP Hub Lite 是一个轻量级的 MCP (Model Context Protocol) 网关系统。
 src/                                 # 后端源码
 ├── api/                             # API和MCP协议处理
 │   ├── mcp/                         # MCP JSON-RPC协议处理器
-│   │   ├── tools.ts                 # 工具处理
-│   │   ├── gateway.ts               # Gateway处理
-│   │   └── server-manager.ts        # 服务器管理
+│   │   └── gateway.ts               # Gateway处理（包含工具、初始化等）
 │   └── web/                         # Web API处理器
 │       ├── servers.ts               # 服务器管理API
-│       ├── config.ts                # 配置管理API
+│       ├── config.ts                # 配置管理API（新增）
+│       ├── search.ts                # 搜索API
+│       ├── mcp-status.ts            # MCP状态API
 │       ├── health.ts                # 健康检查API
 │       └── index.ts                 # Web API导出
 ├── models/                          # 数据模型和实体定义
@@ -67,16 +68,17 @@ src/                                 # 后端源码
 │   └── index.ts                     # 模型导出
 ├── services/                        # 核心业务逻辑
 │   ├── hub-manager.service.ts       # 服务器管理服务（HubManager）
-│   ├── direct-search.service.ts     # 直接遍历搜索服务（DirectSearch）
-│   ├── gateway.service.ts # MCP HttpStream网关服务
+│   ├── simple-search.service.ts     # 简化搜索服务
+│   ├── mcp-connection-manager.ts    # MCP连接管理器（新增）
+│   ├── gateway.service.ts           # MCP HttpStream网关服务
 │   └── index.ts                     # 服务导出
 ├── config/                          # 配置管理
 │   ├── config.schema.ts             # 配置模式验证
-│   ├── config.manager.ts            # 配置加载/保存（移除复杂备份管理）
+│   └── config-manager.ts            # 配置加载/保存/更新
 ├── utils/                           # 工具函数
-│   ├── validation.ts                # 验证工具
-│   ├── process.ts                   # 进程工具
 │   ├── logger.ts                    # 日志工具
+│   ├── log-rotator.ts               # 日志轮转（新增）
+│   ├── mcp-error-handler.ts         # MCP错误处理（新增）
 │   └── index.ts                     # 工具导出
 ├── cli/                             # 命令行接口
 │   ├── commands/                    # CLI命令实现
@@ -88,11 +90,12 @@ src/                                 # 后端源码
 │   │   └── restart.ts               # 重启服务器命令
 │   ├── index.ts                     # CLI入口文件
 │   └── parse-args.ts                # 命令参数解析
-├── pid/                             # 进程ID管理
-│   ├── manager.ts                   # PID文件管理器
-│   └── file.ts                      # PID文件操作工具
-├── types/                           # 全局类型定义
-│   └── mcp-types.ts                 # MCP协议类型
+├── pid/                             # 进程ID管理（独立模块）
+│   ├── manager.ts                   # PID管理器
+│   ├── file.ts                      # PID文件操作工具
+│   └── types.ts                     # PID类型定义
+├── server/                          # 服务器运行时
+│   └── runner.ts                    # 服务器启动器
 └── index.ts                         # 服务入口
 
 frontend/                           # Vue3前端源码
@@ -103,10 +106,8 @@ frontend/                           # Vue3前端源码
 ├── src/                            # Vue3源代码
 │   ├── assets/                     # 资源文件（图片、图标等）
 │   ├── components/                 # 公共组件
-│   │   ├── ServerIcon.vue          # 服务器图标组件
-│   │   ├── ToolCard.vue            # 工具卡片组件
-│   │   ├── SearchBox.vue           # 搜索框组件
-│   │   └── StatusBadge.vue         # 状态徽章组件
+│   │   ├── ToolCard.vue            # 工具卡片组件（新增）
+│   │   └── StatusBadge.vue         # 状态徽章组件（新增）
 │   ├── views/                      # 页面视图
 │   │   ├── Dashboard.vue           # 仪表板视图
 │   │   ├── ServerManager.vue       # 服务器管理视图
@@ -117,9 +118,10 @@ frontend/                           # Vue3前端源码
 │   │   └── index.ts                # 路由定义
 │   ├── stores/                     # 状态管理
 │   │   ├── server.store.ts         # 服务器状态管理
-│   │   ├── tool.store.ts           # 工具状态管理
+│   │   ├── tool.store.ts           # 工具状态管理（新增）
 │   │   ├── config.store.ts         # 配置状态管理
 │   │   └── i18n.store.ts           # 国际化状态管理
+│   ├── locales/                    # 国际化配置
 │   ├── App.vue                     # 根组件
 │   ├── main.ts                     # 前端入口
 │   └── styles/                     # 样式文件
@@ -128,16 +130,13 @@ frontend/                           # Vue3前端源码
 ├── index.html                      # HTML模板
 └── vite.config.ts                  # Vite配置
 
-build/                              # 构建脚本
-├── vite.build.js                   # 前端构建脚本
-├── copy.assets.js                  # 资源复制脚本
-└── postbuild.js                    # 构建后处理脚本
-
-public/                             # 公共资源
-└── assets/                         # 静态资源
-    ├── js/                         # 静态脚本
-    ├── css/                        # 静态样式
-    └── img/                        # 静态图片
+dist/                               # 构建输出
+├── client/                         # 前端构建产物
+│   ├── assets/                     # 前端资源
+│   ├── index.html
+│   └── locales/                    # 语言文件
+└── server/                         # 后端构建产物
+    └── src/                        # 编译后的后端代码
 
 tests/                              # 测试结构
 ├── unit/                           # 单元测试
@@ -181,23 +180,33 @@ package.json                        # 包配置
 
 ```typescript
 // src/pid/file.ts - 实现PID文件管理
-import { promises as fs } from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
-import os from 'os';
 
-export function createPidFile(filename: string, pid: number): void {
-  const homeDir = os.homedir();
-  const pidDir = path.join(homeDir, '.mcp-hub-lite', 'pids');
-  ensureDir(pidDir);
+export interface PidFileOptions {
+  filename?: string;
+  directory?: string;
+}
 
-  const filePath = path.join(pidDir, filename);
+export function writePidFile(pid: number, options?: PidFileOptions): void {
+  const filename = options?.filename || '.mcp-hub.pid';
+  const directory = options?.directory || path.join(process.cwd(), 'config');
+
+  // 确保目录存在
+  if (!fs.existsSync(directory)) {
+    fs.mkdirSync(directory, { recursive: true });
+  }
+
+  const filePath = path.join(directory, filename);
   fs.writeFileSync(filePath, pid.toString(), 'utf-8');
 }
 
-export function readPidFile(filename: string): number | null {
+export function readPidFile(options?: PidFileOptions): number | null {
   try {
-    const homeDir = os.homedir();
-    const filePath = path.join(homeDir, '.mcp-hub-lite', 'pids', filename);
+    const filename = options?.filename || '.mcp-hub.pid';
+    const directory = options?.directory || path.join(process.cwd(), 'config');
+    const filePath = path.join(directory, filename);
+
     const content = fs.readFileSync(filePath, 'utf-8');
     return parseInt(content.trim(), 10);
   } catch {
@@ -205,23 +214,39 @@ export function readPidFile(filename: string): number | null {
   }
 }
 
-export function deletePidFile(filename: string): void {
+export function removePidFile(options?: PidFileOptions): void {
   try {
-    const homeDir = os.homedir();
-    const filePath = path.join(homeDir, '.mcp-hub-lite', 'pids', filename);
+    const filename = options?.filename || '.mcp-hub.pid';
+    const directory = options?.directory || path.join(process.cwd(), 'config');
+    const filePath = path.join(directory, filename);
+
     fs.unlinkSync(filePath);
   } catch {
     // 忽略删除错误
   }
 }
+
+export function pidFileExists(options?: PidFileOptions): boolean {
+  try {
+    const filename = options?.filename || '.mcp-hub.pid';
+    const directory = options?.directory || path.join(process.cwd(), 'config');
+    const filePath = path.join(directory, filename);
+
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
 ```
 
 **特性说明**:
-- PID文件存储位置：`~/.mcp-hub-lite/pids/`
+- PID文件存储位置：`config/`目录（默认为`.mcp-hub.pid`）
+- 支持自定义文件名和目录（通过PidFileOptions）
 - 支持进程启动时创建PID文件记录
 - 支持运行时读取PID文件确定服务状态
 - 支持进程停止时删除PID文件
-- 错误处理：文件不存在或读取失败时返回null而不抛出异常
+- 支持检查PID文件是否存在
+- 错误处理：文件不存在或读取失败时返回null/false而不抛出异常
 
 ### 架构优势
 
@@ -261,15 +286,17 @@ export function deletePidFile(filename: string): void {
 ```json
 // package.json关键部分
 {
-  "main": "dist/index.js",
+  "main": "dist/server/src/index.js",
   "bin": {
-    "mcp-hub-lite": "dist/cli/index.js"
+    "mcp-hub-lite": "./dist/server/src/index.js"
   },
   "scripts": {
-    "build:frontend": "cd frontend && npm install && npm run build",
-    "build:backend": "tsc",
-    "build:integrate": "node build/copy.assets.js",
-    "build": "npm run build:frontend && npm run build:backend && npm run build:integrate"
+    "build": "run-p type-check build:client build:server",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.json",
+    "type-check": "vue-tsc --noEmit -p tsconfig.frontend.json --composite false",
+    "dev": "vite",
+    "test": "vitest run"
   }
 }
 ```

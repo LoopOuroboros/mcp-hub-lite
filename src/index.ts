@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { runServer } from './server/runner.js';
 import { configManager } from './config/config-manager.js';
-import { PidManager } from './server/pid-manager.js';
+import { PidManager } from './pid/manager.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -45,9 +45,68 @@ program
         detached: true,
         stdio: ['ignore', logStream, logStream]
       });
-      
+
       subprocess.unref();
-      console.log(`Server started (PID: ${subprocess.pid})`);
+
+      // Wait for server to initialize and write PID file
+      const startTime = Date.now();
+      const maxWaitTime = 5000; // 5 seconds max wait
+      const checkInterval = 200; // Check every 200ms
+
+      await new Promise<void>((resolve) => {
+        const checkPid = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+
+          // Check if PID file exists
+          if (PidManager.pidFileExists()) {
+            clearInterval(checkPid);
+            const pid = PidManager.getPid();
+            console.log(`✓ Server started successfully (PID: ${pid})`);
+            console.log(`\nAccess the web UI at: http://${options.host || 'localhost'}:${options.port || 7788}`);
+            resolve();
+            return;
+          }
+
+          // Timeout - check if subprocess is still running
+          if (elapsed > maxWaitTime) {
+            clearInterval(checkPid);
+            console.error(`\n✗ Server failed to start within ${maxWaitTime}ms`);
+
+            // Try to read the last few lines of log to provide helpful error message
+            try {
+              const logContent = fs.readFileSync(logFile, 'utf-8');
+              const logLines = logContent.trim().split('\n');
+              const recentLines = logLines.slice(-10); // Last 10 lines
+
+              // Check for common error patterns
+              const portInUsePattern = /EADDRINUSE.*:(\d+)/;
+              const alreadyRunningPattern = /MCP Hub Lite is already running/;
+
+              for (const line of recentLines) {
+                if (alreadyRunningPattern.test(line)) {
+                  console.error(`\n⚠️  MCP Hub Lite is already running!`);
+                  console.error(`   Use 'npm run stop' to stop the existing instance.`);
+                  break;
+                } else if (portInUsePattern.test(line)) {
+                  const match = line.match(portInUsePattern);
+                  const port = match ? match[1] : 'unknown';
+                  console.error(`\n⚠️  Port ${port} is already in use by another application.`);
+                  console.error(`   Solutions:`);
+                  console.error(`   1. Stop the application using port ${port}`);
+                  console.error(`   2. Use a different port: npm run start -- --port <PORT>`);
+                  break;
+                }
+              }
+            } catch (err) {
+              // Ignore log read errors
+            }
+
+            console.error(`\n📄 Check full logs for details: ${logFile}\n`);
+            process.exit(1);
+          }
+        }, checkInterval);
+      });
+
       process.exit(0);
     }
 
@@ -115,9 +174,12 @@ program
     console.log(`${colors.yellow}Transport:${colors.reset} HTTP-Stream`);
     console.log('');
     const mcpClientConfig = {
-      "name": "MCP Hub Lite",
-      "transport": "http-stream",
-      "endpoint": `http://${config.host}:${config.port}/mcp`
+      "mcpServers": {
+        "mcp-hub-lite": {
+          "type": "http-stream",
+          "url": `http://${config.host}:${config.port}/mcp`
+        }
+      }
     };
     console.log(JSON.stringify(mcpClientConfig, null, 2));
     console.log('');
