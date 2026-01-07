@@ -8,11 +8,15 @@ import { z } from 'zod';
 export const McpServerConfigSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1).max(100),
+  description: z.string().optional(),
   command: z.string(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().default(true),
-  tags: z.record(z.string(), z.string()).optional()
+  tags: z.record(z.string(), z.string()).optional(),
+  type: z.string().default('stdio'),
+  longRunning: z.boolean().default(true),
+  timeout: z.number().default(60)
 });
 
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;

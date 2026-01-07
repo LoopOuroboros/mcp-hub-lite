@@ -27,11 +27,14 @@ vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
 
 describe('McpConnectionManager', () => {
   const mockServer = {
-    id: 'test-server',
+    id: 'test-server-1',
     name: 'Test Server',
     command: 'node',
-    args: ['server.js'],
-    enabled: true
+    args: ['test-script.js'],
+    enabled: true,
+    type: 'stdio',
+    longRunning: true,
+    timeout: 60
   };
 
   beforeEach(async () => {
@@ -76,7 +79,10 @@ describe('SimpleSearchService', () => {
             name: 'Search Test',
             command: 'node',
             args: [],
-            enabled: true
+            enabled: true,
+            type: 'stdio',
+            longRunning: true,
+            timeout: 60
         };
         await mcpConnectionManager.connect(mockServer);
         

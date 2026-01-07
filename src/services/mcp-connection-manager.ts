@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { CustomStdioClientTransport } from '../utils/custom-stdio-transport.js';
 import { McpServerConfig } from '../config/config.schema.js';
 import { logger } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
@@ -13,7 +13,7 @@ export interface ServerStatus {
 
 class McpConnectionManager {
   private clients: Map<string, Client> = new Map();
-  private transports: Map<string, StdioClientTransport> = new Map();
+  private transports: Map<string, CustomStdioClientTransport> = new Map();
   private serverStatus: Map<string, ServerStatus> = new Map();
   private toolCache: Map<string, McpTool[]> = new Map();
 
@@ -29,7 +29,7 @@ class McpConnectionManager {
         }
       }
 
-      const transport = new StdioClientTransport({
+      const transport = new CustomStdioClientTransport({
         command: server.command,
         args: server.args,
         env: server.env ? { ...safeEnv, ...server.env } : safeEnv
@@ -126,6 +126,7 @@ class McpConnectionManager {
         status.lastCheck = Date.now();
       }
 
+      logger.info(`Refreshed tools for server ${serverId}: ${tools.length} tools found`);
       return tools;
     } catch (error) {
       logger.error(`Failed to list tools for server ${serverId}:`, error);
@@ -138,7 +139,9 @@ class McpConnectionManager {
   }
 
   public getTools(serverId: string): McpTool[] {
-    return this.toolCache.get(serverId) || [];
+    const tools = this.toolCache.get(serverId) || [];
+    logger.info(`getTools for ${serverId}: returned ${tools.length} tools`);
+    return tools;
   }
 
   public getAllTools(): McpTool[] {

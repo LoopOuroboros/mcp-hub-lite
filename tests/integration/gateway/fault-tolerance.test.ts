@@ -30,7 +30,10 @@ describe('Fault Tolerance', () => {
     name: 'Faulty Server',
     command: 'node',
     args: ['server.js'],
-    enabled: true
+    enabled: true,
+    type: 'stdio',
+    longRunning: true,
+    timeout: 60
   };
 
   beforeEach(async () => {

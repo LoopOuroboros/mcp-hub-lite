@@ -1,43 +1,16 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import ServerManager from '../views/ServerManager.vue';
-import ToolSearch from '../views/ToolSearch.vue';
-import Dashboard from '../views/Dashboard.vue';
-import Settings from '../views/Settings.vue';
-import About from '../views/About.vue';
+/// <reference types="vite/client" />
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory((import.meta as any).env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/dashboard'
-    },
-    {
-      path: '/dashboard',
-      name: 'Dashboard',
-      component: Dashboard
-    },
-    {
-      path: '/servers',
-      name: 'ServerManager',
-      component: ServerManager
-    },
-    {
-      path: '/tools',
-      name: 'ToolSearch',
-      component: ToolSearch
-    },
-    {
-      path: '/settings',
-      name: 'Settings',
-      component: Settings
-    },
-    {
-      path: '/about',
-      name: 'About',
-      component: About
+      name: 'home',
+      component: HomeView
     }
   ]
-});
+})
 
-export default router;
+export default router

@@ -58,4 +58,16 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Internal Server Error' });
     }
   });
+
+  // GET /web/mcp/servers/:id/tools - Get tools for a specific server
+  fastify.get<{ Params: { id: string } }>('/web/mcp/servers/:id/tools', async (request, reply) => {
+    try {
+      logger.info(`API request tools for server: ${request.params.id}`);
+      const tools = mcpConnectionManager.getTools(request.params.id);
+      return tools;
+    } catch (error) {
+      logger.error('Failed to get MCP tools:', error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  });
 }

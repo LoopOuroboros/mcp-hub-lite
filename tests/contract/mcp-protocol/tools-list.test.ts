@@ -53,7 +53,10 @@ describe('MCP Protocol Contract - tools/list', () => {
     name: 'Contract Test Server',
     command: 'node',
     args: ['test-server.js'],
-    enabled: true
+    enabled: true,
+    type: 'stdio',
+    longRunning: true,
+    timeout: 60
   };
 
   beforeEach(async () => {
