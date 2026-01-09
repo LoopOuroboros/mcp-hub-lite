@@ -96,6 +96,26 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
+  async function startServer(id: string) {
+    // Mock async operation
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        updateServerStatus(id, 'running')
+        resolve()
+      }, 500)
+    })
+  }
+
+  async function stopServer(id: string) {
+    // Mock async operation
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        updateServerStatus(id, 'stopped')
+        resolve()
+      }, 500)
+    })
+  }
+
   return {
     servers,
     selectedServerId,
@@ -103,6 +123,8 @@ export const useServerStore = defineStore('server', () => {
     stats,
     selectServer,
     addServer,
-    updateServerStatus
+    updateServerStatus,
+    startServer,
+    stopServer
   }
 })

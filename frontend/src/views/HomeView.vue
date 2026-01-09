@@ -1,18 +1,17 @@
 <template>
-  <div class="common-layout h-full">
-    <el-container class="h-full">
-      <el-aside width="300px" class="h-full">
-        <Sidebar @add-server="showAddModal = true" />
-      </el-aside>
-      <el-container>
-        <el-main class="bg-[#0f172a] text-white p-0">
-          <Dashboard v-if="!store.selectedServerId" />
-          <ServerDetail v-else />
-        </el-main>
-      </el-container>
-    </el-container>
+  <div class="flex w-full h-full">
+    <!-- Sidebar / Server List -->
+    <aside class="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1e293b] transition-colors duration-300">
+      <Sidebar @add-server="openAddModal('form')" />
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-hidden bg-gray-50 dark:bg-[#0f172a] relative transition-colors duration-300">
+      <Dashboard v-if="!store.selectedServerId" />
+      <ServerDetail v-else />
+    </main>
 
-    <AddServerModal v-model="showAddModal" />
+    <AddServerModal v-model="showAddModal" :initial-mode="addModalMode" />
   </div>
 </template>
 
@@ -26,15 +25,10 @@ import AddServerModal from '../components/AddServerModal.vue'
 
 const store = useServerStore()
 const showAddModal = ref(false)
-</script>
+const addModalMode = ref<'form' | 'json'>('form')
 
-<style scoped>
-/* Reset Element Plus container styles if needed */
-.el-container {
-  height: 100%;
+function openAddModal(mode: 'form' | 'json') {
+  addModalMode.value = mode
+  showAddModal.value = true
 }
-.el-main {
-  height: 100%;
-  overflow: hidden;
-}
-</style>
+</script>

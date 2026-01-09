@@ -29,7 +29,8 @@ export default {
       env: '环境变量',
       addArg: '添加参数',
       addEnv: '添加环境变量',
-      save: '保存配置'
+      save: '保存配置',
+      editByJson: '通过 JSON 编辑'
     },
     logs: {
       autoScroll: '自动滚动',
@@ -55,6 +56,7 @@ export default {
     argPlaceholder: '参数',
     urlPlaceholder: 'http://localhost:3000/sse',
     keyPlaceholder: '键',
+    byJson: '通过 JSON 添加',
     valuePlaceholder: '值'
   },
   action: {

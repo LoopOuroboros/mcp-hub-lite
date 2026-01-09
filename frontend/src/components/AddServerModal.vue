@@ -37,11 +37,15 @@
           <el-input v-model="form.command" :placeholder="$t('addServer.executablePlaceholder')" />
         </el-form-item>
         <el-form-item :label="$t('serverDetail.config.args')">
-          <div v-for="(arg, index) in form.args" :key="index" class="flex gap-2 mb-2">
-            <el-input v-model="form.args[index]" :placeholder="$t('addServer.argPlaceholder')" />
-            <el-button :icon="Delete" circle plain @click="removeArg(index)" />
+          <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
+            <div v-for="(arg, index) in form.args" :key="index" class="flex gap-2 w-full">
+              <el-input v-model="form.args[index]" :placeholder="$t('addServer.argPlaceholder')" />
+              <el-button :icon="Delete" circle plain @click="removeArg(index)" />
+            </div>
+            <div>
+              <el-button :icon="Plus" plain size="small" @click="addArg">+ {{ $t('serverDetail.config.addArg') }}</el-button>
+            </div>
           </div>
-          <el-button :icon="Plus" plain size="small" @click="addArg">+ {{ $t('serverDetail.config.addArg') }}</el-button>
         </el-form-item>
       </template>
 
@@ -52,31 +56,59 @@
       </template>
 
       <el-form-item :label="$t('serverDetail.config.env')">
-          <div v-for="(item, index) in envItems" :key="index" class="flex gap-2 mb-2">
-            <el-input v-model="item.key" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" />
-            <el-input v-model="item.value" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
-            <el-button :icon="Delete" circle plain @click="removeEnv(index)" />
+          <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
+            <div v-for="(item, index) in envItems" :key="index" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
+              <el-input v-model="item.key" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" />
+              <el-input v-model="item.value" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
+              <el-button :icon="Delete" circle plain @click="removeEnv(index)" />
+            </div>
+            <div>
+              <el-button :icon="Plus" plain size="small" @click="addEnv">+ {{ $t('serverDetail.config.addEnv') }}</el-button>
+            </div>
           </div>
-          <el-button :icon="Plus" plain size="small" @click="addEnv">+ {{ $t('serverDetail.config.addEnv') }}</el-button>
       </el-form-item>
     </el-form>
 
     <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="handleClose">{{ $t('action.cancel') }}</el-button>
-        <el-button type="primary" @click="createServer">{{ $t('action.create') }}</el-button>
-      </span>
+      <div class="dialog-footer flex justify-between w-full">
+        <el-button @click="showImportJson = true">{{ $t('addServer.byJson') }}</el-button>
+        <div>
+          <el-button @click="handleClose">{{ $t('action.cancel') }}</el-button>
+          <el-button type="primary" @click="createServer">{{ $t('action.create') }}</el-button>
+        </div>
+      </div>
     </template>
+
+    <el-dialog
+      v-model="showImportJson"
+      title="Import JSON Config"
+      width="500px"
+      append-to-body
+      class="custom-dialog"
+    >
+      <el-input
+        v-model="jsonConfig"
+        type="textarea"
+        :rows="10"
+        placeholder='{ "mcpServers": { "name": { "command": "...", ... } } }'
+      />
+      <template #footer>
+        <el-button @click="showImportJson = false">Cancel</el-button>
+        <el-button type="primary" @click="importJson">Import</el-button>
+      </template>
+    </el-dialog>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import { useServerStore } from '../stores/server'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
   modelValue: boolean
+  initialMode?: 'form' | 'json'
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -88,6 +120,15 @@ const dialogVisible = computed({
   set: (val) => emit('update:modelValue', val)
 })
 
+const showImportJson = ref(false)
+
+watch(dialogVisible, (val) => {
+  if (val && props.initialMode === 'json') {
+    showImportJson.value = true
+  }
+})
+const jsonConfig = ref('')
+
 const form = ref({
   transport: 'stdio' as 'stdio' | 'sse',
   name: '',
@@ -97,6 +138,48 @@ const form = ref({
 })
 
 const envItems = ref<{key: string, value: string}[]>([])
+
+function importJson() {
+  try {
+    const parsed = JSON.parse(jsonConfig.value)
+    // Support { "mcpServers": { "name": { ... } } } or just { ... }
+    let configToUse = parsed
+    let nameToUse = ''
+
+    if (parsed.mcpServers) {
+      const keys = Object.keys(parsed.mcpServers)
+      if (keys.length > 0) {
+        nameToUse = keys[0] || ''
+        configToUse = parsed.mcpServers[nameToUse]
+      }
+    }
+
+    if (nameToUse) {
+      form.value.name = nameToUse
+    }
+
+    if (configToUse.command) {
+      form.value.transport = 'stdio'
+      form.value.command = configToUse.command
+      form.value.args = configToUse.args || []
+    } else if (configToUse.url) {
+      form.value.transport = 'sse'
+      form.value.url = configToUse.url
+    }
+
+    if (configToUse.env) {
+      envItems.value = Object.entries(configToUse.env).map(([key, value]) => ({
+        key,
+        value: String(value)
+      }))
+    }
+
+    showImportJson.value = false
+    ElMessage.success('Configuration imported successfully')
+  } catch (e: any) {
+    ElMessage.error('Invalid JSON configuration: ' + e.message)
+  }
+}
 
 function addArg() {
   form.value.args.push('')
@@ -156,14 +239,14 @@ function createServer() {
 </script>
 
 <style>
-.custom-dialog {
-  background-color: #1e293b;
+/* 适配暗色模式，仅在 dark 下应用深色背景 */
+html.dark .custom-dialog {
+  --el-dialog-bg-color: #1e293b;
   border: 1px solid #334155;
 }
-.custom-dialog .el-dialog__title {
-  color: white;
-}
-.custom-dialog .el-dialog__body {
+
+/* 确保标题和关闭按钮颜色正确 */
+html.dark .custom-dialog .el-dialog__title {
   color: white;
 }
 </style>

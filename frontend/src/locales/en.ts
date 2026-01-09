@@ -29,7 +29,8 @@ export default {
       env: 'Environment Variables',
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
-      save: 'Save Configuration'
+      save: 'Save Configuration',
+      editByJson: 'Edit By Json'
     },
     logs: {
       autoScroll: 'Auto-scroll',
@@ -55,6 +56,7 @@ export default {
     argPlaceholder: 'Argument',
     urlPlaceholder: 'http://localhost:3000/sse',
     keyPlaceholder: 'Key',
+    byJson: 'By Json',
     valuePlaceholder: 'Value'
   },
   action: {

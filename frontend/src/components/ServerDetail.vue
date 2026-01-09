@@ -1,13 +1,16 @@
 <template>
-  <div v-if="server" class="server-detail h-full flex flex-col p-6 overflow-hidden">
+  <div v-if="server" class="server-detail h-full flex flex-col p-6 overflow-hidden transition-colors duration-300">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-6 shrink-0">
       <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold text-white">{{ server.name }}</h2>
-        <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-opacity-20 text-sm"
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ server.name }}</h2>
+        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm transition-colors"
              :class="getStatusBadgeClass(server.status)">
           <div class="w-2 h-2 rounded-full" :class="getStatusDotClass(server.status)"></div>
-          {{ $t(`serverDetail.status.${server.status}`) }} | PID: {{ server.pid || 'N/A' }} | Uptime: {{ server.uptime || '00:00:00' }} | {{ $t('serverDetail.config.transport') }}: {{ server.config.transport }}
+          {{ $t(`serverDetail.status.${server.status}`) }}
+          <span class="opacity-75">| PID: {{ server.pid || 'N/A' }}</span>
+          <span class="opacity-75">| Uptime: {{ server.uptime || '00:00:00' }}</span>
+          <span class="opacity-75">| {{ $t('serverDetail.config.transport') }}: {{ server.config.transport }}</span>
         </div>
       </div>
       <div class="flex gap-2">
@@ -34,11 +37,15 @@
                 <el-input v-model="server.config.command" />
               </el-form-item>
               <el-form-item :label="$t('serverDetail.config.args')">
-                <div v-for="(arg, index) in server.config.args" :key="index" class="flex gap-2 mb-2">
-                  <el-input v-model="server.config.args![index]" />
-                  <el-button :icon="Delete" circle plain @click="removeArg(index)" />
+                <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
+                  <div v-for="(arg, index) in server.config.args" :key="index" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
+                    <el-input v-model="server.config.args![index]" />
+                    <el-button :icon="Delete" circle plain @click="removeArg(index)" />
+                  </div>
+                  <div>
+                    <el-button :icon="Plus" plain size="small" @click="addArg">+ {{ $t('serverDetail.config.addArg') }}</el-button>
+                  </div>
                 </div>
-                <el-button :icon="Plus" plain size="small" @click="addArg">+ {{ $t('serverDetail.config.addArg') }}</el-button>
               </el-form-item>
             </template>
             
@@ -49,26 +56,52 @@
             </template>
 
             <el-form-item :label="$t('serverDetail.config.env')">
-               <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 mb-2">
-                  <el-input v-model="envKeys[key as string]" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" @change="(val: string) => updateEnvKey(key as string, val)" />
-                  <el-input v-model="server.config.env![key]" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
-                  <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
+               <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
+                 <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
+                    <el-input v-model="envKeys[key as string]" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" @change="(val: string) => updateEnvKey(key as string, val)" />
+                    <el-input v-model="server.config.env![key]" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
+                    <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
+                 </div>
+                 <div>
+                    <el-button :icon="Plus" plain size="small" @click="addEnv">+ {{ $t('serverDetail.config.addEnv') }}</el-button>
+                 </div>
                </div>
-               <el-button :icon="Plus" plain size="small" @click="addEnv">+ {{ $t('serverDetail.config.addEnv') }}</el-button>
             </el-form-item>
 
-            <el-button type="primary" class="mt-4" @click="saveConfig">{{ $t('serverDetail.config.save') }}</el-button>
+            <div class="flex gap-2">
+               <el-button type="primary" class="mt-4" @click="saveConfig">{{ $t('serverDetail.config.save') }}</el-button>
+               <el-button class="mt-4" :icon="Edit" @click="openEditJson">{{ $t('serverDetail.config.editByJson') }}</el-button>
+            </div>
           </el-form>
         </div>
       </el-tab-pane>
+
+    <el-dialog
+      v-model="showEditJson"
+      title="Edit JSON Config"
+      width="600px"
+      append-to-body
+      class="custom-dialog"
+    >
+      <el-input
+        v-model="jsonConfig"
+        type="textarea"
+        :rows="15"
+        placeholder='{ "mcpServers": { "name": { "command": "...", ... } } }'
+      />
+      <template #footer>
+        <el-button @click="showEditJson = false">Cancel</el-button>
+        <el-button type="primary" @click="saveJsonConfig">Update</el-button>
+      </template>
+    </el-dialog>
       
       <el-tab-pane :label="$t('serverDetail.tabs.logs')" name="logs" class="h-full flex flex-col">
         <div class="flex justify-end gap-2 mb-2">
-            <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" />
+            <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
             <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
             <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{ $t('serverDetail.logs.copy') }}</el-button>
         </div>
-        <div class="bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
+        <div class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
           <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
             <span v-if="log.includes('[SYSTEM')" class="text-blue-400">{{ log }}</span>
             <span v-else-if="log.includes('[STDERR') || log.includes('Error')" class="text-red-400">{{ log }}</span>
@@ -86,7 +119,7 @@
       </el-tab-pane>
     </el-tabs>
   </div>
-  <div v-else class="h-full flex items-center justify-center text-gray-500">
+  <div v-else class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
     {{ $t('serverDetail.emptySelect') }}
   </div>
 </template>
@@ -94,35 +127,55 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useServerStore } from '../stores/server'
-import { Refresh, SwitchButton, VideoPlay, Delete, Plus, CopyDocument } from '@element-plus/icons-vue'
+import { Refresh, SwitchButton, VideoPlay, Delete, Plus, CopyDocument, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
+const props = defineProps<{
+  // No props needed as we use store, but good practice
+}>()
+
 const store = useServerStore()
 const { t } = useI18n()
-const server = computed(() => store.selectedServer)
 const activeTab = ref('logs')
 const autoScroll = ref(true)
 const logsContainer = ref<HTMLElement | null>(null)
 
-// Helper to manage Env Keys editing (since object keys are immutable)
+// JSON Edit state
+const showEditJson = ref(false)
+const jsonConfig = ref('')
+
+// Local state for env key editing
 const envKeys = ref<Record<string, string>>({})
 
-watch(server, (newServer) => {
-  if (newServer && newServer.config.env) {
-    envKeys.value = Object.keys(newServer.config.env).reduce((acc, key) => {
-      acc[key] = key
-      return acc
-    }, {} as Record<string, string>)
+const server = computed(() => {
+  const s = store.servers.find(s => s.id === store.selectedServerId)
+  if (s && s.config.env) {
+    // Initialize envKeys
+    Object.keys(s.config.env).forEach(k => {
+      if (!envKeys.value[k]) envKeys.value[k] = k
+    })
   }
-}, { immediate: true })
+  return s
+})
+
+// Auto scroll logs
+watch(() => server.value?.logs.length, () => {
+  if (autoScroll.value) {
+    nextTick(() => {
+      if (logsContainer.value) {
+        logsContainer.value.scrollTop = logsContainer.value.scrollHeight
+      }
+    })
+  }
+})
 
 function getStatusBadgeClass(status: string) {
   switch (status) {
-    case 'running': return 'bg-green-500 text-green-400'
-    case 'stopped': return 'bg-gray-500 text-gray-400'
-    case 'error': return 'bg-red-500 text-red-400'
-    default: return 'bg-gray-500 text-gray-400'
+    case 'running': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'stopped': return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+    case 'error': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
   }
 }
 
@@ -135,95 +188,151 @@ function getStatusDotClass(status: string) {
   }
 }
 
-function restartServer() {
+// ... Actions ...
+const restartServer = async () => {
   if (server.value) {
-    store.updateServerStatus(server.value.id, 'stopped')
-    setTimeout(() => {
-      store.updateServerStatus(server.value!.id, 'running')
-      ElMessage.success(t('action.restarted'))
-    }, 1000)
+    await store.updateServerStatus(server.value.id, 'stopped')
+    setTimeout(() => store.updateServerStatus(server.value!.id, 'running'), 1000)
+    ElMessage.success(t('action.restarted'))
   }
 }
 
-function stopServer() {
+const stopServer = async () => {
   if (server.value) {
-    store.updateServerStatus(server.value.id, 'stopped')
+    await store.updateServerStatus(server.value.id, 'stopped')
     ElMessage.success(t('action.stopped'))
   }
 }
 
-function startServer() {
+const startServer = async () => {
   if (server.value) {
-    store.updateServerStatus(server.value.id, 'running')
+    await store.updateServerStatus(server.value.id, 'running')
     ElMessage.success(t('action.started'))
   }
 }
 
-function addArg() {
-  if (server.value) {
-    if (!server.value.config.args) server.value.config.args = []
-    server.value.config.args.push('')
+const saveConfig = () => {
+  // Mock save
+  ElMessage.success(t('action.configSaved'))
+}
+
+const openEditJson = () => {
+  if (!server.value) return
+  
+  const configObj: any = {
+    env: server.value.config.env || {}
+  }
+  
+  if (server.value.config.transport === 'stdio') {
+    configObj.command = server.value.config.command
+    configObj.args = server.value.config.args || []
+  } else {
+    configObj.url = server.value.config.url
+  }
+
+  const fullConfig = {
+    mcpServers: {
+      [server.value.name]: configObj
+    }
+  }
+  
+  jsonConfig.value = JSON.stringify(fullConfig, null, 2)
+  showEditJson.value = true
+}
+
+const saveJsonConfig = () => {
+  try {
+    const parsed = JSON.parse(jsonConfig.value)
+    if (!parsed.mcpServers) throw new Error('Missing mcpServers key')
+    
+    const names = Object.keys(parsed.mcpServers)
+    if (names.length === 0) throw new Error('No server config found')
+    
+    const name = names[0] || ''
+    const newConfig = parsed.mcpServers[name]
+    
+    if (server.value) {
+      // Update config
+      if (newConfig.command) {
+        server.value.config.transport = 'stdio'
+        server.value.config.command = newConfig.command
+        server.value.config.args = newConfig.args || []
+      } else if (newConfig.url) {
+        server.value.config.transport = 'sse'
+        server.value.config.url = newConfig.url
+      }
+      
+      if (newConfig.env) {
+        server.value.config.env = newConfig.env
+        // Update local envKeys
+        envKeys.value = {}
+        Object.keys(newConfig.env).forEach(k => {
+          envKeys.value[k] = k
+        })
+      }
+      
+      showEditJson.value = false
+      ElMessage.success(t('action.configSaved'))
+    }
+  } catch (e: any) {
+    ElMessage.error('Invalid JSON: ' + e.message)
   }
 }
 
-function removeArg(index: number) {
-  if (server.value && server.value.config.args) {
-    server.value.config.args.splice(index, 1)
-  }
+// Config helpers
+const addArg = () => {
+  if (!server.value!.config.args) server.value!.config.args = []
+  server.value!.config.args.push('')
 }
 
-function addEnv() {
-  if (server.value) {
-    if (!server.value.config.env) server.value.config.env = {}
-    const newKey = `NEW_VAR_${Object.keys(server.value.config.env).length + 1}`
-    server.value.config.env[newKey] = ''
-    envKeys.value[newKey] = newKey
-  }
+const removeArg = (index: number) => {
+  server.value!.config.args?.splice(index, 1)
 }
 
-function removeEnv(key: string) {
-  if (server.value && server.value.config.env) {
-    delete server.value.config.env[key]
-    delete envKeys.value[key]
-  }
+const addEnv = () => {
+  if (!server.value!.config.env) server.value!.config.env = {}
+  const newKey = `NEW_VAR_${Object.keys(server.value!.config.env).length}`
+  server.value!.config.env[newKey] = ''
+  envKeys.value[newKey] = newKey
 }
 
-function updateEnvKey(oldKey: string, newKey: string) {
-  if (server.value && server.value.config.env) {
-    const value = server.value.config.env[oldKey] || ''
-    delete server.value.config.env[oldKey]
-    server.value.config.env[newKey] = value
-    delete envKeys.value[oldKey]
-    envKeys.value[newKey] = newKey
-  }
+const removeEnv = (key: string) => {
+  delete server.value!.config.env![key]
+  delete envKeys.value[key]
 }
 
-function saveConfig() {
-  ElMessage.success(t('action.saved'))
+const updateEnvKey = (oldKey: string, newKey: string) => {
+  if (oldKey === newKey) return
+  const val = server.value!.config.env![oldKey] || ''
+  delete server.value!.config.env![oldKey]
+  server.value!.config.env![newKey] = val
+  delete envKeys.value[oldKey]
+  envKeys.value[newKey] = newKey
 }
 
-function clearLogs() {
+const clearLogs = () => {
   if (server.value) {
     server.value.logs = []
+    ElMessage.success(t('action.logsCleared'))
   }
 }
 
-function copyLogs() {
+const copyLogs = () => {
   if (server.value) {
     navigator.clipboard.writeText(server.value.logs.join('\n'))
-    ElMessage.success(t('serverDetail.logs.copied'))
+    ElMessage.success(t('action.logsCopied'))
   }
 }
 </script>
 
-<style>
-.custom-tabs .el-tabs__item {
-  color: #94a3b8;
+<style scoped>
+/* Tabs styling adjustments if needed */
+.custom-tabs :deep(.el-tabs__header) {
+  margin-bottom: 0;
 }
-.custom-tabs .el-tabs__item.is-active {
-  color: #3b82f6;
-}
-.custom-tabs .el-tabs__nav-wrap::after {
-  background-color: #334155;
+.custom-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  overflow: hidden;
+  padding-top: 1rem;
 }
 </style>
