@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { http } from '../utils/http'
 
 export interface ServerConfig {
-  transport: 'stdio' | 'sse'
+  transport: 'stdio' | 'sse' | 'streamable-http'
   command?: string
   args?: string[]
   url?: string
@@ -79,9 +79,9 @@ export const useServerStore = defineStore('server', () => {
           id: config.id || '',
           name: config.name,
           status,
-          type: config.type === 'sse' ? 'remote' : 'local',
+          type: config.type === 'sse' || config.type === 'streamable-http' ? 'remote' : 'local',
           config: {
-            transport: (config.type as 'stdio' | 'sse') || 'stdio',
+            transport: (config.type as 'stdio' | 'sse' | 'streamable-http') || 'stdio',
             command: config.command,
             args: config.args,
             url: config.url,

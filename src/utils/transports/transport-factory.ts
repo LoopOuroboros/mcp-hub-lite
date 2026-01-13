@@ -2,6 +2,7 @@ import { McpServerConfig } from '../../config/config.schema.js';
 import { CustomStdioClientTransport } from '../custom-stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { HttpTransport } from './http-transport.js';
+import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { Transport, ServerTransportConfig } from './transport.interface.js';
 import { logger } from '../../utils/logger.js';
 
@@ -52,6 +53,16 @@ export class TransportFactory {
           transportConfig.timeout
         );
 
+      case 'streamable-http':
+        if (!transportConfig.url) {
+          throw new Error('Streamable HTTP transport requires a URL');
+        }
+        return new StreamableHttpTransport(
+          transportConfig.url,
+          transportConfig.headers,
+          transportConfig.timeout
+        );
+
       default:
         throw new Error(`Unsupported transport type: ${server.type || 'undefined'}`);
     }
@@ -83,6 +94,13 @@ export class TransportFactory {
     } else if (type === 'http') {
       return {
         type: 'http',
+        url: server.url || '',
+        headers: server.env,
+        timeout: server.timeout || 30000
+      };
+    } else if (type === 'streamable-http') {
+      return {
+        type: 'streamable-http',
         url: server.url || '',
         headers: server.env,
         timeout: server.timeout || 30000

@@ -14,9 +14,9 @@ export const McpServerConfigSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().default(true),
   tags: z.record(z.string(), z.string()).optional(),
-  type: z.string().default('stdio'),
+  type: z.enum(['stdio', 'sse', 'streamable-http']).default('stdio'),
   longRunning: z.boolean().default(true),
-  timeout: z.number().default(60),
+  timeout: z.number().default(60000),
   url: z.string().optional()
 });
 

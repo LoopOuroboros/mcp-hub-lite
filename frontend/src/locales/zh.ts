@@ -21,8 +21,9 @@ export default {
     },
     config: {
       transport: '传输方式',
-      transportStdio: 'stdio (本地进程)',
-      transportSse: 'sse (远程服务器)',
+      transportStdio: '标准输入/输出 (stdio)',
+      transportSse: '服务器发送事件 (sse)',
+      transportHttp: '可流式传输的http (streamableHttp)',
       executable: '可执行文件',
       args: '参数',
       url: 'URL',
@@ -74,7 +75,7 @@ export default {
   error: {
     stdioCommandRequired: 'STDIO 服务器需要有效的命令',
     sseUrlRequired: 'SSE 服务器需要有效的 URL',
-    httpUrlRequired: 'HTTP 服务器需要有效的 URL',
+    httpUrlRequired: '可流式传输的 HTTP 服务器需要有效的 URL',
     unsupportedTransportType: '不支持的传输类型',
     connectionFailed: '连接服务器失败',
     invalidServerConfig: '服务器配置无效'

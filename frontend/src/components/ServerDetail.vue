@@ -29,6 +29,7 @@
               <el-select v-model="server.config.transport" class="w-full">
                 <el-option :label="$t('serverDetail.config.transportStdio')" value="stdio" />
                 <el-option :label="$t('serverDetail.config.transportSse')" value="sse" />
+                <el-option :label="$t('serverDetail.config.transportHttp')" value="streamable-http" />
               </el-select>
             </el-form-item>
             
@@ -306,7 +307,12 @@ const saveJsonConfig = async () => {
         updatedConfig.args = newConfig.args || []
         delete (updatedConfig as any).url
       } else if (newConfig.url) {
-        updatedConfig.transport = 'sse'
+        // Check if it's Streamable HTTP transport based on type or other indicators
+        if (newConfig.type === 'streamable-http' || newConfig.type === 'http') {
+          updatedConfig.transport = 'streamable-http'
+        } else {
+          updatedConfig.transport = 'sse'
+        }
         updatedConfig.url = newConfig.url
         delete (updatedConfig as any).command
         delete (updatedConfig as any).args

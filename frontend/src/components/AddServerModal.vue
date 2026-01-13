@@ -9,7 +9,7 @@
     <el-form :model="form" label-position="top">
       <el-form-item :label="$t('addServer.transportType')">
         <div class="flex gap-4 w-full">
-          <div 
+          <div
             class="flex-1 p-4 border rounded-lg cursor-pointer text-center transition-all"
             :class="form.transport === 'stdio' ? 'border-blue-500 bg-blue-900/20' : 'border-gray-600 hover:border-gray-500'"
             @click="form.transport = 'stdio'"
@@ -17,13 +17,21 @@
             <div class="font-bold mb-1">stdio</div>
             <div class="text-xs text-gray-400">({{ $t('serverDetail.config.transportStdio') }})</div>
           </div>
-          <div 
+          <div
             class="flex-1 p-4 border rounded-lg cursor-pointer text-center transition-all"
             :class="form.transport === 'sse' ? 'border-blue-500 bg-blue-900/20' : 'border-gray-600 hover:border-gray-500'"
             @click="form.transport = 'sse'"
           >
             <div class="font-bold mb-1">SSE</div>
             <div class="text-xs text-gray-400">({{ $t('serverDetail.config.transportSse') }})</div>
+          </div>
+          <div
+            class="flex-1 p-4 border rounded-lg cursor-pointer text-center transition-all"
+            :class="form.transport === 'streamable-http' ? 'border-blue-500 bg-blue-900/20' : 'border-gray-600 hover:border-gray-500'"
+            @click="form.transport = 'streamable-http'"
+          >
+            <div class="font-bold mb-1">Streamable HTTP</div>
+            <div class="text-xs text-gray-400">({{ $t('serverDetail.config.transportHttp') }})</div>
           </div>
         </div>
       </el-form-item>
@@ -130,7 +138,7 @@ watch(dialogVisible, (val) => {
 const jsonConfig = ref('')
 
 const form = ref({
-  transport: 'stdio' as 'stdio' | 'sse',
+  transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
   name: '',
   command: '',
   args: [] as string[],
@@ -163,7 +171,12 @@ function importJson() {
       form.value.command = configToUse.command
       form.value.args = configToUse.args || []
     } else if (configToUse.url) {
-      form.value.transport = 'sse'
+      // Check if it's Streamable HTTP transport based on type or other indicators
+      if (configToUse.type === 'streamable-http' || configToUse.type === 'http') {
+        form.value.transport = 'streamable-http'
+      } else {
+        form.value.transport = 'sse'
+      }
       form.value.url = configToUse.url
     }
 
