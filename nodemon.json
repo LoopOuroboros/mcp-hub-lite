@@ -1,0 +1,13 @@
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "ignore": [
+    "src/**/*.test.ts",
+    "dist/**",
+    "frontend/**",
+    "node_modules/**"
+  ],
+  "exec": "node --import=tsx src/server/dev-server.ts",
+  "delay": 1000,
+  "verbose": true
+}

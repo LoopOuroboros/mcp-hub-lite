@@ -70,5 +70,13 @@ export default {
     stopped: '服务器已停止',
     started: '服务器已启动',
     saved: '配置已保存'
+  },
+  error: {
+    stdioCommandRequired: 'STDIO 服务器需要有效的命令',
+    sseUrlRequired: 'SSE 服务器需要有效的 URL',
+    httpUrlRequired: 'HTTP 服务器需要有效的 URL',
+    unsupportedTransportType: '不支持的传输类型',
+    connectionFailed: '连接服务器失败',
+    invalidServerConfig: '服务器配置无效'
   }
 }

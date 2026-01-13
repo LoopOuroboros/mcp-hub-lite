@@ -6,6 +6,8 @@ import { logger } from '../../utils/logger.js';
 /**
  * Web API routes for MCP connection status
  * All endpoints under /web/mcp
+ * HOT RELOAD TEST - This file should trigger restart when modified
+ * Last modified: 2026-01-13 for hot reload testing
  */
 export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   // GET /web/mcp/status - Get status of all MCP servers
@@ -17,7 +19,8 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         status: mcpConnectionManager.getStatus(server.id || '') || {
           connected: false,
           lastCheck: Date.now(),
-          toolsCount: 0
+          toolsCount: 0,
+          pid: undefined
         }
       }));
 

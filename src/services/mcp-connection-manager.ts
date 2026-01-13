@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { CustomStdioClientTransport } from '../utils/custom-stdio-transport.js';
+import { TransportFactory } from '../utils/transports/transport-factory.js';
 import { McpServerConfig } from '../config/config.schema.js';
 import { logger } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
@@ -9,31 +9,34 @@ export interface ServerStatus {
   error?: string;
   lastCheck: number;
   toolsCount: number;
+  pid?: number;
 }
 
 class McpConnectionManager {
   private clients: Map<string, Client> = new Map();
-  private transports: Map<string, CustomStdioClientTransport> = new Map();
+  private transports: Map<string, any> = new Map(); // Using 'any' for transport types
   private serverStatus: Map<string, ServerStatus> = new Map();
   private toolCache: Map<string, McpTool[]> = new Map();
 
   public async connect(server: McpServerConfig): Promise<boolean> {
     try {
       logger.info(`Connecting to server ${server.name} (${server.id || 'unknown'})...`);
-      
-      // Convert process.env to Record<string, string> by filtering undefined values
-      const safeEnv: Record<string, string> = {};
-      for (const [key, value] of Object.entries(process.env)) {
-        if (value !== undefined) {
-          safeEnv[key] = value;
-        }
+
+      // Validate server configuration
+      if (!server.id) {
+        throw new Error('Server ID is required');
       }
 
-      const transport = new CustomStdioClientTransport({
-        command: server.command,
-        args: server.args,
-        env: server.env ? { ...safeEnv, ...server.env } : safeEnv
-      });
+      if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
+        throw new Error('STDIO server requires a valid command');
+      }
+
+      if ((server.type === 'sse' || server.type === 'http') && (!server.url || server.url.trim() === '')) {
+        throw new Error(`${server.type.toUpperCase()} server requires a valid URL`);
+      }
+
+      // Create transport based on server type
+      const transport = TransportFactory.createTransport(server);
 
       const client = new Client({
         name: "mcp-hub-lite",
@@ -43,20 +46,31 @@ class McpConnectionManager {
       });
 
       await client.connect(transport);
-      
-      this.clients.set(server.id || 'unknown', client);
-      this.transports.set(server.id || 'unknown', transport);
-      const serverId = server.id || 'unknown';
-      this.serverStatus.set(serverId, {
+
+      this.clients.set(server.id, client);
+      this.transports.set(server.id, transport);
+
+      // Get PID if available (only for stdio transport)
+      let pid: number | undefined;
+      if ('pid' in transport && typeof transport.pid === 'number') {
+        pid = transport.pid;
+      }
+
+      this.serverStatus.set(server.id, {
         connected: true,
         lastCheck: Date.now(),
-        toolsCount: 0
+        toolsCount: 0,
+        pid: pid
       });
 
-      logger.info(`Connected to server ${server.name}`);
+      logger.info(`Connected to server ${server.name} (${server.type || 'stdio'})`);
 
-      // Fetch tools immediately
-      await this.refreshTools(serverId);
+      // Fetch tools immediately (only for bidirectional transports)
+      if (server.type !== 'sse') {
+        await this.refreshTools(server.id);
+      } else {
+        logger.info('SSE transport is unidirectional, skipping tool refresh');
+      }
 
       return true;
     } catch (error) {
@@ -77,27 +91,27 @@ class McpConnectionManager {
     const transport = this.transports.get(serverId);
 
     if (client) {
-        try {
-            await client.close();
-        } catch (e) {
-            logger.warn(`Error closing client for ${serverId}:`, e);
-        }
+      try {
+        await client.close();
+      } catch (e) {
+        logger.warn(`Error closing client for ${serverId}:`, e);
+      }
     }
-    
+
     if (transport) {
-        try {
-            await transport.close();
-        } catch (e) {
-             logger.warn(`Error closing transport for ${serverId}:`, e);
-        }
+      try {
+        await transport.close();
+      } catch (e) {
+        logger.warn(`Error closing transport for ${serverId}:`, e);
+      }
     }
 
     this.clients.delete(serverId);
     this.transports.delete(serverId);
     this.serverStatus.set(serverId, {
-        connected: false,
-        lastCheck: Date.now(),
-        toolsCount: 0
+      connected: false,
+      lastCheck: Date.now(),
+      toolsCount: 0
     });
     this.toolCache.delete(serverId);
   }
@@ -113,12 +127,12 @@ class McpConnectionManager {
       const tools: McpTool[] = result.tools.map(t => ({
         name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema as any, // Cast to match our model
+        inputSchema: t.inputSchema as any,
         serverId: serverId
       }));
 
       this.toolCache.set(serverId, tools);
-      
+
       // Update status
       const status = this.serverStatus.get(serverId);
       if (status) {
@@ -151,9 +165,9 @@ class McpConnectionManager {
     }
     return allTools;
   }
-  
+
   public getClient(serverId: string): Client | undefined {
-      return this.clients.get(serverId);
+    return this.clients.get(serverId);
   }
 
   public async callTool(serverId: string, toolName: string, args: any): Promise<any> {
@@ -161,16 +175,16 @@ class McpConnectionManager {
     if (!client) {
       throw new Error(`Server ${serverId} not connected`);
     }
-    
+
     try {
-        const result = await client.callTool({
-            name: toolName,
-            arguments: args
-        });
-        return result;
+      const result = await client.callTool({
+        name: toolName,
+        arguments: args
+      });
+      return result;
     } catch (error) {
-        logger.error(`Failed to call tool ${toolName} on server ${serverId}:`, error);
-        throw error;
+      logger.error(`Failed to call tool ${toolName} on server ${serverId}:`, error);
+      throw error;
     }
   }
 }

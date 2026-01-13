@@ -70,5 +70,13 @@ export default {
     stopped: 'Server stopped',
     started: 'Server started',
     saved: 'Configuration saved'
+  },
+  error: {
+    stdioCommandRequired: 'STDIO server requires a valid command',
+    sseUrlRequired: 'SSE server requires a valid URL',
+    httpUrlRequired: 'HTTP server requires a valid URL',
+    unsupportedTransportType: 'Unsupported transport type',
+    connectionFailed: 'Failed to connect to server',
+    invalidServerConfig: 'Invalid server configuration'
   }
 }

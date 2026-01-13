@@ -1,6 +1,6 @@
 <template>
   <el-config-provider :locale="elLocale" :class="theme === 'dark' ? 'dark' : ''">
-    <!-- Root container handling theme bg/text -->
+    <!-- Root container handling theme bg/text - HOT RELOAD TEST -->
     <div class="app-container h-screen w-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <Header />
       <div class="flex-1 flex overflow-hidden relative">

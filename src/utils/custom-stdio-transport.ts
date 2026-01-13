@@ -46,6 +46,10 @@ export class CustomStdioClientTransport implements Transport {
     private _readBuffer = new ReadBuffer();
     private _stderrStream: PassThrough | null = null;
     private _serverParams: StdioServerParameters;
+
+    public get pid(): number | undefined {
+        return this._process?.pid;
+    }
     
     public onclose?: () => void;
     public onerror?: (error: Error) => void;

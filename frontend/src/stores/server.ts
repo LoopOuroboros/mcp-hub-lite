@@ -38,6 +38,7 @@ interface McpStatus {
     error?: string
     lastCheck: number
     toolsCount: number
+    pid?: number
   }
 }
 
@@ -87,7 +88,8 @@ export const useServerStore = defineStore('server', () => {
             env: config.env
           },
           logs: [], // Logs API not yet available
-          uptime: statusInfo?.connected ? 'Active' : undefined
+          uptime: statusInfo?.connected ? 'Active' : undefined,
+          pid: statusInfo?.pid
         }
       })
     } catch (e: any) {
