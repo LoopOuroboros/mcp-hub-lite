@@ -76,6 +76,10 @@ export default defineConfig({
         target: `http://${backendHost}:${backendPort}`,
         changeOrigin: true
       },
+      '/web': {
+        target: `http://${backendHost}:${backendPort}`,
+        changeOrigin: true
+      },
       '/mcp': {
         target: `http://${backendHost}:${backendPort}`,
         changeOrigin: true,

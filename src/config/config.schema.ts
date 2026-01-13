@@ -16,7 +16,8 @@ export const McpServerConfigSchema = z.object({
   tags: z.record(z.string(), z.string()).optional(),
   type: z.string().default('stdio'),
   longRunning: z.boolean().default(true),
-  timeout: z.number().default(60)
+  timeout: z.number().default(60),
+  url: z.string().optional()
 });
 
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;

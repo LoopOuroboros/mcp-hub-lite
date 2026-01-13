@@ -128,7 +128,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useServerStore } from '../stores/server'
 import { Refresh, SwitchButton, VideoPlay, Delete, Plus, CopyDocument, Edit } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
@@ -191,29 +191,75 @@ function getStatusDotClass(status: string) {
 // ... Actions ...
 const restartServer = async () => {
   if (server.value) {
-    await store.updateServerStatus(server.value.id, 'stopped')
-    setTimeout(() => store.updateServerStatus(server.value!.id, 'running'), 1000)
-    ElMessage.success(t('action.restarted'))
+    try {
+      if (server.value.status === 'running') {
+        await store.stopServer(server.value.id)
+      }
+      await store.startServer(server.value.id)
+      ElMessage.success(t('action.restarted'))
+    } catch (e: any) {
+      ElMessage.error(e.message)
+    }
   }
 }
 
 const stopServer = async () => {
   if (server.value) {
-    await store.updateServerStatus(server.value.id, 'stopped')
-    ElMessage.success(t('action.stopped'))
+    try {
+      await store.stopServer(server.value.id)
+      ElMessage.success(t('action.stopped'))
+    } catch (e: any) {
+      ElMessage.error(e.message)
+    }
   }
 }
 
 const startServer = async () => {
   if (server.value) {
-    await store.updateServerStatus(server.value.id, 'running')
-    ElMessage.success(t('action.started'))
+    try {
+      await store.startServer(server.value.id)
+      ElMessage.success(t('action.started'))
+    } catch (e: any) {
+      ElMessage.error(e.message)
+    }
   }
 }
 
-const saveConfig = () => {
-  // Mock save
-  ElMessage.success(t('action.configSaved'))
+const deleteServer = async () => {
+  if (server.value) {
+    try {
+      await ElMessageBox.confirm(
+        t('serverDetail.deleteConfirm'),
+        t('action.delete'),
+        {
+          confirmButtonText: t('action.delete'),
+          cancelButtonText: t('action.cancel'),
+          type: 'warning'
+        }
+      )
+      
+      await store.deleteServer(server.value.id)
+      ElMessage.success(t('action.serverDeleted'))
+      store.selectedServerId = null
+    } catch (e: any) {
+      if (e !== 'cancel') {
+        ElMessage.error(e.message || 'Failed to delete server')
+      }
+    }
+  }
+}
+
+const saveConfig = async () => {
+  if (server.value) {
+    try {
+      await store.updateServer(server.value.id, {
+        config: server.value.config
+      })
+      ElMessage.success(t('action.configSaved'))
+    } catch (e: any) {
+      ElMessage.error(e.message)
+    }
+  }
 }
 
 const openEditJson = () => {
@@ -240,7 +286,7 @@ const openEditJson = () => {
   showEditJson.value = true
 }
 
-const saveJsonConfig = () => {
+const saveJsonConfig = async () => {
   try {
     const parsed = JSON.parse(jsonConfig.value)
     if (!parsed.mcpServers) throw new Error('Missing mcpServers key')
@@ -252,21 +298,32 @@ const saveJsonConfig = () => {
     const newConfig = parsed.mcpServers[name]
     
     if (server.value) {
-      // Update config
+      const updatedConfig = { ...server.value.config }
+
       if (newConfig.command) {
-        server.value.config.transport = 'stdio'
-        server.value.config.command = newConfig.command
-        server.value.config.args = newConfig.args || []
+        updatedConfig.transport = 'stdio'
+        updatedConfig.command = newConfig.command
+        updatedConfig.args = newConfig.args || []
+        delete (updatedConfig as any).url
       } else if (newConfig.url) {
-        server.value.config.transport = 'sse'
-        server.value.config.url = newConfig.url
+        updatedConfig.transport = 'sse'
+        updatedConfig.url = newConfig.url
+        delete (updatedConfig as any).command
+        delete (updatedConfig as any).args
       }
       
       if (newConfig.env) {
-        server.value.config.env = newConfig.env
-        // Update local envKeys
+        updatedConfig.env = newConfig.env
+      }
+
+      await store.updateServer(server.value.id, {
+        name: name !== server.value.name ? name : undefined,
+        config: updatedConfig
+      })
+
+      if (updatedConfig.env) {
         envKeys.value = {}
-        Object.keys(newConfig.env).forEach(k => {
+        Object.keys(updatedConfig.env).forEach(k => {
           envKeys.value[k] = k
         })
       }

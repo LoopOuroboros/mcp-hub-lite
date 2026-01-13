@@ -213,28 +213,32 @@ function resetForm() {
   envItems.value = []
 }
 
-function createServer() {
+async function createServer() {
   const env = envItems.value.reduce((acc, item) => {
     if (item.key) acc[item.key] = item.value
     return acc
   }, {} as Record<string, string>)
 
-  store.addServer({
-    id: Math.random().toString(36).substr(2, 9),
-    name: form.value.name || 'Unnamed Server',
-    status: 'stopped',
-    type: form.value.transport === 'stdio' ? 'local' : 'remote',
-    config: {
-      transport: form.value.transport,
-      command: form.value.command,
-      args: form.value.args.filter(a => a),
-      url: form.value.url,
-      env
-    },
-    logs: []
-  })
-  
-  handleClose()
+  try {
+    await store.addServer({
+      name: form.value.name || 'Unnamed Server',
+      status: 'stopped',
+      type: form.value.transport === 'stdio' ? 'local' : 'remote',
+      config: {
+        transport: form.value.transport,
+        command: form.value.command,
+        args: form.value.args.filter(a => a),
+        url: form.value.url,
+        env
+      },
+      logs: []
+    })
+    
+    ElMessage.success('Server added successfully')
+    handleClose()
+  } catch (error: any) {
+    ElMessage.error(error.message || 'Failed to add server')
+  }
 }
 </script>
 

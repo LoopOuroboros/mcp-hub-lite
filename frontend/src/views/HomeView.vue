@@ -16,16 +16,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useServerStore } from '../stores/server'
 import Sidebar from '../components/Sidebar.vue'
 import Dashboard from '../components/Dashboard.vue'
 import ServerDetail from '../components/ServerDetail.vue'
 import AddServerModal from '../components/AddServerModal.vue'
+import { ElMessage } from 'element-plus'
 
 const store = useServerStore()
 const showAddModal = ref(false)
 const addModalMode = ref<'form' | 'json'>('form')
+
+onMounted(() => {
+  store.fetchServers()
+})
+
+watch(() => store.error, (newError) => {
+  if (newError) {
+    ElMessage.error(newError)
+  }
+})
 
 function openAddModal(mode: 'form' | 'json') {
   addModalMode.value = mode

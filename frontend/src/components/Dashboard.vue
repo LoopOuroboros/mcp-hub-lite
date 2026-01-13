@@ -3,7 +3,18 @@
     <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 shrink-0">{{ $t('dashboard.title') }}</h2>
     
     <!-- Stats Cards -->
-    <div class="grid grid-cols-3 gap-6 mb-8 shrink-0">
+    <div v-if="store.loading && store.servers.length === 0" class="grid grid-cols-3 gap-6 mb-8 shrink-0">
+      <el-skeleton animated :count="3" class="w-full h-full">
+        <template #template>
+          <div class="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1e293b] h-32">
+            <el-skeleton-item variant="text" style="width: 30%" class="mb-2" />
+            <el-skeleton-item variant="h1" style="width: 50%" />
+          </div>
+        </template>
+      </el-skeleton>
+    </div>
+
+    <div v-else class="grid grid-cols-3 gap-6 mb-8 shrink-0">
       <div class="stat-card bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
         <div class="text-gray-500 dark:text-gray-400 text-sm mb-2">{{ $t('dashboard.totalServers') }}</div>
         <div class="text-4xl font-bold text-gray-900 dark:text-white">{{ store.stats.total }}</div>

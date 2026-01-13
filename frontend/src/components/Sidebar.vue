@@ -6,7 +6,21 @@
         <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('sidebar.servers') }}</div>
       </div>
       
-      <div class="space-y-3">
+      <div v-if="store.loading && store.servers.length === 0" class="space-y-3">
+        <el-skeleton animated :count="3" class="w-full">
+          <template #template>
+            <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a374a] mb-3">
+              <div class="flex items-center gap-3 mb-2">
+                <el-skeleton-item variant="circle" style="width: 32px; height: 32px" />
+                <el-skeleton-item variant="text" style="width: 50%" />
+              </div>
+              <el-skeleton-item variant="text" style="width: 80%" />
+            </div>
+          </template>
+        </el-skeleton>
+      </div>
+
+      <div v-else class="space-y-3">
         <div
           v-for="server in store.servers"
           :key="server.id"
@@ -81,8 +95,11 @@
 <script setup lang="ts">
 import { useServerStore } from '../stores/server'
 import { VideoPlay, CircleClose, Warning, Plus, SwitchButton } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
 
 const store = useServerStore()
+const { t } = useI18n()
 
 defineEmits(['add-server'])
 
@@ -127,10 +144,16 @@ function getStatusTextColor(status: string) {
 }
 
 async function toggleServerStatus(server: any) {
-  if (server.status === 'running') {
-    await store.stopServer(server.id)
-  } else {
-    await store.startServer(server.id)
+  try {
+    if (server.status === 'running') {
+      await store.stopServer(server.id)
+      ElMessage.success(t('action.stopped'))
+    } else {
+      await store.startServer(server.id)
+      ElMessage.success(t('action.started'))
+    }
+  } catch (e: any) {
+    ElMessage.error(e.message)
   }
 }
 </script>
