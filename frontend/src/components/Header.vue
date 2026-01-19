@@ -3,7 +3,7 @@
     <!-- Left: Logo & Nav -->
     <div class="flex items-center gap-8">
       <!-- Logo -->
-      <div class="flex items-center gap-2 font-bold text-xl text-gray-900 dark:text-white cursor-pointer" @click="goHome">
+      <div class="flex items-center gap-2 font-bold text-xl text-gray-900 dark:text-white cursor-pointer" @click="navigateTo('dashboard')">
         <el-icon class="text-blue-600 dark:text-blue-400"><ElementPlus /></el-icon>
         <span>MCP Hub Lite</span>
       </div>
@@ -11,18 +11,19 @@
       <!-- Main Navigation -->
       <nav class="hidden md:flex items-center gap-1">
         <button 
-          @click="goHome"
+          @click="navigateTo('dashboard')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-          :class="[!store.selectedServerId ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
+          :class="[isDashboardActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('sidebar.dashboard') }}
         </button>
-        <!-- Placeholder for Settings/Other pages -->
-        <!-- 
-        <button class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-          {{ $t('settings.title') || 'Settings' }}
-        </button> 
-        -->
+        <button 
+          @click="navigateTo('tools')"
+          class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+          :class="[isToolsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
+        >
+          {{ $t('tools.title') }}
+        </button>
       </nav>
     </div>
 
@@ -68,6 +69,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTheme, type Theme } from '../composables/useTheme'
 import { useServerStore } from '../stores/server'
@@ -76,6 +79,11 @@ import { Sunny, Moon, Monitor, ArrowDown, ElementPlus } from '@element-plus/icon
 const { locale } = useI18n()
 const { theme, setTheme } = useTheme()
 const store = useServerStore()
+const router = useRouter()
+const route = useRoute()
+
+const isDashboardActive = computed(() => route.name === 'dashboard' && !store.selectedServerId)
+const isToolsActive = computed(() => route.name === 'tools')
 
 const handleThemeCommand = (command: string) => {
   setTheme(command as Theme)
@@ -85,7 +93,8 @@ const handleLangCommand = (command: string) => {
   locale.value = command
 }
 
-const goHome = () => {
+const navigateTo = (name: string) => {
   store.selectedServerId = null
+  router.push({ name })
 }
 </script>

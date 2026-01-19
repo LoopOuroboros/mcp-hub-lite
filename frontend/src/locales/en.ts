@@ -101,5 +101,32 @@ export default {
     unsupportedTransportType: 'Unsupported transport type',
     connectionFailed: 'Failed to connect to server',
     invalidServerConfig: 'Invalid server configuration'
+  },
+  tools: {
+    title: 'MCP Tool Gateway',
+    searchPlaceholder: "Search all tools (e.g., 'file', 'database', 'list')...",
+    systemTools: 'Gateway System Tools',
+    aggregatedTools: 'Aggregated Server Tools',
+    noToolsFound: 'No tools found. Connect some servers to get started.',
+    call: 'Call',
+    detailsCall: 'Details / Call',
+    noDescription: 'No description provided',
+    systemTag: 'System',
+    online: 'Online',
+    offline: 'Offline',
+    systemToolsList: {
+      listServers: {
+        name: 'list_mcp_servers',
+        description: 'List all backend MCP servers currently connected to this gateway.'
+      },
+      searchTools: {
+        name: 'search_aggregated_tools',
+        description: 'Search for tools across all connected servers based on a query string.'
+      },
+      callTool: {
+        name: 'call_tool_generic',
+        description: 'Invokes a specific tool on a target server with provided arguments.'
+      }
+    }
   }
 }

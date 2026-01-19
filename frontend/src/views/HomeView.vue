@@ -7,8 +7,7 @@
     
     <!-- Main Content Area -->
     <main class="flex-1 h-full overflow-hidden bg-gray-50 dark:bg-[#0f172a] relative transition-colors duration-300">
-      <Dashboard v-if="!store.selectedServerId" />
-      <ServerDetail v-else />
+      <router-view />
     </main>
 
     <AddServerModal v-model="showAddModal" :initial-mode="addModalMode" />
@@ -19,8 +18,6 @@
 import { ref, onMounted, watch } from 'vue'
 import { useServerStore } from '../stores/server'
 import Sidebar from '../components/Sidebar.vue'
-import Dashboard from '../components/Dashboard.vue'
-import ServerDetail from '../components/ServerDetail.vue'
 import AddServerModal from '../components/AddServerModal.vue'
 import { ElMessage } from 'element-plus'
 

@@ -26,11 +26,11 @@
           :key="server.id"
           class="server-card group relative p-3 rounded-xl border transition-all duration-200 cursor-pointer"
           :class="[
-            store.selectedServerId === server.id 
+            isServerSelected(server.id)
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-800' 
               : 'bg-white dark:bg-[#2a374a] border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm'
           ]"
-          @click="store.selectServer(server.id)"
+          @click="selectServer(server.id)"
         >
           <!-- Row 1: Icon + Name + Action Button -->
           <div class="flex items-start justify-between gap-3 mb-2">
@@ -68,7 +68,7 @@
                 </span>
                 <span class="opacity-30">|</span>
                 <span class="shrink-0">
-                  Transport: {{ server.config.transport }}
+                  {{ $t('serverDetail.config.transport') }}: {{ server.config.transport }}
                 </span>
                 <template v-if="server.status === 'running' && server.pid">
                   <span class="opacity-30">|</span>
@@ -93,53 +93,63 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useServerStore } from '../stores/server'
 import { VideoPlay, CircleClose, Warning, Plus, SwitchButton } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
+const route = useRoute()
 const store = useServerStore()
 const { t } = useI18n()
 
-defineEmits(['add-server'])
+function selectServer(id: string) {
+  store.selectServer(id)
+  if (route.name !== 'dashboard') {
+    router.push({ name: 'dashboard' })
+  }
+}
 
-// Icons mapping
+function isServerSelected(id: string) {
+  return route.name === 'dashboard' && store.selectedServerId === id
+}
+
+// ... existing helper functions ...
 function getStatusIcon(status: string) {
   switch (status) {
     case 'running': return VideoPlay
     case 'stopped': return CircleClose
     case 'error': return Warning
-    default: return CircleClose
+    default: return Warning
   }
 }
 
-// Icon Color
 function getStatusColor(status: string) {
   switch (status) {
     case 'running': return 'text-green-500'
-    case 'stopped': return 'text-gray-400 dark:text-gray-500'
+    case 'stopped': return 'text-gray-400'
     case 'error': return 'text-red-500'
     default: return 'text-gray-400'
   }
 }
 
-// Icon Background
 function getStatusIconBgClass(status: string) {
   switch (status) {
     case 'running': return 'bg-green-100 dark:bg-green-900/30'
-    case 'stopped': return 'bg-gray-100 dark:bg-gray-700/50'
+    case 'stopped': return 'bg-gray-100 dark:bg-gray-800'
     case 'error': return 'bg-red-100 dark:bg-red-900/30'
     default: return 'bg-gray-100 dark:bg-gray-800'
   }
 }
 
-// Text Color
 function getStatusTextColor(status: string) {
   switch (status) {
     case 'running': return 'text-green-600 dark:text-green-400'
-    case 'stopped': return 'text-gray-500 dark:text-gray-500'
+    case 'stopped': return 'text-gray-500 dark:text-gray-400'
     case 'error': return 'text-red-600 dark:text-red-400'
-    default: return 'text-gray-500'
+    default: return 'text-gray-500 dark:text-gray-400'
   }
 }
 
@@ -147,15 +157,17 @@ async function toggleServerStatus(server: any) {
   try {
     if (server.status === 'running') {
       await store.stopServer(server.id)
-      ElMessage.success(t('action.stopped'))
+      ElMessage.success(t('message.stopSuccess'))
     } else {
       await store.startServer(server.id)
-      ElMessage.success(t('action.started'))
+      ElMessage.success(t('message.startSuccess'))
     }
-  } catch (e: any) {
-    ElMessage.error(e.message)
+  } catch (error: any) {
+    ElMessage.error(error.message || 'Operation failed')
   }
 }
+
+defineEmits(['add-server'])
 </script>
 
 <style scoped>

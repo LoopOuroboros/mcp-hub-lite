@@ -82,6 +82,7 @@ process-logs/
 
 # Analysis Docs
 docs/kaizen/
+docs/img/
 
 # Misc
 *.zip

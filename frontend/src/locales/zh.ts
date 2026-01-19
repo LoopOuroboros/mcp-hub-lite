@@ -100,6 +100,34 @@ export default {
     httpUrlRequired: '可流式传输的 HTTP 服务器需要有效的 URL',
     unsupportedTransportType: '不支持的传输类型',
     connectionFailed: '连接服务器失败',
-    invalidServerConfig: '服务器配置无效'
+    invalidServerConfig: '服务器配置无效',
+    unknown: '发生未知错误'
+  },
+  tools: {
+    title: 'MCP 工具网关',
+    searchPlaceholder: "搜索所有工具 (例如：'file', 'database', 'list')...",
+    systemTools: '网关系统工具',
+    aggregatedTools: '聚合服务器工具',
+    noToolsFound: '未找到工具。请连接一些服务器以开始使用。',
+    call: '调用',
+    detailsCall: '详情 / 调用',
+    noDescription: '未提供描述',
+    systemTag: '系统',
+    online: '在线',
+    offline: '离线',
+    systemToolsList: {
+      listServers: {
+        name: 'list_mcp_servers',
+        description: '列出当前连接到此网关的所有后端 MCP 服务器。'
+      },
+      searchTools: {
+        name: 'search_aggregated_tools',
+        description: '基于查询字符串跨所有连接的服务器搜索工具。'
+      },
+      callTool: {
+        name: 'call_tool_generic',
+        description: '使用提供的参数调用目标服务器上的特定工具。'
+      }
+    }
   }
 }
