@@ -18,10 +18,14 @@ export class HttpError extends Error {
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  // 只有在有请求体时才设置 Content-Type 头部
+  const headers: Record<string, string> = {};
+  if (options.body) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (options.headers) {
+    Object.assign(headers, options.headers);
+  }
 
   try {
     const response = await fetch(url, {

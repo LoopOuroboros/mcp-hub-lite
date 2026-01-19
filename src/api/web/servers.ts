@@ -60,7 +60,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
 
   // DELETE /web/servers/:id
   fastify.delete<{ Params: { id: string } }>('/web/servers/:id', async (request, reply) => {
-    const success = hubManager.removeServer(request.params.id);
+    const success = await hubManager.removeServer(request.params.id);
     if (!success) {
         return reply.code(404).send({ error: 'Server not found' });
     }
