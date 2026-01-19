@@ -38,16 +38,6 @@ export interface SseTransportConfig {
 }
 
 /**
- * HTTP 传输配置
- */
-export interface HttpTransportConfig {
-  type: 'http';
-  url: string;
-  headers?: Record<string, string>;
-  timeout?: number;
-}
-
-/**
  * Streamable HTTP 传输配置
  */
 export interface StreamableHttpTransportConfig {
@@ -60,4 +50,4 @@ export interface StreamableHttpTransportConfig {
 /**
  * 通用服务器配置
  */
-export type ServerTransportConfig = StdioTransportConfig | SseTransportConfig | HttpTransportConfig | StreamableHttpTransportConfig;
+export type ServerTransportConfig = StdioTransportConfig | SseTransportConfig | StreamableHttpTransportConfig;

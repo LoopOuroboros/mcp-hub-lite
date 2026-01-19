@@ -19,6 +19,8 @@ export interface Server {
   logs: string[]
   uptime?: string
   pid?: number
+  tools?: any[]
+  resources?: any[]
 }
 
 interface McpServerConfig {
@@ -185,6 +187,34 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
+  async function fetchTools(serverId: string) {
+    try {
+      const tools = await http.get<any[]>(`/web/mcp/servers/${serverId}/tools`)
+      const server = servers.value.find(s => s.id === serverId)
+      if (server) {
+        server.tools = tools
+      }
+      return tools
+    } catch (e) {
+      console.error('Fetch tools error:', e)
+      return []
+    }
+  }
+
+  async function fetchResources(serverId: string) {
+    try {
+      const resources = await http.get<any[]>(`/web/mcp/servers/${serverId}/resources`)
+      const server = servers.value.find(s => s.id === serverId)
+      if (server) {
+        server.resources = resources
+      }
+      return resources
+    } catch (e) {
+      console.error('Fetch resources error:', e)
+      return []
+    }
+  }
+
   return {
     servers,
     loading,
@@ -199,6 +229,8 @@ export const useServerStore = defineStore('server', () => {
     startServer,
     stopServer,
     deleteServer,
-    updateServerStatus
+    updateServerStatus,
+    fetchTools,
+    fetchResources
   }
 })

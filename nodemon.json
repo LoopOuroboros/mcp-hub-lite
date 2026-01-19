@@ -9,5 +9,8 @@
   ],
   "exec": "node --import=tsx src/server/dev-server.ts",
   "delay": 1000,
-  "verbose": true
+  "verbose": true,
+  "env": {
+    "DEV_LOG_FILE": "true"
+  }
 }

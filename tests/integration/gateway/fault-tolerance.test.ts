@@ -31,7 +31,7 @@ describe('Fault Tolerance', () => {
     command: 'node',
     args: ['server.js'],
     enabled: true,
-    type: 'stdio',
+    type: 'stdio' as const,
     longRunning: true,
     timeout: 60
   };

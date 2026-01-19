@@ -60,7 +60,7 @@ describe('MCP Protocol Contract - tools/call', () => {
     command: 'node',
     args: ['test-server.js'],
     enabled: true,
-    type: 'stdio',
+    type: 'stdio' as const,
     longRunning: true,
     timeout: 60
   };

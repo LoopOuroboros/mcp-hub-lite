@@ -73,4 +73,16 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Internal Server Error' });
     }
   });
+
+  // GET /web/mcp/servers/:id/resources - Get resources for a specific server
+  fastify.get<{ Params: { id: string } }>('/web/mcp/servers/:id/resources', async (request, reply) => {
+    try {
+      logger.info(`API request resources for server: ${request.params.id}`);
+      const resources = mcpConnectionManager.getResources(request.params.id);
+      return resources;
+    } catch (error) {
+      logger.error('Failed to get MCP resources:', error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  });
 }

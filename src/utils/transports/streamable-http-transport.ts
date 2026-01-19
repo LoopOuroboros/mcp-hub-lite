@@ -40,7 +40,7 @@ export class StreamableHttpTransport implements Transport {
           'Content-Type': 'application/json',
           ...this.headers
         },
-        timeout: this.timeout
+        signal: AbortSignal.timeout(this.timeout)
       };
 
       this.transport = new StreamableHTTPClientTransport(url, {

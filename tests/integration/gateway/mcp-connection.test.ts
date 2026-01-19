@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
 import { simpleSearchService } from '../../../src/services/simple-search.service.js';
+import { configManager } from '../../../src/config/config-manager.js';
 
 // Mock SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -32,13 +33,20 @@ describe('McpConnectionManager', () => {
     command: 'node',
     args: ['test-script.js'],
     enabled: true,
-    type: 'stdio',
+    type: 'stdio' as const,
     longRunning: true,
     timeout: 60
   };
 
   beforeEach(async () => {
     // Clean up
+    if (mcpConnectionManager.getStatus(mockServer.id)?.connected) {
+        await mcpConnectionManager.disconnect(mockServer.id);
+    }
+  });
+
+  afterEach(async () => {
+    // Clean up and restore original config
     if (mcpConnectionManager.getStatus(mockServer.id)?.connected) {
         await mcpConnectionManager.disconnect(mockServer.id);
     }
@@ -72,7 +80,7 @@ describe('SimpleSearchService', () => {
     it('should search tools', () => {
          // Placeholder
     });
-    
+
     it('should find tool by name', async () => {
         const mockServer = {
             id: 'search-test-server',
@@ -80,14 +88,18 @@ describe('SimpleSearchService', () => {
             command: 'node',
             args: [],
             enabled: true,
-            type: 'stdio',
+            type: 'stdio' as const,
             longRunning: true,
             timeout: 60
         };
+
         await mcpConnectionManager.connect(mockServer);
-        
+
         const results = simpleSearchService.search('test');
         expect(results.length).toBeGreaterThan(0);
         expect(results[0].tool.name).toBe('test-tool');
+
+        // Clean up
+        await mcpConnectionManager.disconnect(mockServer.id);
     });
 });

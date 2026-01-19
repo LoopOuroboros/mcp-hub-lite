@@ -1,7 +1,6 @@
 import { McpServerConfig } from '../../config/config.schema.js';
 import { CustomStdioClientTransport } from '../custom-stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
-import { HttpTransport } from './http-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { Transport, ServerTransportConfig } from './transport.interface.js';
 import { logger } from '../../utils/logger.js';
@@ -43,16 +42,6 @@ export class TransportFactory {
           transportConfig.maxReconnectAttempts
         );
 
-      case 'http':
-        if (!transportConfig.url) {
-          throw new Error('HTTP transport requires a URL');
-        }
-        return new HttpTransport(
-          transportConfig.url,
-          transportConfig.headers,
-          transportConfig.timeout
-        );
-
       case 'streamable-http':
         if (!transportConfig.url) {
           throw new Error('Streamable HTTP transport requires a URL');
@@ -91,13 +80,6 @@ export class TransportFactory {
         reconnectInterval: 3000,
         maxReconnectAttempts: 5
       };
-    } else if (type === 'http') {
-      return {
-        type: 'http',
-        url: server.url || '',
-        headers: server.env,
-        timeout: server.timeout || 30000
-      };
     } else if (type === 'streamable-http') {
       return {
         type: 'streamable-http',
@@ -106,7 +88,7 @@ export class TransportFactory {
         timeout: server.timeout || 30000
       };
     } else {
-      throw new Error(`Unsupported server type: ${type}`);
+      throw new Error(`Unsupported transport type: ${type}`);
     }
   }
 }

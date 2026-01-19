@@ -3,12 +3,15 @@ import { TransportFactory } from '../utils/transports/transport-factory.js';
 import { McpServerConfig } from '../config/config.schema.js';
 import { logger } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
+import { McpResource } from '../models/resource.model.js';
+import { configManager } from '../config/config-manager.js';
 
 export interface ServerStatus {
   connected: boolean;
   error?: string;
   lastCheck: number;
   toolsCount: number;
+  resourcesCount: number;
   pid?: number;
 }
 
@@ -17,6 +20,15 @@ class McpConnectionManager {
   private transports: Map<string, any> = new Map(); // Using 'any' for transport types
   private serverStatus: Map<string, ServerStatus> = new Map();
   private toolCache: Map<string, McpTool[]> = new Map();
+  private resourceCache: Map<string, McpResource[]> = new Map();
+
+  /**
+   * Gets server name by ID with fallback to ID if not found
+   */
+  private getServerName(serverId: string): string {
+    const server = configManager.getServerById(serverId);
+    return server ? `${server.name} (${serverId})` : serverId;
+  }
 
   public async connect(server: McpServerConfig): Promise<boolean> {
     try {
@@ -31,7 +43,7 @@ class McpConnectionManager {
         throw new Error('STDIO server requires a valid command');
       }
 
-      if ((server.type === 'sse' || server.type === 'http') && (!server.url || server.url.trim() === '')) {
+      if ((server.type === 'sse' || server.type === 'streamable-http') && (!server.url || server.url.trim() === '')) {
         throw new Error(`${server.type.toUpperCase()} server requires a valid URL`);
       }
 
@@ -60,16 +72,18 @@ class McpConnectionManager {
         connected: true,
         lastCheck: Date.now(),
         toolsCount: 0,
+        resourcesCount: 0,
         pid: pid
       });
 
       logger.info(`Connected to server ${server.name} (${server.type || 'stdio'})`);
 
-      // Fetch tools immediately (only for bidirectional transports)
+      // Fetch tools and resources immediately (only for bidirectional transports)
       if (server.type !== 'sse') {
         await this.refreshTools(server.id);
+        await this.refreshResources(server.id);
       } else {
-        logger.info('SSE transport is unidirectional, skipping tool refresh');
+        logger.info('SSE transport is unidirectional, skipping tool/resource refresh');
       }
 
       return true;
@@ -80,7 +94,8 @@ class McpConnectionManager {
         connected: false,
         error: error instanceof Error ? error.message : String(error),
         lastCheck: Date.now(),
-        toolsCount: 0
+        toolsCount: 0,
+        resourcesCount: 0
       });
       return false;
     }
@@ -94,7 +109,7 @@ class McpConnectionManager {
       try {
         await client.close();
       } catch (e) {
-        logger.warn(`Error closing client for ${serverId}:`, e);
+        logger.warn(`Error closing client for ${this.getServerName(serverId)}:`, e);
       }
     }
 
@@ -102,7 +117,7 @@ class McpConnectionManager {
       try {
         await transport.close();
       } catch (e) {
-        logger.warn(`Error closing transport for ${serverId}:`, e);
+        logger.warn(`Error closing transport for ${this.getServerName(serverId)}:`, e);
       }
     }
 
@@ -111,9 +126,11 @@ class McpConnectionManager {
     this.serverStatus.set(serverId, {
       connected: false,
       lastCheck: Date.now(),
-      toolsCount: 0
+      toolsCount: 0,
+      resourcesCount: 0
     });
     this.toolCache.delete(serverId);
+    this.resourceCache.delete(serverId);
   }
 
   public async refreshTools(serverId: string): Promise<McpTool[]> {
@@ -140,11 +157,55 @@ class McpConnectionManager {
         status.lastCheck = Date.now();
       }
 
-      logger.info(`Refreshed tools for server ${serverId}: ${tools.length} tools found`);
+      logger.info(`Refreshed tools for server ${this.getServerName(serverId)}: ${tools.length} tools found`);
       return tools;
     } catch (error) {
-      logger.error(`Failed to list tools for server ${serverId}:`, error);
+      logger.error(`Failed to list tools for server ${this.getServerName(serverId)}:`, error);
       throw error;
+    }
+  }
+
+  public async refreshResources(serverId: string): Promise<McpResource[]> {
+    const client = this.clients.get(serverId);
+    if (!client) {
+      throw new Error(`Server ${serverId} not connected`);
+    }
+
+    try {
+      // Check if client actually supports listResources method
+      if (typeof client.listResources !== 'function') {
+        logger.warn(`Server ${this.getServerName(serverId)} does not support resources listing`);
+        return [];
+      }
+
+      const result = await client.listResources();
+      const resources: McpResource[] = result.resources.map(r => ({
+        name: r.name,
+        uri: r.uri,
+        mimeType: r.mimeType,
+        description: r.description,
+        serverId: serverId
+      }));
+
+      this.resourceCache.set(serverId, resources);
+
+      // Update status
+      const status = this.serverStatus.get(serverId);
+      if (status) {
+        status.resourcesCount = resources.length;
+        status.lastCheck = Date.now();
+      }
+
+      logger.info(`Refreshed resources for server ${this.getServerName(serverId)}: ${resources.length} resources found`);
+      return resources;
+    } catch (error: any) {
+      // Check if error is "Method not found" (MCP error -32601), which means server doesn't implement resources
+      if (error.code === -32601 || error.message?.includes('Method not found')) {
+        logger.debug(`Server ${this.getServerName(serverId)} does not support resources functionality`);
+      } else {
+        logger.warn(`Failed to list resources for server ${this.getServerName(serverId)}:`, error);
+      }
+      return [];
     }
   }
 
@@ -154,8 +215,14 @@ class McpConnectionManager {
 
   public getTools(serverId: string): McpTool[] {
     const tools = this.toolCache.get(serverId) || [];
-    logger.info(`getTools for ${serverId}: returned ${tools.length} tools`);
+    logger.info(`getTools for ${this.getServerName(serverId)}: returned ${tools.length} tools`);
     return tools;
+  }
+
+  public getResources(serverId: string): McpResource[] {
+    const resources = this.resourceCache.get(serverId) || [];
+    logger.info(`getResources for ${this.getServerName(serverId)}: returned ${resources.length} resources`);
+    return resources;
   }
 
   public getAllTools(): McpTool[] {
@@ -183,7 +250,7 @@ class McpConnectionManager {
       });
       return result;
     } catch (error) {
-      logger.error(`Failed to call tool ${toolName} on server ${serverId}:`, error);
+      logger.error(`Failed to call tool ${toolName} on server ${this.getServerName(serverId)}:`, error);
       throw error;
     }
   }

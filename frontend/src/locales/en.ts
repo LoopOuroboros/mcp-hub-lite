@@ -14,10 +14,13 @@ export default {
   },
   serverDetail: {
     emptySelect: 'Select a server to view details',
+    noServerSelected: 'No server selected',
+    deleteConfirm: 'Are you sure you want to delete this server?',
     tabs: {
       config: 'Configuration',
       logs: 'Logs',
-      tools: 'Tools & Resources'
+      tools: 'Tools',
+      resources: 'Resources'
     },
     config: {
       transport: 'Transport',
@@ -40,7 +43,17 @@ export default {
       copied: 'Logs copied to clipboard'
     },
     tools: {
-      construction: 'Tools and Resources view is under construction.'
+      available: 'Available Tools',
+      details: 'Tool Details',
+      schema: 'Schema (JSON)',
+      selectHint: 'Select a tool to view details',
+      none: 'No tools available'
+    },
+    resources: {
+      name: 'Name',
+      uri: 'URI',
+      mimeType: 'MIME Type',
+      none: 'No resources available'
     },
     status: {
       running: 'Running',
@@ -66,11 +79,17 @@ export default {
     start: 'Start',
     cancel: 'Cancel',
     create: 'Create Server',
+    delete: 'Delete',
     save: 'Save',
+    view: 'View',
     restarted: 'Server restarted',
     stopped: 'Server stopped',
     started: 'Server started',
-    saved: 'Configuration saved'
+    saved: 'Configuration saved',
+    configSaved: 'Configuration saved',
+    serverDeleted: 'Server deleted',
+    logsCleared: 'Logs cleared',
+    logsCopied: 'Logs copied to clipboard'
   },
   error: {
     stdioCommandRequired: 'STDIO server requires a valid command',

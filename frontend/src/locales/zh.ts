@@ -14,10 +14,13 @@ export default {
   },
   serverDetail: {
     emptySelect: '请选择一个服务器以查看详情',
+    noServerSelected: '未选择服务器',
+    deleteConfirm: '确定要删除此服务器吗？',
     tabs: {
       config: '配置',
       logs: '日志',
-      tools: '工具与资源'
+      tools: '工具',
+      resources: '资源'
     },
     config: {
       transport: '传输方式',
@@ -40,7 +43,17 @@ export default {
       copied: '日志已复制到剪贴板'
     },
     tools: {
-      construction: '工具与资源视图正在开发中。'
+      available: '可用工具',
+      details: '工具详情',
+      schema: '参数 Schema (JSON)',
+      selectHint: '请选择一个工具以查看详情',
+      none: '暂无可用工具'
+    },
+    resources: {
+      name: '名称',
+      uri: 'URI',
+      mimeType: 'MIME 类型',
+      none: '暂无可用资源'
     },
     status: {
       running: '运行中',
@@ -66,11 +79,17 @@ export default {
     start: '启动',
     cancel: '取消',
     create: '创建服务器',
+    delete: '删除',
     save: '保存',
+    view: '查看',
     restarted: '服务器已重启',
     stopped: '服务器已停止',
     started: '服务器已启动',
-    saved: '配置已保存'
+    saved: '配置已保存',
+    configSaved: '配置已保存',
+    serverDeleted: '服务器已删除',
+    logsCleared: '日志已清空',
+    logsCopied: '日志已复制到剪贴板'
   },
   error: {
     stdioCommandRequired: 'STDIO 服务器需要有效的命令',

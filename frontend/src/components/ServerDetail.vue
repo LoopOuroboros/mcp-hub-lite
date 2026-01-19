@@ -15,13 +15,15 @@
       </div>
       <div class="flex gap-2">
         <el-button :icon="Refresh" plain @click="restartServer">{{ $t('action.restart') }}</el-button>
-        <el-button v-if="server.status === 'running'" type="danger" :icon="SwitchButton" @click="stopServer">{{ $t('action.stop') }}</el-button>
+        <el-button v-if="server.status === 'running'" type="warning" plain :icon="SwitchButton" @click="stopServer">{{ $t('action.stop') }}</el-button>
         <el-button v-else type="success" :icon="VideoPlay" @click="startServer">{{ $t('action.start') }}</el-button>
+        <el-button type="danger" :icon="Delete" @click="deleteServer">{{ $t('action.delete') }}</el-button>
       </div>
     </div>
 
     <!-- Tabs -->
     <el-tabs v-model="activeTab" class="flex-1 flex flex-col overflow-hidden custom-tabs">
+      <!-- Config Tab -->
       <el-tab-pane :label="$t('serverDetail.tabs.config')" name="config" class="h-full overflow-y-auto">
         <div class="max-w-3xl">
           <el-form label-position="top" class="mt-4">
@@ -38,8 +40,8 @@
                 <el-input v-model="server.config.command" />
               </el-form-item>
               <el-form-item :label="$t('serverDetail.config.args')">
-                <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
-                  <div v-for="(arg, index) in server.config.args" :key="index" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
+                <div class="w-full flex flex-col gap-2">
+                  <div v-for="(arg, index) in server.config.args" :key="index" class="flex gap-2 w-full">
                     <el-input v-model="server.config.args![index]" />
                     <el-button :icon="Delete" circle plain @click="removeArg(index)" />
                   </div>
@@ -57,8 +59,8 @@
             </template>
 
             <el-form-item :label="$t('serverDetail.config.env')">
-               <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
-                 <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
+               <div class="w-full flex flex-col gap-2">
+                 <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full">
                     <el-input v-model="envKeys[key as string]" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" @change="(val: string) => updateEnvKey(key as string, val)" />
                     <el-input v-model="server.config.env![key]" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
                     <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
@@ -77,6 +79,91 @@
         </div>
       </el-tab-pane>
 
+      <!-- Logs Tab -->
+      <el-tab-pane :label="$t('serverDetail.tabs.logs')" name="logs" class="h-full flex flex-col">
+        <div class="flex justify-end gap-2 mb-2">
+            <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
+            <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
+            <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{ $t('serverDetail.logs.copy') }}</el-button>
+        </div>
+        <div class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
+          <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
+            <span v-if="log.includes('[SYSTEM')" class="text-blue-400">{{ log }}</span>
+            <span v-else-if="log.includes('[STDERR') || log.includes('Error')" class="text-red-400">{{ log }}</span>
+            <span v-else-if="log.includes('[MCP REQUEST]')" class="text-green-400">{{ log }}</span>
+            <span v-else-if="log.includes('[MCP RESPONSE]')" class="text-purple-400">{{ log }}</span>
+            <span v-else>{{ log }}</span>
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <!-- Tools Tab -->
+      <el-tab-pane :label="$t('serverDetail.tabs.tools')" name="tools" class="h-full flex flex-col">
+         <div class="flex h-full gap-4">
+            <!-- Available Tools List -->
+            <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
+               <h3 class="font-bold mb-4">{{ $t('serverDetail.tools.available') }}</h3>
+               <div v-if="server.tools && server.tools.length > 0" class="space-y-2">
+                  <div 
+                    v-for="tool in server.tools" 
+                    :key="tool.name"
+                    class="p-3 rounded-lg cursor-pointer transition-colors"
+                    :class="selectedTool?.name === tool.name ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'"
+                    @click="selectTool(tool)"
+                  >
+                     <div class="font-medium">{{ tool.name }}</div>
+                     <div class="text-xs text-gray-500 truncate">{{ tool.description }}</div>
+                  </div>
+               </div>
+               <div v-else class="text-gray-500 text-sm italic">
+                  {{ $t('serverDetail.tools.none') }}
+               </div>
+            </div>
+            
+            <!-- Tool Details -->
+            <div class="flex-1 overflow-y-auto pl-2">
+               <h3 class="font-bold mb-4">{{ $t('serverDetail.tools.details') }}: {{ selectedTool?.name || '' }}</h3>
+               <div v-if="selectedTool">
+                  <p class="mb-4 text-gray-600 dark:text-gray-300">{{ selectedTool.description }}</p>
+                  
+                  <h4 class="font-medium mb-2">{{ $t('serverDetail.tools.schema') }}</h4>
+                  <pre class="bg-gray-50 dark:bg-[#0f172a] p-4 rounded-lg overflow-x-auto text-sm font-mono border border-gray-200 dark:border-gray-700">{{ JSON.stringify(selectedTool.inputSchema, null, 2) }}</pre>
+               </div>
+               <div v-else class="flex h-full items-center justify-center text-gray-400">
+                  {{ $t('serverDetail.tools.selectHint') }}
+               </div>
+            </div>
+         </div>
+      </el-tab-pane>
+
+      <!-- Resources Tab -->
+      <el-tab-pane :label="$t('serverDetail.tabs.resources')" name="resources" class="h-full flex flex-col">
+         <div class="h-full overflow-y-auto">
+             <el-table :data="server.resources || []" style="width: 100%" class="custom-table">
+                <el-table-column prop="name" :label="$t('serverDetail.resources.name')" width="200">
+                   <template #default="{ row }">
+                      <div class="flex items-center gap-2">
+                         <el-icon><Document /></el-icon>
+                         <span class="font-medium">{{ row.name }}</span>
+                      </div>
+                   </template>
+                </el-table-column>
+                <el-table-column prop="uri" :label="$t('serverDetail.resources.uri')" min-width="300" />
+                <el-table-column prop="mimeType" :label="$t('serverDetail.resources.mimeType')" width="150" />
+                <el-table-column label="" width="100" align="right">
+                   <template #default>
+                      <el-button size="small" plain>{{ $t('action.view') }}</el-button>
+                   </template>
+                </el-table-column>
+             </el-table>
+             <div v-if="!server.resources || server.resources.length === 0" class="text-center py-8 text-gray-500">
+                {{ $t('serverDetail.resources.none') }}
+             </div>
+         </div>
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- JSON Config Dialog -->
     <el-dialog
       v-model="showEditJson"
       title="Edit JSON Config"
@@ -95,72 +182,52 @@
         <el-button type="primary" @click="saveJsonConfig">Update</el-button>
       </template>
     </el-dialog>
-      
-      <el-tab-pane :label="$t('serverDetail.tabs.logs')" name="logs" class="h-full flex flex-col">
-        <div class="flex justify-end gap-2 mb-2">
-            <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
-            <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
-            <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{ $t('serverDetail.logs.copy') }}</el-button>
-        </div>
-        <div class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
-          <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
-            <span v-if="log.includes('[SYSTEM')" class="text-blue-400">{{ log }}</span>
-            <span v-else-if="log.includes('[STDERR') || log.includes('Error')" class="text-red-400">{{ log }}</span>
-            <span v-else-if="log.includes('[MCP REQUEST]')" class="text-green-400">{{ log }}</span>
-            <span v-else-if="log.includes('[MCP RESPONSE]')" class="text-purple-400">{{ log }}</span>
-            <span v-else>{{ log }}</span>
-          </div>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane :label="$t('serverDetail.tabs.tools')" name="tools">
-        <div class="p-4 text-center text-gray-500">
-          {{ $t('serverDetail.tools.construction') }}
-        </div>
-      </el-tab-pane>
-    </el-tabs>
   </div>
-  <div v-else class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-    {{ $t('serverDetail.emptySelect') }}
+  <div v-else class="h-full flex items-center justify-center text-gray-400">
+    {{ $t('serverDetail.noServerSelected') }}
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useServerStore } from '../stores/server'
-import { Refresh, SwitchButton, VideoPlay, Delete, Plus, CopyDocument, Edit } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-
-const props = defineProps<{
-  // No props needed as we use store, but good practice
-}>()
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useServerStore()
 const { t } = useI18n()
-const activeTab = ref('logs')
+
+// Computed property for the selected server
+const server = computed(() => store.selectedServer)
+
+// State
+const activeTab = ref('config')
 const autoScroll = ref(true)
 const logsContainer = ref<HTMLElement | null>(null)
-
-// JSON Edit state
+const envKeys = ref<Record<string, string>>({})
 const showEditJson = ref(false)
 const jsonConfig = ref('')
+const selectedTool = ref<any>(null)
 
-// Local state for env key editing
-const envKeys = ref<Record<string, string>>({})
-
-const server = computed(() => {
-  const s = store.servers.find(s => s.id === store.selectedServerId)
-  if (s && s.config.env) {
-    // Initialize envKeys
-    Object.keys(s.config.env).forEach(k => {
-      if (!envKeys.value[k]) envKeys.value[k] = k
+// Initialize env keys when server changes
+watch(server, (newServer) => {
+  if (newServer?.config.env) {
+    envKeys.value = {}
+    Object.keys(newServer.config.env).forEach(k => {
+      envKeys.value[k] = k
     })
   }
-  return s
-})
+}, { immediate: true })
 
-// Auto scroll logs
+// Auto-switch tabs based on status when server changes
+watch(() => server.value?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    activeTab.value = server.value?.status === 'running' ? 'logs' : 'config'
+  }
+}, { immediate: true })
+
+// Auto-scroll logs
 watch(() => server.value?.logs.length, () => {
   if (autoScroll.value) {
     nextTick(() => {
@@ -171,6 +238,22 @@ watch(() => server.value?.logs.length, () => {
   }
 })
 
+// Tab switching logic
+watch(activeTab, async (tab) => {
+  if (!server.value?.id) return
+  
+  if (tab === 'tools') {
+    await store.fetchTools(server.value.id)
+  } else if (tab === 'resources') {
+    await store.fetchResources(server.value.id)
+  }
+})
+
+function selectTool(tool: any) {
+  selectedTool.value = tool
+}
+
+// Helper functions for status styling
 function getStatusBadgeClass(status: string) {
   switch (status) {
     case 'running': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -189,7 +272,7 @@ function getStatusDotClass(status: string) {
   }
 }
 
-// ... Actions ...
+// Actions
 const restartServer = async () => {
   if (server.value) {
     try {
@@ -307,7 +390,6 @@ const saveJsonConfig = async () => {
         updatedConfig.args = newConfig.args || []
         delete (updatedConfig as any).url
       } else if (newConfig.url) {
-        // Check if it's Streamable HTTP transport based on type or other indicators
         if (newConfig.type === 'streamable-http' || newConfig.type === 'http') {
           updatedConfig.transport = 'streamable-http'
         } else {
