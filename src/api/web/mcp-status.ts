@@ -20,6 +20,7 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
           connected: false,
           lastCheck: Date.now(),
           toolsCount: 0,
+          resourcesCount: 0,
           pid: undefined
         }
       }));

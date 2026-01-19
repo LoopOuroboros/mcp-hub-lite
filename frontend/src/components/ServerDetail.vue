@@ -98,7 +98,7 @@
       </el-tab-pane>
 
       <!-- Tools Tab -->
-      <el-tab-pane :label="$t('serverDetail.tabs.tools')" name="tools" class="h-full flex flex-col">
+      <el-tab-pane :label="`${$t('serverDetail.tabs.tools')} (${server.toolsCount || 0})`" name="tools" class="h-full flex flex-col">
          <div class="flex h-full gap-4">
             <!-- Available Tools List -->
             <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
@@ -137,7 +137,7 @@
       </el-tab-pane>
 
       <!-- Resources Tab -->
-      <el-tab-pane :label="$t('serverDetail.tabs.resources')" name="resources" class="h-full flex flex-col">
+      <el-tab-pane :label="`${$t('serverDetail.tabs.resources')} (${server.resourcesCount || 0})`" name="resources" class="h-full flex flex-col">
          <div class="h-full overflow-y-auto">
              <el-table :data="server.resources || []" style="width: 100%" class="custom-table">
                 <el-table-column prop="name" :label="$t('serverDetail.resources.name')" width="200">

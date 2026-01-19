@@ -21,6 +21,8 @@ export interface Server {
   pid?: number
   tools?: any[]
   resources?: any[]
+  toolsCount?: number
+  resourcesCount?: number
 }
 
 interface McpServerConfig {
@@ -40,6 +42,7 @@ interface McpStatus {
     error?: string
     lastCheck: number
     toolsCount: number
+    resourcesCount: number
     pid?: number
   }
 }
@@ -76,7 +79,7 @@ export const useServerStore = defineStore('server', () => {
       servers.value = configs.map(config => {
         const statusInfo = statuses.find(s => s.id === config.id)?.status
         const status = statusInfo?.connected ? 'running' : (statusInfo?.error ? 'error' : 'stopped')
-        
+
         return {
           id: config.id || '',
           name: config.name,
@@ -91,7 +94,9 @@ export const useServerStore = defineStore('server', () => {
           },
           logs: [], // Logs API not yet available
           uptime: statusInfo?.connected ? 'Active' : undefined,
-          pid: statusInfo?.pid
+          pid: statusInfo?.pid,
+          toolsCount: statusInfo?.toolsCount,
+          resourcesCount: statusInfo?.resourcesCount
         }
       })
     } catch (e: any) {
