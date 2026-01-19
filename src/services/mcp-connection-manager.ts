@@ -5,6 +5,7 @@ import { logger } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
 import { configManager } from '../config/config-manager.js';
+import { logStorage } from './log-storage.service.js';
 
 export interface ServerStatus {
   connected: boolean;
@@ -50,6 +51,18 @@ class McpConnectionManager {
 
       // Create transport based on server type
       const transport = TransportFactory.createTransport(server);
+
+      // 添加日志监听器
+      if ('onstdout' in transport) {
+        transport.onstdout = (data: string) => {
+          logStorage.append(server.id!, 'info', `[${server.name}] [STDOUT] ${data}`);
+        };
+      }
+      if ('onstderr' in transport) {
+        transport.onstderr = (data: string) => {
+          logStorage.append(server.id!, 'error', `[${server.name}] [STDERR] ${data}`);
+        };
+      }
 
       const client = new Client({
         name: "mcp-hub-lite",

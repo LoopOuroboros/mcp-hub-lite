@@ -29,7 +29,7 @@ export class TransportFactory {
           env: transportConfig.env,
           cwd: process.cwd(),
           stderr: 'pipe'
-        });
+        }, server.name);
 
       case 'sse':
         if (!transportConfig.url) {

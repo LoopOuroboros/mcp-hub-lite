@@ -11,13 +11,19 @@ export interface ServerConfig {
   timeout?: number
 }
 
+export interface LogEntry {
+  timestamp: number
+  level: 'debug' | 'info' | 'warn' | 'error'
+  message: string
+}
+
 export interface Server {
   id: string
   name: string
   status: 'running' | 'stopped' | 'error'
   type: 'local' | 'remote'
   config: ServerConfig
-  logs: string[]
+  logs: LogEntry[]
   uptime?: string
   startTime?: number
   pid?: number
@@ -229,6 +235,30 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
+  async function fetchLogs(serverId: string) {
+    try {
+      const response = await http.get<{ data: LogEntry[] }>(`/web/servers/${serverId}/logs`)
+      const server = servers.value.find(s => s.id === serverId)
+      if (server) {
+        server.logs = response.data
+      }
+    } catch (e) {
+      console.error('Fetch logs error:', e)
+    }
+  }
+
+  async function clearLogs(serverId: string) {
+    try {
+      await http.delete(`/web/servers/${serverId}/logs`)
+      const server = servers.value.find(s => s.id === serverId)
+      if (server) {
+        server.logs = []
+      }
+    } catch (e) {
+      console.error('Clear logs error:', e)
+    }
+  }
+
   return {
     servers,
     loading,
@@ -245,6 +275,8 @@ export const useServerStore = defineStore('server', () => {
     deleteServer,
     updateServerStatus,
     fetchTools,
-    fetchResources
+    fetchResources,
+    fetchLogs,
+    clearLogs
   }
 })

@@ -12,6 +12,7 @@ import { webSearchRoutes } from './api/web/search.js';
 import { webHealthRoutes } from './api/web/health.js';
 import { webMcpStatusRoutes } from './api/web/mcp-status.js';
 import { configRoutes } from './api/web/config.js';
+import { webLogRoutes } from './api/web/logs.js';
 
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,7 @@ export async function buildApp() {
   fastify.register(webHealthRoutes);
   fastify.register(webMcpStatusRoutes);
   fastify.register(configRoutes);
+  fastify.register(webLogRoutes);
 
   // Serve static files from dist/client (frontend build output)
   const clientPath = path.join(__dirname, '../../client');

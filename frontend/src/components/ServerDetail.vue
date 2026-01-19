@@ -110,11 +110,9 @@
         </div>
         <div class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
           <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
-            <span v-if="log.includes('[SYSTEM')" class="text-blue-400">{{ log }}</span>
-            <span v-else-if="log.includes('[STDERR') || log.includes('Error')" class="text-red-400">{{ log }}</span>
-            <span v-else-if="log.includes('[MCP REQUEST]')" class="text-green-400">{{ log }}</span>
-            <span v-else-if="log.includes('[MCP RESPONSE]')" class="text-purple-400">{{ log }}</span>
-            <span v-else>{{ log }}</span>
+            <span :class="getLogLevelColor(log.level)">
+              {{ formatTimestamp(log.timestamp) }} [{{ log.level.toUpperCase() }}] {{ log.message }}
+            </span>
           </div>
         </div>
       </el-tab-pane>
@@ -278,11 +276,13 @@ watch(() => server.value?.logs.length, () => {
 // Tab switching logic
 watch(activeTab, async (tab) => {
   if (!server.value?.id) return
-  
+
   if (tab === 'tools') {
     await store.fetchTools(server.value.id)
   } else if (tab === 'resources') {
     await store.fetchResources(server.value.id)
+  } else if (tab === 'logs') {
+    await store.fetchLogs(server.value.id)
   }
 })
 
@@ -307,6 +307,28 @@ function getStatusDotClass(status: string) {
     case 'error': return 'bg-red-500'
     default: return 'bg-gray-500'
   }
+}
+
+// Helper functions for log styling
+function getLogLevelColor(level: string) {
+  switch (level) {
+    case 'debug': return 'text-gray-400'
+    case 'info': return 'text-blue-400'
+    case 'warn': return 'text-yellow-400'
+    case 'error': return 'text-red-400'
+    default: return 'text-gray-300'
+  }
+}
+
+function formatTimestamp(timestamp: number) {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 // Uptime Logic
@@ -533,16 +555,19 @@ const updateEnvKey = (oldKey: string, newKey: string) => {
   envKeys.value[newKey] = newKey
 }
 
-const clearLogs = () => {
+const clearLogs = async () => {
   if (server.value) {
-    server.value.logs = []
+    await store.clearLogs(server.value.id)
     ElMessage.success(t('action.logsCleared'))
   }
 }
 
 const copyLogs = () => {
   if (server.value) {
-    navigator.clipboard.writeText(server.value.logs.join('\n'))
+    const logText = server.value.logs.map(log =>
+      `${formatTimestamp(log.timestamp)} [${log.level.toUpperCase()}] ${log.message}`
+    ).join('\n')
+    navigator.clipboard.writeText(logText)
     ElMessage.success(t('action.logsCopied'))
   }
 }

@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { logger } from './logger.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {
@@ -46,17 +47,21 @@ export class CustomStdioClientTransport implements Transport {
     private _readBuffer = new ReadBuffer();
     private _stderrStream: PassThrough | null = null;
     private _serverParams: StdioServerParameters;
+    private _serverName?: string;
 
     public get pid(): number | undefined {
         return this._process?.pid;
     }
-    
+
     public onclose?: () => void;
     public onerror?: (error: Error) => void;
     public onmessage?: (message: JSONRPCMessage) => void;
+    public onstdout?: (data: string) => void;
+    public onstderr?: (data: string) => void;
 
-    constructor(server: StdioServerParameters) {
+    constructor(server: StdioServerParameters, serverName?: string) {
         this._serverParams = server;
+        this._serverName = serverName;
         if (server.stderr === 'pipe') {
             this._stderrStream = new PassThrough();
         }
@@ -71,7 +76,7 @@ export class CustomStdioClientTransport implements Transport {
             this._process = spawn(this._serverParams.command, this._serverParams.args ?? [], {
                 env: { ...process.env, ...this._serverParams.env },
                 stdio: ['pipe', 'pipe', this._serverParams.stderr === 'pipe' ? 'pipe' : (this._serverParams.stderr || 'inherit')],
-                shell: false, 
+                shell: false,
                 windowsHide: true, // Force hide window on Windows
                 cwd: this._serverParams.cwd
             });
@@ -95,6 +100,15 @@ export class CustomStdioClientTransport implements Transport {
             });
 
             this._process.stdout?.on('data', (chunk: Buffer) => {
+                const dataStr = chunk.toString('utf8');
+                // 转发原始 stdout 数据
+                this.onstdout?.(dataStr);
+                if (this._serverName) {
+                    logger.info(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                } else {
+                    logger.info(`[STDOUT] ${dataStr.trim()}`);
+                }
+                // 解析 JSON-RPC 消息
                 this._readBuffer.append(chunk);
                 this.processReadBuffer();
             });
@@ -104,7 +118,29 @@ export class CustomStdioClientTransport implements Transport {
             });
 
             if (this._stderrStream && this._process.stderr) {
-                this._process.stderr.pipe(this._stderrStream);
+                this._process.stderr.on('data', (chunk: Buffer) => {
+                    const dataStr = chunk.toString('utf8');
+                    // 转发原始 stderr 数据
+                    this.onstderr?.(dataStr);
+                    if (this._serverName) {
+                        logger.error(`[${this._serverName}] [STDERR] ${dataStr.trim()}`);
+                    } else {
+                        logger.error(`[STDERR] ${dataStr.trim()}`);
+                    }
+                    // 也可以将 stderr 数据写入 PassThrough 流
+                    this._stderrStream?.write(chunk);
+                });
+            } else if (this._process.stderr) {
+                // 如果 stderr 不是 pipe 模式，直接监听
+                this._process.stderr.on('data', (chunk: Buffer) => {
+                    const dataStr = chunk.toString('utf8');
+                    this.onstderr?.(dataStr);
+                    if (this._serverName) {
+                        logger.error(`[${this._serverName}] [STDERR] ${dataStr.trim()}`);
+                    } else {
+                        logger.error(`[STDERR] ${dataStr.trim()}`);
+                    }
+                });
             }
         });
     }
