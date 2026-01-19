@@ -16,6 +16,7 @@ export default {
     emptySelect: 'Select a server to view details',
     noServerSelected: 'No server selected',
     deleteConfirm: 'Are you sure you want to delete this server?',
+    version: 'Version',
     tabs: {
       config: 'Configuration',
       logs: 'Logs',

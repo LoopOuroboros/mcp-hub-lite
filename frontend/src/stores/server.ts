@@ -31,6 +31,7 @@ export interface Server {
   resources?: any[]
   toolsCount?: number
   resourcesCount?: number
+  version?: string
 }
 
 interface McpServerConfig {
@@ -54,6 +55,7 @@ interface McpStatus {
     resourcesCount: number
     pid?: number
     startTime?: number
+    version?: string
   }
 }
 
@@ -108,7 +110,8 @@ export const useServerStore = defineStore('server', () => {
           startTime: statusInfo?.startTime,
           pid: statusInfo?.pid,
           toolsCount: statusInfo?.toolsCount,
-          resourcesCount: statusInfo?.resourcesCount
+          resourcesCount: statusInfo?.resourcesCount,
+          version: statusInfo?.version
         }
       })
     } catch (e: any) {

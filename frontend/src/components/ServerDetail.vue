@@ -18,6 +18,12 @@
             <span class="font-medium">{{ server.config.transport }}</span>
           </div>
 
+          <!-- Version -->
+          <div v-if="server.version" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+            <span class="opacity-75">{{ $t('serverDetail.version') }}:</span>
+            <span class="font-medium">{{ server.version }}</span>
+          </div>
+
           <!-- PID (Only for stdio) -->
           <div v-if="server.config.transport === 'stdio'" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
             <span class="opacity-75">PID:</span>

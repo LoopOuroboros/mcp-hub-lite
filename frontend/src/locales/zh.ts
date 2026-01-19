@@ -16,6 +16,7 @@ export default {
     emptySelect: '请选择一个服务器以查看详情',
     noServerSelected: '未选择服务器',
     deleteConfirm: '确定要删除此服务器吗？',
+    version: '版本',
     tabs: {
       config: '配置',
       logs: '日志',

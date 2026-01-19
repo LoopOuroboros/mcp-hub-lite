@@ -14,6 +14,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
           { name: 'test-tool', description: 'A test tool', inputSchema: {} }
         ]
       });
+      getServerVersion = vi.fn().mockReturnValue({ version: '1.0.0' });
     }
   };
 });
@@ -58,6 +59,7 @@ describe('McpConnectionManager', () => {
     
     const status = mcpConnectionManager.getStatus(mockServer.id);
     expect(status?.connected).toBe(true);
+    expect(status?.version).toBe('1.0.0');
   });
 
   it('should list tools after connection', async () => {

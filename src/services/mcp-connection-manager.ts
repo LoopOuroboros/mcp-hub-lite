@@ -15,6 +15,7 @@ export interface ServerStatus {
   resourcesCount: number;
   pid?: number;
   startTime?: number;
+  version?: string;
 }
 
 class McpConnectionManager {
@@ -82,13 +83,17 @@ class McpConnectionManager {
         pid = transport.pid;
       }
 
+      // Get server version
+      const serverVersion = client.getServerVersion()?.version;
+
       this.serverStatus.set(server.id, {
         connected: true,
         lastCheck: Date.now(),
         toolsCount: 0,
         resourcesCount: 0,
         pid: pid,
-        startTime: Date.now()
+        startTime: Date.now(),
+        version: serverVersion
       });
 
       logger.info(`Connected to server ${server.name} (${server.type || 'stdio'})`);
