@@ -9,6 +9,7 @@ export interface ServerConfig {
   url?: string
   env?: Record<string, string>
   timeout?: number
+  enabled?: boolean
 }
 
 export interface LogEntry {
@@ -43,6 +44,7 @@ interface McpServerConfig {
   type: string
   url?: string
   timeout?: number
+  enabled?: boolean
 }
 
 interface McpStatus {
@@ -103,7 +105,8 @@ export const useServerStore = defineStore('server', () => {
             args: config.args,
             url: config.url,
             env: config.env,
-            timeout: config.timeout
+            timeout: config.timeout,
+            enabled: config.enabled ?? true
           },
           logs: [], // Logs API not yet available
           uptime: statusInfo?.connected ? 'Active' : undefined,
@@ -132,7 +135,7 @@ export const useServerStore = defineStore('server', () => {
         args: serverData.config?.args,
         env: serverData.config?.env,
         timeout: serverData.config?.timeout,
-        enabled: true,
+        enabled: serverData.config?.enabled ?? true,
         longRunning: true
       }
       await http.post('/web/servers', payload)
@@ -157,6 +160,7 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.env) payload.env = serverData.config.env
         if (serverData.config.url) payload.url = serverData.config.url
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout
+        if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled
       }
       
       console.log('Update server payload:', payload)

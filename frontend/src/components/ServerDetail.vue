@@ -86,6 +86,10 @@
               <el-input-number v-model="timeoutInSeconds" :min="0" :step="1" />
             </el-form-item>
 
+            <el-form-item :label="$t('serverDetail.config.autoStart')">
+               <el-switch v-model="server.config.enabled" />
+            </el-form-item>
+
             <el-form-item :label="$t('serverDetail.config.env')">
                <div class="w-full flex flex-col gap-2">
                  <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full">
@@ -448,7 +452,8 @@ const openEditJson = () => {
   if (!server.value) return
   
   const configObj: any = {
-    env: server.value.config.env || {}
+    env: server.value.config.env || {},
+    enabled: server.value.config.enabled
   }
 
   if (server.value.config.timeout) {
@@ -508,6 +513,10 @@ const saveJsonConfig = async () => {
 
       if (newConfig.timeout !== undefined) {
         updatedConfig.timeout = newConfig.timeout
+      }
+
+      if (newConfig.enabled !== undefined) {
+        updatedConfig.enabled = newConfig.enabled
       }
 
       await store.updateServer(server.value.id, {

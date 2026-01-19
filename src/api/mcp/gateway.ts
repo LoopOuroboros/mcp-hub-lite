@@ -1,152 +1,57 @@
 import { FastifyInstance } from 'fastify';
-import { mcpConnectionManager } from '../../services/mcp-connection-manager.js';
-import { MCPErrorHandler } from '../../utils/mcp-error-handler.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { gateway } from '../../services/gateway.service.js';
+import { logger } from '../../utils/logger.js';
+
+let transport: StreamableHTTPServerTransport | null = null;
 
 /**
- * MCP JSON-RPC 2.0 Gateway endpoint
+ * MCP Gateway endpoint using Streamable HTTP Transport
  * Handles all MCP protocol requests at /mcp endpoint
  */
 export async function mcpGatewayRoutes(fastify: FastifyInstance) {
-  // POST /mcp - Handle JSON-RPC 2.0 requests for MCP protocol
-  fastify.post('/mcp', async (request, reply) => {
-    try {
-      const requestBody = request.body as any;
+  
+  if (!transport) {
+      // Initialize Streamable HTTP Transport
+      // This supports both SSE (GET) and JSON-RPC messages (POST)
+      // It manages sessions internally
+      transport = new StreamableHTTPServerTransport();
+      
+      // Create a dedicated McpServer instance for HTTP transport
+      const server = gateway.createConnectionServer();
+      
+      // Connect server to transport
+      await server.connect(transport);
+      logger.info("MCP Streamable HTTP Transport initialized");
+  }
 
-      // Validate JSON-RPC 2.0 format
-      if (!requestBody.jsonrpc || requestBody.jsonrpc !== '2.0') {
-        return reply.code(400).send({
-          jsonrpc: '2.0',
-          error: {
-            code: -32600,
-            message: 'Invalid Request',
-            data: 'Missing or invalid jsonrpc field'
-          },
-          id: requestBody.id || null
-        });
-      }
-
-      // Route to appropriate MCP handler based on method
-      const { method, params, id } = requestBody;
-
-      switch (method) {
-        case 'initialize':
-          // Handle MCP initialize
-          return await handleInitialize(request, reply, params, id);
-
-        case 'tools/list':
-          // Handle tools listing
-          return await handleToolsList(request, reply, params, id);
-
-        case 'tools/call':
-          // Handle tool execution
-          return await handleToolsCall(request, reply, params, id);
-
-        case 'ping':
-          // Handle ping
-          return await handlePing(request, reply, params, id);
-
-        default:
-          return reply.code(400).send({
-            jsonrpc: '2.0',
-            error: {
-              code: -32601,
-              message: 'Method not found',
-              data: `Unknown method: ${method}`
-            },
-            id
-          });
-      }
-    } catch (error) {
-      const mcpError = MCPErrorHandler.toMCPError(error as Error);
-      return reply.code(500).send({
-        jsonrpc: '2.0',
-        error: mcpError,
-        id: (request.body as any)?.id || null
-      });
-    }
-  });
-}
-
-// Helper functions for MCP methods
-async function handleInitialize(request: any, reply: any, params: any, id: string | number) {
-  // TODO: Implement MCP initialize logic
-  return {
-    jsonrpc: '2.0',
-    result: {
-      serverInfo: {
-        name: 'MCP-HUB-LITE',
-        version: '1.0.0',
-        mcpVersion: '2025-11-25'
-      },
-      capabilities: {
-        tools: {
-          list: true,
-          execute: true
+  // Handle root /mcp endpoint (GET for SSE, POST for messages)
+  fastify.all('/mcp', async (request, reply) => {
+    if (!transport) return reply.code(500).send("Transport not initialized");
+    
+    // Log request summary in one line
+    let logMsg = `MCP Gateway ${request.method} ${request.url}`;
+    if (request.body) {
+        try {
+            const preview = JSON.stringify(request.body);
+            logMsg += ` Body: ${preview}`;
+        } catch (e) {
+            logMsg += ` Body: [Unserializable]`;
         }
-      }
-    },
-    id
-  };
-}
-
-async function handleToolsList(request: any, reply: any, params: any, id: string | number) {
-  try {
-    // Get tools from all connected servers
-    const allTools = mcpConnectionManager.getAllTools();
-    return {
-      jsonrpc: '2.0',
-      result: allTools,
-      id
-    };
-  } catch (error) {
-    const mcpError = MCPErrorHandler.toMCPError(error as Error);
-    // Override message for tool listing context
-    mcpError.message = 'Failed to list tools';
-    return reply.code(500).send({
-      jsonrpc: '2.0',
-      error: mcpError,
-      id
-    });
-  }
-}
-
-async function handleToolsCall(request: any, reply: any, params: any, id: string | number) {
-  try {
-    const { serverId, toolName, arguments: args } = params;
-    if (!serverId || !toolName) {
-      return reply.code(400).send({
-        jsonrpc: '2.0',
-        error: {
-          code: -32602,
-          message: 'Invalid parameters',
-          data: 'Missing serverId or toolName'
-        },
-        id
-      });
     }
+    logger.info(logMsg);
 
-    const result = await mcpConnectionManager.callTool(serverId, toolName, args);
-    return {
-      jsonrpc: '2.0',
-      result,
-      id
-    };
-  } catch (error) {
-    const mcpError = MCPErrorHandler.toMCPError(error as Error);
-    // Override message for tool execution context
-    mcpError.message = 'Failed to execute tool';
-    return reply.code(500).send({
-      jsonrpc: '2.0',
-      error: mcpError,
-      id
-    });
-  }
-}
+    // Pass parsed body if available (Fastify might have consumed the stream)
+    await transport.handleRequest(request.raw, reply.raw, request.body);
+    return reply.hijack();
+  });
 
-async function handlePing(request: any, reply: any, params: any, id: string | number) {
-  return {
-    jsonrpc: '2.0',
-    result: { pong: true },
-    id
-  };
+  // Handle any subpaths if client appends them (e.g. session-specific URLs)
+  fastify.all('/mcp/*', async (request, reply) => {
+    if (!transport) return reply.code(500).send("Transport not initialized");
+
+    // Pass parsed body if available
+    await transport.handleRequest(request.raw, reply.raw, request.body);
+    return reply.hijack();
+  });
 }

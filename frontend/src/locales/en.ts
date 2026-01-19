@@ -33,6 +33,7 @@ export default {
       url: 'URL',
       env: 'Environment Variables',
       timeout: 'Timeout (s)',
+      autoStart: 'Auto-start',
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
       save: 'Save Configuration',

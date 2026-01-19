@@ -33,6 +33,7 @@ export default {
       url: '服务地址',
       env: '环境变量',
       timeout: '超时时间 (秒)',
+      autoStart: '随系统启动',
       addArg: '添加参数',
       addEnv: '添加环境变量',
       save: '保存配置',

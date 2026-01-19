@@ -121,6 +121,11 @@
             "minLength": 1,
             "maxLength": 100
           },
+          "enabled": {
+            "type": "boolean",
+            "description": "是否随系统启动自动连接",
+            "default": true
+          },
           "description": {
             "type": "string",
             "description": "服务器描述",
