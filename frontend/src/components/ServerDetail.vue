@@ -76,6 +76,10 @@
               </el-form-item>
             </template>
 
+            <el-form-item :label="$t('serverDetail.config.timeout')">
+              <el-input-number v-model="timeoutInSeconds" :min="0" :step="1" />
+            </el-form-item>
+
             <el-form-item :label="$t('serverDetail.config.env')">
                <div class="w-full flex flex-col gap-2">
                  <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full">
@@ -227,6 +231,21 @@ const envKeys = ref<Record<string, string>>({})
 const showEditJson = ref(false)
 const jsonConfig = ref('')
 const selectedTool = ref<any>(null)
+
+// Computed property for timeout in seconds
+const timeoutInSeconds = computed({
+  get: () => {
+    if (server.value?.config.timeout) {
+      return server.value.config.timeout / 1000
+    }
+    return 60 // Default 60s
+  },
+  set: (val: number) => {
+    if (server.value) {
+      server.value.config.timeout = val * 1000
+    }
+  }
+})
 
 // Initialize env keys when server changes
 watch(server, (newServer) => {
@@ -403,6 +422,10 @@ const openEditJson = () => {
   const configObj: any = {
     env: server.value.config.env || {}
   }
+
+  if (server.value.config.timeout) {
+    configObj.timeout = server.value.config.timeout
+  }
   
   if (server.value.config.transport === 'stdio') {
     configObj.command = server.value.config.command
@@ -453,6 +476,10 @@ const saveJsonConfig = async () => {
       
       if (newConfig.env) {
         updatedConfig.env = newConfig.env
+      }
+
+      if (newConfig.timeout !== undefined) {
+        updatedConfig.timeout = newConfig.timeout
       }
 
       await store.updateServer(server.value.id, {

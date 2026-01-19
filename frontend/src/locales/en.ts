@@ -31,6 +31,7 @@ export default {
       args: 'Arguments',
       url: 'URL',
       env: 'Environment Variables',
+      timeout: 'Timeout (s)',
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
       save: 'Save Configuration',

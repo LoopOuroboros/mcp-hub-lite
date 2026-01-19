@@ -8,6 +8,7 @@ export interface ServerConfig {
   args?: string[]
   url?: string
   env?: Record<string, string>
+  timeout?: number
 }
 
 export interface Server {
@@ -34,6 +35,7 @@ interface McpServerConfig {
   env?: Record<string, string>
   type: string
   url?: string
+  timeout?: number
 }
 
 interface McpStatus {
@@ -92,7 +94,8 @@ export const useServerStore = defineStore('server', () => {
             command: config.command,
             args: config.args,
             url: config.url,
-            env: config.env
+            env: config.env,
+            timeout: config.timeout
           },
           logs: [], // Logs API not yet available
           uptime: statusInfo?.connected ? 'Active' : undefined,
@@ -119,6 +122,7 @@ export const useServerStore = defineStore('server', () => {
         command: serverData.config?.command,
         args: serverData.config?.args,
         env: serverData.config?.env,
+        timeout: serverData.config?.timeout,
         enabled: true,
         longRunning: true
       }
@@ -143,8 +147,10 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.args) payload.args = serverData.config.args
         if (serverData.config.env) payload.env = serverData.config.env
         if (serverData.config.url) payload.url = serverData.config.url
+        if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout
       }
       
+      console.log('Update server payload:', payload)
       await http.put(`/web/servers/${id}`, payload)
       await fetchServers()
     } catch (e: any) {
