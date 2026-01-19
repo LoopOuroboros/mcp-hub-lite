@@ -57,11 +57,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useServerStore } from '../stores/server'
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue'
 
 const store = useServerStore()
+
+onMounted(() => {
+  if (!store.loading && store.servers.length > 0) {
+    store.fetchAllLogs()
+  }
+})
+
+watch(() => store.loading, (loading) => {
+  if (!loading && store.servers.length > 0) {
+    store.fetchAllLogs()
+  }
+})
 
 const activities = computed(() => {
   const allActivities: any[] = []

@@ -294,7 +294,7 @@ watch(activeTab, async (tab) => {
   } else if (tab === 'logs') {
     await store.fetchLogs(server.value.id)
   }
-})
+}, { immediate: true })
 
 function selectTool(tool: any) {
   selectedTool.value = tool

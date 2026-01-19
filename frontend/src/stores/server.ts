@@ -90,6 +90,8 @@ export const useServerStore = defineStore('server', () => {
         http.get<McpStatus[]>('/web/mcp/status')
       ])
 
+      const existingLogs = new Map(servers.value.map(s => [s.id, s.logs]))
+
       servers.value = configs.map(config => {
         const statusInfo = statuses.find(s => s.id === config.id)?.status
         const status = statusInfo?.connected ? 'running' : (statusInfo?.error ? 'error' : 'stopped')
@@ -108,7 +110,7 @@ export const useServerStore = defineStore('server', () => {
             timeout: config.timeout,
             enabled: config.enabled ?? true
           },
-          logs: [], // Logs API not yet available
+          logs: existingLogs.get(config.id || '') || [],
           uptime: statusInfo?.connected ? 'Active' : undefined,
           startTime: statusInfo?.startTime,
           pid: statusInfo?.pid,
@@ -266,6 +268,12 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
+  async function fetchAllLogs() {
+    await Promise.all(
+      servers.value.map(s => fetchLogs(s.id))
+    )
+  }
+
   return {
     servers,
     loading,
@@ -284,6 +292,7 @@ export const useServerStore = defineStore('server', () => {
     fetchTools,
     fetchResources,
     fetchLogs,
+    fetchAllLogs,
     clearLogs
   }
 })
