@@ -18,6 +18,7 @@ export interface Server {
   config: ServerConfig
   logs: string[]
   uptime?: string
+  startTime?: number
   pid?: number
   tools?: any[]
   resources?: any[]
@@ -44,6 +45,7 @@ interface McpStatus {
     toolsCount: number
     resourcesCount: number
     pid?: number
+    startTime?: number
   }
 }
 
@@ -94,6 +96,7 @@ export const useServerStore = defineStore('server', () => {
           },
           logs: [], // Logs API not yet available
           uptime: statusInfo?.connected ? 'Active' : undefined,
+          startTime: statusInfo?.startTime,
           pid: statusInfo?.pid,
           toolsCount: statusInfo?.toolsCount,
           resourcesCount: statusInfo?.resourcesCount

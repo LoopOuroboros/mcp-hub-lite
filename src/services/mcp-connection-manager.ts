@@ -13,6 +13,7 @@ export interface ServerStatus {
   toolsCount: number;
   resourcesCount: number;
   pid?: number;
+  startTime?: number;
 }
 
 class McpConnectionManager {
@@ -73,7 +74,8 @@ class McpConnectionManager {
         lastCheck: Date.now(),
         toolsCount: 0,
         resourcesCount: 0,
-        pid: pid
+        pid: pid,
+        startTime: Date.now()
       });
 
       logger.info(`Connected to server ${server.name} (${server.type || 'stdio'})`);

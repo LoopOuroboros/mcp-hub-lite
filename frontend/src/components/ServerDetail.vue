@@ -2,15 +2,33 @@
   <div v-if="server" class="server-detail h-full flex flex-col p-6 overflow-hidden transition-colors duration-300">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 shrink-0">
-      <div class="flex items-center gap-4">
+      <div class="flex flex-col items-start gap-2">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ server.name }}</h2>
-        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm transition-colors"
-             :class="getStatusBadgeClass(server.status)">
-          <div class="w-2 h-2 rounded-full" :class="getStatusDotClass(server.status)"></div>
-          {{ $t(`serverDetail.status.${server.status}`) }}
-          <span class="opacity-75">| PID: {{ server.pid || 'N/A' }}</span>
-          <span class="opacity-75">| Uptime: {{ server.uptime || '00:00:00' }}</span>
-          <span class="opacity-75">| {{ $t('serverDetail.config.transport') }}: {{ server.config.transport }}</span>
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Status -->
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm transition-colors border border-transparent"
+               :class="getStatusBadgeClass(server.status)">
+            <div class="w-2 h-2 rounded-full" :class="getStatusDotClass(server.status)"></div>
+            {{ $t(`serverDetail.status.${server.status}`) }}
+          </div>
+
+          <!-- Transport -->
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+            <span class="opacity-75">{{ $t('serverDetail.config.transport') }}:</span>
+            <span class="font-medium">{{ server.config.transport }}</span>
+          </div>
+
+          <!-- PID (Only for stdio) -->
+          <div v-if="server.config.transport === 'stdio'" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+            <span class="opacity-75">PID:</span>
+            <span class="font-mono">{{ server.pid || 'N/A' }}</span>
+          </div>
+
+          <!-- Uptime -->
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+            <span class="opacity-75">Uptime:</span>
+            <span class="font-mono">{{ formattedUptime }}</span>
+          </div>
         </div>
       </div>
       <div class="flex gap-2">
@@ -189,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useServerStore } from '../stores/server'
 import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
@@ -271,6 +289,39 @@ function getStatusDotClass(status: string) {
     default: return 'bg-gray-500'
   }
 }
+
+// Uptime Logic
+const formattedUptime = ref('00:00:00')
+let uptimeInterval: ReturnType<typeof setInterval> | null = null
+
+const updateUptime = () => {
+  if (server.value?.startTime && server.value.status === 'running') {
+    const diff = Math.floor((Date.now() - server.value.startTime) / 1000)
+    if (diff < 0) {
+       formattedUptime.value = '00:00:00'
+       return
+    }
+    const hours = Math.floor(diff / 3600)
+    const minutes = Math.floor((diff % 3600) / 60)
+    const seconds = diff % 60
+    formattedUptime.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  } else {
+    formattedUptime.value = '00:00:00'
+  }
+}
+
+onMounted(() => {
+  uptimeInterval = setInterval(updateUptime, 1000)
+  updateUptime()
+})
+
+onUnmounted(() => {
+  if (uptimeInterval) clearInterval(uptimeInterval)
+})
+
+watch(() => server.value?.startTime, () => {
+  updateUptime()
+})
 
 // Actions
 const restartServer = async () => {
