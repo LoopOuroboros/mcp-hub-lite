@@ -157,6 +157,7 @@ export const useServerStore = defineStore('server', () => {
         url: serverData.config?.url,
         timeout: serverData.config?.timeout,
         enabled: serverData.config?.enabled ?? true,
+        allowedTools: serverData.config?.allowedTools ?? [],
         longRunning: true
       }
 
