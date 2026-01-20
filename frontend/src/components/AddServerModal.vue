@@ -5,6 +5,8 @@
     width="600px"
     class="custom-dialog"
     :before-close="handleClose"
+    append-to-body
+    align-center
   >
     <el-form :model="form" label-position="top">
       <el-form-item :label="$t('addServer.transportType')">
@@ -63,6 +65,14 @@
         </el-form-item>
       </template>
 
+      <el-form-item :label="$t('serverDetail.config.timeout')">
+        <el-input-number v-model="form.timeout" :min="0" :step="10" />
+      </el-form-item>
+      
+      <el-form-item :label="$t('serverDetail.config.autoStart')">
+        <el-switch v-model="form.autoStart" />
+      </el-form-item>
+
       <el-form-item :label="$t('serverDetail.config.env')">
           <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
             <div v-for="(item, index) in envItems" :key="index" class="flex gap-2 w-full" style="display: flex; gap: 0.5rem; width: 100%;">
@@ -81,8 +91,8 @@
       <div class="dialog-footer flex justify-between w-full">
         <el-button @click="showImportJson = true">{{ $t('addServer.byJson') }}</el-button>
         <div>
-          <el-button @click="handleClose">{{ $t('action.cancel') }}</el-button>
-          <el-button type="primary" @click="createServer">{{ $t('action.create') }}</el-button>
+          <el-button @click="handleClose" :disabled="isSubmitting">{{ $t('action.cancel') }}</el-button>
+          <el-button type="primary" @click="createServer" :loading="isSubmitting">{{ $t('action.create') }}</el-button>
         </div>
       </div>
     </template>
@@ -135,7 +145,8 @@ watch(dialogVisible, (val) => {
     showImportJson.value = true
   }
 })
-const jsonConfig = ref('')
+const defaultJsonConfig = `{\n  "mcpServers": {\n  }\n}`
+const jsonConfig = ref(defaultJsonConfig)
 
 const form = ref({
   transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
@@ -143,6 +154,8 @@ const form = ref({
   command: '',
   args: [] as string[],
   url: '',
+  timeout: 60,
+  autoStart: false
 })
 
 const envItems = ref<{key: string, value: string}[]>([])
@@ -178,6 +191,14 @@ function importJson() {
         form.value.transport = 'sse'
       }
       form.value.url = configToUse.url
+    }
+
+    if (configToUse.timeout) {
+      form.value.timeout = configToUse.timeout / 1000
+    }
+    
+    if (configToUse.enabled !== undefined) {
+      form.value.autoStart = configToUse.enabled
     }
 
     if (configToUse.env) {
@@ -221,12 +242,21 @@ function resetForm() {
     name: '',
     command: '',
     args: [],
-    url: ''
+    url: '',
+    timeout: 60,
+    autoStart: false
   }
   envItems.value = []
+  jsonConfig.value = defaultJsonConfig
+  showImportJson.value = false
 }
 
+const isSubmitting = ref(false)
+
 async function createServer() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  
   const env = envItems.value.reduce((acc, item) => {
     if (item.key) acc[item.key] = item.value
     return acc
@@ -242,6 +272,9 @@ async function createServer() {
         command: form.value.command,
         args: form.value.args.filter(a => a),
         url: form.value.url,
+        timeout: form.value.timeout * 1000,
+        enabled: form.value.autoStart,
+        allowedTools: [],
         env
       },
       logs: []
@@ -251,6 +284,8 @@ async function createServer() {
     handleClose()
   } catch (error: any) {
     ElMessage.error(error.message || 'Failed to add server')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>

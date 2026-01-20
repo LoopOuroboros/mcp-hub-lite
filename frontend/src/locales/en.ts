@@ -9,6 +9,17 @@ export default {
   settings: {
     title: 'System Settings',
     save: 'Save Changes',
+    systemTab: 'System',
+    host: 'Host',
+    port: 'Port',
+    appearance: 'Appearance',
+    theme: 'Theme',
+    language: 'Language',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System Default',
+    langEn: 'English',
+    langZh: 'Chinese',
     logging: 'Logging',
     logLevel: 'Log Level',
     logRotation: 'Log Rotation',
@@ -74,7 +85,7 @@ export default {
       schema: 'Schema (JSON)',
       selectHint: 'Select a tool to view details',
       none: 'No tools available',
-      gateway: 'Gateway',
+      aggregated: 'Aggregated',
       call: 'Call'
     },
     resources: {

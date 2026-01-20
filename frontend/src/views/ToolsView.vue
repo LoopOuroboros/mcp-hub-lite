@@ -203,11 +203,11 @@ const groupedTools = computed(() => {
     // Find server name from store
     const server = store.servers.find(s => s.id === result.tool.serverId)
 
-    // Filter by allowedTools if configured (Gateway Logic)
-    if (server && server.config.allowedTools) {
-      if (!server.config.allowedTools.includes(result.tool.name)) {
-        return
-      }
+    // Filter by allowedTools (Aggregated Logic)
+    // If allowedTools is undefined or empty, no tools are aggregated
+    const allowed = server?.config?.allowedTools || []
+    if (!allowed.includes(result.tool.name)) {
+      return
     }
 
     const statusText = server?.status === 'running' ? t('tools.online') : t('tools.offline')

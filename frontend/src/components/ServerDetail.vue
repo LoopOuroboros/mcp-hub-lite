@@ -143,23 +143,13 @@
                   >
                      <div class="min-w-0 flex-1 mr-2">
                         <div class="font-medium truncate">{{ tool.name }}</div>
-                        <div class="text-xs text-gray-500 truncate">{{ tool.description }}</div>
                      </div>
                      <el-switch
-                       :model-value="!server.config.allowedTools || server.config.allowedTools.includes(tool.name)"
+                       :model-value="isToolAllowed(tool.name)"
                        @update:model-value="(val: boolean) => updateToolVisibility(tool.name, val)"
                        class="mr-4"
-                       :active-text="$t('serverDetail.tools.gateway')"
+                       :active-text="$t('serverDetail.tools.aggregated')"
                      />
-                     <el-button 
-                       type="primary" 
-                       size="small" 
-                       plain 
-                       class="opacity-0 group-hover:opacity-100 transition-opacity" 
-                       @click.stop="openCallDialog(tool)"
-                     >
-                       {{ $t('serverDetail.tools.call') }}
-                     </el-button>
                   </div>
                </div>
                <div v-else class="text-gray-500 text-sm italic">
@@ -340,6 +330,16 @@ function openCallDialog(tool: any) {
   showCallDialog.value = true
 }
 
+function isToolAllowed(toolName: string) {
+  if (!server.value?.config) return false
+  const allowed = server.value.config.allowedTools
+  if (allowed === undefined || allowed === null) return false
+  if (Array.isArray(allowed)) {
+    return allowed.includes(toolName)
+  }
+  return false
+}
+
 // Helper functions for status styling
 function getStatusBadgeClass(status: string) {
   switch (status) {
@@ -478,38 +478,14 @@ const deleteServer = async () => {
 const updateToolVisibility = async (toolName: string, enabled: boolean) => {
   if (!server.value) return
 
-  // Logic: 
-  // If allowedTools is undefined, it implies ALL are enabled.
-  // If we disable one, we must materialize the list of ALL OTHER tools as allowed.
-  // If allowedTools is defined, we just add/remove.
+  let currentAllowed = server.value.config.allowedTools || []
 
-  const allTools = server.value.tools?.map((t: any) => t.name) || []
-  let currentAllowed = server.value.config.allowedTools
-
-  // Initialize if undefined (Transition from "All" to "Explicit List")
-  if (!currentAllowed) {
-    if (enabled) {
-       // It was already effectively enabled (since undefined = all), so do nothing?
-       // But user clicked switch ON? Maybe they want to explicitly whitelist this one and disable others?
-       // No, switch behavior is "Toggle State". If it shows ON, and I click ON again? 
-       // Switch emits change only when value changes.
-       // If it shows ON (because undefined), and user clicks it, it becomes OFF (enabled=false).
-       // So we enter the `else` block.
-       return 
-    } else {
-       // User wants to DISABLE this tool.
-       // We must whitelist all others.
-       currentAllowed = allTools.filter(t => t !== toolName)
+  if (enabled) {
+    if (!currentAllowed.includes(toolName)) {
+      currentAllowed = [...currentAllowed, toolName]
     }
   } else {
-    // List exists
-    if (enabled) {
-      if (!currentAllowed.includes(toolName)) {
-        currentAllowed = [...currentAllowed, toolName]
-      }
-    } else {
-      currentAllowed = currentAllowed.filter(t => t !== toolName)
-    }
+    currentAllowed = currentAllowed.filter((t: string) => t !== toolName)
   }
 
   // Optimistic update

@@ -9,6 +9,17 @@ export default {
   settings: {
     title: '系统设置',
     save: '保存更改',
+    systemTab: '系统',
+    host: '主机地址',
+    port: '端口号',
+    appearance: '外观设置',
+    theme: '主题',
+    language: '语言',
+    themeLight: '浅色',
+    themeDark: '深色',
+    themeSystem: '跟随系统',
+    langEn: 'English',
+    langZh: '中文',
     logging: '日志设置',
     logLevel: '日志级别',
     logRotation: '日志轮转',
@@ -74,7 +85,7 @@ export default {
       schema: '参数 Schema (JSON)',
       selectHint: '请选择一个工具以查看详情',
       none: '暂无可用工具',
-      gateway: '网关',
+      aggregated: '聚合',
       call: '调用'
     },
     resources: {

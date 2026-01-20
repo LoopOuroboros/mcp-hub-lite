@@ -1,5 +1,6 @@
 import { ConfigManager, configManager, McpServerConfig } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
+import { mcpConnectionManager } from './mcp-connection-manager.js';
 
 export class HubManagerService {
   private configManager: ConfigManager;
@@ -19,6 +20,16 @@ export class HubManagerService {
   async addServer(server: Partial<McpServerConfig> & Omit<McpServerConfig, 'id'>): Promise<McpServerConfig> {
     const newServer = await this.configManager.addServer(server as McpServerConfig);
     logger.info(`Server added: [${newServer.id}]`);
+    
+    // Auto-connect if enabled
+    if (newServer.enabled !== false) {
+      try {
+        await mcpConnectionManager.connect(newServer);
+      } catch (error) {
+        logger.error(`Failed to auto-connect server ${newServer.id}:`, error);
+      }
+    }
+    
     return newServer;
   }
 

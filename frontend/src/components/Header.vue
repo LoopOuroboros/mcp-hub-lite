@@ -82,6 +82,7 @@ import { useI18n } from 'vue-i18n'
 import { useTheme, type Theme } from '../composables/useTheme'
 import { useServerStore } from '../stores/server'
 import { Sunny, Moon, Monitor, ArrowDown, ElementPlus } from '@element-plus/icons-vue'
+import { http } from '../utils/http'
 
 const { locale } = useI18n()
 const { theme, setTheme } = useTheme()
@@ -93,12 +94,22 @@ const isDashboardActive = computed(() => route.name === 'dashboard' && !store.se
 const isToolsActive = computed(() => route.name === 'tools')
 const isSettingsActive = computed(() => route.name === 'settings')
 
+const updateSystemConfig = async (updates: Record<string, any>) => {
+  try {
+    await http.put('/web/config', updates);
+  } catch (error) {
+    console.error('Failed to sync system config:', error);
+  }
+}
+
 const handleThemeCommand = (command: string) => {
   setTheme(command as Theme)
+  updateSystemConfig({ theme: command })
 }
 
 const handleLangCommand = (command: string) => {
   locale.value = command
+  updateSystemConfig({ language: command })
 }
 
 const navigateTo = (name: string) => {

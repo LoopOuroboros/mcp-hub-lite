@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow h-full">
+  <div 
+    class="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer"
+    @click="$emit('call')"
+  >
     <div class="min-w-0 mb-3">
       <div class="flex items-center gap-2 mb-2">
         <span class="font-bold text-gray-900 dark:text-gray-100 font-mono text-base truncate" :title="title">
@@ -16,11 +19,6 @@
       <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2" :title="description">
         {{ description || $t('tools.noDescription') }}
       </p>
-    </div>
-    <div class="flex justify-end mt-auto">
-      <el-button plain size="small" class="w-full" @click="$emit('call')">
-        {{ $t('tools.call') }}
-      </el-button>
     </div>
   </div>
 </template>

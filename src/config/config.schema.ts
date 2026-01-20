@@ -83,6 +83,8 @@ export const SystemConfigSchema = z.object({
   version: z.string().default('1.0.0'),
   host: z.string().default('localhost'),
   port: z.number().default(7788),
+  language: z.enum(['zh', 'en']).default('zh'),
+  theme: z.enum(['light', 'dark', 'system']).default('system'),
   logging: LoggingConfigSchema,
   security: SecurityConfigSchema,
   servers: z.array(McpServerConfigSchema).default([])
