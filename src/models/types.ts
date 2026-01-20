@@ -104,7 +104,7 @@ export type CMDSuccess<T = unknown> = {
 };
 
 // 错误响应 - 使用错误层级码
-export type CMDError<T = null> = {
+export type CMDError = {
   code: AllErrorCodes;
   message: string;
   data: null;

@@ -9,7 +9,7 @@ import { McpServerConfigSchema } from '../../config/config.schema.js';
  */
 export async function webServerRoutes(fastify: FastifyInstance) {
   // GET /web/servers
-  fastify.get('/web/servers', async (request, reply) => {
+  fastify.get('/web/servers', async () => {
     return hubManager.getAllServers();
   });
 

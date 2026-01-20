@@ -103,7 +103,7 @@ export class StdioTransport implements Transport {
                 resolve();
             });
 
-            this._process.on('close', (code: number) => {
+            this._process.on('close', (_code: number) => {
                 this._process = undefined;
                 this.onclose?.();
             });

@@ -18,7 +18,7 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   // GET /web/servers/:id/logs - Get logs for a specific server
   fastify.get<{ Params: { id: string }; Querystring: z.infer<typeof logQuerySchema> }>(
     '/web/servers/:id/logs',
-    async (request, reply) => {
+    async (request) => {
       const { id } = request.params;
       const query = logQuerySchema.parse(request.query);
 
@@ -85,7 +85,7 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /web/servers/:id/logs - Clear logs for a specific server
-  fastify.delete<{ Params: { id: string } }>('/web/servers/:id/logs', async (request, reply) => {
+  fastify.delete<{ Params: { id: string } }>('/web/servers/:id/logs', async (request) => {
     const { id } = request.params;
     logStorage.clearLogs(id);
     return {
@@ -98,7 +98,7 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   // GET /web/logs - Get all logs from all servers
   fastify.get<{ Querystring: z.infer<typeof logQuerySchema> }>(
     '/web/logs',
-    async (request, reply) => {
+    async (request) => {
       const query = logQuerySchema.parse(request.query);
 
       const servers = logStorage.getServersWithLogs();
@@ -122,7 +122,7 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   // GET /web/servers/:id/logs/count - Get log count for a specific server
   fastify.get<{ Params: { id: string }; Querystring: { level?: string } }>(
     '/web/servers/:id/logs/count',
-    async (request, reply) => {
+    async (request) => {
       const { id } = request.params;
       const { level } = request.query;
 

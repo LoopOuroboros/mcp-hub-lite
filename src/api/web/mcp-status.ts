@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger.js';
  */
 export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   // GET /web/mcp/status - Get status of all MCP servers
-  fastify.get('/web/mcp/status', async (request, reply) => {
+  fastify.get('/web/mcp/status', async (_request, reply) => {
     try {
       const servers = hubManager.getAllServers();
       const statusList = servers.map(server => ({

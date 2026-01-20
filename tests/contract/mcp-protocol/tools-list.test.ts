@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
 import { hubManager } from '../../../src/services/hub-manager.service.js';
 

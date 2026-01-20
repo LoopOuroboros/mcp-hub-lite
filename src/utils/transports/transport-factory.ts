@@ -3,7 +3,6 @@ import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { Transport, ServerTransportConfig } from './transport.interface.js';
-import { logger } from '../../utils/logger.js';
 
 /**
  * 传输工厂 - 根据服务器配置创建相应的传输客户端

@@ -53,7 +53,7 @@ export class SseTransport implements Transport {
         }
       };
 
-      this.eventSource.onerror = (event) => {
+      this.eventSource.onerror = (_event) => {
         const error = new Error(`SSE connection error for ${this.url}`);
         logger.error('SSE connection error:', error);
 
@@ -101,7 +101,7 @@ export class SseTransport implements Transport {
     }
   }
 
-  async send(message: JSONRPCMessage): Promise<void> {
+  async send(_message: JSONRPCMessage): Promise<void> {
     // SSE is unidirectional (server to client only)
     // For bidirectional communication, we need a separate HTTP endpoint
     // This is a limitation of SSE protocol

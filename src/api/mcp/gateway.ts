@@ -28,7 +28,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
   // Handle root /mcp endpoint (GET for SSE, POST for messages)
   fastify.all('/mcp', {
     bodyLimit: 10 * 1024 * 1024, // 10MB limit
-    preHandler: (request, reply, done) => {
+    preHandler: (request, _reply, done) => {
       // Ensure we don't parse the body for SSE (GET) requests
       if (request.method === 'GET') {
         request.body = null;
@@ -65,7 +65,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
   // Handle any subpaths if client appends them (e.g. session-specific URLs)
   fastify.all('/mcp/*', {
     bodyLimit: 10 * 1024 * 1024, // 10MB limit
-    preHandler: (request, reply, done) => {
+    preHandler: (request, _reply, done) => {
       // Ensure we don't parse the body for SSE (GET) requests
       if (request.method === 'GET') {
         request.body = null;

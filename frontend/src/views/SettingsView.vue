@@ -179,87 +179,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Check, Document, Lock, Setting, Sunny, Moon, Monitor } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { http } from '../utils/http';
 import { useTheme } from '../composables/useTheme';
+import { useSystemStore } from '../stores/system';
+import { storeToRefs } from 'pinia';
 
 const { t, locale } = useI18n();
 const { theme, setTheme } = useTheme();
-const loading = ref(true);
+const systemStore = useSystemStore();
+const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
 const activeTab = ref('system');
-
-interface Config {
-  host: string;
-  port: number;
-  language: string;
-  theme: string;
-  logging: {
-    level: string;
-    rotation: {
-      enabled: boolean;
-      maxAge: string;
-      maxSize: string;
-      compress: boolean;
-    };
-  };
-  security: {
-    allowedNetworks: string[];
-    maxConcurrentConnections: number;
-    connectionTimeout: number;
-    idleConnectionTimeout: number;
-    maxConnections: number;
-  };
-  // other fields are preserved but not edited here
-  [key: string]: any;
-}
-
-const config = ref<Config>({
-  host: 'localhost',
-  port: 7788,
-  language: 'zh',
-  theme: 'system',
-  logging: {
-    level: 'info',
-    rotation: {
-      enabled: true,
-      maxAge: '7d',
-      maxSize: '100MB',
-      compress: false
-    }
-  },
-  security: {
-    allowedNetworks: [],
-    maxConcurrentConnections: 50,
-    connectionTimeout: 30000,
-    idleConnectionTimeout: 300000,
-    maxConnections: 50
-  }
-});
-
-watch(() => config.value.theme, (newTheme) => {
-  if (newTheme && newTheme !== theme.value) setTheme(newTheme as any);
-});
-
-watch(() => config.value.language, (newLang) => {
-  if (newLang && newLang !== locale.value) locale.value = newLang;
-});
-
-// Sync from global state to local config (e.g. when changed in Header)
-watch(theme, (newTheme) => {
-  if (config.value.theme !== newTheme) {
-    config.value.theme = newTheme;
-  }
-});
-
-watch(locale, (newLang) => {
-  if (config.value.language !== newLang) {
-    config.value.language = newLang as string;
-  }
-});
 
 const maxAgeDays = computed({
     get: () => {
@@ -324,46 +257,16 @@ const maxAgeDays = computed({
   });
  
   onMounted(async () => {
-  await fetchConfig();
-});
-
-async function fetchConfig() {
-  loading.value = true;
-  try {
-    const data = await http.get<Config>('/web/config');
-    // Sync local state with loaded config, preserving defaults if fields are missing
-    config.value = {
-      ...config.value,
-      ...data,
-      // Ensure nested objects are merged correctly
-      logging: {
-        ...config.value.logging,
-        ...(data.logging || {}),
-        rotation: {
-          ...config.value.logging.rotation,
-          ...(data.logging?.rotation || {})
-        }
-      },
-      security: {
-        ...config.value.security,
-        ...(data.security || {})
-      }
-    };
-    
-    // Sync local state with loaded config
-    if (data.theme) setTheme(data.theme as any);
-    if (data.language) locale.value = data.language;
-  } catch (error: any) {
-    ElMessage.error(t('settings.fetchError') + ': ' + error.message);
-  } finally {
-    loading.value = false;
+  // Config is already fetched by App.vue usually
+  if (!config.value.host) {
+    await systemStore.fetchConfig();
   }
-}
+});
 
 async function saveConfig() {
   saving.value = true;
   try {
-    await http.put('/web/config', config.value);
+    await systemStore.updateConfig(config.value);
     ElMessage.success(t('settings.saveSuccess'));
   } catch (error: any) {
     ElMessage.error(t('settings.saveError') + ': ' + error.message);

@@ -83,8 +83,8 @@ const activities = computed(() => {
       allActivities.push({
         serverName: server.name,
         serverStatus: server.status,
-        message: log,
-        time: new Date().toLocaleTimeString(), 
+        message: log.message,
+        time: formatTimestamp(log.timestamp), 
         originalIndex: idx
       })
     })
@@ -93,11 +93,21 @@ const activities = computed(() => {
   return allActivities.reverse()
 })
 
+function formatTimestamp(timestamp: number) {
+  const date = new Date(timestamp)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+  return `${hours}:${minutes}:${seconds}.${milliseconds}`
+}
+
 function getStatusIcon(status: string) {
   switch (status) {
     case 'running': return VideoPlay
     case 'stopped': return CircleClose
     case 'error': return Warning
+    case 'starting': return Warning
     default: return CircleClose
   }
 }
@@ -107,6 +117,7 @@ function getStatusColor(status: string) {
     case 'running': return 'text-green-500'
     case 'stopped': return 'text-gray-400'
     case 'error': return 'text-yellow-500'
+    case 'starting': return 'text-yellow-500'
     default: return 'text-gray-400'
   }
 }

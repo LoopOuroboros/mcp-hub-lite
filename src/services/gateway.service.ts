@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
 import { logger } from "../utils/logger.js";
@@ -53,8 +53,7 @@ export class GatewayService {
       jsonrpc: z.literal('2.0')
     });
 
-    server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
-      const { clientInfo = { name: "unknown-client", version: "1.0.0" }, capabilities } = request.params || {};
+    server.server.setRequestHandler(InitializeRequestSchema, async () => {
       return {
         protocolVersion: "2024-11-05",
         serverInfo: {
@@ -315,12 +314,25 @@ export class GatewayService {
 
       // Add system tools
       const systemTools = hubToolsService.getSystemTools();
+      const usedNames = new Set<string>();
+
       for (const tool of systemTools) {
         gatewayTools.push({
           name: tool.name,
           description: `[System] ${tool.description}`,
           inputSchema: tool.inputSchema
         });
+        usedNames.add(tool.name);
+      }
+
+      // First pass: Count tool name frequencies to determine uniqueness
+      const toolNameCounts = new Map<string, number>();
+      for (const tool of allTools) {
+        const serverConfig = hubManager.getServerById(tool.serverId);
+        if (serverConfig?.allowedTools && !serverConfig.allowedTools.includes(tool.name)) {
+          continue;
+        }
+        toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
       }
 
       for (const tool of allTools) {
@@ -331,9 +343,43 @@ export class GatewayService {
           }
 
           const serverName = serverConfig ? serverConfig.name : tool.serverId;
-          const safeServerName = serverName.replace(/[^a-zA-Z0-9]/g, '_');
+          
+          let gatewayToolName = tool.name;
+          const isUnique = toolNameCounts.get(tool.name) === 1;
+          const isSystemConflict = usedNames.has(tool.name);
 
-          const gatewayToolName = `${safeServerName}_${tool.name}`;
+          // If tool name is not unique or conflicts with system tool, append server hash
+          if (!isUnique || isSystemConflict) {
+              // serverConfig.hash is guaranteed by ConfigManager for all configured servers
+              const hash = serverConfig?.hash || 'xxxx'; 
+              gatewayToolName = `${tool.name}_${hash}`;
+          }
+
+          // Ensure name doesn't exceed 60 chars
+          if (gatewayToolName.length > 60) {
+              const hash = serverConfig?.hash || 'xxxx';
+              // Reserve space for hash and separator
+              const maxToolNameLen = 60 - hash.length - 1; 
+              const truncatedToolName = tool.name.substring(0, maxToolNameLen);
+              gatewayToolName = `${truncatedToolName}_${hash}`;
+          }
+
+          // Final uniqueness check (in case of hash collision or previous renaming conflict)
+          let finalName = gatewayToolName;
+          let counter = 1;
+          while (usedNames.has(finalName)) {
+              const suffix = `_${counter}`;
+              if (gatewayToolName.length + suffix.length > 60) {
+                  const availableLen = 60 - suffix.length;
+                  finalName = gatewayToolName.substring(0, availableLen) + suffix;
+              } else {
+                  finalName = gatewayToolName + suffix;
+              }
+              counter++;
+          }
+          gatewayToolName = finalName;
+
+          usedNames.add(gatewayToolName);
 
           toolMap.set(gatewayToolName, {
               serverId: tool.serverId,

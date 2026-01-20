@@ -29,7 +29,7 @@
           :key="server.id"
           class="server-card group relative p-3 rounded-xl border transition-all duration-200 cursor-pointer"
           :class="[
-            isServerSelected(server.id)
+            isServerSelected()
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-800' 
               : 'bg-white dark:bg-[#2a374a] border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm'
           ]"
@@ -125,6 +125,7 @@ function getStatusIcon(status: string) {
     case 'running': return VideoPlay
     case 'stopped': return CircleClose
     case 'error': return Warning
+    case 'starting': return Warning
     default: return Warning
   }
 }
@@ -134,6 +135,7 @@ function getStatusColor(status: string) {
     case 'running': return 'text-green-500'
     case 'stopped': return 'text-gray-400'
     case 'error': return 'text-red-500'
+    case 'starting': return 'text-yellow-500'
     default: return 'text-gray-400'
   }
 }
@@ -143,6 +145,7 @@ function getStatusIconBgClass(status: string) {
     case 'running': return 'bg-green-100 dark:bg-green-900/30'
     case 'stopped': return 'bg-gray-100 dark:bg-gray-800'
     case 'error': return 'bg-red-100 dark:bg-red-900/30'
+    case 'starting': return 'bg-yellow-100 dark:bg-yellow-900/30'
     default: return 'bg-gray-100 dark:bg-gray-800'
   }
 }
@@ -152,6 +155,7 @@ function getStatusTextColor(status: string) {
     case 'running': return 'text-green-600 dark:text-green-400'
     case 'stopped': return 'text-gray-500 dark:text-gray-400'
     case 'error': return 'text-red-600 dark:text-red-400'
+    case 'starting': return 'text-yellow-600 dark:text-yellow-400'
     default: return 'text-gray-500 dark:text-gray-400'
   }
 }

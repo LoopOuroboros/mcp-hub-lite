@@ -9,6 +9,8 @@ export const McpServerConfigSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1).max(100),
   description: z.string().optional(),
+  timestamp: z.number().optional(),
+  hash: z.string().optional(),
   command: z.string().optional(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),

@@ -11,18 +11,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import Header from './components/Header.vue'
 import { useTheme } from './composables/useTheme'
+import { useSystemStore } from './stores/system'
 
 const { locale } = useI18n()
-const { theme } = useTheme()
+const { theme, setTheme } = useTheme()
+const systemStore = useSystemStore()
 
 const elLocale = computed(() => {
   return locale.value === 'zh' ? zhCn : en
+})
+
+onMounted(async () => {
+  await systemStore.fetchConfig()
+  
+  // Apply initial config
+  if (systemStore.config.language) {
+    locale.value = systemStore.config.language
+  }
+  if (systemStore.config.theme) {
+    setTheme(systemStore.config.theme as any)
+  }
+})
+
+// Watch for store changes to sync global state
+watch(() => systemStore.config.theme, (newTheme) => {
+  if (newTheme && newTheme !== theme.value) {
+    setTheme(newTheme as any)
+  }
+})
+
+watch(() => systemStore.config.language, (newLang) => {
+  if (newLang && newLang !== locale.value) {
+    locale.value = newLang
+  }
 })
 </script>
 

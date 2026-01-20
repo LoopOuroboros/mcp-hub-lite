@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Define mocks first
 const mocks = vi.hoisted(() => ({
@@ -67,15 +66,12 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 
 // Import after mocks
 import { GatewayService } from '../../../src/services/gateway.service.js';
-import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
-import { hubManager } from '../../../src/services/hub-manager.service.js';
 
 describe('GatewayService', () => {
-  let gateway: GatewayService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    gateway = new GatewayService();
+    new GatewayService();
   });
 
   it('should register handlers on initialization', () => {

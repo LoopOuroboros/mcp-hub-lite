@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Mock } from 'vitest';
 import { HubToolsService } from '../../../src/services/hub-tools.service.js';
 import { hubManager } from '../../../src/services/hub-manager.service.js';
 import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
@@ -113,7 +112,7 @@ describe('HubToolsService', () => {
       ];
 
       // Spy on and mock the instance method
-      const listServersSpy = vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('server', 'name', false);
@@ -167,7 +166,7 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const listServersSpy = vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('Server', 'name', true);
@@ -267,7 +266,7 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const listAllToolsInServerSpy = vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
+      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
         serverId,
         tools: mockTools
@@ -331,7 +330,7 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const listAllToolsInServerSpy = vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
+      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
         serverId,
         tools: mockTools
@@ -360,7 +359,7 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const listAllToolsInServerSpy = vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
+      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
         serverId,
         tools: mockTools
@@ -459,11 +458,6 @@ describe('HubToolsService', () => {
   describe('findTools', () => {
     it('should find tools matching pattern across all servers', async () => {
       // Arrange
-      const mockServers = [
-        { id: '1', name: 'Server 1' },
-        { id: '2', name: 'Server 2' }
-      ];
-
       const mockTools = {
         'Server 1': {
           serverId: '1',
@@ -498,7 +492,7 @@ describe('HubToolsService', () => {
         }
       };
 
-      const listAllToolsSpy = vi.spyOn(hubToolsService, 'listAllTools').mockResolvedValue(mockTools);
+      vi.spyOn(hubToolsService, 'listAllTools').mockResolvedValue(mockTools);
 
       // Act
       const results = await hubToolsService.findTools('File', 'both', false);

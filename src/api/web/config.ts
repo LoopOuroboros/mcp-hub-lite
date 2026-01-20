@@ -8,7 +8,7 @@ import { configManager } from '../../config/config-manager.js';
 
 export async function configRoutes(fastify: FastifyInstance) {
   // GET /web/config - 获取当前配置
-  fastify.get('/web/config', async (request, reply) => {
+  fastify.get('/web/config', async (_request, reply) => {
     try {
       const config = configManager.getConfig();
       return reply.send(config);
@@ -35,7 +35,7 @@ export async function configRoutes(fastify: FastifyInstance) {
   });
 
   // POST /web/config/export - 导出配置
-  fastify.post('/web/config/export', async (request, reply) => {
+  fastify.post('/web/config/export', async (_request, reply) => {
     try {
       const config = configManager.getConfig();
       reply.header('Content-Disposition', 'attachment; filename=mcp-hub-config.json');

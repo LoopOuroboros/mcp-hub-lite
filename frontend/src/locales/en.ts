@@ -97,7 +97,8 @@ export default {
     status: {
       running: 'Running',
       stopped: 'Stopped',
-      error: 'Error'
+      error: 'Error',
+      starting: 'Starting'
     }
   },
   addServer: {

@@ -1,5 +1,4 @@
-import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { CMDError, AllErrorCodes } from '../models/types.js';
+import { CMDError } from '../models/types.js';
 
 // Define MCPError interface to match the specification
 export interface MCPError {

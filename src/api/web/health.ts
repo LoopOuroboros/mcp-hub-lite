@@ -6,7 +6,7 @@ import { FastifyInstance } from 'fastify';
  */
 export async function webHealthRoutes(fastify: FastifyInstance) {
   // GET /web/health
-  fastify.get('/web/health', async (request, reply) => {
+  fastify.get('/web/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 }

@@ -346,6 +346,7 @@ function getStatusBadgeClass(status: string) {
     case 'running': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
     case 'stopped': return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
     case 'error': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    case 'starting': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
     default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
   }
 }
@@ -355,6 +356,7 @@ function getStatusDotClass(status: string) {
     case 'running': return 'bg-green-500'
     case 'stopped': return 'bg-gray-500'
     case 'error': return 'bg-red-500'
+    case 'starting': return 'bg-yellow-500'
     default: return 'bg-gray-500'
   }
 }
@@ -378,7 +380,8 @@ function formatTimestamp(timestamp: number) {
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`
 }
 
 // Uptime Logic

@@ -22,7 +22,7 @@ export interface LogEntry {
 export interface Server {
   id: string
   name: string
-  status: 'running' | 'stopped' | 'error'
+  status: 'running' | 'stopped' | 'error' | 'starting'
   type: 'local' | 'remote'
   config: ServerConfig
   logs: LogEntry[]
@@ -98,7 +98,18 @@ export const useServerStore = defineStore('server', () => {
 
       servers.value = configs.map(config => {
         const statusInfo = statuses.find(s => s.id === config.id)?.status
-        const status = statusInfo?.connected ? 'running' : (statusInfo?.error ? 'error' : 'stopped')
+        // 根据 config.enabled 和 statusInfo 来判断状态
+        let status: 'running' | 'stopped' | 'error' | 'starting'
+        if (statusInfo?.connected) {
+          status = 'running'
+        } else if (statusInfo?.error) {
+          status = 'error'
+        } else if (config.enabled) {
+          // 如果配置为 enabled 但尚未连接，显示为 starting
+          status = 'starting'
+        } else {
+          status = 'stopped'
+        }
 
         return {
           id: config.id || '',
@@ -148,8 +159,25 @@ export const useServerStore = defineStore('server', () => {
         enabled: serverData.config?.enabled ?? true,
         longRunning: true
       }
-      await http.post('/web/servers', payload)
-      await fetchServers()
+
+      // 发送 POST 请求添加服务器
+      const response = await http.post('/web/servers', payload)
+
+      // 如果启用了自动启动，立即更新状态为 starting，提供更好的用户体验
+      if (payload.enabled) {
+        await fetchServers() // 先获取服务器列表以获取新服务器的 ID
+        const newServer = servers.value.find(s => s.name === payload.name)
+        if (newServer) {
+          updateServerStatus(newServer.id, 'starting')
+
+          // 等待连接完成（使用 setTimeout 避免阻塞 UI）
+          setTimeout(async () => {
+            await fetchServers() // 再次获取服务器状态，确保显示最终状态
+          }, 1000)
+        }
+      } else {
+        await fetchServers()
+      }
     } catch (e: any) {
       error.value = e.message || 'Failed to add server'
       throw e
@@ -187,10 +215,14 @@ export const useServerStore = defineStore('server', () => {
 
   async function startServer(id: string) {
     try {
+      // 立即更新状态为 starting，提供更好的用户体验
+      updateServerStatus(id, 'starting')
       await http.post(`/web/mcp/servers/${id}/connect`, {})
       await fetchServers()
     } catch (e: any) {
       error.value = e.message || 'Failed to start server'
+      // 失败时更新为 error 状态
+      updateServerStatus(id, 'error')
       throw e
     }
   }
@@ -218,7 +250,7 @@ export const useServerStore = defineStore('server', () => {
      }
   }
 
-  function updateServerStatus(id: string, status: 'running' | 'stopped' | 'error') {
+  function updateServerStatus(id: string, status: 'running' | 'stopped' | 'error' | 'starting') {
     const server = servers.value.find(s => s.id === id)
     if (server) {
       server.status = status

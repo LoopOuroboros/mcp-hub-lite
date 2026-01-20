@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
 import { simpleSearchService } from '../../../src/services/simple-search.service.js';
-import { configManager } from '../../../src/config/config-manager.js';
 
 // Mock SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {

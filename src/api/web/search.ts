@@ -17,7 +17,7 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
       limit?: number;
       offset?: number;
     }
-  }>('/web/search', async (request, reply) => {
+  }>('/web/search', async (request) => {
     const { q, serverId, tags, status, limit, offset } = request.query;
 
     // Parse search options
@@ -68,7 +68,7 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
   });
 
   // GET /web/search/health - Search service health check (for monitoring)
-  fastify.get('/web/search/health', async (request, reply) => {
+  fastify.get('/web/search/health', async () => {
     return {
       status: 'healthy',
       timestamp: new Date().toISOString(),

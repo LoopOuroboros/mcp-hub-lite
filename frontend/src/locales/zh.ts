@@ -97,7 +97,8 @@ export default {
     status: {
       running: '运行中',
       stopped: '已停止',
-      error: '错误'
+      error: '错误',
+      starting: '启动中'
     }
   },
   addServer: {

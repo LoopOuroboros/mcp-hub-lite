@@ -155,7 +155,7 @@ const form = ref({
   args: [] as string[],
   url: '',
   timeout: 60,
-  autoStart: false
+  autoStart: true
 })
 
 const envItems = ref<{key: string, value: string}[]>([])
@@ -244,7 +244,7 @@ function resetForm() {
     args: [],
     url: '',
     timeout: 60,
-    autoStart: false
+    autoStart: true
   }
   envItems.value = []
   jsonConfig.value = defaultJsonConfig
