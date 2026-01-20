@@ -1,5 +1,5 @@
 import { McpServerConfig } from '../../config/config.schema.js';
-import { CustomStdioClientTransport } from '../custom-stdio-transport.js';
+import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { Transport, ServerTransportConfig } from './transport.interface.js';
@@ -23,7 +23,7 @@ export class TransportFactory {
         if (!transportConfig.command) {
           throw new Error('STDIO transport requires a command');
         }
-        return new CustomStdioClientTransport({
+        return new StdioTransport({
           command: transportConfig.command,
           args: transportConfig.args,
           env: transportConfig.env,

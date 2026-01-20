@@ -71,6 +71,20 @@ npx vitest tests/integration/gateway/mcp-connection.test.ts
 
 配置文件: `vitest.config.ts`
 
+```typescript
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      all: true
+    }
+  }
+});
+```
+
 ## 依赖关系
 
 ```
@@ -78,7 +92,6 @@ integration/
 ├── api/
 │   └── gateway.test.ts
 │       └── tests: src/api/mcp/gateway.ts
-│
 └── gateway/
     ├── fault-tolerance.test.ts
     │   └── tests: src/services/gateway.service.ts
@@ -100,6 +113,10 @@ integration/
 
 A: `npx vitest tests/integration/`
 
+### Q: 如何生成覆盖率报告？
+
+A: `npx vitest --coverage tests/integration/`
+
 ### Q: 集成测试和单元测试的区别？
 
 A: 集成测试测试多个组件之间的交互，需要模拟或使用真实的依赖组件。
@@ -117,6 +134,9 @@ A: 使用 `beforeEach` 和 `afterEach` 钩子设置和清理测试环境。
 | `integration/gateway/mcp-connection.test.ts` | MCP 连接测试 |
 
 ## 变更记录 (Changelog)
+
+### 2026-01-20
+- 更新 Integration Tests 模块文档
 
 ### 2026-01-19
 - 初始化 Integration Tests 模块文档

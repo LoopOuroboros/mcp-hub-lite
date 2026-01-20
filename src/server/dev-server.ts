@@ -3,6 +3,9 @@ import { configManager } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
 import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
 
+// Enable dev logging to file
+logger.enableDevLog();
+
 async function startDevServer() {
   try {
     const app = await buildApp();

@@ -10,6 +10,7 @@ export interface ServerConfig {
   env?: Record<string, string>
   timeout?: number
   enabled?: boolean
+  allowedTools?: string[]
 }
 
 export interface LogEntry {
@@ -45,6 +46,7 @@ interface McpServerConfig {
   url?: string
   timeout?: number
   enabled?: boolean
+  allowedTools?: string[]
 }
 
 interface McpStatus {
@@ -91,6 +93,8 @@ export const useServerStore = defineStore('server', () => {
       ])
 
       const existingLogs = new Map(servers.value.map(s => [s.id, s.logs]))
+      const existingTools = new Map(servers.value.map(s => [s.id, s.tools]))
+      const existingResources = new Map(servers.value.map(s => [s.id, s.resources]))
 
       servers.value = configs.map(config => {
         const statusInfo = statuses.find(s => s.id === config.id)?.status
@@ -108,9 +112,12 @@ export const useServerStore = defineStore('server', () => {
             url: config.url,
             env: config.env,
             timeout: config.timeout,
-            enabled: config.enabled ?? true
+            enabled: config.enabled ?? true,
+            allowedTools: config.allowedTools
           },
           logs: existingLogs.get(config.id || '') || [],
+          tools: existingTools.get(config.id || ''),
+          resources: existingResources.get(config.id || ''),
           uptime: statusInfo?.connected ? 'Active' : undefined,
           startTime: statusInfo?.startTime,
           pid: statusInfo?.pid,
@@ -136,6 +143,7 @@ export const useServerStore = defineStore('server', () => {
         command: serverData.config?.command,
         args: serverData.config?.args,
         env: serverData.config?.env,
+        url: serverData.config?.url,
         timeout: serverData.config?.timeout,
         enabled: serverData.config?.enabled ?? true,
         longRunning: true
@@ -163,6 +171,7 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.url) payload.url = serverData.config.url
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout
         if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled
+        if (serverData.config.allowedTools !== undefined) payload.allowedTools = serverData.config.allowedTools
       }
       
       console.log('Update server payload:', payload)

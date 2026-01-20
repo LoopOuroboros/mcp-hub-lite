@@ -24,6 +24,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
           }
         ]
       });
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Contract Test Server', version: '1.0.0' });
       callTool = vi.fn().mockImplementation(async (request) => {
         if (request.name === 'calculator') {
           const expr = request.arguments?.expression;

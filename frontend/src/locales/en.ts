@@ -3,7 +3,29 @@ export default {
     title: 'MCP Server Manager',
     dashboard: 'Dashboard',
     servers: 'MCP Servers',
-    addServer: 'Add New Server'
+    addServer: 'Add New Server',
+    settings: 'Settings'
+  },
+  settings: {
+    title: 'System Settings',
+    save: 'Save Changes',
+    logging: 'Logging',
+    logLevel: 'Log Level',
+    logRotation: 'Log Rotation',
+    enableRotation: 'Enable Rotation',
+    maxAge: 'Max Age (Days)',
+    maxSize: 'Max Size',
+    compress: 'Compress Archived Logs',
+    security: 'Security',
+    allowedNetworks: 'Allowed Networks',
+    allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',
+    maxConcurrentConnections: 'Max Concurrent Connections',
+    maxConnections: 'Max Connections',
+    connectionTimeout: 'Connection Timeout',
+    idleConnectionTimeout: 'Idle Connection Timeout',
+    fetchError: 'Failed to fetch configuration',
+    saveSuccess: 'Configuration saved successfully',
+    saveError: 'Failed to save configuration'
   },
   dashboard: {
     title: 'Dashboard',
@@ -46,11 +68,14 @@ export default {
       copied: 'Logs copied to clipboard'
     },
     tools: {
+      title: 'Tool Discovery',
       available: 'Available Tools',
       details: 'Tool Details',
       schema: 'Schema (JSON)',
       selectHint: 'Select a tool to view details',
-      none: 'No tools available'
+      none: 'No tools available',
+      gateway: 'Gateway',
+      call: 'Call'
     },
     resources: {
       name: 'Name',
@@ -109,24 +134,9 @@ export default {
     aggregatedTools: 'Aggregated Server Tools',
     noToolsFound: 'No tools found. Connect some servers to get started.',
     call: 'Call',
-    detailsCall: 'Details / Call',
     noDescription: 'No description provided',
     systemTag: 'System',
     online: 'Online',
-    offline: 'Offline',
-    systemToolsList: {
-      listServers: {
-        name: 'list_mcp_servers',
-        description: 'List all backend MCP servers currently connected to this gateway.'
-      },
-      searchTools: {
-        name: 'search_aggregated_tools',
-        description: 'Search for tools across all connected servers based on a query string.'
-      },
-      callTool: {
-        name: 'call_tool_generic',
-        description: 'Invokes a specific tool on a target server with provided arguments.'
-      }
-    }
+    offline: 'Offline'
   }
 }

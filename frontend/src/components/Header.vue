@@ -24,6 +24,13 @@
         >
           {{ $t('tools.title') }}
         </button>
+        <button 
+          @click="navigateTo('settings')"
+          class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+          :class="[isSettingsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
+        >
+          {{ $t('sidebar.settings') }}
+        </button>
       </nav>
     </div>
 
@@ -84,6 +91,7 @@ const route = useRoute()
 
 const isDashboardActive = computed(() => route.name === 'dashboard' && !store.selectedServerId)
 const isToolsActive = computed(() => route.name === 'tools')
+const isSettingsActive = computed(() => route.name === 'settings')
 
 const handleThemeCommand = (command: string) => {
   setTheme(command as Theme)

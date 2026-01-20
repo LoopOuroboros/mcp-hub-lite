@@ -6,6 +6,7 @@ import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
 import { configManager } from '../config/config-manager.js';
 import { logStorage } from './log-storage.service.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 export interface ServerStatus {
   connected: boolean;
@@ -29,13 +30,12 @@ class McpConnectionManager {
    * Gets server name by ID with fallback to ID if not found
    */
   private getServerName(serverId: string): string {
-    const server = configManager.getServerById(serverId);
-    return server ? `${server.name} (${serverId})` : serverId;
+    return `[${serverId}]`;
   }
 
   public async connect(server: McpServerConfig): Promise<boolean> {
     try {
-      logger.info(`Connecting to server ${server.name} (${server.id || 'unknown'})...`);
+      logger.info(`Connecting to server [${server.id || 'unknown'}]...`);
 
       // Validate server configuration
       if (!server.id) {
@@ -84,7 +84,8 @@ class McpConnectionManager {
       }
 
       // Get server version
-      const serverVersion = client.getServerVersion()?.version;
+      const serverInfo = client.getServerVersion();
+      const serverVersion = serverInfo?.version || serverInfo?.name;
 
       this.serverStatus.set(server.id, {
         connected: true,
@@ -96,7 +97,7 @@ class McpConnectionManager {
         version: serverVersion
       });
 
-      logger.info(`Connected to server ${server.name} (${server.type || 'stdio'})`);
+      logger.info(`Connected to server [${server.id}]`);
 
       // Fetch tools and resources immediately (only for bidirectional transports)
       if (server.type !== 'sse') {

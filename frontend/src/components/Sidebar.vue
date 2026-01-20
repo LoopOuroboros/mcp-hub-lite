@@ -3,7 +3,10 @@
     <!-- Server List Area -->
     <div class="p-4 flex-1 overflow-y-auto custom-scrollbar">
       <div class="flex items-center justify-between mb-4 px-1">
-        <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('sidebar.servers') }}</div>
+        <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          {{ $t('sidebar.servers') }}
+          <span v-if="store.servers.length" class="ml-1 text-gray-400">({{ store.servers.length }})</span>
+        </div>
       </div>
       
       <div v-if="store.loading && store.servers.length === 0" class="space-y-3">

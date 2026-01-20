@@ -12,6 +12,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
       close = vi.fn().mockResolvedValue(undefined);
       listTools = mockListTools;
       callTool = vi.fn();
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Test Server', version: '1.0.0' });
     }
   };
 });

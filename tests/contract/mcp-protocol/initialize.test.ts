@@ -36,11 +36,21 @@ describe('MCP Protocol Contract - initialize', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/mcp',
-      payload: requestBody
+      payload: requestBody,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
+      }
     });
 
+    console.log('Response status:', response.statusCode);
+    console.log('Response body:', response.body);
     expect(response.statusCode).toBe(200);
-    const responseBody = response.json();
+
+    // Parse SSE response format: "event: message\ndata: {json}"
+    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
+    expect(dataMatch).toBeDefined();
+    const responseBody = JSON.parse(dataMatch![1]);
 
     // Verify JSON-RPC 2.0 compliance
     expect(responseBody).toHaveProperty('jsonrpc');
@@ -76,11 +86,19 @@ describe('MCP Protocol Contract - initialize', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/mcp',
-      payload: invalidRequest
+      payload: invalidRequest,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
+      }
     });
 
     expect(response.statusCode).toBe(200);
-    const responseBody = response.json();
+
+    // Parse SSE response format: "event: message\ndata: {json}"
+    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
+    expect(dataMatch).toBeDefined();
+    const responseBody = JSON.parse(dataMatch![1]);
 
     // Should have result (not error) - our implementation handles empty params
     expect(responseBody).toHaveProperty('result');
@@ -97,11 +115,19 @@ describe('MCP Protocol Contract - initialize', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/mcp',
-      payload: pingRequest
+      payload: pingRequest,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
+      }
     });
 
     expect(response.statusCode).toBe(200);
-    const responseBody = response.json();
+
+    // Parse SSE response format: "event: message\ndata: {json}"
+    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
+    expect(dataMatch).toBeDefined();
+    const responseBody = JSON.parse(dataMatch![1]);
 
     expect(responseBody).toHaveProperty('jsonrpc', '2.0');
     expect(responseBody).toHaveProperty('id', 'ping-1');

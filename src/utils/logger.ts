@@ -13,20 +13,26 @@ export class Logger {
 
     // 检查是否启用了开发日志文件
     if (process.env.DEV_LOG_FILE) {
-      const logDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-      }
-      const logFile = path.join(logDir, 'dev-server.log');
-
-      // 开发模式下清空日志文件，避免过期日志干扰
-      if (fs.existsSync(logFile)) {
-        fs.truncateSync(logFile, 0);
-      }
-
-      this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
-      console.log(`[DEV LOG] Writing logs to: ${logFile} (cleared on startup)`);
+      this.enableDevLog();
     }
+  }
+
+  public enableDevLog() {
+    if (this.logFileStream) return;
+
+    const logDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    const logFile = path.join(logDir, 'dev-server.log');
+
+    // 开发模式下清空日志文件，避免过期日志干扰
+    if (fs.existsSync(logFile)) {
+      fs.truncateSync(logFile, 0);
+    }
+
+    this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
+    console.log(`[DEV LOG] Writing logs to: ${logFile} (cleared on startup)`);
   }
 
   public setUseStderr(use: boolean) {

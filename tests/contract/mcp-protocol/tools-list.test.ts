@@ -35,6 +35,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
           }
         ]
       });
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Contract Test Server', version: '1.0.0' });
     }
   };
 });

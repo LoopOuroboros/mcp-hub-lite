@@ -14,7 +14,8 @@ services/
 ├── gateway.service.ts         # MCP Gateway 网关服务
 ├── simple-search.service.ts   # 简化搜索服务
 ├── mcp-connection-manager.ts # MCP 连接管理器
-└── log-storage.service.ts      # 日志存储服务
+├── log-storage.service.ts      # 日志存储服务
+└── hub-tools.service.ts       # 系统工具服务
 ```
 
 ## 核心服务
@@ -93,6 +94,36 @@ services/
 - `getLogs(serverId, limit)` - 获取日志
 - `clearLogs(serverId)` - 清除日志
 
+### HubToolsService (`hub-tools.service.ts`)
+
+**职责**: 提供系统工具和服务器管理工具的统一接口
+
+**主要系统工具**:
+- `list-servers` - 列出所有连接的服务器
+- `find-servers` - 查找匹配模式的服务器
+- `list-all-tools-in-server` - 列出特定服务器的所有工具
+- `find-tools-in-server` - 在特定服务器中查找匹配模式的工具
+- `get-tool` - 获取特定工具的完整 schema
+- `call-tool` - 调用特定服务器上的工具
+- `find-tools` - 在所有服务器中查找匹配模式的工具
+
+**主要方法**:
+- `getSystemTools()` - 获取系统工具列表
+- `listServers()` - 获取服务器列表
+- `findServers(pattern, searchIn, caseSensitive)` - 查找服务器
+- `listAllToolsInServer(serverId)` - 列出服务器所有工具
+- `findToolsInServer(serverId, pattern, searchIn, caseSensitive)` - 查找服务器中的工具
+- `getTool(serverId, toolName)` - 获取工具 schema
+- `callTool(serverId, toolName, toolArgs)` - 调用工具
+- `listAllTools()` - 列出所有服务器的所有工具
+- `findTools(pattern, searchIn, caseSensitive)` - 查找所有工具
+
+**优化说明**: 已将所有方法中的 serverName 参数替换为 serverId，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销。
+
+**依赖**:
+- `hubManager` - 服务器管理器
+- `mcpConnectionManager` - MCP 连接管理器
+
 ## 依赖关系
 
 ```
@@ -112,7 +143,11 @@ services/
 │   ├── depends on: hub-manager.service.ts
 │   └── depends on: utils/transports/
 │
-└── log-storage.service.ts
+├── log-storage.service.ts
+│
+└── hub-tools.service.ts
+    ├── depends on: hub-manager.service.ts
+    └── depends on: mcp-connection-manager.ts
 ```
 
 ## 数据模型
@@ -167,8 +202,13 @@ A: 在 `utils/transports/` 目录下实现新的 Transport 类，然后在 `mcp-
 | `services/simple-search.service.ts` | 搜索服务 |
 | `services/mcp-connection-manager.ts` | 连接管理器 |
 | `services/log-storage.service.ts` | 日志存储服务 |
+| `services/hub-tools.service.ts` | 系统工具服务 |
 
 ## 变更记录 (Changelog)
+
+### 2026-01-20
+- 添加 HubToolsService 文档
+- 优化 HubTools 调用逻辑，使用 serverId 替代 serverName，避免查找开销
 
 ### 2026-01-19
 - 初始化 Services 模块文档

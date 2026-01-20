@@ -3,7 +3,29 @@ export default {
     title: 'MCP 服务器管理器',
     dashboard: '仪表盘',
     servers: 'MCP 服务器',
-    addServer: '添加新服务器'
+    addServer: '添加新服务器',
+    settings: '系统设置'
+  },
+  settings: {
+    title: '系统设置',
+    save: '保存更改',
+    logging: '日志设置',
+    logLevel: '日志级别',
+    logRotation: '日志轮转',
+    enableRotation: '启用轮转',
+    maxAge: '最大保留时间 (天)',
+    maxSize: '最大文件大小',
+    compress: '压缩归档日志',
+    security: '安全设置',
+    allowedNetworks: '允许的网络',
+    allowedNetworksHint: '输入 IP CIDR (如 192.168.1.0/24)。按回车添加。',
+    maxConcurrentConnections: '最大并发连接数',
+    maxConnections: '最大连接数',
+    connectionTimeout: '连接超时',
+    idleConnectionTimeout: '空闲连接超时',
+    fetchError: '获取配置失败',
+    saveSuccess: '配置保存成功',
+    saveError: '保存配置失败'
   },
   dashboard: {
     title: '仪表盘',
@@ -46,11 +68,14 @@ export default {
       copied: '日志已复制到剪贴板'
     },
     tools: {
+      title: '工具发现',
       available: '可用工具',
       details: '工具详情',
       schema: '参数 Schema (JSON)',
       selectHint: '请选择一个工具以查看详情',
-      none: '暂无可用工具'
+      none: '暂无可用工具',
+      gateway: '网关',
+      call: '调用'
     },
     resources: {
       name: '名称',
@@ -110,24 +135,9 @@ export default {
     aggregatedTools: '聚合服务器工具',
     noToolsFound: '未找到工具。请连接一些服务器以开始使用。',
     call: '调用',
-    detailsCall: '详情 / 调用',
     noDescription: '未提供描述',
     systemTag: '系统',
     online: '在线',
-    offline: '离线',
-    systemToolsList: {
-      listServers: {
-        name: 'list_mcp_servers',
-        description: '列出当前连接到此网关的所有后端 MCP 服务器。'
-      },
-      searchTools: {
-        name: 'search_aggregated_tools',
-        description: '基于查询字符串跨所有连接的服务器搜索工具。'
-      },
-      callTool: {
-        name: 'call_tool_generic',
-        description: '使用提供的参数调用目标服务器上的特定工具。'
-      }
-    }
+    offline: '离线'
   }
 }

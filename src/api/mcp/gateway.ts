@@ -26,32 +26,64 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
   }
 
   // Handle root /mcp endpoint (GET for SSE, POST for messages)
-  fastify.all('/mcp', async (request, reply) => {
-    if (!transport) return reply.code(500).send("Transport not initialized");
-    
-    // Log request summary in one line
-    let logMsg = `MCP Gateway ${request.method} ${request.url}`;
-    if (request.body) {
-        try {
-            const preview = JSON.stringify(request.body);
-            logMsg += ` Body: ${preview}`;
-        } catch (e) {
-            logMsg += ` Body: [Unserializable]`;
-        }
-    }
-    logger.info(logMsg);
+  fastify.all('/mcp', {
+    bodyLimit: 10 * 1024 * 1024, // 10MB limit
+    preHandler: (request, reply, done) => {
+      // Ensure we don't parse the body for SSE (GET) requests
+      if (request.method === 'GET') {
+        request.body = null;
+      }
+      done();
+    },
+    handler: async (request, reply) => {
+      if (!transport) return reply.code(500).send("Transport not initialized");
 
-    // Pass parsed body if available (Fastify might have consumed the stream)
-    await transport.handleRequest(request.raw, reply.raw, request.body);
-    return reply.hijack();
+      // Log request summary in one line
+      let logMsg = `MCP Gateway ${request.method} ${request.url}`;
+      if (request.body) {
+          try {
+              const preview = JSON.stringify(request.body);
+              logMsg += ` Body: ${preview}`;
+          } catch (e) {
+              logMsg += ` Body: [Unserializable]`;
+          }
+      }
+      logger.info(logMsg);
+
+      // Set default Content-Type and Accept headers for JSON-RPC
+      reply.header('Content-Type', 'application/json');
+      if (!request.headers['accept']) {
+        request.headers['accept'] = 'application/json, text/event-stream';
+      }
+
+      // Pass parsed body to transport
+      await transport.handleRequest(request.raw, reply.raw, request.body);
+      return reply.hijack();
+    }
   });
 
   // Handle any subpaths if client appends them (e.g. session-specific URLs)
-  fastify.all('/mcp/*', async (request, reply) => {
-    if (!transport) return reply.code(500).send("Transport not initialized");
+  fastify.all('/mcp/*', {
+    bodyLimit: 10 * 1024 * 1024, // 10MB limit
+    preHandler: (request, reply, done) => {
+      // Ensure we don't parse the body for SSE (GET) requests
+      if (request.method === 'GET') {
+        request.body = null;
+      }
+      done();
+    },
+    handler: async (request, reply) => {
+      if (!transport) return reply.code(500).send("Transport not initialized");
 
-    // Pass parsed body if available
-    await transport.handleRequest(request.raw, reply.raw, request.body);
-    return reply.hijack();
+      // Set default Content-Type and Accept headers for JSON-RPC
+      reply.header('Content-Type', 'application/json');
+      if (!request.headers['accept']) {
+        request.headers['accept'] = 'application/json, text/event-stream';
+      }
+
+      // Pass parsed body to transport
+      await transport.handleRequest(request.raw, reply.raw, request.body);
+      return reply.hijack();
+    }
   });
 }

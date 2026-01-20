@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger } from './logger.js';
+import { logger } from '../../utils/logger.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {
@@ -42,7 +42,7 @@ export interface StdioServerParameters {
     cwd?: string;
 }
 
-export class CustomStdioClientTransport implements Transport {
+export class StdioTransport implements Transport {
     private _process?: any;
     private _readBuffer = new ReadBuffer();
     private _stderrStream: PassThrough | null = null;
@@ -69,11 +69,24 @@ export class CustomStdioClientTransport implements Transport {
 
     async start(): Promise<void> {
         if (this._process) {
-            throw new Error('StdioClientTransport already started!');
+            throw new Error('StdioTransport already started!');
+        }
+
+        let command = this._serverParams.command;
+        let args = this._serverParams.args ?? [];
+        
+        // Windows compatibility: Batch files (npx, npm, etc.) need cmd.exe /c to run with shell: false
+        if (process.platform === 'win32') {
+             const knownBatchCommands = ['npx', 'npm', 'pnpm', 'yarn', 'uvx'];
+             if (knownBatchCommands.includes(command) || command.endsWith('.cmd') || command.endsWith('.bat')) {
+                 // Use cmd.exe /c to execute the batch file
+                 args = ['/c', command, ...args];
+                 command = 'cmd.exe';
+             }
         }
 
         return new Promise((resolve, reject) => {
-            this._process = spawn(this._serverParams.command, this._serverParams.args ?? [], {
+            this._process = spawn(command, args, {
                 env: { ...process.env, ...this._serverParams.env },
                 stdio: ['pipe', 'pipe', this._serverParams.stderr === 'pipe' ? 'pipe' : (this._serverParams.stderr || 'inherit')],
                 shell: false,

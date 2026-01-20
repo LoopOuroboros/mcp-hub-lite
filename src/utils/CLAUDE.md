@@ -101,7 +101,7 @@ export interface McpTransport {
 
 **适用场景**: 支持流式响应的 HTTP MCP 服务器
 
-### Custom Stdio Transport (`custom-stdio-transport.ts`)
+### Stdio Transport (`transports/stdio-transport.ts`)
 
 **职责**: 自定义标准输入输出传输
 
@@ -124,13 +124,13 @@ utils/
 ├── log-rotator.ts        # 无依赖
 ├── port-checker.ts        # 无依赖
 ├── mcp-error-handler.ts    # 无依赖
-├── custom-stdio-transport.ts
-│   └── depends on: @modelcontextprotocol/sdk
 └── transports/
     ├── transport.interface.ts      # 无依赖
     ├── transport-factory.ts      # 依赖其他 transport
     ├── sse-transport.ts        # 依赖 transport.interface.ts
-    └── streamable-http-transport.ts  # 依赖 transport.interface.ts
+    ├── streamable-http-transport.ts  # 依赖 transport.interface.ts
+    └── stdio-transport.ts
+        └── depends on: @modelcontextprotocol/sdk
 ```
 
 ## 测试与质量
@@ -162,7 +162,7 @@ A: 在配置文件中设置 `logging.rotation` 相关参数，或使用环境变
 | `utils/log-rotator.ts` | 日志轮转 |
 | `utils/port-checker.ts` | 端口检查 |
 | `utils/mcp-error-handler.ts` | MCP 错误处理 |
-| `utils/custom-stdio-transport.ts` | 自定义 Stdio 传输 |
+| `utils/transports/stdio-transport.ts` | 自定义 Stdio 传输 |
 | `utils/transports/transport.interface.ts` | 传输接口 |
 | `utils/transports/transport-factory.ts` | 传输工厂 |
 | `utils/transports/sse-transport.ts` | SSE 传输 |

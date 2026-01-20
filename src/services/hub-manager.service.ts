@@ -16,9 +16,9 @@ export class HubManagerService {
     return this.configManager.getServers().find((s: any) => s.id === id);
   }
 
-  async addServer(server: McpServerConfig): Promise<McpServerConfig> {
-    const newServer = await this.configManager.addServer(server);
-    logger.info(`Server added: ${newServer.name} (${newServer.id})`);
+  async addServer(server: Partial<McpServerConfig> & Omit<McpServerConfig, 'id'>): Promise<McpServerConfig> {
+    const newServer = await this.configManager.addServer(server as McpServerConfig);
+    logger.info(`Server added: [${newServer.id}]`);
     return newServer;
   }
 

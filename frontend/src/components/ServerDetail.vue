@@ -137,12 +137,29 @@
                   <div 
                     v-for="tool in server.tools" 
                     :key="tool.name"
-                    class="p-3 rounded-lg cursor-pointer transition-colors"
+                    class="p-3 rounded-lg cursor-pointer transition-colors flex items-center justify-between group"
                     :class="selectedTool?.name === tool.name ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'"
                     @click="selectTool(tool)"
                   >
-                     <div class="font-medium">{{ tool.name }}</div>
-                     <div class="text-xs text-gray-500 truncate">{{ tool.description }}</div>
+                     <div class="min-w-0 flex-1 mr-2">
+                        <div class="font-medium truncate">{{ tool.name }}</div>
+                        <div class="text-xs text-gray-500 truncate">{{ tool.description }}</div>
+                     </div>
+                     <el-switch
+                       :model-value="!server.config.allowedTools || server.config.allowedTools.includes(tool.name)"
+                       @update:model-value="(val: boolean) => updateToolVisibility(tool.name, val)"
+                       class="mr-4"
+                       :active-text="$t('serverDetail.tools.gateway')"
+                     />
+                     <el-button 
+                       type="primary" 
+                       size="small" 
+                       plain 
+                       class="opacity-0 group-hover:opacity-100 transition-opacity" 
+                       @click.stop="openCallDialog(tool)"
+                     >
+                       {{ $t('serverDetail.tools.call') }}
+                     </el-button>
                   </div>
                </div>
                <div v-else class="text-gray-500 text-sm italic">
@@ -152,7 +169,12 @@
             
             <!-- Tool Details -->
             <div class="flex-1 overflow-y-auto pl-2">
-               <h3 class="font-bold mb-4">{{ $t('serverDetail.tools.details') }}: {{ selectedTool?.name || '' }}</h3>
+               <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-bold">{{ $t('serverDetail.tools.details') }}: {{ selectedTool?.name || '' }}</h3>
+                  <el-button v-if="selectedTool" type="primary" size="small" @click="showCallDialog = true">
+                    {{ $t('serverDetail.tools.call') }}
+                  </el-button>
+               </div>
                <div v-if="selectedTool">
                   <p class="mb-4 text-gray-600 dark:text-gray-300">{{ selectedTool.description }}</p>
                   
@@ -198,20 +220,30 @@
       v-model="showEditJson"
       title="Edit JSON Config"
       width="600px"
-      append-to-body
-      class="custom-dialog"
     >
       <el-input
         v-model="jsonConfig"
         type="textarea"
         :rows="15"
-        placeholder='{ "mcpServers": { "name": { "command": "...", ... } } }'
+        font-family="monospace"
       />
       <template #footer>
-        <el-button @click="showEditJson = false">Cancel</el-button>
-        <el-button type="primary" @click="saveJsonConfig">Update</el-button>
+        <span class="dialog-footer">
+          <el-button @click="showEditJson = false">{{ $t('action.cancel') }}</el-button>
+          <el-button type="primary" @click="saveJsonConfig">{{ $t('action.save') }}</el-button>
+        </span>
       </template>
     </el-dialog>
+
+    <!-- Tool Call Dialog -->
+    <ToolCallDialog
+      v-if="selectedTool"
+      v-model="showCallDialog"
+      :server-id="server.id"
+      :tool-name="selectedTool.name"
+      :description="selectedTool.description"
+      :input-schema="selectedTool.inputSchema"
+    />
   </div>
   <div v-else class="h-full flex items-center justify-center text-gray-400">
     {{ $t('serverDetail.noServerSelected') }}
@@ -221,6 +253,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useServerStore } from '../stores/server'
+import ToolCallDialog from './ToolCallDialog.vue'
 import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -239,6 +272,7 @@ const envKeys = ref<Record<string, string>>({})
 const showEditJson = ref(false)
 const jsonConfig = ref('')
 const selectedTool = ref<any>(null)
+const showCallDialog = ref(false)
 
 // Computed property for timeout in seconds
 const timeoutInSeconds = computed({
@@ -269,6 +303,7 @@ watch(server, (newServer) => {
 watch(() => server.value?.id, (newId, oldId) => {
   if (newId && newId !== oldId) {
     activeTab.value = server.value?.status === 'running' ? 'logs' : 'config'
+    selectedTool.value = null
   }
 }, { immediate: true })
 
@@ -298,6 +333,11 @@ watch(activeTab, async (tab) => {
 
 function selectTool(tool: any) {
   selectedTool.value = tool
+}
+
+function openCallDialog(tool: any) {
+  selectedTool.value = tool
+  showCallDialog.value = true
 }
 
 // Helper functions for status styling
@@ -432,6 +472,56 @@ const deleteServer = async () => {
         ElMessage.error(e.message || 'Failed to delete server')
       }
     }
+  }
+}
+
+const updateToolVisibility = async (toolName: string, enabled: boolean) => {
+  if (!server.value) return
+
+  // Logic: 
+  // If allowedTools is undefined, it implies ALL are enabled.
+  // If we disable one, we must materialize the list of ALL OTHER tools as allowed.
+  // If allowedTools is defined, we just add/remove.
+
+  const allTools = server.value.tools?.map((t: any) => t.name) || []
+  let currentAllowed = server.value.config.allowedTools
+
+  // Initialize if undefined (Transition from "All" to "Explicit List")
+  if (!currentAllowed) {
+    if (enabled) {
+       // It was already effectively enabled (since undefined = all), so do nothing?
+       // But user clicked switch ON? Maybe they want to explicitly whitelist this one and disable others?
+       // No, switch behavior is "Toggle State". If it shows ON, and I click ON again? 
+       // Switch emits change only when value changes.
+       // If it shows ON (because undefined), and user clicks it, it becomes OFF (enabled=false).
+       // So we enter the `else` block.
+       return 
+    } else {
+       // User wants to DISABLE this tool.
+       // We must whitelist all others.
+       currentAllowed = allTools.filter(t => t !== toolName)
+    }
+  } else {
+    // List exists
+    if (enabled) {
+      if (!currentAllowed.includes(toolName)) {
+        currentAllowed = [...currentAllowed, toolName]
+      }
+    } else {
+      currentAllowed = currentAllowed.filter(t => t !== toolName)
+    }
+  }
+
+  // Optimistic update
+  server.value.config.allowedTools = currentAllowed
+
+  try {
+    await store.updateServer(server.value.id, {
+      config: server.value.config
+    })
+    ElMessage.success(t('action.configSaved'))
+  } catch (e: any) {
+    ElMessage.error(e.message)
   }
 }
 

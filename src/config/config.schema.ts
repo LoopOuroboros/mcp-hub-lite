@@ -9,7 +9,7 @@ export const McpServerConfigSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  command: z.string(),
+  command: z.string().optional(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().default(true),
@@ -17,7 +17,8 @@ export const McpServerConfigSchema = z.object({
   type: z.enum(['stdio', 'sse', 'streamable-http']).default('stdio'),
   longRunning: z.boolean().default(true),
   timeout: z.number().default(60000),
-  url: z.string().optional()
+  url: z.string().optional(),
+  allowedTools: z.array(z.string()).optional()
 });
 
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
