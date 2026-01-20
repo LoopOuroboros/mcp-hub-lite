@@ -333,7 +333,7 @@ function openCallDialog(tool: any) {
 function isToolAllowed(toolName: string) {
   if (!server.value?.config) return false
   const allowed = server.value.config.allowedTools
-  if (allowed === undefined || allowed === null) return false
+  if (allowed === undefined || allowed === null) return true
   if (Array.isArray(allowed)) {
     return allowed.includes(toolName)
   }
@@ -481,7 +481,18 @@ const deleteServer = async () => {
 const updateToolVisibility = async (toolName: string, enabled: boolean) => {
   if (!server.value) return
 
-  let currentAllowed = server.value.config.allowedTools || []
+  let currentAllowed = server.value.config.allowedTools
+
+  // If allowedTools is undefined, it means "All Allowed".
+  // When modifying, we must convert this implicit "All" to an explicit list of all tools
+  // so that removing one tool works as expected (all others remain allowed).
+  if (currentAllowed === undefined || currentAllowed === null) {
+    if (server.value.tools) {
+      currentAllowed = server.value.tools.map((t: any) => t.name)
+    } else {
+      currentAllowed = []
+    }
+  }
 
   if (enabled) {
     if (!currentAllowed.includes(toolName)) {
