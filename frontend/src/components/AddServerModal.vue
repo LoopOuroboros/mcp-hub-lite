@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import { useServerStore } from '../stores/server'
 import { ElMessage } from 'element-plus'
@@ -131,6 +132,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
+const { t } = useI18n()
 const store = useServerStore()
 
 const dialogVisible = computed({
@@ -209,9 +211,9 @@ function importJson() {
     }
 
     showImportJson.value = false
-    ElMessage.success('Configuration imported successfully')
+    ElMessage.success(t('action.configImported'))
   } catch (e: any) {
-    ElMessage.error('Invalid JSON configuration: ' + e.message)
+    ElMessage.error(t('error.invalidJsonConfig') + ': ' + e.message)
   }
 }
 
@@ -280,10 +282,10 @@ async function createServer() {
       logs: []
     })
     
-    ElMessage.success('Server added successfully')
+    ElMessage.success(t('action.serverAdded'))
     handleClose()
   } catch (error: any) {
-    ElMessage.error(error.message || 'Failed to add server')
+    ElMessage.error(error.message || t('error.addServerFailed'))
   } finally {
     isSubmitting.value = false
   }

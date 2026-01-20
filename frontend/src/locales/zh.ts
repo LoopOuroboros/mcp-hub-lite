@@ -129,7 +129,9 @@ export default {
     configSaved: '配置已保存',
     serverDeleted: '服务器已删除',
     logsCleared: '日志已清空',
-    logsCopied: '日志已复制到剪贴板'
+    logsCopied: '日志已复制到剪贴板',
+    serverAdded: '服务器添加成功',
+    configImported: '配置导入成功'
   },
   error: {
     stdioCommandRequired: 'STDIO 服务器需要有效的命令',
@@ -138,6 +140,8 @@ export default {
     unsupportedTransportType: '不支持的传输类型',
     connectionFailed: '连接服务器失败',
     invalidServerConfig: '服务器配置无效',
+    addServerFailed: '添加服务器失败',
+    invalidJsonConfig: '无效的 JSON 配置',
     unknown: '发生未知错误'
   },
   tools: {

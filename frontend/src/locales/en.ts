@@ -129,7 +129,9 @@ export default {
     configSaved: 'Configuration saved',
     serverDeleted: 'Server deleted',
     logsCleared: 'Logs cleared',
-    logsCopied: 'Logs copied to clipboard'
+    logsCopied: 'Logs copied to clipboard',
+    serverAdded: 'Server added successfully',
+    configImported: 'Configuration imported successfully'
   },
   error: {
     stdioCommandRequired: 'STDIO server requires a valid command',
@@ -137,7 +139,9 @@ export default {
     httpUrlRequired: 'Streamable HTTP server requires a valid URL',
     unsupportedTransportType: 'Unsupported transport type',
     connectionFailed: 'Failed to connect to server',
-    invalidServerConfig: 'Invalid server configuration'
+    invalidServerConfig: 'Invalid server configuration',
+    addServerFailed: 'Failed to add server',
+    invalidJsonConfig: 'Invalid JSON configuration'
   },
   tools: {
     title: 'MCP Tool Gateway',
