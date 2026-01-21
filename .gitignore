@@ -44,6 +44,7 @@ pids/
 # Temporary
 tmp/
 temp/
+test/temp/
 
 # OS
 .DS_Store

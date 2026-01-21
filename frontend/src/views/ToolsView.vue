@@ -203,10 +203,19 @@ const groupedTools = computed(() => {
     // Find server name from store
     const server = store.servers.find(s => s.id === result.tool.serverId)
 
+    // If server is not found (e.g. not loaded yet, or ID mismatch), 
+    // we cannot verify allowedTools config. 
+    // Default to HIDE to respect potential restrictions and avoid showing unverified tools.
+    if (!server) {
+      return
+    }
+
     // Filter by allowedTools (Aggregated Logic)
-    // If allowedTools is undefined or empty, no tools are aggregated
-    const allowed = server?.config?.allowedTools || []
-    if (!allowed.includes(result.tool.name)) {
+    // If allowedTools is undefined/null (not configured), show all tools (default allow)
+    // If allowedTools is defined (even if empty), strictly filter by it
+    const allowed = server.config?.allowedTools
+    
+    if (allowed != null && !allowed.includes(result.tool.name)) {
       return
     }
 

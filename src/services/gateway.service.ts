@@ -7,6 +7,8 @@ import { logger } from "../utils/logger.js";
 import { z } from "zod";
 import { searchCoreService } from "./search/search-core.service.js";
 import { hubToolsService } from "./hub-tools.service.js";
+import { getClientCwd } from "../utils/request-context.js";
+import { clientTrackerService } from "./client-tracker.service.js";
 
 export class GatewayService {
   private server: McpServer;
@@ -264,6 +266,14 @@ export class GatewayService {
     server.server.setRequestHandler(CallToolDirectRequestSchema, async (request) => {
       try {
         const { serverId, toolName, toolArgs } = request.params;
+        
+        // Inject CWD if available and not present in args
+        const cwd = getClientCwd();
+        if (cwd && !toolArgs.cwd) {
+            toolArgs.cwd = cwd;
+            logger.debug(`Injected CWD into direct tool call: ${cwd}`);
+        }
+
         const result = await hubToolsService.callTool(serverId, toolName, toolArgs);
         return result;
       } catch (error: any) {
@@ -324,6 +334,19 @@ export class GatewayService {
         });
         usedNames.add(tool.name);
       }
+      
+      // Add list-clients tool manually
+      const listClientsTool = {
+          name: 'list-clients',
+          description: '[System] List all connected MCP clients',
+          inputSchema: {
+              type: 'object',
+              properties: {}
+          }
+      };
+      
+      gatewayTools.push(listClientsTool);
+      usedNames.add(listClientsTool.name);
 
       // First pass: Count tool name frequencies to determine uniqueness
       const toolNameCounts = new Map<string, number>();
@@ -404,10 +427,13 @@ export class GatewayService {
       const toolArgs: any = request.params.arguments || {};
 
       // Handle system tools
-      if (['list-servers', 'find-servers', 'list-all-tools-in-server', 'find-tools-in-server', 'get-tool', 'call-tool', 'find-tools'].includes(toolName)) {
+      if (['list-servers', 'find-servers', 'list-all-tools-in-server', 'find-tools-in-server', 'get-tool', 'call-tool', 'find-tools', 'list-clients'].includes(toolName)) {
         try {
           let result;
           switch (toolName) {
+            case 'list-clients':
+              result = clientTrackerService.getClients();
+              break;
             case 'list-servers':
               result = await hubToolsService.listServers();
               break;
@@ -433,6 +459,12 @@ export class GatewayService {
               result = await hubToolsService.getTool(toolArgs.serverId, toolArgs.toolName);
               break;
             case 'call-tool':
+              // Inject CWD for nested call-tool
+              const cwd = getClientCwd();
+              if (cwd && toolArgs.toolArgs && !toolArgs.toolArgs.cwd) {
+                  toolArgs.toolArgs.cwd = cwd;
+                  logger.debug(`Injected CWD into nested tool call: ${cwd}`);
+              }
               result = await hubToolsService.callTool(toolArgs.serverId, toolArgs.toolName, toolArgs.toolArgs);
               break;
             case 'find-tools':
@@ -470,6 +502,13 @@ export class GatewayService {
       }
 
       try {
+        // Inject CWD if available and not present in args
+        const cwd = getClientCwd();
+        if (cwd && !toolArgs.cwd) {
+            toolArgs.cwd = cwd;
+            logger.debug(`Injected CWD into tool call [${toolName}]: ${cwd}`);
+        }
+        
         const result = await mcpConnectionManager.callTool(target.serverId, target.realToolName, toolArgs);
         return result;
       } catch (error: any) {

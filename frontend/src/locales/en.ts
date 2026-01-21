@@ -2,6 +2,7 @@ export default {
   sidebar: {
     title: 'MCP Server Manager',
     dashboard: 'Dashboard',
+    clients: 'Clients',
     servers: 'MCP Servers',
     addServer: 'Add New Server',
     settings: 'Settings'

@@ -29,7 +29,7 @@
           :key="server.id"
           class="server-card group relative p-3 rounded-xl border transition-all duration-200 cursor-pointer"
           :class="[
-            isServerSelected()
+            isServerSelected(server.id)
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-800' 
               : 'bg-white dark:bg-[#2a374a] border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm'
           ]"

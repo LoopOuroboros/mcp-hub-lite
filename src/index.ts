@@ -176,7 +176,7 @@ program
     const mcpClientConfig = {
       "mcpServers": {
         "mcp-hub-lite": {
-          "type": "http-stream",
+          "type": "http",
           "url": `http://${config.host}:${config.port}/mcp`
         }
       }

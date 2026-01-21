@@ -1,5 +1,6 @@
 import { McpTool } from '../../models/tool.model.js';
 import { mcpConnectionManager } from '../mcp-connection-manager.js';
+import { hubManager } from '../hub-manager.service.js';
 import { SearchResult, SearchOptions } from './types.js';
 import { SearchScorer } from './search-scorer.js';
 import { SearchCacheService } from './search-cache.js';
@@ -44,9 +45,25 @@ export class SearchCoreService {
       return cached;
     }
 
-    const tools = mcpConnectionManager.getAllTools();
-    this.cacheService.set(tools);
-    return tools;
+    const allTools = mcpConnectionManager.getAllTools();
+    
+    // Filter tools based on server configuration (allowedTools)
+    const allowedTools = allTools.filter(tool => {
+      const server = hubManager.getServerById(tool.serverId);
+      const allowed = server?.allowedTools;
+      
+      // If allowedTools is explicitly defined (not null/undefined), use it to filter
+      // If it's an empty array, it will filter out all tools
+      if (allowed != null) {
+        return allowed.includes(tool.name);
+      }
+      
+      // If allowedTools is undefined/null, allow all tools
+      return true;
+    });
+
+    this.cacheService.set(allowedTools);
+    return allowedTools;
   }
 
   private applyFilters(tools: McpTool[], filters?: SearchOptions['filters']): McpTool[] {

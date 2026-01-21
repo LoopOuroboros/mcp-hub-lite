@@ -14,6 +14,7 @@ import { webMcpStatusRoutes } from './api/web/mcp-status.js';
 import { configRoutes } from './api/web/config.js';
 import { webLogRoutes } from './api/web/logs.js';
 import { webHubToolsRoutes } from './api/web/hub-tools.js';
+import { webClientRoutes } from './api/web/clients.js';
 
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +46,7 @@ export async function buildApp() {
   fastify.register(configRoutes);
   fastify.register(webLogRoutes);
   fastify.register(webHubToolsRoutes);
+  fastify.register(webClientRoutes);
 
   // Serve static files from dist/client (frontend build output)
   const clientPath = path.join(__dirname, '../../client');

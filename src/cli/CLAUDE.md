@@ -90,12 +90,12 @@ Status: Running
 MCP Integration:
 ================
 Endpoint: http://localhost:7788/mcp
-Transport: HTTP-Stream
+Transport: StreamableHttp
 
 {
   "mcpServers": {
     "mcp-hub-lite": {
-      "type": "http-stream",
+      "type": "http",
       "url": "http://localhost:7788/mcp"
     }
   }

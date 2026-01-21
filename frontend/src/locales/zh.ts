@@ -2,6 +2,7 @@ export default {
   sidebar: {
     title: 'MCP 服务器管理器',
     dashboard: '仪表盘',
+    clients: '客户端',
     servers: 'MCP 服务器',
     addServer: '添加新服务器',
     settings: '系统设置'
