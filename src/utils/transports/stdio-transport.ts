@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger } from '../../utils/logger.js';
+import { logger, isToolsListResponse } from '../../utils/logger.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {
@@ -116,10 +116,22 @@ export class StdioTransport implements Transport {
                 const dataStr = chunk.toString('utf8');
                 // 转发原始 stdout 数据
                 this.onstdout?.(dataStr);
+
+                // 检查是否为 tools/list 响应，如果是则使用 debug 级别
+                const isToolsListResp = isToolsListResponse(dataStr);
+
                 if (this._serverName) {
-                    logger.info(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                    if (isToolsListResp) {
+                        logger.debug(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                    } else {
+                        logger.info(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                    }
                 } else {
-                    logger.info(`[STDOUT] ${dataStr.trim()}`);
+                    if (isToolsListResp) {
+                        logger.debug(`[STDOUT] ${dataStr.trim()}`);
+                    } else {
+                        logger.info(`[STDOUT] ${dataStr.trim()}`);
+                    }
                 }
                 // 解析 JSON-RPC 消息
                 this._readBuffer.append(chunk);

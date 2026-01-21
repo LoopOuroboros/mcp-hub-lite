@@ -166,3 +166,37 @@ export class Logger {
 }
 
 export const logger = new Logger();
+
+/**
+ * 检查数据是否为 tools/list 响应
+ * @param data stdout 或响应数据
+ * @returns 如果是 tools/list 响应返回 true
+ */
+export function isToolsListResponse(data: string): boolean {
+  try {
+    const trimmed = data.trim();
+    if (trimmed.startsWith('{')) {
+      const message = JSON.parse(trimmed) as any;
+      // 检查是否为响应且包含 tools 或 resources 字段
+      if (message.result && typeof message.result === 'object') {
+        // 匹配 tools/list 响应格式: {"result":{"tools": [...]} }
+        if ('tools' in message.result) {
+          return true;
+        }
+        // 匹配 resources/list 响应格式: {"result":{"resources": [...]} }
+        if ('resources' in message.result) {
+          return true;
+        }
+        // 匹配 initialize 响应格式: {"result":{"capabilities":{"tools": {...}} } }
+        if (message.result.capabilities &&
+            typeof message.result.capabilities === 'object' &&
+            ('tools' in message.result.capabilities || 'resources' in message.result.capabilities)) {
+          return true;
+        }
+      }
+    }
+  } catch {
+    // 非JSON数据，忽略
+  }
+  return false;
+}

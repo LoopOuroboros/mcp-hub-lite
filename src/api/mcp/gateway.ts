@@ -57,13 +57,18 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       // Log request summary in one line
       let logMsg = `MCP Gateway ${request.method} ${request.url} [Client: ${context.clientId}]`;
       if (context.cwd) logMsg += ` [CWD: ${context.cwd}]`;
-      
+
       // logger.info(`Debug: Query: ${JSON.stringify(request.query)}, Headers: ${JSON.stringify(request.headers['x-mcp-client-id'])}`);
-      
+
       if (request.body) {
           try {
               const preview = JSON.stringify(request.body);
-              logMsg += ` Body: ${preview}`;
+              // For tools/list responses with many tools, use debug level to avoid verbose logs
+              if (logMsg.includes('tools/list')) {
+                  logger.debug(logMsg + ` Body: ${preview}`);
+              } else {
+                  logMsg += ` Body: ${preview}`;
+              }
           } catch (e) {
               logMsg += ` Body: [Unserializable]`;
           }

@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TransportFactory } from '../utils/transports/transport-factory.js';
 import { McpServerConfig } from '../config/config.schema.js';
-import { logger } from '../utils/logger.js';
+import { logger, isToolsListResponse } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
 import { logStorage } from './log-storage.service.js';
@@ -55,7 +55,10 @@ class McpConnectionManager {
       // 添加日志监听器
       if ('onstdout' in transport) {
         transport.onstdout = (data: string) => {
-          logStorage.append(server.id!, 'info', `[${server.name}] [STDOUT] ${data}`);
+          // 检查是否为 tools/list 响应
+          const isToolsListResp = isToolsListResponse(data);
+          const logLevel = isToolsListResp ? 'debug' : 'info';
+          logStorage.append(server.id!, logLevel, `[${server.name}] [STDOUT] ${data}`);
         };
       }
       if ('onstderr' in transport) {
