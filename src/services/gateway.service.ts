@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ListRootsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
 import { logger } from "../utils/logger.js";
 import { z } from "zod";
 import { searchCoreService } from "./search/search-core.service.js";
 import { hubToolsService } from "./hub-tools.service.js";
-import { getClientCwd } from "../utils/request-context.js";
+import { getClientCwd, getClientContext } from "../utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
 
 export class GatewayService {
@@ -55,12 +55,26 @@ export class GatewayService {
       jsonrpc: z.literal('2.0')
     });
 
-    server.server.setRequestHandler(InitializeRequestSchema, async () => {
+    server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
+      // Capture client info
+      const context = getClientContext();
+      if (context && request.params?.clientInfo) {
+        const { name, version } = request.params.clientInfo;
+        logger.info(`Initialized client: ${name} v${version} (ID: ${context.clientId})`);
+        
+        // Update client info in tracker
+        clientTrackerService.updateClient({
+            ...context,
+            clientName: name
+        });
+      }
+
       return {
         protocolVersion: "2024-11-05",
         serverInfo: {
           name: "mcp-hub-lite-gateway",
           version: "1.0.0",
+          mcpVersion: "2024-11-05"
         },
         capabilities: {
           tools: {
@@ -82,6 +96,38 @@ export class GatewayService {
 
     server.server.setRequestHandler(PingRequestSchema, async () => {
       return { pong: true };  // 符合 MCP 规范的响应格式
+    });
+
+    // Handle initialized notification to fetch roots
+    const InitializedNotificationSchema = z.object({
+      method: z.literal('notifications/initialized'),
+      params: z.any().optional(),
+      jsonrpc: z.literal('2.0')
+    });
+
+    server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
+      const context = getClientContext();
+      if (!context) {
+        logger.warn('Received notifications/initialized but client context is missing');
+        return;
+      }
+
+      logger.info(`Client ${context.clientId} initialized, fetching roots...`);
+      
+      try {
+        const result = await server.server.request(
+          { method: "roots/list" }, 
+          ListRootsResultSchema
+        );
+        
+        if (result.roots) {
+          logger.info(`Received ${result.roots.length} roots from client ${context.clientId}`);
+          clientTrackerService.updateClientRoots(context.clientId, result.roots);
+        }
+      } catch (error) {
+        // Many clients (e.g. web browsers) might not support roots, just log as debug
+        logger.debug(`Failed to fetch roots from client ${context.clientId}: ${error}`);
+      }
     });
 
     // Define search tool schema

@@ -114,6 +114,7 @@ export class StdioTransport implements Transport {
 
             this._process.stdout?.on('data', (chunk: Buffer) => {
                 const dataStr = chunk.toString('utf8');
+
                 // 转发原始 stdout 数据
                 this.onstdout?.(dataStr);
 
@@ -133,6 +134,7 @@ export class StdioTransport implements Transport {
                         logger.info(`[STDOUT] ${dataStr.trim()}`);
                     }
                 }
+
                 // 解析 JSON-RPC 消息
                 this._readBuffer.append(chunk);
                 this.processReadBuffer();
@@ -188,9 +190,39 @@ export class StdioTransport implements Transport {
         }
     }
 
-    async close() {
+    async close(): Promise<void> {
         if (this._process) {
-            this._process.kill();
+            return new Promise((resolve) => {
+                // 监听子进程退出事件
+                const cleanup = () => {
+                    this._process = undefined;
+                    this._readBuffer.clear();
+                    resolve();
+                };
+
+                this._process.once('close', cleanup);
+                this._process.once('exit', cleanup);
+
+                // 发送 SIGTERM 信号，给子进程机会优雅关闭
+                try {
+                    this._process.kill('SIGTERM');
+
+                    // 设置超时保护，如果子进程在5秒内没有退出，强制终止
+                    const timeout = setTimeout(() => {
+                        if (this._process) {
+                            logger.warn('Child process did not exit gracefully, force killing...');
+                            this._process.kill('SIGKILL');
+                        }
+                    }, 5000);
+
+                    // 确保超时定时器在进程退出后被清除
+                    this._process.once('close', () => clearTimeout(timeout));
+                    this._process.once('exit', () => clearTimeout(timeout));
+                } catch (error) {
+                    logger.error('Error closing stdio transport:', error);
+                    cleanup();
+                }
+            });
         }
         this._readBuffer.clear();
     }

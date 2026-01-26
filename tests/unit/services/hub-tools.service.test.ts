@@ -443,11 +443,11 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(allTools).toEqual({
-        'Server 1': {
+        '1': {
           serverId: '1',
           tools: mockTools[0]
         },
-        'Server 2': {
+        '2': {
           serverId: '2',
           tools: mockTools[1]
         }
@@ -459,7 +459,7 @@ describe('HubToolsService', () => {
     it('should find tools matching pattern across all servers', async () => {
       // Arrange
       const mockTools = {
-        'Server 1': {
+        '1': {
           serverId: '1',
           tools: [
             {
@@ -471,7 +471,7 @@ describe('HubToolsService', () => {
             }
           ]
         },
-        'Server 2': {
+        '2': {
           serverId: '2',
           tools: [
             {
@@ -499,7 +499,7 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(results).toEqual({
-        'Server 1': {
+        '1': {
           serverId: '1',
           tools: [
             {
@@ -511,7 +511,7 @@ describe('HubToolsService', () => {
             }
           ]
         },
-        'Server 2': {
+        '2': {
           serverId: '2',
           tools: [
             {

@@ -57,6 +57,15 @@ export class TransportFactory {
   }
 
   /**
+   * 构建系统环境变量
+   * 为 stdio 传输添加必要的系统环境变量
+   */
+  private static buildSystemEnv(): Record<string, string> {
+    return {
+    };
+  }
+
+  /**
    * 验证并转换服务器配置为传输配置
    */
   private static validateAndConvertConfig(server: McpServerConfig): ServerTransportConfig {
@@ -67,7 +76,10 @@ export class TransportFactory {
         type: 'stdio',
         command: server.command || '',
         args: server.args,
-        env: server.env,
+        env: {
+          ...this.buildSystemEnv(), // 系统环境变量
+          ...(server.env || {}) // 用户自定义的环境变量（可覆盖系统默认值）
+        },
         cwd: process.cwd(),
         stderr: 'pipe'
       };

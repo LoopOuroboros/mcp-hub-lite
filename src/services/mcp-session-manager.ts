@@ -1,9 +1,7 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { gateway } from './gateway.service.js';
-import { clientTrackerService } from './client-tracker.service.js';
 import { logger } from '../utils/logger.js';
-import { ListRootsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
 interface Session {
     server: McpServer;
@@ -37,37 +35,12 @@ export class McpSessionManager {
         
         // Use stateless mode for the transport to avoid strict session validation
         // The Gateway handles session routing via clientId in the URL/headers
-        const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined
-        });
+        const transport = new StreamableHTTPServerTransport();
         const server = gateway.createConnectionServer();
         
         // Setup Active Fetching for Roots
-        // We hook into oninitialized to fetch roots as soon as the client is ready
-        server.server.oninitialized = async () => {
-            logger.info(`Session initialized for client ${clientId}, fetching roots...`);
-            try {
-              // Wait a short moment for the SSE connection to be fully established
-              // The client sends POST initialize/initialized and GET /mcp (SSE) concurrently
-              // We need to ensure the SSE stream is ready before we can send requests to the client
-              await new Promise(resolve => setTimeout(resolve, 1000));
-
-              // Fetch roots from client
-              // Note: This requires the client to support roots/list request handling
-              const result = await server.server.request(
-                { method: "roots/list" }, 
-                ListRootsResultSchema
-              );
-                
-                if (result.roots) {
-                    logger.info(`Received ${result.roots.length} roots from client ${clientId}`);
-                    clientTrackerService.updateClientRoots(clientId, result.roots);
-                }
-            } catch (error) {
-                // It's common that clients might not support this or fail, so just warn
-                logger.warn(`Failed to fetch roots from client ${clientId}: ${error instanceof Error ? error.message : String(error)}`);
-            }
-        };
+        // Handled by GatewayService's initialized notification handler
+        // server.server.oninitialized = async () => { ... }
 
         await server.connect(transport);
 

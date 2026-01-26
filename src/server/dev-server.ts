@@ -34,15 +34,19 @@ async function startDevServer() {
 }
 
 // Handle graceful shutdown for better restart experience
-process.on('SIGTERM', () => {
-  logger.info('Received SIGTERM, shutting down gracefully...');
+const shutdown = async (signal: string) => {
+  logger.info(`Received ${signal}, shutting down gracefully...`);
+  try {
+    await mcpConnectionManager.disconnectAll();
+  } catch (error) {
+    logger.error('Error disconnecting servers:', error);
+  }
   process.exit(0);
-});
+};
 
-process.on('SIGINT', () => {
-  logger.info('Received SIGINT, shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
