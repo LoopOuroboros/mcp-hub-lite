@@ -19,7 +19,13 @@ class ClientTrackerService {
     const existing = this.clients.get(context.clientId);
     this.clients.set(context.clientId, {
       ...context,
+      // Preserve existing info if not provided in new request
+      clientName: context.clientName || existing?.clientName,
+      project: context.project || existing?.project,
       cwd: context.cwd || existing?.cwd, // Preserve CWD if not provided in new request (e.g. inferred from roots)
+      userAgent: context.userAgent || existing?.userAgent,
+      ip: context.ip || existing?.ip,
+      
       lastSeen: Date.now(),
       roots: existing?.roots // Preserve roots if already fetched
     });

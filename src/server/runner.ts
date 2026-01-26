@@ -54,6 +54,26 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
         });
     }
 
+    // Setup signal handlers for graceful shutdown
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down...`);
+      try {
+        await mcpConnectionManager.disconnectAll();
+        if (!isStdio && app) {
+            await app.close();
+        }
+        PidManager.removePid();
+        logger.info('Server stopped gracefully');
+        process.exit(0);
+      } catch (error) {
+        logger.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
     if (isStdio) {
         await gateway.start();
         // Write PID after gateway starts successfully

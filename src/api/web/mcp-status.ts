@@ -45,6 +45,9 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         return reply.code(500).send({ error: 'Failed to connect to server' });
       }
 
+      // Update enabled status in config
+      await hubManager.updateServer(request.params.id, { enabled: true });
+
       return { success: true };
     } catch (error) {
       logger.error('Failed to connect MCP server:', error);
@@ -56,6 +59,10 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   fastify.post<{ Params: { id: string } }>('/web/mcp/servers/:id/disconnect', async (request, reply) => {
     try {
       await mcpConnectionManager.disconnect(request.params.id);
+      
+      // Update enabled status in config to ensure it doesn't show as "starting"
+      await hubManager.updateServer(request.params.id, { enabled: false });
+      
       return { success: true };
     } catch (error) {
       logger.error('Failed to disconnect MCP server:', error);

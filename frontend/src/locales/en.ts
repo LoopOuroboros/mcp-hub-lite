@@ -7,6 +7,17 @@ export default {
     addServer: 'Add New Server',
     settings: 'Settings'
   },
+  clients: {
+    title: 'Connected Clients',
+    refresh: 'Refresh',
+    sessionId: 'Session ID',
+    name: 'Client Name',
+    cwd: 'CWD',
+    project: 'Project',
+    roots: 'Roots',
+    lastSeen: 'Last Seen',
+    noRoots: '-'
+  },
   settings: {
     title: 'System Settings',
     save: 'Save Changes',

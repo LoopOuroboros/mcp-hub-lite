@@ -53,6 +53,24 @@ class McpConnectionManager {
       // Create transport based on server type
       const transport = TransportFactory.createTransport(server);
 
+      // Handle transport close events
+      if ('onclose' in transport) {
+        transport.onclose = () => {
+          logger.info(`Transport closed for server [${server.id}]`);
+          const currentStatus = this.serverStatus.get(server.id!);
+          // Only update status if it was previously connected or starting
+          if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
+             this.serverStatus.set(server.id!, {
+               connected: false,
+               lastCheck: Date.now(),
+               toolsCount: 0,
+               resourcesCount: 0,
+               error: 'Connection closed unexpectedly'
+             });
+          }
+        };
+      }
+
       // 添加日志监听器
       if ('onstdout' in transport) {
         transport.onstdout = (data: string) => {
@@ -160,49 +178,61 @@ class McpConnectionManager {
   }
 
   public async disconnect(serverId: string): Promise<void> {
+    logger.info(`Disconnecting from server [${serverId}]...`);
+
     const client = this.clients.get(serverId);
     const transport = this.transports.get(serverId);
 
-    if (client) {
-      try {
-        await client.close();
-      } catch (e) {
-        logger.warn(`Error closing client for [${serverId}]:`, e);
+    try {
+      if (client) {
+        try {
+          await client.close();
+        } catch (e) {
+          logger.warn(`Error closing client for [${serverId}]:`, e);
+        }
       }
-    }
 
-    if (transport) {
-      try {
+      if (transport && typeof transport.close === 'function') {
         await transport.close();
-      } catch (e) {
-        logger.warn(`Error closing transport for [${serverId}]:`, e);
       }
+    } catch (error) {
+      logger.error(`Error disconnecting server [${serverId}]:`, error);
+    } finally {
+      this.clients.delete(serverId);
+      this.transports.delete(serverId);
+      this.toolCache.delete(serverId);
+      this.resourceCache.delete(serverId);
+
+      this.serverStatus.set(serverId, {
+        connected: false,
+        lastCheck: Date.now(),
+        toolsCount: 0,
+        resourcesCount: 0
+      });
+
+      // 发布服务器断开连接事件
+      eventBus.publish(EventTypes.SERVER_DISCONNECTED, {
+        serverId,
+        status: 'offline',
+        timestamp: Date.now()
+      });
+
+      // 发布服务器状态变化事件
+      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+        serverId,
+        status: 'offline',
+        timestamp: Date.now()
+      });
+
+      logger.info(`Disconnected from server [${serverId}]`);
     }
+  }
 
-    this.clients.delete(serverId);
-    this.transports.delete(serverId);
-    this.serverStatus.set(serverId, {
-      connected: false,
-      lastCheck: Date.now(),
-      toolsCount: 0,
-      resourcesCount: 0
-    });
-    this.toolCache.delete(serverId);
-    this.resourceCache.delete(serverId);
-
-    // 发布服务器断开连接事件
-    eventBus.publish(EventTypes.SERVER_DISCONNECTED, {
-      serverId,
-      status: 'offline',
-      timestamp: Date.now()
-    });
-
-    // 发布服务器状态变化事件
-    eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-      serverId,
-      status: 'offline',
-      timestamp: Date.now()
-    });
+  public async disconnectAll(): Promise<void> {
+    logger.info('Disconnecting all servers...');
+    const serverIds = Array.from(this.clients.keys());
+    await Promise.all(serverIds.map(id => this.disconnect(id)));
+    logger.info('All servers disconnected');
   }
 
   public async refreshTools(serverId: string): Promise<McpTool[]> {
@@ -325,6 +355,46 @@ class McpConnectionManager {
       logger.error(`Failed to call tool ${toolName} on server [${serverId}]:`, error);
       throw error;
     }
+  }
+
+  public async disconnect(serverId: string): Promise<void> {
+    logger.info(`Disconnecting from server [${serverId}]...`);
+    
+    const client = this.clients.get(serverId);
+    const transport = this.transports.get(serverId);
+
+    try {
+      if (client) {
+        // SDK client doesn't have close(), but we can try to close transport
+      }
+
+      if (transport && typeof transport.close === 'function') {
+        await transport.close();
+      }
+    } catch (error) {
+      logger.error(`Error disconnecting server [${serverId}]:`, error);
+    } finally {
+      this.clients.delete(serverId);
+      this.transports.delete(serverId);
+      this.toolCache.delete(serverId);
+      this.resourceCache.delete(serverId);
+      
+      this.serverStatus.set(serverId, {
+        connected: false,
+        lastCheck: Date.now(),
+        toolsCount: 0,
+        resourcesCount: 0
+      });
+      
+      logger.info(`Disconnected from server [${serverId}]`);
+    }
+  }
+
+  public async disconnectAll(): Promise<void> {
+    logger.info('Disconnecting all servers...');
+    const serverIds = Array.from(this.clients.keys());
+    await Promise.all(serverIds.map(id => this.disconnect(id)));
+    logger.info('All servers disconnected');
   }
 }
 

@@ -1,11 +1,22 @@
 export default {
   sidebar: {
     title: 'MCP 服务器管理器',
-    dashboard: '仪表盘',
+    dashboard: '仪表板',
     clients: '客户端',
     servers: 'MCP 服务器',
     addServer: '添加新服务器',
-    settings: '系统设置'
+    settings: '设置'
+  },
+  clients: {
+    title: '已连接的客户端',
+    refresh: '刷新',
+    sessionId: '会话 ID',
+    name: '客户端名称',
+    cwd: '工作目录',
+    project: '项目',
+    roots: '根目录',
+    lastSeen: '最后活跃',
+    noRoots: '-'
   },
   settings: {
     title: '系统设置',

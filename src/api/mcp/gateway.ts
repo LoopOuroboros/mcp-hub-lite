@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 
 function extractClientContext(request: any): ClientContext {
   const headers = request.headers;
-  
+
   // Priority 1: Session ID from Query (Standard MCP SSE)
   // This is the most reliable identifier for an active session
   let clientId = request.query && (request.query as any).sessionId;
@@ -16,19 +16,44 @@ function extractClientContext(request: any): ClientContext {
       const match = request.url.match(/sessionId=([^&]+)/);
       if (match) {
           clientId = match[1];
-          // logger.debug(`Extracted sessionId from URL manually: ${clientId}`);
+          logger.debug(`Extracted sessionId from URL: ${clientId}`);
       }
   }
 
   const clientName = (headers['x-mcp-client-id'] as string) || (headers['x-client-id'] as string);
+  const clients = clientTrackerService.getClients();
 
-  // Priority 2: If no session ID, generate a new unique one
+  // Priority 2: For JSON-RPC requests like initialize, maintain session consistency
+  if (!clientId && request.body) {
+      // For initialize request, generate a consistent session ID
+      if (request.body.method === 'initialize' && request.body.params?.clientInfo) {
+          const { name, version } = request.body.params.clientInfo;
+          // Use client name + version as a stable identifier for initialize requests
+          clientId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
+          logger.debug(`Extracted clientId from initialize params: ${clientId}`);
+      }
+  }
+
+  // Priority 3: Simplified session matching - only match exact clientId or clientName
+  if (!clientId) {
+      // Check if there's already a session with matching client name (for consistency)
+      if (clientName) {
+          const existingClient = clients.find(c => c.clientName === clientName);
+          if (existingClient) {
+              clientId = existingClient.clientId;
+              logger.debug(`Found existing clientId for ${clientName}: ${clientId}`);
+          }
+      }
+  }
+
+  // Priority 4: Generate new unique session ID only if no other method works
   if (!clientId) {
       // Use client name as prefix if available, but ensure uniqueness with UUID
       const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'anon-';
       clientId = `${prefix}${randomUUID().substring(0, 8)}`;
+      logger.debug(`Generated new clientId: ${clientId}`);
   }
-  
+
   return {
     clientId,
     clientName,
@@ -89,6 +114,14 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
           // Pass parsed body to transport within request context
           await requestContext.run(context, async () => {
+              // Fix: Ensure transport sees the sessionId in the URL so it sends correct endpoint URI to client
+              // This is crucial for clients (like browsers) that can't send headers with EventSource
+              if (request.method === 'GET' && !request.raw.url.includes('sessionId=')) {
+                  const separator = request.raw.url.includes('?') ? '&' : '?';
+                  request.raw.url = `${request.raw.url}${separator}sessionId=${context.clientId}`;
+                  logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`);
+              }
+
               await session.transport.handleRequest(request.raw, reply.raw, request.body);
           });
       } catch (error) {
