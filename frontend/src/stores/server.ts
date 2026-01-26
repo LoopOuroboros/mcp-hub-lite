@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { http } from '../utils/http'
+import { useWebSocketStore } from './websocket'
 
 export interface ServerConfig {
   transport: 'stdio' | 'sse' | 'streamable-http'
@@ -286,16 +287,14 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
-  async function fetchLogs(serverId: string) {
-    try {
-      const response = await http.get<{ data: LogEntry[] }>(`/web/servers/${serverId}/logs`)
-      const server = servers.value.find(s => s.id === serverId)
-      if (server) {
-        server.logs = response.data
-      }
-    } catch (e) {
-      console.error('Fetch logs error:', e)
-    }
+  /**
+   * 使用 WebSocket 获取服务器日志
+   * 不再使用 HTTP 请求，改为通过 WebSocket 订阅和获取
+   */
+  function fetchLogs(serverId: string) {
+    // 获取 WebSocket store 实例
+    const wsStore = useWebSocketStore()
+    wsStore.fetchLogs(serverId, 100) // 获取最新的 100 条日志
   }
 
   async function clearLogs(serverId: string) {
@@ -310,10 +309,8 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
-  async function fetchAllLogs() {
-    await Promise.all(
-      servers.value.map(s => fetchLogs(s.id))
-    )
+  function fetchAllLogs() {
+    servers.value.forEach(s => fetchLogs(s.id))
   }
 
   return {

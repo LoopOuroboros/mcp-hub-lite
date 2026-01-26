@@ -59,9 +59,11 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useServerStore } from '../stores/server'
+import { useWebSocketStore } from '../stores/websocket'
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue'
 
 const store = useServerStore()
+const wsStore = useWebSocketStore()
 
 onMounted(() => {
   if (!store.loading && store.servers.length > 0) {

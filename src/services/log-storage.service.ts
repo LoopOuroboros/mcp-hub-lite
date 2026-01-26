@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger.js';
+import { eventBus, EventTypes } from './event-bus.service.js';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -44,6 +45,12 @@ export class LogStorageService {
 
     // 通知监听者
     this.notifyListeners(serverId, logEntry);
+
+    // 发布日志事件
+    eventBus.publish(EventTypes.LOG_ENTRY, {
+      serverId,
+      logs: [logEntry]
+    });
 
     return logEntry;
   }

@@ -243,12 +243,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useServerStore } from '../stores/server'
+import { useWebSocketStore } from '../stores/websocket'
 import ToolCallDialog from './ToolCallDialog.vue'
 import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useServerStore()
+const wsStore = useWebSocketStore()
 const { t } = useI18n()
 
 // Computed property for the selected server
@@ -317,7 +319,7 @@ watch(activeTab, async (tab) => {
   } else if (tab === 'resources') {
     await store.fetchResources(server.value.id)
   } else if (tab === 'logs') {
-    await store.fetchLogs(server.value.id)
+    store.fetchLogs(server.value.id) // 不再是异步方法
   }
 }, { immediate: true })
 

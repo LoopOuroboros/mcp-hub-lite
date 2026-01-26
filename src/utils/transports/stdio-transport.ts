@@ -122,15 +122,15 @@ export class StdioTransport implements Transport {
 
                 if (this._serverName) {
                     if (isToolsListResp) {
-                        logger.debug(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                        logger.debug(`[${this._serverName}] [PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
                     } else {
-                        logger.info(`[${this._serverName}] [STDOUT] ${dataStr.trim()}`);
+                        logger.info(`[${this._serverName}] [PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
                     }
                 } else {
                     if (isToolsListResp) {
-                        logger.debug(`[STDOUT] ${dataStr.trim()}`);
+                        logger.debug(`[PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
                     } else {
-                        logger.info(`[STDOUT] ${dataStr.trim()}`);
+                        logger.info(`[PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
                     }
                 }
                 // 解析 JSON-RPC 消息
@@ -148,9 +148,9 @@ export class StdioTransport implements Transport {
                     // 转发原始 stderr 数据
                     this.onstderr?.(dataStr);
                     if (this._serverName) {
-                        logger.error(`[${this._serverName}] [STDERR] ${dataStr.trim()}`);
+                        logger.error(`[${this._serverName}] [PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
                     } else {
-                        logger.error(`[STDERR] ${dataStr.trim()}`);
+                        logger.error(`[PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
                     }
                     // 也可以将 stderr 数据写入 PassThrough 流
                     this._stderrStream?.write(chunk);
@@ -161,9 +161,9 @@ export class StdioTransport implements Transport {
                     const dataStr = chunk.toString('utf8');
                     this.onstderr?.(dataStr);
                     if (this._serverName) {
-                        logger.error(`[${this._serverName}] [STDERR] ${dataStr.trim()}`);
+                        logger.error(`[${this._serverName}] [PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
                     } else {
-                        logger.error(`[STDERR] ${dataStr.trim()}`);
+                        logger.error(`[PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
                     }
                 });
             }

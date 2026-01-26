@@ -16,6 +16,9 @@ import { webLogRoutes } from './api/web/logs.js';
 import { webHubToolsRoutes } from './api/web/hub-tools.js';
 import { webClientRoutes } from './api/web/clients.js';
 
+// WebSocket Routes
+import { webSocketRoutes } from './api/ws/events.js';
+
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +50,7 @@ export async function buildApp() {
   fastify.register(webLogRoutes);
   fastify.register(webHubToolsRoutes);
   fastify.register(webClientRoutes);
+  fastify.register(webSocketRoutes);
 
   // Serve static files from dist/client (frontend build output)
   const clientPath = path.join(__dirname, '../../client');

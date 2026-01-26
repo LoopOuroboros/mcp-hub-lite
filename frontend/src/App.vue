@@ -18,10 +18,12 @@ import en from 'element-plus/es/locale/lang/en'
 import Header from './components/Header.vue'
 import { useTheme } from './composables/useTheme'
 import { useSystemStore } from './stores/system'
+import { useWebSocketStore } from './stores/websocket'
 
 const { locale } = useI18n()
 const { theme, setTheme } = useTheme()
 const systemStore = useSystemStore()
+const wsStore = useWebSocketStore()
 
 const elLocale = computed(() => {
   return locale.value === 'zh' ? zhCn : en

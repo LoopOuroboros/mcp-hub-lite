@@ -55,9 +55,10 @@ export class Logger {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
-  private createLogMessage(level: LogLevel, message: string): string {
+  private createLogMessage(level: LogLevel, message: string, pid?: number): string {
     const timestamp = this.formatTimestamp(new Date());
-    return `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+    const processPid = pid ?? process.pid;
+    return `[${timestamp}] [${level.toUpperCase()}] [PID:${processPid}] ${message}`;
   }
 
   // 辅助方法：格式化错误对象

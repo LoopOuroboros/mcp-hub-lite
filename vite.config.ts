@@ -84,6 +84,11 @@ export default defineConfig({
         target: `http://${backendHost}:${backendPort}`,
         changeOrigin: true,
         ws: true
+      },
+      '/ws': {
+        target: `http://${backendHost}:${backendPort}`,
+        changeOrigin: true,
+        ws: true
       }
     }
   },

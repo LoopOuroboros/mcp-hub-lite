@@ -2,6 +2,7 @@ import { buildApp } from '../app.js';
 import { configManager } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
 import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
+import { PidManager } from '../pid/manager.js';
 
 // Enable dev logging to file
 logger.enableDevLog();
@@ -27,8 +28,13 @@ async function startDevServer() {
     });
     logger.info(`MCP Hub Lite Dev Server running at http://${config.host}:${config.port}`);
 
+    // Write PID file after server starts successfully
+    PidManager.writePid();
+
   } catch (err) {
     logger.error('Failed to start dev server:', err);
+    // Clean up PID file if it exists
+    PidManager.removePid();
     process.exit(1);
   }
 }

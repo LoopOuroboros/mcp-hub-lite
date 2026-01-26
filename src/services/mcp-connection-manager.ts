@@ -5,6 +5,7 @@ import { logger, isToolsListResponse } from '../utils/logger.js';
 import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
 import { logStorage } from './log-storage.service.js';
+import { eventBus, EventTypes } from './event-bus.service.js';
 
 export interface ServerStatus {
   connected: boolean;
@@ -101,10 +102,35 @@ class McpConnectionManager {
 
       logger.info(`Connected to server [${server.id}]`);
 
+      // 发布服务器连接成功事件
+      eventBus.publish(EventTypes.SERVER_CONNECTED, {
+        serverId: server.id,
+        status: 'online',
+        timestamp: Date.now()
+      });
+
+      // 发布服务器状态变化事件
+      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+        serverId: server.id,
+        status: 'online',
+        timestamp: Date.now()
+      });
+
       // Fetch tools and resources immediately (only for bidirectional transports)
       if (server.type !== 'sse') {
-        await this.refreshTools(server.id);
-        await this.refreshResources(server.id);
+        const tools = await this.refreshTools(server.id);
+        const resources = await this.refreshResources(server.id);
+
+        // 发布工具和资源更新事件
+        eventBus.publish(EventTypes.TOOLS_UPDATED, {
+          serverId: server.id,
+          tools
+        });
+
+        eventBus.publish(EventTypes.RESOURCES_UPDATED, {
+          serverId: server.id,
+          resources
+        });
       } else {
         logger.info('SSE transport is unidirectional, skipping tool/resource refresh');
       }
@@ -120,6 +146,15 @@ class McpConnectionManager {
         toolsCount: 0,
         resourcesCount: 0
       });
+
+      // 发布服务器状态变化事件（错误状态）
+      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+        serverId,
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: Date.now()
+      });
+
       return false;
     }
   }
@@ -154,6 +189,20 @@ class McpConnectionManager {
     });
     this.toolCache.delete(serverId);
     this.resourceCache.delete(serverId);
+
+    // 发布服务器断开连接事件
+    eventBus.publish(EventTypes.SERVER_DISCONNECTED, {
+      serverId,
+      status: 'offline',
+      timestamp: Date.now()
+    });
+
+    // 发布服务器状态变化事件
+    eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+      serverId,
+      status: 'offline',
+      timestamp: Date.now()
+    });
   }
 
   public async refreshTools(serverId: string): Promise<McpTool[]> {

@@ -1,6 +1,7 @@
 import { ConfigManager, configManager, McpServerConfig } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { eventBus, EventTypes } from './event-bus.service.js';
 
 export class HubManagerService {
   private configManager: ConfigManager;
@@ -20,7 +21,10 @@ export class HubManagerService {
   async addServer(server: Partial<McpServerConfig> & Omit<McpServerConfig, 'id'>): Promise<McpServerConfig> {
     const newServer = await this.configManager.addServer(server as McpServerConfig);
     logger.info(`Server added: [${newServer.id}]`);
-    
+
+    // 发布服务器添加事件
+    eventBus.publish(EventTypes.SERVER_ADDED, newServer);
+
     // Auto-connect if enabled
     if (newServer.enabled !== false) {
       try {
@@ -29,7 +33,7 @@ export class HubManagerService {
         logger.error(`Failed to auto-connect server ${newServer.id}:`, error);
       }
     }
-    
+
     return newServer;
   }
 
@@ -42,7 +46,13 @@ export class HubManagerService {
 
     await this.configManager.updateServer(id, updates);
     logger.info(`Server updated: ${id}`);
-    return this.getServerById(id) || null;
+
+    const updatedServer = this.getServerById(id) || null;
+    if (updatedServer) {
+      eventBus.publish(EventTypes.SERVER_UPDATED, updatedServer);
+    }
+
+    return updatedServer;
   }
 
   async removeServer(id: string): Promise<boolean> {
@@ -53,6 +63,9 @@ export class HubManagerService {
 
     await this.configManager.removeServer(id);
     logger.info(`Server removed: ${id}`);
+
+    eventBus.publish(EventTypes.SERVER_DELETED, id);
+
     return true;
   }
 }
