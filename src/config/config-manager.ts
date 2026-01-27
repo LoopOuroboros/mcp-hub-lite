@@ -234,6 +234,7 @@ export class ConfigManager {
 
     try {
       if (this.fileExists(this.configPath)) {
+        logger.info(`Loading configuration from: ${this.configPath}`);
         const content = fs.readFileSync(this.configPath, 'utf-8');
         const parsedConfig = JSON.parse(content);
 
@@ -242,6 +243,7 @@ export class ConfigManager {
         baseConfig = SystemConfigSchema.parse(migratedConfig);
       } else {
         // Config file doesn't exist, use default
+        logger.info(`Config file not found, creating new configuration at: ${this.configPath}`);
         baseConfig = SystemConfigSchema.parse({});
         this.saveConfigSync(baseConfig);
       }
@@ -299,6 +301,13 @@ export class ConfigManager {
     Object.keys(configWithEnv.servers).forEach(serverName => {
       if (!this.serverInstances[serverName]) {
         this.serverInstances[serverName] = [];
+      }
+    });
+
+    // 清理不再存在于配置文件中的服务器实例条目
+    Object.keys(this.serverInstances).forEach(serverName => {
+      if (!configWithEnv.servers[serverName]) {
+        delete this.serverInstances[serverName];
       }
     });
 

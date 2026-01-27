@@ -96,28 +96,60 @@ export const useServerStore = defineStore('server', () => {
       const existingTools = new Map(servers.value.map(s => [s.id, s.tools]))
       const existingResources = new Map(servers.value.map(s => [s.id, s.resources]))
 
-      // 组合服务器基础配置和实例配置
+      // 显示所有服务器配置，包括没有实例的
       const combinedServers: Server[] = []
 
       serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
         // 获取该服务器名称对应的所有实例
         const instances = serverInstances[serverName] || []
 
-        instances.forEach((instanceConfig, index) => {
-          const serverId = instanceConfig.id // 使用实例ID作为服务器唯一ID
-          const statusInfo = statuses.find(s => s.id === serverId)?.status
+        if (instances.length > 0) {
+          // 有实例的情况 - 保持原有逻辑
+          instances.forEach((instanceConfig, index) => {
+            const serverId = instanceConfig.id // 使用实例ID作为服务器唯一ID
+            const statusInfo = statuses.find(s => s.id === serverId)?.status
 
-          // 根据 config.enabled 和 statusInfo 来判断状态
+            // 根据 config.enabled 和 statusInfo 来判断状态
+            let status: 'running' | 'stopped' | 'error' | 'starting'
+            if (statusInfo?.connected) {
+              status = 'running'
+            } else if (statusInfo?.error) {
+              status = 'error'
+            } else if (serverConfig.enabled) {
+              // 如果配置为 enabled 但尚未连接，显示为 starting
+              status = 'starting'
+            } else {
+              status = 'stopped'
+            }
+
+            combinedServers.push({
+              id: serverId,
+              name: serverName,
+              status,
+              type: serverConfig.type === 'sse' || serverConfig.type === 'streamable-http' ? 'remote' : 'local',
+              config: serverConfig,
+              instance: instanceConfig,
+              logs: existingLogs.get(serverId) || [],
+              tools: existingTools.get(serverId),
+              resources: existingResources.get(serverId),
+              uptime: statusInfo?.connected ? 'Active' : undefined,
+              startTime: statusInfo?.startTime,
+              pid: statusInfo?.pid,
+              toolsCount: statusInfo?.toolsCount,
+              resourcesCount: statusInfo?.resourcesCount,
+              version: statusInfo?.version
+            })
+          })
+        } else {
+          // 没有实例的情况 - 创建一个虚拟实例用于显示
+          const serverId = `config-${serverName}-${Date.now()}`
+
+          // 根据配置的 enabled 状态确定显示状态
           let status: 'running' | 'stopped' | 'error' | 'starting'
-          if (statusInfo?.connected) {
-            status = 'running'
-          } else if (statusInfo?.error) {
-            status = 'error'
-          } else if (serverConfig.enabled) {
-            // 如果配置为 enabled 但尚未连接，显示为 starting
-            status = 'starting'
+          if (serverConfig.enabled) {
+            status = 'starting' // 配置为启用但未启动
           } else {
-            status = 'stopped'
+            status = 'stopped' // 配置为禁用
           }
 
           combinedServers.push({
@@ -126,18 +158,22 @@ export const useServerStore = defineStore('server', () => {
             status,
             type: serverConfig.type === 'sse' || serverConfig.type === 'streamable-http' ? 'remote' : 'local',
             config: serverConfig,
-            instance: instanceConfig,
+            instance: {
+              id: serverId,
+              timestamp: Date.now(),
+              hash: 'config-only'
+            },
             logs: existingLogs.get(serverId) || [],
             tools: existingTools.get(serverId),
             resources: existingResources.get(serverId),
-            uptime: statusInfo?.connected ? 'Active' : undefined,
-            startTime: statusInfo?.startTime,
-            pid: statusInfo?.pid,
-            toolsCount: statusInfo?.toolsCount,
-            resourcesCount: statusInfo?.resourcesCount,
-            version: statusInfo?.version
+            uptime: undefined,
+            startTime: undefined,
+            pid: undefined,
+            toolsCount: 0,
+            resourcesCount: 0,
+            version: undefined
           })
-        })
+        }
       })
 
       servers.value = combinedServers
@@ -225,9 +261,25 @@ export const useServerStore = defineStore('server', () => {
 
   async function startServer(id: string) {
     try {
+      const server = servers.value.find(s => s.id === id)
+      if (!server) {
+        throw new Error('Server not found')
+      }
+
       // 立即更新状态为 starting，提供更好的用户体验
       updateServerStatus(id, 'starting')
-      await http.post(`/web/mcp/servers/${id}/connect`, {})
+
+      let actualServerId = id
+
+      // 如果是配置-only的服务器（虚拟ID），需要创建实例
+      if (id.startsWith('config-')) {
+        // 创建服务器实例
+        const response = await http.post<ServerInstanceConfig>(`/web/server-instances/${server.name}`, {})
+        actualServerId = response.id
+      }
+
+      // 连接服务器（使用实际的实例ID）
+      await http.post(`/web/mcp/servers/${actualServerId}/connect`, {})
       await fetchServers()
     } catch (e: any) {
       error.value = e.message || 'Failed to start server'
@@ -239,6 +291,18 @@ export const useServerStore = defineStore('server', () => {
 
   async function stopServer(id: string) {
     try {
+      const server = servers.value.find(s => s.id === id)
+      if (!server) {
+        throw new Error('Server not found')
+      }
+
+      // 如果是配置-only的服务器，不需要断开连接
+      if (id.startsWith('config-')) {
+        await fetchServers()
+        return
+      }
+
+      // 断开服务器连接（使用实例ID）
       await http.post(`/web/mcp/servers/${id}/disconnect`, {})
       await fetchServers()
     } catch (e: any) {
@@ -251,19 +315,24 @@ export const useServerStore = defineStore('server', () => {
     try {
       const server = servers.value.find(s => s.id === id)
       if (server) {
-        // 检查是否还有其他实例
-        const serverInstances = await http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances')
-        const instances = serverInstances[server.name] || []
-
-        if (instances.length > 1) {
-          // 如果还有其他实例，只删除该实例
-          const instanceIndex = instances.findIndex(inst => inst.id === id)
-          if (instanceIndex !== -1) {
-            await http.delete(`/web/server-instances/${server.name}/${instanceIndex}`)
-          }
-        } else {
-          // 如果是最后一个实例，删除整个服务器
+        // 如果是配置-only的服务器（虚拟ID），直接删除整个服务器配置
+        if (id.startsWith('config-')) {
           await http.delete(`/web/servers/${server.name}`)
+        } else {
+          // 检查是否还有其他实例
+          const serverInstances = await http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances')
+          const instances = serverInstances[server.name] || []
+
+          if (instances.length > 1) {
+            // 如果还有其他实例，只删除该实例
+            const instanceIndex = instances.findIndex(inst => inst.id === id)
+            if (instanceIndex !== -1) {
+              await http.delete(`/web/server-instances/${server.name}/${instanceIndex}`)
+            }
+          } else {
+            // 如果是最后一个实例，删除整个服务器
+            await http.delete(`/web/servers/${server.name}`)
+          }
         }
       }
 

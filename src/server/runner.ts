@@ -46,16 +46,30 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...');
-    const serverInstances = config.serverInstances;
-    for (const [serverName, instances] of Object.entries(serverInstances)) {
-      const serverConfig = config.servers[serverName];
-      if (serverConfig && serverConfig.enabled) {
-        instances.forEach(instance => {
-          // Connect in background to not block startup
-          mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
-            logger.error(`Failed to auto-connect to ${serverName}:`, err);
+    const serverConfigs = configManager.getServers();
+    for (const { name: serverName, config: serverConfig } of serverConfigs) {
+      if (serverConfig.enabled) {
+        // Check if there are existing instances
+        const existingInstances = configManager.getServerInstanceByName(serverName);
+        if (existingInstances.length === 0) {
+          // Auto-create instance for enabled servers
+          try {
+            const newInstance = await configManager.addServerInstance(serverName, {});
+            // Connect the new instance
+            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch(err => {
+              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+            });
+          } catch (err) {
+            logger.error(`Failed to create instance for ${serverName}:`, err);
+          }
+        } else {
+          // Connect existing instances
+          existingInstances.forEach(instance => {
+            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
+              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+            });
           });
-        });
+        }
       }
     }
 
