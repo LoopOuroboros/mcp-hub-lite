@@ -42,15 +42,22 @@ describe('Server API Routes', () => {
   });
 
   it('POST /api/servers should add a server', async () => {
-    const newServer = { 
-        name: 'New Server', 
-        command: 'node', 
-        args: [], 
+    const newServer = {
+        name: 'New Server',
+        config: {
+            command: 'node',
+            args: [],
+            env: {},
+            enabled: true
+        }
+    };
+    const createdServer = {
+        command: 'node',
+        args: [],
         env: {},
         enabled: true
     };
-    const createdServer = { ...newServer, id: 'uuid' };
-    
+
     vi.mocked(hubManager.addServer).mockReturnValue(createdServer as any);
 
     const response = await app.inject({
@@ -60,7 +67,10 @@ describe('Server API Routes', () => {
     });
 
     expect(response.statusCode).toBe(201);
-    expect(JSON.parse(response.payload)).toEqual(createdServer);
+    expect(JSON.parse(response.payload)).toEqual({
+        name: newServer.name,
+        config: createdServer
+    });
   });
 
   it('POST /api/servers should validate input', async () => {

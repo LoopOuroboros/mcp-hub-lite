@@ -22,21 +22,44 @@ describe('HubToolsService', () => {
       // Arrange
       const mockServers = [
         {
-          id: '1',
           name: 'Test Server 1',
-          type: 'stdio',
-          enabled: true,
-          command: 'test-command',
-          args: []
+          config: {
+            type: 'stdio',
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         },
         {
-          id: '2',
           name: 'Test Server 2',
-          type: 'sse',
-          enabled: true,
-          url: 'http://example.com'
+          config: {
+            type: 'sse',
+            url: 'http://example.com',
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         }
       ];
+
+      const mockServerInstances: Record<string, any[]> = {
+        'Test Server 1': [
+          {
+            id: '1',
+            timestamp: Date.now(),
+            hash: 'hash1'
+          }
+        ],
+        'Test Server 2': [
+          {
+            id: '2',
+            timestamp: Date.now(),
+            hash: 'hash2'
+          }
+        ]
+      };
 
       const mockStatuses = [
         {
@@ -51,6 +74,8 @@ describe('HubToolsService', () => {
       ];
 
       (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      (hubManager.getServerInstanceByName as any)
+        .mockImplementation((name: string) => mockServerInstances[name]);
       (mcpConnectionManager.getStatus as any)
         .mockImplementation((id: string) => id === '1' ? mockStatuses[0] : mockStatuses[1]);
 
@@ -78,6 +103,7 @@ describe('HubToolsService', () => {
       ]);
 
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
+      expect(hubManager.getServerInstanceByName).toHaveBeenCalledTimes(2);
       expect(mcpConnectionManager.getStatus).toHaveBeenCalledTimes(2);
     });
   });
@@ -207,32 +233,31 @@ describe('HubToolsService', () => {
         }
       ];
 
-      (hubManager.getServerById as any).mockReturnValue({ id: serverId, name: serverName });
+      (hubManager.getServerInstanceByName as any).mockReturnValue([{ id: serverId }]);
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
-      const result = await hubToolsService.listAllToolsInServer(serverId);
+      const result = await hubToolsService.listAllToolsInServer(serverName);
 
       // Assert
       expect(result).toEqual({
         serverName,
-        serverId,
         tools: mockTools
       });
 
-      expect(hubManager.getServerById).toHaveBeenCalledTimes(1);
-      expect(hubManager.getServerById).toHaveBeenCalledWith(serverId);
+      expect(hubManager.getServerInstanceByName).toHaveBeenCalledTimes(1);
+      expect(hubManager.getServerInstanceByName).toHaveBeenCalledWith(serverName);
       expect(mcpConnectionManager.getTools).toHaveBeenCalledWith(serverId);
     });
 
     it('should throw error if server not found', async () => {
       // Arrange
-      const serverId = '999';
-      (hubManager.getServerById as any).mockReturnValue(undefined);
+      const serverName = 'Non-existent Server';
+      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
 
       // Act & Assert
-      await expect(hubToolsService.listAllToolsInServer(serverId)).rejects.toThrow(
-        `Server with ID "${serverId}" not found`
+      await expect(hubToolsService.listAllToolsInServer(serverName)).rejects.toThrow(
+        `Server with name "${serverName}" not found`
       );
     });
   });
@@ -268,17 +293,15 @@ describe('HubToolsService', () => {
 
       vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
-        serverId,
         tools: mockTools
       });
 
       // Act
-      const result = await hubToolsService.findToolsInServer(serverId, 'File', 'both', false);
+      const result = await hubToolsService.findToolsInServer(serverName, 'File', 'both', false);
 
       // Assert
       expect(result).toEqual({
         serverName,
-        serverId,
         tools: [
           {
             id: 'tool1',
@@ -332,12 +355,11 @@ describe('HubToolsService', () => {
 
       vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
-        serverId,
         tools: mockTools
       });
 
       // Act
-      const tool = await hubToolsService.getTool(serverId, toolName);
+      const tool = await hubToolsService.getTool(serverName, toolName);
 
       // Assert
       expect(tool).toEqual(mockTools[0]);
@@ -361,12 +383,11 @@ describe('HubToolsService', () => {
 
       vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
         serverName,
-        serverId,
         tools: mockTools
       });
 
       // Act
-      const tool = await hubToolsService.getTool(serverId, toolName);
+      const tool = await hubToolsService.getTool(serverName, toolName);
 
       // Assert
       expect(tool).toBeUndefined();
@@ -382,11 +403,11 @@ describe('HubToolsService', () => {
       const toolArgs = { path: '/test/file.txt' };
       const expectedResult = { content: 'Test file content' };
 
-      (hubManager.getServerById as any).mockReturnValue({ id: serverId, name: serverName });
+      (hubManager.getServerInstanceByName as any).mockReturnValue([{ id: serverId }]);
       (mcpConnectionManager.callTool as any).mockResolvedValue(expectedResult);
 
       // Act
-      const result = await hubToolsService.callTool(serverId, toolName, toolArgs);
+      const result = await hubToolsService.callTool(serverName, toolName, toolArgs);
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -395,12 +416,12 @@ describe('HubToolsService', () => {
 
     it('should throw error if server not found when calling tool', async () => {
       // Arrange
-      const serverId = '999';
-      (hubManager.getServerById as any).mockReturnValue(undefined);
+      const serverName = 'Non-existent Server';
+      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
 
       // Act & Assert
-      await expect(hubToolsService.callTool(serverId, 'readFile', {})).rejects.toThrow(
-        `Server with ID "${serverId}" not found`
+      await expect(hubToolsService.callTool(serverName, 'readFile', {})).rejects.toThrow(
+        `Server with name "${serverName}" not found`
       );
     });
   });
@@ -409,9 +430,45 @@ describe('HubToolsService', () => {
     it('should list all tools from all servers', async () => {
       // Arrange
       const mockServers = [
-        { id: '1', name: 'Server 1' },
-        { id: '2', name: 'Server 2' }
+        {
+          name: 'Server 1',
+          config: {
+            type: 'stdio',
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
+        },
+        {
+          name: 'Server 2',
+          config: {
+            type: 'sse',
+            url: 'http://example.com',
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
+        }
       ];
+
+      const mockServerInstances: Record<string, any[]> = {
+        'Server 1': [
+          {
+            id: '1',
+            timestamp: Date.now(),
+            hash: 'hash1'
+          }
+        ],
+        'Server 2': [
+          {
+            id: '2',
+            timestamp: Date.now(),
+            hash: 'hash2'
+          }
+        ]
+      };
 
       const mockTools = [
         [
@@ -435,6 +492,8 @@ describe('HubToolsService', () => {
       ];
 
       (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      (hubManager.getServerInstanceByName as any)
+        .mockImplementation((name: string) => mockServerInstances[name]);
       (mcpConnectionManager.getTools as any)
         .mockImplementation((id: string) => id === '1' ? mockTools[0] : mockTools[1]);
 
@@ -443,12 +502,10 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(allTools).toEqual({
-        '1': {
-          serverId: '1',
+        'Server 1': {
           tools: mockTools[0]
         },
-        '2': {
-          serverId: '2',
+        'Server 2': {
           tools: mockTools[1]
         }
       });
@@ -459,8 +516,7 @@ describe('HubToolsService', () => {
     it('should find tools matching pattern across all servers', async () => {
       // Arrange
       const mockTools = {
-        '1': {
-          serverId: '1',
+        'Server 1': {
           tools: [
             {
               id: 'tool1',
@@ -471,8 +527,7 @@ describe('HubToolsService', () => {
             }
           ]
         },
-        '2': {
-          serverId: '2',
+        'Server 2': {
           tools: [
             {
               id: 'tool2',
@@ -499,8 +554,7 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(results).toEqual({
-        '1': {
-          serverId: '1',
+        'Server 1': {
           tools: [
             {
               id: 'tool1',
@@ -511,8 +565,7 @@ describe('HubToolsService', () => {
             }
           ]
         },
-        '2': {
-          serverId: '2',
+        'Server 2': {
           tools: [
             {
               id: 'tool2',

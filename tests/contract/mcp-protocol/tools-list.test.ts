@@ -56,7 +56,8 @@ describe('MCP Protocol Contract - tools/list', () => {
     enabled: true,
     type: 'stdio' as const,
     longRunning: true,
-    timeout: 60
+    timeout: 60,
+    allowedTools: ['calculator', 'weather']
   };
 
   beforeEach(async () => {
@@ -66,7 +67,14 @@ describe('MCP Protocol Contract - tools/list', () => {
     }
 
     // Add server to hub manager
-    hubManager.addServer(testServer);
+    hubManager.addServer(testServer.name, testServer);
+
+    // Add server instance (id, timestamp, hash)
+    hubManager.addServerInstance(testServer.name, {
+      id: testServer.id,
+      timestamp: Date.now(),
+      hash: 'test-hash'
+    });
   });
 
   afterEach(async () => {
@@ -74,7 +82,7 @@ describe('MCP Protocol Contract - tools/list', () => {
     if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
       await mcpConnectionManager.disconnect(testServer.id);
     }
-    hubManager.removeServer(testServer.id);
+    hubManager.removeServer(testServer.name);
   });
 
   it('should return JSON-RPC 2.0 compliant response format', async () => {
@@ -110,7 +118,17 @@ describe('MCP Protocol Contract - tools/list', () => {
   });
 
   it('should return empty tool list for disconnected server', async () => {
-    // Don't connect to server, try to get tools directly
+    // First connect to populate the tool cache
+    await mcpConnectionManager.connect(testServer);
+
+    // Verify tools are available when connected
+    const connectedTools = mcpConnectionManager.getTools(testServer.id);
+    expect(connectedTools.length).toBeGreaterThan(0);
+
+    // Disconnect the server
+    await mcpConnectionManager.disconnect(testServer.id);
+
+    // Now get tools should return empty array for disconnected server
     const tools = mcpConnectionManager.getTools(testServer.id);
     expect(tools).toEqual([]);
   });

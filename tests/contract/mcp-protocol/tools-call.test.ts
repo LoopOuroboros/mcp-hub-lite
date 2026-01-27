@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
 import { hubManager } from '../../../src/services/hub-manager.service.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 
 // Mock the actual server connection for contract tests
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -63,17 +66,32 @@ describe('MCP Protocol Contract - tools/call', () => {
     enabled: true,
     type: 'stdio' as const,
     longRunning: true,
-    timeout: 60
+    timeout: 60,
+    allowedTools: ['calculator']
   };
 
+  let tempConfigPath: string;
+
   beforeEach(async () => {
+    // Create a temporary directory for test configuration
+    const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+    tempConfigPath = path.join(tempDir, '.mcp-hub.json');
+
     // Clean up any existing connections
     if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
       await mcpConnectionManager.disconnect(testServer.id);
     }
 
     // Add server to hub manager
-    hubManager.addServer(testServer);
+    hubManager.addServer(testServer.name, testServer);
+
+    // Add server instance (id, timestamp, hash)
+    hubManager.addServerInstance(testServer.name, {
+      id: testServer.id,
+      timestamp: Date.now(),
+      hash: 'test-hash'
+    });
   });
 
   afterEach(async () => {
@@ -81,7 +99,13 @@ describe('MCP Protocol Contract - tools/call', () => {
     if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
       await mcpConnectionManager.disconnect(testServer.id);
     }
-    hubManager.removeServer(testServer.id);
+    hubManager.removeServer(testServer.name);
+
+    // Clean up temporary configuration
+    if (tempConfigPath && fs.existsSync(tempConfigPath)) {
+      const tempDir = path.dirname(tempConfigPath);
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('should execute tool with valid arguments and return JSON-RPC 2.0 compliant result', async () => {

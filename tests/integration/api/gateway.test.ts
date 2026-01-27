@@ -116,7 +116,12 @@ describe('GatewayService', () => {
       { name: 'testTool', description: 'desc', inputSchema: {}, serverId: 'server1' }
     ];
     vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
-    vi.mocked(mocks.getServerById).mockReturnValue({ name: 'Test Server', id: 'server1' } as any);
+    vi.mocked(mocks.getServerById).mockReturnValue({
+      name: 'Test Server',
+      id: 'server1',
+      config: { allowedTools: ['testTool'] },
+      instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
+    } as any);
 
     // Find the registered handler for ListTools
     // We can identify ListTools handler by checking if the schema has 'method' literal 'tools/list'
@@ -159,7 +164,12 @@ describe('GatewayService', () => {
       { name: 'testTool', description: 'desc', inputSchema: {}, serverId: 'server1' }
     ];
     vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
-    vi.mocked(mocks.getServerById).mockReturnValue({ name: 'Test Server', id: 'server1' } as any);
+    vi.mocked(mocks.getServerById).mockReturnValue({
+      name: 'Test Server',
+      id: 'server1',
+      config: { allowedTools: ['testTool'] },
+      instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
+    } as any);
 
     // Find list tools handler to populate tool map
     let listToolsHandler: Function | undefined;

@@ -8,9 +8,12 @@ vi.mock('../src/services/hub-manager.service.js', () => ({
   hubManager: {
     getAllServers: vi.fn(),
     getServerById: vi.fn(),
+    getServerByName: vi.fn(),
     addServer: vi.fn(),
     updateServer: vi.fn(),
     removeServer: vi.fn(),
+    addServerInstance: vi.fn().mockResolvedValue({}),
+    getServerInstanceByName: vi.fn(),
   }
 }));
 
@@ -42,15 +45,24 @@ describe('Server API Routes', () => {
   });
 
   it('POST /api/servers should add a server', async () => {
-    const newServer = { 
-        name: 'New Server', 
-        command: 'node', 
-        args: [], 
-        env: {},
-        enabled: true
+    const newServer = {
+        name: 'New Server',
+        config: {
+            command: 'node',
+            args: [],
+            env: {},
+            enabled: true,
+            allowedTools: []
+        }
     };
-    const createdServer = { ...newServer, id: 'uuid' };
-    
+    const createdServer = {
+        command: 'node',
+        args: [],
+        env: {},
+        enabled: true,
+        allowedTools: []
+    };
+
     vi.mocked(hubManager.addServer).mockReturnValue(createdServer as any);
 
     const response = await app.inject({
@@ -60,7 +72,10 @@ describe('Server API Routes', () => {
     });
 
     expect(response.statusCode).toBe(201);
-    expect(JSON.parse(response.payload)).toEqual(createdServer);
+    expect(JSON.parse(response.payload)).toEqual({
+        name: newServer.name,
+        config: createdServer
+    });
   });
 
   it('POST /api/servers should validate input', async () => {
