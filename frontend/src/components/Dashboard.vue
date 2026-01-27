@@ -34,7 +34,7 @@
       <div class="p-4 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ $t('dashboard.recentActivity') }}</h3>
       </div>
-      <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+      <div ref="activityContainer" class="p-4 overflow-y-auto flex-1 custom-scrollbar">
         <div v-for="(activity, index) in activities" :key="index" class="activity-item mb-4 pb-4 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
           <div class="flex items-center gap-2 mb-1">
             <el-icon :size="16" :class="getStatusColor(activity.serverStatus)">
@@ -57,13 +57,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, ref, nextTick } from 'vue'
 import { useServerStore } from '../stores/server'
 import { useWebSocketStore } from '../stores/websocket'
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue'
 
 const store = useServerStore()
 const wsStore = useWebSocketStore()
+const activityContainer = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   if (!store.loading && store.servers.length > 0) {
@@ -86,13 +87,24 @@ const activities = computed(() => {
         serverName: server.name,
         serverStatus: server.status,
         message: log.message,
-        time: formatTimestamp(log.timestamp), 
+        time: formatTimestamp(log.timestamp),
+        timestamp: log.timestamp, 
         originalIndex: idx
       })
     })
   })
 
-  return allActivities.reverse()
+  // Sort by timestamp ascending (Old -> New)
+  return allActivities.sort((a, b) => a.timestamp - b.timestamp)
+})
+
+// Auto-scroll to bottom when activities change
+watch(() => activities.value.length, () => {
+  nextTick(() => {
+    if (activityContainer.value) {
+      activityContainer.value.scrollTop = activityContainer.value.scrollHeight
+    }
+  })
 })
 
 function formatTimestamp(timestamp: number) {

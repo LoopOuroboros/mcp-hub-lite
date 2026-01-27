@@ -15,7 +15,7 @@
           <!-- Transport -->
           <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
             <span class="opacity-75">{{ $t('serverDetail.config.transport') }}:</span>
-            <span class="font-medium">{{ server.config.transport }}</span>
+            <span class="font-medium">{{ server.config.type }}</span>
           </div>
 
           <!-- Version -->
@@ -25,7 +25,7 @@
           </div>
 
           <!-- PID (Only for stdio) -->
-          <div v-if="server.config.transport === 'stdio'" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+          <div v-if="server.config.type === 'stdio'" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
             <span class="opacity-75">PID:</span>
             <span class="font-mono">{{ server.pid || 'N/A' }}</span>
           </div>
@@ -52,14 +52,14 @@
         <div class="max-w-3xl">
           <el-form label-position="top" class="mt-4">
             <el-form-item :label="$t('serverDetail.config.transport')">
-              <el-select v-model="server.config.transport" class="w-full">
+              <el-select v-model="server.config.type" class="w-full">
                 <el-option :label="$t('serverDetail.config.transportStdio')" value="stdio" />
                 <el-option :label="$t('serverDetail.config.transportSse')" value="sse" />
                 <el-option :label="$t('serverDetail.config.transportHttp')" value="streamable-http" />
               </el-select>
             </el-form-item>
             
-            <template v-if="server.config.transport === 'stdio'">
+            <template v-if="server.config.type === 'stdio'">
               <el-form-item :label="$t('serverDetail.config.executable')">
                 <el-input v-model="server.config.command" />
               </el-form-item>
@@ -335,7 +335,7 @@ function openCallDialog(tool: any) {
 function isToolAllowed(toolName: string) {
   if (!server.value?.config) return false
   const allowed = server.value.config.allowedTools
-  if (allowed === undefined || allowed === null) return true
+  if (allowed === undefined || allowed === null || allowed.length === 0) return false
   if (Array.isArray(allowed)) {
     return allowed.includes(toolName)
   }
@@ -542,7 +542,7 @@ const openEditJson = () => {
     configObj.timeout = server.value.config.timeout
   }
   
-  if (server.value.config.transport === 'stdio') {
+  if (server.value.config.type === 'stdio') {
     configObj.command = server.value.config.command
     configObj.args = server.value.config.args || []
   } else {
@@ -574,15 +574,15 @@ const saveJsonConfig = async () => {
       const updatedConfig = { ...server.value.config }
 
       if (newConfig.command) {
-        updatedConfig.transport = 'stdio'
+        updatedConfig.type = 'stdio'
         updatedConfig.command = newConfig.command
         updatedConfig.args = newConfig.args || []
         delete (updatedConfig as any).url
       } else if (newConfig.url) {
         if (newConfig.type === 'streamable-http' || newConfig.type === 'http') {
-          updatedConfig.transport = 'streamable-http'
+          updatedConfig.type = 'streamable-http'
         } else {
-          updatedConfig.transport = 'sse'
+          updatedConfig.type = 'sse'
         }
         updatedConfig.url = newConfig.url
         delete (updatedConfig as any).command

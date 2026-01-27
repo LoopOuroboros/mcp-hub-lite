@@ -24,10 +24,10 @@
             <el-form :model="config" label-position="left">
                <div class="flex flex-col gap-2">
                  <el-form-item :label="$t('settings.host')">
-                   <el-input v-model="config.host" class="w-[200px]" />
+                   <el-input v-model="config.system.host" class="w-[200px]" />
                  </el-form-item>
                  <el-form-item :label="$t('settings.port')">
-                   <el-input-number v-model="config.port" :min="1" :max="65535" class="w-[200px]" />
+                   <el-input-number v-model="config.system.port" :min="1" :max="65535" class="w-[200px]" />
                  </el-form-item>
                </div>
                
@@ -37,7 +37,7 @@
                </div>
 
               <el-form-item :label="$t('settings.theme')">
-                <el-select v-model="config.theme" class="w-[200px]">
+                <el-select v-model="config.system.theme" class="w-[200px]">
                   <el-option :label="$t('settings.themeLight')" value="light">
                     <span class="flex items-center gap-2">
                       <el-icon><Sunny /></el-icon>
@@ -60,7 +60,7 @@
               </el-form-item>
 
               <el-form-item :label="$t('settings.language')">
-                <el-select v-model="config.language" class="w-[200px]">
+                <el-select v-model="config.system.language" class="w-[200px]">
                   <el-option :label="$t('settings.langEn')" value="en" />
                   <el-option :label="$t('settings.langZh')" value="zh" />
                 </el-select>
@@ -79,9 +79,9 @@
           </template>
           
           <div class="pt-4">
-            <el-form :model="config.logging" label-position="left" v-if="config.logging">
+            <el-form :model="config.system.logging" label-position="left" v-if="config.system.logging">
               <el-form-item :label="$t('settings.logLevel')">
-                <el-select v-model="config.logging.level" class="w-full md:w-64">
+                <el-select v-model="config.system.logging.level" class="w-full md:w-64">
                   <el-option label="DEBUG" value="debug" />
                   <el-option label="INFO" value="info" />
                   <el-option label="WARN" value="warn" />
@@ -95,10 +95,10 @@
               </div>
               
               <el-form-item>
-                <el-checkbox v-model="config.logging.rotation.enabled">{{ $t('settings.enableRotation') }}</el-checkbox>
+                <el-checkbox v-model="config.system.logging.rotation.enabled">{{ $t('settings.enableRotation') }}</el-checkbox>
               </el-form-item>
               
-              <div class="flex flex-col gap-2" v-if="config.logging.rotation.enabled">
+              <div class="flex flex-col gap-2" v-if="config.system.logging.rotation.enabled">
                 <el-form-item :label="$t('settings.maxAge')">
                   <el-input-number v-model="maxAgeDays" :min="1" class="w-[150px]" />
                 </el-form-item>
@@ -115,7 +115,7 @@
                 </el-form-item>
                 <el-form-item :label="$t('settings.compress')">
                    <div class="h-8 flex items-center">
-                     <el-switch v-model="config.logging.rotation.compress" />
+                     <el-switch v-model="config.system.logging.rotation.compress" />
                    </div>
                 </el-form-item>
               </div>

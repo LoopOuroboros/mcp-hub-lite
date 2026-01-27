@@ -71,7 +71,7 @@
                 </span>
                 <span class="opacity-30">|</span>
                 <span class="shrink-0">
-                  {{ $t('serverDetail.config.transport') }}: {{ server.config.transport }}
+                  {{ $t('serverDetail.config.transport') }}: {{ server.config.type }}
                 </span>
                 <template v-if="server.status === 'running' && server.pid">
                   <span class="opacity-30">|</span>

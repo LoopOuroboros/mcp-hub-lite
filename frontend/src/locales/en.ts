@@ -123,7 +123,10 @@ export default {
     urlPlaceholder: 'http://localhost:3000/sse',
     keyPlaceholder: 'Key',
     byJson: 'By Json',
-    valuePlaceholder: 'Value'
+    valuePlaceholder: 'Value',
+    importBatch: 'Import Batch',
+    batchImportTitle: 'Batch Import MCP Servers',
+    importAll: 'Import All'
   },
   action: {
     restart: 'Restart',

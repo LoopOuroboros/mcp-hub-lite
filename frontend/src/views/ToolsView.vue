@@ -211,11 +211,11 @@ const groupedTools = computed(() => {
     }
 
     // Filter by allowedTools (Aggregated Logic)
-    // If allowedTools is undefined/null (not configured), show all tools (default allow)
-    // If allowedTools is defined (even if empty), strictly filter by it
+    // If allowedTools is empty (default), hide all tools (default deny)
+    // If allowedTools is defined and non-empty, strictly filter by it
     const allowed = server.config?.allowedTools
-    
-    if (allowed != null && !allowed.includes(result.tool.name)) {
+
+    if (!allowed || allowed.length === 0 || !allowed.includes(result.tool.name)) {
       return
     }
 

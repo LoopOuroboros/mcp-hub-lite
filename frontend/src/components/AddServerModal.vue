@@ -89,7 +89,10 @@
 
     <template #footer>
       <div class="dialog-footer flex justify-between w-full">
-        <el-button @click="showImportJson = true">{{ $t('addServer.byJson') }}</el-button>
+        <div class="flex gap-2">
+          <el-button @click="showImportJson = true">{{ $t('addServer.byJson') }}</el-button>
+          <el-button @click="showBatchImport = true">{{ $t('addServer.importBatch') }}</el-button>
+        </div>
         <div>
           <el-button @click="handleClose" :disabled="isSubmitting">{{ $t('action.cancel') }}</el-button>
           <el-button type="primary" @click="createServer" :loading="isSubmitting">{{ $t('action.create') }}</el-button>
@@ -99,7 +102,7 @@
 
     <el-dialog
       v-model="showImportJson"
-      title="Import JSON Config"
+      :title="$t('addServer.byJson')"
       width="500px"
       append-to-body
       class="custom-dialog"
@@ -111,8 +114,70 @@
         placeholder='{ "mcpServers": { "name": { "command": "...", ... } } }'
       />
       <template #footer>
-        <el-button @click="showImportJson = false">Cancel</el-button>
-        <el-button type="primary" @click="importJson">Import</el-button>
+        <el-button @click="showImportJson = false">{{ $t('action.cancel') }}</el-button>
+        <el-button type="primary" @click="importJson">{{ $t('action.save') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="showBatchImport"
+      :title="$t('addServer.batchImportTitle')"
+      width="600px"
+      append-to-body
+      class="custom-dialog"
+    >
+      <el-input
+        v-model="batchJsonConfig"
+        type="textarea"
+        :rows="12"
+        placeholder='{ "mcpServers": { "server1": { "command": "npx @anthropic-ai/mcp", "args": ["--model", "claude-3-opus-20250620"] }, "server2": { "url": "http://localhost:3000" } } }'
+      />
+      <template #footer>
+        <el-button @click="showBatchImport = false">{{ $t('action.cancel') }}</el-button>
+        <el-button type="primary" @click="importBatchJson" :loading="isSubmitting">{{ $t('addServer.importAll') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="showImportResult"
+      :title="$t('addServer.batchImportTitle')"
+      width="600px"
+      append-to-body
+      class="custom-dialog"
+    >
+      <div v-if="importResult.success.length > 0" class="mb-4">
+        <h4 class="text-green-500 mb-2">{{ $t('action.serverAdded') }}</h4>
+        <el-card class="mb-4">
+          <template #header>
+            <div class="card-header">
+              <span>{{ $t('action.serverAdded') }}</span>
+            </div>
+          </template>
+          <div class="space-y-2">
+            <div v-for="server in importResult.success" :key="server.id" class="p-2 bg-green-50 dark:bg-green-900/20 rounded">
+              {{ server.name }}
+            </div>
+          </div>
+        </el-card>
+      </div>
+      <div v-if="importResult.errors.length > 0" class="mb-4">
+        <h4 class="text-red-500 mb-2">{{ $t('error.addServerFailed') }}</h4>
+        <el-card class="mb-4">
+          <template #header>
+            <div class="card-header">
+              <span>{{ $t('error.addServerFailed') }}</span>
+            </div>
+          </template>
+          <div class="space-y-2">
+            <div v-for="(error, index) in importResult.errors" :key="index" class="p-2 bg-red-50 dark:bg-red-900/20 rounded">
+              <div class="font-bold">{{ error.name }}</div>
+              <div class="text-sm text-gray-400">{{ error.error }}</div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+      <template #footer>
+        <el-button @click="showImportResult = false">Close</el-button>
       </template>
     </el-dialog>
   </el-dialog>
@@ -141,6 +206,8 @@ const dialogVisible = computed({
 })
 
 const showImportJson = ref(false)
+const showBatchImport = ref(false)
+const showImportResult = ref(false)
 
 watch(dialogVisible, (val) => {
   if (val && props.initialMode === 'json') {
@@ -149,6 +216,12 @@ watch(dialogVisible, (val) => {
 })
 const defaultJsonConfig = `{\n  "mcpServers": {\n  }\n}`
 const jsonConfig = ref(defaultJsonConfig)
+const batchJsonConfig = ref(`{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "enabled": true\n    }\n  }\n}`)
+
+const importResult = ref({
+  success: [] as any[],
+  errors: [] as { name: string; error: string }[]
+})
 
 const form = ref({
   transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
@@ -198,7 +271,7 @@ function importJson() {
     if (configToUse.timeout) {
       form.value.timeout = configToUse.timeout / 1000
     }
-    
+
     if (configToUse.enabled !== undefined) {
       form.value.autoStart = configToUse.enabled
     }
@@ -214,6 +287,31 @@ function importJson() {
     ElMessage.success(t('action.configImported'))
   } catch (e: any) {
     ElMessage.error(t('error.invalidJsonConfig') + ': ' + e.message)
+  }
+}
+
+async function importBatchJson() {
+  try {
+    const parsed = JSON.parse(batchJsonConfig.value)
+
+    if (!parsed.mcpServers || typeof parsed.mcpServers !== 'object') {
+      ElMessage.error('Invalid JSON format: missing "mcpServers" object')
+      return
+    }
+
+    // Close dialogs immediately
+    showBatchImport.value = false
+    handleClose()
+    ElMessage.success(t('action.serverAdded'))
+
+    // Run import asynchronously
+    store.importServersFromJson(parsed).catch((e: any) => {
+      console.error('Import error:', e)
+      ElMessage.error('Import failed: ' + e.message)
+    })
+  } catch (e: any) {
+    console.error('Import error:', e) // 添加错误调试信息
+    ElMessage.error('Import failed: ' + e.message)
   }
 }
 
@@ -250,7 +348,14 @@ function resetForm() {
   }
   envItems.value = []
   jsonConfig.value = defaultJsonConfig
+  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "enabled": true\n    }\n  }\n}`
+  importResult.value = {
+    success: [],
+    errors: []
+  }
   showImportJson.value = false
+  showBatchImport.value = false
+  showImportResult.value = false
 }
 
 const isSubmitting = ref(false)
@@ -258,7 +363,7 @@ const isSubmitting = ref(false)
 async function createServer() {
   if (isSubmitting.value) return
   isSubmitting.value = true
-  
+
   const env = envItems.value.reduce((acc, item) => {
     if (item.key) acc[item.key] = item.value
     return acc
@@ -270,7 +375,7 @@ async function createServer() {
       status: 'stopped',
       type: form.value.transport === 'stdio' ? 'local' : 'remote',
       config: {
-        transport: form.value.transport,
+        type: form.value.transport,
         command: form.value.command,
         args: form.value.args.filter(a => a),
         url: form.value.url,
@@ -281,7 +386,7 @@ async function createServer() {
       },
       logs: []
     })
-    
+
     ElMessage.success(t('action.serverAdded'))
     handleClose()
   } catch (error: any) {

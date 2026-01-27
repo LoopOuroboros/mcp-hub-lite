@@ -123,7 +123,10 @@ export default {
     urlPlaceholder: 'http://localhost:3000/sse',
     keyPlaceholder: '键',
     byJson: '通过 JSON 添加',
-    valuePlaceholder: '值'
+    valuePlaceholder: '值',
+    importBatch: '批量导入',
+    batchImportTitle: '批量导入 MCP 服务器',
+    importAll: '全部导入'
   },
   action: {
     restart: '重启',
