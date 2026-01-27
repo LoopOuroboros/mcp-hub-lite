@@ -1,7 +1,0 @@
-      PID    PPID    PGID     WINPID   TTY         UID    STIME COMMAND
-      310     296     271       3572  ?         197609 09:53:13 /d/Program Files/nodejs/node
-     6957    6938    6938      39348  ?         197609 11:08:11 /usr/bin/bash
-     7149       1    7149      40096  ?         197609 11:16:52 /usr/bin/bash
-      296     271     271      36404  ?         197609 09:53:13 /usr/bin/bash
-     6965    6957    6938      32500  ?         197609 11:08:12 /d/Program Files/nodejs/node
-     7168    7149    7149      41444  ?         197609 11:16:53 /usr/bin/PS
