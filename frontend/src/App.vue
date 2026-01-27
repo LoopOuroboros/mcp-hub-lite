@@ -1,7 +1,10 @@
 <template>
-  <el-config-provider :locale="elLocale" :class="theme === 'dark' ? 'dark' : ''">
+  <el-config-provider :locale="elLocale">
     <!-- Root container handling theme bg/text - HOT RELOAD TEST -->
-    <div class="app-container h-screen w-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <div :class="[
+      'app-container h-screen w-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300',
+      theme === 'dark' ? 'dark' : ''
+    ]">
       <Header />
       <div class="flex-1 flex overflow-hidden relative">
         <router-view />
@@ -31,24 +34,24 @@ const elLocale = computed(() => {
 
 onMounted(async () => {
   await systemStore.fetchConfig()
-  
+
   // Apply initial config
-  if (systemStore.config.language) {
-    locale.value = systemStore.config.language
+  if (systemStore.config.system.language) {
+    locale.value = systemStore.config.system.language
   }
-  if (systemStore.config.theme) {
-    setTheme(systemStore.config.theme as any)
+  if (systemStore.config.system.theme) {
+    setTheme(systemStore.config.system.theme as any)
   }
 })
 
 // Watch for store changes to sync global state
-watch(() => systemStore.config.theme, (newTheme) => {
+watch(() => systemStore.config.system.theme, (newTheme) => {
   if (newTheme && newTheme !== theme.value) {
     setTheme(newTheme as any)
   }
 })
 
-watch(() => systemStore.config.language, (newLang) => {
+watch(() => systemStore.config.system.language, (newLang) => {
   if (newLang && newLang !== locale.value) {
     locale.value = newLang
   }
