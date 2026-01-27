@@ -1,5 +1,6 @@
 import { ClientContext } from '../utils/request-context.js';
 import { logger } from '../utils/logger.js';
+import { eventBus } from './event-bus.service.js';
 
 export interface ClientInfo extends ClientContext {
   lastSeen: number;
@@ -17,7 +18,7 @@ class ClientTrackerService {
 
   public updateClient(context: ClientContext) {
     const existing = this.clients.get(context.clientId);
-    this.clients.set(context.clientId, {
+    const clientInfo: ClientInfo = {
       ...context,
       // Preserve existing info if not provided in new request
       clientName: context.clientName || existing?.clientName,
@@ -25,10 +26,19 @@ class ClientTrackerService {
       cwd: context.cwd || existing?.cwd, // Preserve CWD if not provided in new request (e.g. inferred from roots)
       userAgent: context.userAgent || existing?.userAgent,
       ip: context.ip || existing?.ip,
-      
+
       lastSeen: Date.now(),
       roots: existing?.roots // Preserve roots if already fetched
-    });
+    };
+    this.clients.set(context.clientId, clientInfo);
+
+    // 如果是新客户端，发布连接事件
+    if (!existing) {
+      eventBus.publish('client-connected', {
+        timestamp: Date.now(),
+        client: clientInfo
+      });
+    }
   }
 
   public updateClientRoots(clientId: string, roots: Array<{ uri: string; name?: string }>) {
@@ -72,6 +82,13 @@ class ClientTrackerService {
       if (now - info.lastSeen > this.TIMEOUT_MS) {
         this.clients.delete(id);
         logger.debug(`Removed stale client: ${id}`);
+
+        // 发布客户端断开事件
+        eventBus.publish('client-disconnected', {
+          timestamp: Date.now(),
+          clientId: id,
+          client: info
+        });
       }
     }
   }

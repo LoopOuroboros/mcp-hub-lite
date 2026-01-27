@@ -46,18 +46,33 @@ export class SearchCoreService {
     }
 
     const allTools = mcpConnectionManager.getAllTools();
-    
+
     // Filter tools based on server configuration (allowedTools)
     const allowedTools = allTools.filter(tool => {
-      const server = hubManager.getServerById(tool.serverId);
-      const allowed = server?.allowedTools;
-      
+      // 从服务器 ID 中解析原始服务器 ID 和实例索引
+      const [originalId, indexStr] = tool.serverId.split('-');
+      const index = parseInt(indexStr);
+
+      // 获取服务器基本配置
+      const server = hubManager.getServerById(originalId);
+      if (!server) {
+        return true; // 服务器不存在，允许所有工具（安全策略）
+      }
+
+      // 获取服务器实例配置
+      const instances = hubManager.getServerInstanceByName(server.name);
+      if (!instances || instances.length <= index) {
+        return true; // 实例不存在，允许所有工具
+      }
+
+      const allowed = server.config.allowedTools;
+
       // If allowedTools is explicitly defined (not null/undefined), use it to filter
       // If it's an empty array, it will filter out all tools
       if (allowed != null) {
         return allowed.includes(tool.name);
       }
-      
+
       // If allowedTools is undefined/null, allow all tools
       return true;
     });

@@ -159,9 +159,10 @@ export class GatewayService {
         };
 
         if (filters.serverName) {
-          const server = hubManager.getAllServers().find((s: any) => s.name === filters.serverName);
-          if (server) {
-            searchOptions.filters!.serverId = server.id;
+          const serverInstances = hubManager.getServerInstanceByName(filters.serverName);
+          if (serverInstances.length > 0) {
+            // 使用第一个实例的 ID 作为筛选条件
+            searchOptions.filters!.serverId = serverInstances[0].id;
           }
         }
 
@@ -224,7 +225,7 @@ export class GatewayService {
     const ListAllToolsInServerRequestSchema = z.object({
       method: z.literal('list-all-tools-in-server'),
       params: z.object({
-        serverId: z.string()
+        serverName: z.string()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -232,8 +233,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(ListAllToolsInServerRequestSchema, async (request) => {
       try {
-        const { serverId } = request.params;
-        const result = await hubToolsService.listAllToolsInServer(serverId);
+        const { serverName } = request.params;
+        const result = await hubToolsService.listAllToolsInServer(serverName);
         return result;
       } catch (error: any) {
         logger.error(`List tools in server error:`, error);
@@ -245,7 +246,7 @@ export class GatewayService {
     const FindToolsInServerRequestSchema = z.object({
       method: z.literal('find-tools-in-server'),
       params: z.object({
-        serverId: z.string(),
+        serverName: z.string(),
         pattern: z.string(),
         searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
         caseSensitive: z.boolean().optional().default(false)
@@ -256,8 +257,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(FindToolsInServerRequestSchema, async (request) => {
       try {
-        const { serverId, pattern, searchIn, caseSensitive } = request.params;
-        const result = await hubToolsService.findToolsInServer(serverId, pattern, searchIn, caseSensitive);
+        const { serverName, pattern, searchIn, caseSensitive } = request.params;
+        const result = await hubToolsService.findToolsInServer(serverName, pattern, searchIn, caseSensitive);
         return result;
       } catch (error: any) {
         logger.error(`Find tools in server error:`, error);
@@ -269,7 +270,7 @@ export class GatewayService {
     const GetToolRequestSchema = z.object({
       method: z.literal('get-tool'),
       params: z.object({
-        serverId: z.string(),
+        serverName: z.string(),
         toolName: z.string()
       }),
       id: z.union([z.string(), z.number()]),
@@ -278,12 +279,10 @@ export class GatewayService {
 
     server.server.setRequestHandler(GetToolRequestSchema, async (request) => {
       try {
-        const { serverId, toolName } = request.params;
-        const tool = await hubToolsService.getTool(serverId, toolName);
+        const { serverName, toolName } = request.params;
+        const tool = await hubToolsService.getTool(serverName, toolName);
 
         if (!tool) {
-          const server = hubManager.getServerById(serverId);
-          const serverName = server ? server.name : serverId;
           throw new McpError(-32801, `Tool "${toolName}" not found on server "${serverName}"`);
         }
 
@@ -301,7 +300,7 @@ export class GatewayService {
     const CallToolDirectRequestSchema = z.object({
       method: z.literal('call-tool'),
       params: z.object({
-        serverId: z.string(),
+        serverName: z.string(),
         toolName: z.string(),
         toolArgs: z.record(z.string(), z.any())
       }),
@@ -311,8 +310,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(CallToolDirectRequestSchema, async (request) => {
       try {
-        const { serverId, toolName, toolArgs } = request.params;
-        
+        const { serverName, toolName, toolArgs } = request.params;
+
         // Inject CWD if available and not present in args
         const cwd = getClientCwd();
         if (cwd && !toolArgs.cwd) {
@@ -320,7 +319,7 @@ export class GatewayService {
             logger.debug(`Injected CWD into direct tool call: ${cwd}`);
         }
 
-        const result = await hubToolsService.callTool(serverId, toolName, toolArgs);
+        const result = await hubToolsService.callTool(serverName, toolName, toolArgs);
         return result;
       } catch (error: any) {
         logger.error(`Call tool error:`, error);
@@ -397,38 +396,45 @@ export class GatewayService {
       // First pass: Count tool name frequencies to determine uniqueness
       const toolNameCounts = new Map<string, number>();
       for (const tool of allTools) {
+        // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
         const serverConfig = hubManager.getServerById(tool.serverId);
-        if (serverConfig?.allowedTools && !serverConfig.allowedTools.includes(tool.name)) {
-          continue;
+        if (serverConfig) {
+          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+            continue;
+          }
         }
         toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
       }
 
       for (const tool of allTools) {
+          // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
           const serverConfig = hubManager.getServerById(tool.serverId);
-          
-          if (serverConfig?.allowedTools && !serverConfig.allowedTools.includes(tool.name)) {
-            continue;
+
+          if (serverConfig) {
+            if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+              continue;
+            }
           }
 
           const serverName = serverConfig ? serverConfig.name : tool.serverId;
-          
+
           let gatewayToolName = tool.name;
           const isUnique = toolNameCounts.get(tool.name) === 1;
           const isSystemConflict = usedNames.has(tool.name);
 
           // If tool name is not unique or conflicts with system tool, append server hash
           if (!isUnique || isSystemConflict) {
-              // serverConfig.hash is guaranteed by ConfigManager for all configured servers
-              const hash = serverConfig?.hash || 'xxxx'; 
+              // 从 serverConfig 中获取实例的 hash
+              const hash = serverConfig?.instance?.hash || 'xxxx';
               gatewayToolName = `${tool.name}_${hash}`;
           }
 
           // Ensure name doesn't exceed 60 chars
           if (gatewayToolName.length > 60) {
-              const hash = serverConfig?.hash || 'xxxx';
+              // 直接从 serverConfig 中获取实例的 hash
+              const hash = serverConfig?.instance?.hash || 'xxxx';
               // Reserve space for hash and separator
-              const maxToolNameLen = 60 - hash.length - 1; 
+              const maxToolNameLen = 60 - hash.length - 1;
               const truncatedToolName = tool.name.substring(0, maxToolNameLen);
               gatewayToolName = `${truncatedToolName}_${hash}`;
           }
@@ -491,18 +497,18 @@ export class GatewayService {
               );
               break;
             case 'list-all-tools-in-server':
-              result = await hubToolsService.listAllToolsInServer(toolArgs.serverId);
+              result = await hubToolsService.listAllToolsInServer(toolArgs.serverName);
               break;
             case 'find-tools-in-server':
               result = await hubToolsService.findToolsInServer(
-                toolArgs.serverId,
+                toolArgs.serverName,
                 toolArgs.pattern,
                 toolArgs.searchIn,
                 toolArgs.caseSensitive
               );
               break;
             case 'get-tool':
-              result = await hubToolsService.getTool(toolArgs.serverId, toolArgs.toolName);
+              result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName);
               break;
             case 'call-tool':
               // Inject CWD for nested call-tool
@@ -511,7 +517,7 @@ export class GatewayService {
                   toolArgs.toolArgs.cwd = cwd;
                   logger.debug(`Injected CWD into nested tool call: ${cwd}`);
               }
-              result = await hubToolsService.callTool(toolArgs.serverId, toolArgs.toolName, toolArgs.toolArgs);
+              result = await hubToolsService.callTool(toolArgs.serverName, toolArgs.toolName, toolArgs.toolArgs);
               break;
             case 'find-tools':
               result = await hubToolsService.findTools(

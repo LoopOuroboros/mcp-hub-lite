@@ -5,25 +5,31 @@ import { z } from 'zod';
  * Simplified schema for MCP-HUB-LITE Lite version
  */
 
+// 服务器配置 Schema（以服务器名称为 key）
 export const McpServerConfigSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1).max(100),
-  description: z.string().optional(),
-  timestamp: z.number().optional(),
-  hash: z.string().optional(),
   command: z.string().optional(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().default(true),
   tags: z.record(z.string(), z.string()).optional(),
-  type: z.enum(['stdio', 'sse', 'streamable-http']).default('stdio'),
-  longRunning: z.boolean().default(true),
+  type: z.enum(['stdio', 'sse', 'streamable-http', 'http']).default('stdio'),
   timeout: z.number().default(60000),
   url: z.string().optional(),
-  allowedTools: z.array(z.string()).optional()
+  allowedTools: z.array(z.string()).default([])
 });
 
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+
+// 服务器实例 Schema（每个实例包含 id、timestamp、hash）
+export const ServerInstanceConfigSchema = z.object({
+  id: z.string(),
+  timestamp: z.number(), // 启动时间
+  hash: z.string(),
+  pid: z.number().optional(), // 进程ID
+  startTime: z.number().optional() // 启动时间（与 timestamp 相同，保持兼容性）
+});
+
+export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
 
 /**
  * Logging Configuration Schema
@@ -83,13 +89,29 @@ export const SecurityConfigSchema = z.object({
  */
 export const SystemConfigSchema = z.object({
   version: z.string().default('1.0.0'),
-  host: z.string().default('localhost'),
-  port: z.number().default(7788),
-  language: z.enum(['zh', 'en']).default('zh'),
-  theme: z.enum(['light', 'dark', 'system']).default('system'),
-  logging: LoggingConfigSchema,
+  system: z.object({
+    host: z.string().default('localhost'),
+    port: z.number().default(7788),
+    language: z.enum(['zh', 'en']).default('zh'),
+    theme: z.enum(['light', 'dark', 'system']).default('system'),
+    logging: LoggingConfigSchema
+  }).default({
+    host: 'localhost',
+    port: 7788,
+    language: 'zh',
+    theme: 'system',
+    logging: {
+      level: 'info',
+      rotation: {
+        enabled: true,
+        maxAge: '7d',
+        maxSize: '100MB',
+        compress: false
+      }
+    }
+  }),
   security: SecurityConfigSchema,
-  servers: z.array(McpServerConfigSchema).default([])
+  servers: z.record(z.string(), McpServerConfigSchema).default({})
 });
 
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;

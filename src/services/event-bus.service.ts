@@ -97,6 +97,9 @@ export const EventTypes = {
   SERVER_ADDED: 'server-added',
   SERVER_UPDATED: 'server-updated',
   SERVER_DELETED: 'server-deleted',
+  SERVER_INSTANCE_ADDED: 'server-instance-added',
+  SERVER_INSTANCE_UPDATED: 'server-instance-updated',
+  SERVER_INSTANCE_DELETED: 'server-instance-deleted',
 
   // 工具相关事件
   TOOLS_UPDATED: 'tools',
@@ -114,6 +117,10 @@ export const EventTypes = {
   // 系统相关事件
   SYSTEM_HEALTH: 'system-health',
   CONFIGURATION_UPDATED: 'configuration-updated',
+
+  // 客户端相关事件
+  CLIENT_CONNECTED: 'client-connected',
+  CLIENT_DISCONNECTED: 'client-disconnected',
 } as const;
 
 // 创建全局事件总线实例
