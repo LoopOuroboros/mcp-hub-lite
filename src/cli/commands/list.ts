@@ -14,10 +14,11 @@ export const listCommand = new Command('list')
         // Table format
         console.log('MCP Servers:');
         console.table(servers.map(server => ({
-          ID: server.id,
           Name: server.name,
-          Command: `${server.command} ${server.args.join(' ')}`,
-          Enabled: server.enabled ? 'Yes' : 'No'
+          // 现在需要显示服务器实例信息
+          Instances: server.instances?.length || 0,
+          Type: server.config.type,
+          Enabled: server.config.enabled
         })));
       }
     } catch (error) {

@@ -20,7 +20,7 @@ program
   .description('Lightweight MCP Gateway for managing MCP servers')
   .version('1.0.0');
 
-// Register all 6 core commands
+// Register all core commands
 program.addCommand(startCommand);
 program.addCommand(stopCommand);
 program.addCommand(statusCommand);

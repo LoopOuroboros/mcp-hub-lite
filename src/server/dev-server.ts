@@ -14,19 +14,24 @@ async function startDevServer() {
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...');
-    const servers = config.servers.filter((s: any) => s.enabled);
-    for (const server of servers) {
-      mcpConnectionManager.connect(server).catch(err => {
-        logger.error(`Failed to auto-connect to ${server.name}:`, err);
-      });
+    const serverInstances = config.serverInstances;
+    for (const [serverName, instances] of Object.entries(serverInstances)) {
+      const serverConfig = config.servers[serverName];
+      if (serverConfig && serverConfig.enabled) {
+        instances.forEach(instance => {
+          mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
+            logger.error(`Failed to auto-connect to ${serverName}:`, err);
+          });
+        });
+      }
     }
 
     // Listen on configured port
     await app.listen({
-      port: config.port,
-      host: config.host
+      port: config.system.port,
+      host: config.system.host
     });
-    logger.info(`MCP Hub Lite Dev Server running at http://${config.host}:${config.port}`);
+    logger.info(`MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`);
 
     // Write PID file after server starts successfully
     PidManager.writePid();

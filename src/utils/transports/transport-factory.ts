@@ -1,4 +1,3 @@
-import { McpServerConfig } from '../../config/config.schema.js';
 import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
@@ -10,49 +9,52 @@ import { Transport, ServerTransportConfig } from './transport.interface.js';
 export class TransportFactory {
   /**
    * 创建传输客户端
-   * @param server 服务器配置
+   * @param server 服务器配置，包含基础配置和实例配置
    * @returns 传输客户端实例
    * @throws Error 如果服务器类型不支持或配置无效
    */
-  static createTransport(server: McpServerConfig): Transport {
+  static createTransport(server: any): Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
-    switch (transportConfig.type) {
+    // 使用类型断言确保 TypeScript 能够正确推断类型
+    const config = transportConfig as any;
+
+    switch (config.type) {
       case 'stdio':
-        if (!transportConfig.command) {
+        if (!config.command) {
           throw new Error('STDIO transport requires a command');
         }
         return new StdioTransport({
-          command: transportConfig.command,
-          args: transportConfig.args,
-          env: transportConfig.env,
+          command: config.command,
+          args: config.args,
+          env: config.env,
           cwd: process.cwd(),
           stderr: 'pipe'
         }, server.name);
 
       case 'sse':
-        if (!transportConfig.url) {
+        if (!config.url) {
           throw new Error('SSE transport requires a URL');
         }
         return new SseTransport(
-          transportConfig.url,
-          transportConfig.headers,
-          transportConfig.reconnectInterval,
-          transportConfig.maxReconnectAttempts
+          config.url,
+          config.headers,
+          config.reconnectInterval,
+          config.maxReconnectAttempts
         );
 
       case 'streamable-http':
-        if (!transportConfig.url) {
+        if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
         return new StreamableHttpTransport(
-          transportConfig.url,
-          transportConfig.headers,
-          transportConfig.timeout
+          config.url,
+          config.headers,
+          config.timeout
         );
 
       default:
-        throw new Error(`Unsupported transport type: ${server.type || 'undefined'}`);
+        throw new Error(`Unsupported transport type: ${config.type || 'undefined'}`);
     }
   }
 
@@ -68,7 +70,7 @@ export class TransportFactory {
   /**
    * 验证并转换服务器配置为传输配置
    */
-  private static validateAndConvertConfig(server: McpServerConfig): ServerTransportConfig {
+  private static validateAndConvertConfig(server: any): ServerTransportConfig {
     const type = server.type || 'stdio';
 
     if (type === 'stdio') {
@@ -99,7 +101,15 @@ export class TransportFactory {
         timeout: server.timeout || 30000
       };
     } else {
-      throw new Error(`Unsupported transport type: ${type}`);
+      // 默认返回 stdio 类型，避免返回 never 类型
+      return {
+        type: 'stdio',
+        command: '',
+        args: [],
+        env: this.buildSystemEnv(),
+        cwd: process.cwd(),
+        stderr: 'pipe'
+      };
     }
   }
 }

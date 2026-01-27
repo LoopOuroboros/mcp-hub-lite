@@ -59,5 +59,11 @@ export async function restartServer(options: ServerOptions) {
 }
 
 export async function listServers() {
-  return hubManager.getAllServers();
+  const servers = hubManager.getAllServers();
+  const serverInstances = hubManager.getServerInstances();
+
+  return servers.map(server => ({
+    ...server,
+    instances: serverInstances[server.name] || []
+  }));
 }

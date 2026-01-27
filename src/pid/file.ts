@@ -5,9 +5,11 @@
 
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import type { PidFileOptions } from './types.js';
 
-const DEFAULT_CONFIG_DIR = path.join(process.cwd(), 'config');
+// 配置目录：优先使用用户主目录下的 .mcp-hub-lite/config 文件夹
+const DEFAULT_CONFIG_DIR = path.join(os.homedir(), '.mcp-hub-lite', 'config');
 const DEFAULT_PID_FILENAME = '.mcp-hub.pid';
 
 /**

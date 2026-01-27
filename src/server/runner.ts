@@ -19,8 +19,8 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
     const config = configManager.getConfig();
 
     // Override config with options if provided
-    const host = options.host || config.host;
-    const port = options.port || config.port;
+    const host = options.host || config.system.host;
+    const port = options.port || config.system.port;
 
     // Check if port is already in use (only for HTTP mode)
     if (!isStdio) {
@@ -46,12 +46,17 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...');
-    const servers = config.servers.filter((s: any) => s.enabled);
-    for (const server of servers) {
-        // Connect in background to not block startup
-        mcpConnectionManager.connect(server).catch(err => {
-            logger.error(`Failed to auto-connect to ${server.name}:`, err);
+    const serverInstances = config.serverInstances;
+    for (const [serverName, instances] of Object.entries(serverInstances)) {
+      const serverConfig = config.servers[serverName];
+      if (serverConfig && serverConfig.enabled) {
+        instances.forEach(instance => {
+          // Connect in background to not block startup
+          mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
+            logger.error(`Failed to auto-connect to ${serverName}:`, err);
+          });
         });
+      }
     }
 
     // Setup signal handlers for graceful shutdown

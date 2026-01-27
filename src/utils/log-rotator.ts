@@ -23,7 +23,7 @@ export class LogRotator {
   }
 
   private getRetentionDays(): number {
-    const maxAge = this.config.logging.rotation.maxAge;
+    const maxAge = this.config.system.logging.rotation.maxAge;
     // Parse maxAge like "7d", "30d", etc.
     const match = maxAge.match(/^(\d+)([dhm])$/);
     if (match) {
@@ -44,7 +44,7 @@ export class LogRotator {
   }
 
   private isRotationEnabled(): boolean {
-    return this.config.logging.rotation.enabled;
+    return this.config.system.logging.rotation.enabled;
   }
 
   /**

@@ -122,7 +122,7 @@ program
   .description('List all managed MCP servers')
   .action(async () => {
     const config = configManager.getConfig();
-    const url = `http://${config.host}:${config.port}/web/servers`;
+    const url = `http://${config.system.host}:${config.system.port}/web/servers`;
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -162,22 +162,22 @@ program
     console.log(`${colors.bold}MCP Hub Lite - System Status${colors.reset}`);
     console.log('============================');
     console.log(`${colors.cyan}Process ID:${colors.reset} ${isRunning ? pid : 'Not running'}`);
-    console.log(`${colors.cyan}Port:${colors.reset} ${config.port}`);
-    console.log(`${colors.cyan}Host:${colors.reset} ${config.host}`);
+    console.log(`${colors.cyan}Port:${colors.reset} ${config.system.port}`);
+    console.log(`${colors.cyan}Host:${colors.reset} ${config.system.host}`);
     console.log(`${colors.cyan}Status:${colors.reset} ${isRunning ? `${colors.green}Running${colors.reset}` : `${colors.red}Stopped${colors.reset}`}`);
     console.log('');
 
     // Display MCP connection example
     console.log(`${colors.bold}MCP Integration:${colors.reset}`);
     console.log('================');
-    console.log(`${colors.yellow}Endpoint:${colors.reset} http://${config.host}:${config.port}/mcp`);
+    console.log(`${colors.yellow}Endpoint:${colors.reset} http://${config.system.host}:${config.system.port}/mcp`);
     console.log(`${colors.yellow}Transport:${colors.reset} HTTP-Stream`);
     console.log('');
     const mcpClientConfig = {
       "mcpServers": {
         "mcp-hub-lite": {
           "type": "http",
-          "url": `http://${config.host}:${config.port}/mcp`
+          "url": `http://${config.system.host}:${config.system.port}/mcp`
         }
       }
     };
@@ -187,7 +187,7 @@ program
     // Try to fetch server list if running
     if (isRunning) {
       try {
-        const url = `http://${config.host}:${config.port}/web/servers`;
+        const url = `http://${config.system.host}:${config.system.port}/web/servers`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(url, { signal: controller.signal });
@@ -293,7 +293,7 @@ program
   .description('Open the Web UI')
   .action(async () => {
     const config = configManager.getConfig();
-    const url = `http://${config.host}:${config.port}`;
+    const url = `http://${config.system.host}:${config.system.port}`;
     console.log(`Opening Web UI at ${url}...`);
     const { exec } = await import('child_process');
     const start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
