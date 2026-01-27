@@ -20,6 +20,10 @@ function getBackendPort(): string {
   if (fs.existsSync(configPath)) {
     try {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.system?.port && typeof config.system.port === 'number') {
+        return String(config.system.port);
+      }
+      // 兼容旧配置格式
       if (config.port && typeof config.port === 'number') {
         return String(config.port);
       }
@@ -46,6 +50,10 @@ function getBackendHost(): string {
   if (fs.existsSync(configPath)) {
     try {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.system?.host && typeof config.system.host === 'string') {
+        return config.system.host;
+      }
+      // 兼容旧配置格式
       if (config.host && typeof config.host === 'string') {
         return config.host;
       }

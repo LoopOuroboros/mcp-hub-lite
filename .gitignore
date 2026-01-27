@@ -10,7 +10,7 @@ dist/
 build/
 out/
 coverage/
-config/
+/config/
 
 # Environment files
 .env
