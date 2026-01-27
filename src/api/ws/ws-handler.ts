@@ -17,7 +17,13 @@ const eventTypeMap: Record<string, string> = {
   [EventTypes.SERVER_DELETED]: 'server-deleted',
   [EventTypes.TOOLS_UPDATED]: 'tools',
   [EventTypes.RESOURCES_UPDATED]: 'resources',
-  [EventTypes.LOG_ENTRY]: 'log'
+  [EventTypes.LOG_ENTRY]: 'log',
+  [EventTypes.TOOL_CALL_STARTED]: 'tool-call-started',
+  [EventTypes.TOOL_CALL_COMPLETED]: 'tool-call-completed',
+  [EventTypes.TOOL_CALL_ERROR]: 'tool-call-error',
+  [EventTypes.CONFIGURATION_UPDATED]: 'configuration-updated',
+  [EventTypes.CLIENT_CONNECTED]: 'client-connected',
+  [EventTypes.CLIENT_DISCONNECTED]: 'client-disconnected'
 };
 
 // 客户端到服务器的消息类型
@@ -129,6 +135,69 @@ export interface ErrorMessage {
   };
 }
 
+export interface ToolCallStartedEvent {
+  type: 'tool-call-started';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    args: Record<string, unknown>;
+  };
+}
+
+export interface ToolCallCompletedEvent {
+  type: 'tool-call-completed';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    result: any;
+  };
+}
+
+export interface ToolCallErrorEvent {
+  type: 'tool-call-error';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    error: string;
+    stack?: string;
+  };
+}
+
+export interface ConfigurationUpdatedEvent {
+  type: 'configuration-updated';
+  data: {
+    timestamp: number;
+    config: any;
+    changes?: any;
+  };
+}
+
+export interface ClientConnectedEvent {
+  type: 'client-connected';
+  data: {
+    timestamp: number;
+    client: any;
+  };
+}
+
+export interface ClientDisconnectedEvent {
+  type: 'client-disconnected';
+  data: {
+    timestamp: number;
+    clientId: string;
+    client?: any;
+  };
+}
+
 export type ServerMessage =
   | ServerStatusEvent
   | LogEvent
@@ -140,10 +209,16 @@ export type ServerMessage =
   | ServerConnectedEvent
   | ServerDisconnectedEvent
   | PongMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | ToolCallStartedEvent
+  | ToolCallCompletedEvent
+  | ToolCallErrorEvent
+  | ConfigurationUpdatedEvent
+  | ClientConnectedEvent
+  | ClientDisconnectedEvent;
 
 export class WebSocketHandler {
-  private subscriptions = new Set<keyof typeof EventTypes>();
+  private subscriptions = new Map<keyof typeof EventTypes, () => void>(); // 存储订阅和对应的取消函数
   private heartbeatInterval?: NodeJS.Timeout;
 
   constructor(
@@ -218,8 +293,6 @@ export class WebSocketHandler {
   private handleSubscribe(message: SubscribeMessage): void {
     message.eventTypes.forEach(eventType => {
       if (!this.subscriptions.has(eventType)) {
-        this.subscriptions.add(eventType);
-
         // 订阅事件总线
         const unsubscribe = this.eventBus.subscribe(eventType, (data: any) => {
           const mappedType = eventTypeMap[eventType] as any;
@@ -231,12 +304,11 @@ export class WebSocketHandler {
           }
         });
 
-        // 监听连接关闭时取消订阅
-        this.socket.once('close', unsubscribe);
+        this.subscriptions.set(eventType, unsubscribe);
       }
     });
 
-    console.log('Subscribed to events:', Array.from(this.subscriptions));
+    console.log('Subscribed to events:', Array.from(this.subscriptions.keys()).sort());
   }
 
   /**
@@ -244,10 +316,28 @@ export class WebSocketHandler {
    */
   private handleUnsubscribe(message: UnsubscribeMessage): void {
     message.eventTypes.forEach(eventType => {
-      this.subscriptions.delete(eventType);
+      const unsubscribe = this.subscriptions.get(eventType);
+      if (unsubscribe) {
+        unsubscribe(); // 调用取消订阅函数
+        this.subscriptions.delete(eventType);
+      }
     });
 
-    console.log('Remaining subscriptions:', Array.from(this.subscriptions));
+    console.log('Remaining subscriptions:', Array.from(this.subscriptions.keys()).sort());
+  }
+
+  /**
+   * 处理连接关闭
+   */
+  private handleClose(): void {
+    console.log('WebSocket connection closed');
+    this.stopHeartbeat();
+
+    // 取消所有订阅
+    this.subscriptions.forEach(unsubscribe => {
+      unsubscribe();
+    });
+    this.subscriptions.clear();
   }
 
   /**
@@ -260,13 +350,6 @@ export class WebSocketHandler {
     });
   }
 
-  /**
-   * 处理连接关闭
-   */
-  private handleClose(): void {
-    console.log('WebSocket connection closed');
-    this.stopHeartbeat();
-  }
 
   /**
    * 处理连接错误

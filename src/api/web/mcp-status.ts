@@ -14,16 +14,24 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   fastify.get('/web/mcp/status', async (_request, reply) => {
     try {
       const servers = hubManager.getAllServers();
-      const statusList = servers.map(server => ({
-        id: server.id || '',
-        status: mcpConnectionManager.getStatus(server.id || '') || {
-          connected: false,
-          lastCheck: Date.now(),
-          toolsCount: 0,
-          resourcesCount: 0,
-          pid: undefined
-        }
-      }));
+      const serverInstances = hubManager.getServerInstances();
+      const statusList: Array<{ id: string; status: any }> = [];
+
+      servers.forEach(server => {
+        const instances = serverInstances[server.name] || [];
+        instances.forEach(instance => {
+          statusList.push({
+            id: instance.id || '',
+            status: mcpConnectionManager.getStatus(instance.id || '') || {
+              connected: false,
+              lastCheck: Date.now(),
+              toolsCount: 0,
+              resourcesCount: 0,
+              pid: undefined
+            }
+          });
+        });
+      });
 
       return statusList;
     } catch (error) {
@@ -40,13 +48,13 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Server not found' });
       }
 
-      const success = await mcpConnectionManager.connect(server);
+      const success = await mcpConnectionManager.connect({ ...server.config, ...server.instance });
       if (!success) {
         return reply.code(500).send({ error: 'Failed to connect to server' });
       }
 
-      // Update enabled status in config
-      await hubManager.updateServer(request.params.id, { enabled: true });
+      // Update enabled status in config - 现在 enabled 字段属于服务器配置，而非实例配置
+      await hubManager.updateServer(server.name, { enabled: true });
 
       return { success: true };
     } catch (error) {
@@ -59,10 +67,14 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   fastify.post<{ Params: { id: string } }>('/web/mcp/servers/:id/disconnect', async (request, reply) => {
     try {
       await mcpConnectionManager.disconnect(request.params.id);
-      
+
       // Update enabled status in config to ensure it doesn't show as "starting"
-      await hubManager.updateServer(request.params.id, { enabled: false });
-      
+      // 现在 enabled 字段属于服务器配置，而非实例配置
+      const server = hubManager.getServerById(request.params.id);
+      if (server) {
+        await hubManager.updateServer(server.name, { enabled: false });
+      }
+
       return { success: true };
     } catch (error) {
       logger.error('Failed to disconnect MCP server:', error);

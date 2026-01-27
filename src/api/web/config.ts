@@ -5,6 +5,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { configManager } from '../../config/config-manager.js';
+import { eventBus, EventTypes } from '../../services/event-bus.service.js';
 
 export async function configRoutes(fastify: FastifyInstance) {
   // GET /web/config - 获取当前配置
@@ -25,6 +26,13 @@ export async function configRoutes(fastify: FastifyInstance) {
     try {
       const newConfig = request.body as any;
       await configManager.updateConfig(newConfig);
+
+      // 发布配置更新事件
+      eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
+        timestamp: Date.now(),
+        config: newConfig
+      });
+
       return reply.send({ success: true, message: 'Configuration updated successfully' });
     } catch (error: any) {
       return reply.code(500).send({
@@ -54,6 +62,13 @@ export async function configRoutes(fastify: FastifyInstance) {
     try {
       const importedConfig = request.body as any;
       await configManager.updateConfig(importedConfig);
+
+      // 发布配置更新事件
+      eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
+        timestamp: Date.now(),
+        config: importedConfig
+      });
+
       return reply.send({ success: true, message: 'Configuration imported successfully' });
     } catch (error: any) {
       return reply.code(400).send({
@@ -70,6 +85,13 @@ export async function configRoutes(fastify: FastifyInstance) {
       const config = configManager.getConfig();
       config.servers = servers;
       await configManager.updateConfig(config);
+
+      // 发布配置更新事件
+      eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
+        timestamp: Date.now(),
+        config
+      });
+
       return reply.send({ success: true, message: 'Servers configuration updated' });
     } catch (error: any) {
       return reply.code(500).send({

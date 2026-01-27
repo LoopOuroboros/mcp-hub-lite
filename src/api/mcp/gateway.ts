@@ -28,8 +28,23 @@ function extractClientContext(request: any): ClientContext {
       // For initialize request, generate a consistent session ID
       if (request.body.method === 'initialize' && request.body.params?.clientInfo) {
           const { name, version } = request.body.params.clientInfo;
-          // Use client name + version as a stable identifier for initialize requests
-          clientId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
+          // 从请求中获取 CWD（运行目录），用于区分相同版本但不同运行目录的客户端
+          const cwd = (headers['x-mcp-cwd'] as string) || (headers['x-cwd'] as string);
+          // 使用 client name + version + cwd（哈希化）作为稳定标识符，确保相同版本但不同目录的客户端有不同的 Client-Id
+          let baseId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
+          if (cwd) {
+              // 对 CWD 进行简单哈希处理，避免路径包含特殊字符
+              const cwdHash = cwd.split('').reduce((acc, char) => {
+                  acc = ((acc << 5) - acc) + char.charCodeAt(0);
+                  return acc & acc; // 转换为 32 位整数
+              }, 0).toString(16).replace('-', ''); // 确保是正数
+              baseId = `${baseId}-${cwdHash}`;
+          } else {
+              // 当 cwd 为空时，添加随机哈希值，确保每个会话有唯一的 Client-Id
+              const randomHash = randomUUID().substring(0, 8);
+              baseId = `${baseId}-${randomHash}`;
+          }
+          clientId = baseId;
           logger.debug(`Extracted clientId from initialize params: ${clientId}`);
       }
   }
