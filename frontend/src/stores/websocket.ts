@@ -8,6 +8,9 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { WebSocketClient, createWebSocketClient } from '../utils/websocket'
 import type { ServerMessage } from '../utils/websocket'
 import { useServerStore } from './server'
+import { useToolCallsStore } from './tool-calls'
+import { useSystemStore } from './system'
+import { useClientStore } from './client'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const connected = ref(false)
@@ -57,7 +60,13 @@ export const useWebSocketStore = defineStore('websocket', () => {
             'server-updated',
             'server-deleted',
             'server-connected',
-            'server-disconnected'
+            'server-disconnected',
+            'tool-call-started',
+            'tool-call-completed',
+            'tool-call-error',
+            'configuration-updated',
+            'client-connected',
+            'client-disconnected'
           ]
         })
       },
@@ -80,6 +89,10 @@ export const useWebSocketStore = defineStore('websocket', () => {
     wsClient.value = null
     connected.value = false
   }
+
+  const toolCallsStore = useToolCallsStore()
+  const systemStore = useSystemStore()
+  const clientStore = useClientStore()
 
   function handleServerMessage(message: ServerMessage): void {
     console.log('Received WebSocket message:', message)
@@ -112,12 +125,45 @@ export const useWebSocketStore = defineStore('websocket', () => {
       case 'server-disconnected':
         handleServerDisconnected(message)
         break
+      case 'tool-call-started':
+        toolCallsStore.handleToolCallStarted(message.data)
+        break
+      case 'tool-call-completed':
+        toolCallsStore.handleToolCallCompleted(message.data)
+        break
+      case 'tool-call-error':
+        toolCallsStore.handleToolCallError(message.data)
+        break
+      case 'configuration-updated':
+        handleConfigurationUpdated(message)
+        break
+      case 'client-connected':
+        handleClientConnected(message)
+        break
+      case 'client-disconnected':
+        handleClientDisconnected(message)
+        break
       case 'pong':
         // 心跳响应，忽略
         break
       default:
         console.warn('Unknown WebSocket message type:', (message as any).type)
     }
+  }
+
+  function handleConfigurationUpdated(message: any): void {
+    console.log('Configuration updated:', message.data)
+    systemStore.fetchConfig()
+  }
+
+  function handleClientConnected(message: any): void {
+    console.log('Client connected:', message.data)
+    clientStore.fetchClients()
+  }
+
+  function handleClientDisconnected(message: any): void {
+    console.log('Client disconnected:', message.data)
+    clientStore.fetchClients()
   }
 
   function handleServerStatusChange(message: any): void {

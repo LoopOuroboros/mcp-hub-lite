@@ -3,8 +3,8 @@ import { ref, computed } from 'vue'
 import { http } from '../utils/http'
 import { useWebSocketStore } from './websocket'
 
-export interface ServerConfig {
-  transport: 'stdio' | 'sse' | 'streamable-http'
+// 服务器配置接口（以服务器名称为 key）
+export interface McpServerConfig {
   command?: string
   args?: string[]
   url?: string
@@ -12,6 +12,16 @@ export interface ServerConfig {
   timeout?: number
   enabled?: boolean
   allowedTools?: string[]
+  type: 'stdio' | 'sse' | 'streamable-http'
+  tags?: Record<string, string>
+  description?: string
+}
+
+// 服务器实例配置接口（包含 id、timestamp、hash）
+export interface ServerInstanceConfig {
+  id: string
+  timestamp: number
+  hash: string
 }
 
 export interface LogEntry {
@@ -25,7 +35,8 @@ export interface Server {
   name: string
   status: 'running' | 'stopped' | 'error' | 'starting'
   type: 'local' | 'remote'
-  config: ServerConfig
+  config: McpServerConfig
+  instance: ServerInstanceConfig
   logs: LogEntry[]
   uptime?: string
   startTime?: number
@@ -35,19 +46,6 @@ export interface Server {
   toolsCount?: number
   resourcesCount?: number
   version?: string
-}
-
-interface McpServerConfig {
-  id?: string
-  name: string
-  command?: string
-  args?: string[]
-  env?: Record<string, string>
-  type: string
-  url?: string
-  timeout?: number
-  enabled?: boolean
-  allowedTools?: string[]
 }
 
 interface McpStatus {
@@ -70,7 +68,7 @@ export const useServerStore = defineStore('server', () => {
   const error = ref<string | null>(null)
   const selectedServerId = ref<string | null>(null)
 
-  const selectedServer = computed(() => 
+  const selectedServer = computed(() =>
     servers.value.find(s => s.id === selectedServerId.value)
   )
 
@@ -88,8 +86,9 @@ export const useServerStore = defineStore('server', () => {
     loading.value = true
     error.value = null
     try {
-      const [configs, statuses] = await Promise.all([
-        http.get<McpServerConfig[]>('/web/servers'),
+      const [serverConfigs, serverInstances, statuses] = await Promise.all([
+        http.get<Array<{ name: string; config: McpServerConfig }>>('/web/servers'),
+        http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances'),
         http.get<McpStatus[]>('/web/mcp/status')
       ])
 
@@ -97,47 +96,51 @@ export const useServerStore = defineStore('server', () => {
       const existingTools = new Map(servers.value.map(s => [s.id, s.tools]))
       const existingResources = new Map(servers.value.map(s => [s.id, s.resources]))
 
-      servers.value = configs.map(config => {
-        const statusInfo = statuses.find(s => s.id === config.id)?.status
-        // 根据 config.enabled 和 statusInfo 来判断状态
-        let status: 'running' | 'stopped' | 'error' | 'starting'
-        if (statusInfo?.connected) {
-          status = 'running'
-        } else if (statusInfo?.error) {
-          status = 'error'
-        } else if (config.enabled) {
-          // 如果配置为 enabled 但尚未连接，显示为 starting
-          status = 'starting'
-        } else {
-          status = 'stopped'
-        }
+      // 组合服务器基础配置和实例配置
+      const combinedServers: Server[] = []
 
-        return {
-          id: config.id || '',
-          name: config.name,
-          status,
-          type: config.type === 'sse' || config.type === 'streamable-http' ? 'remote' : 'local',
-          config: {
-            transport: (config.type as 'stdio' | 'sse' | 'streamable-http') || 'stdio',
-            command: config.command,
-            args: config.args,
-            url: config.url,
-            env: config.env,
-            timeout: config.timeout,
-            enabled: config.enabled ?? true,
-            allowedTools: config.allowedTools
-          },
-          logs: existingLogs.get(config.id || '') || [],
-          tools: existingTools.get(config.id || ''),
-          resources: existingResources.get(config.id || ''),
-          uptime: statusInfo?.connected ? 'Active' : undefined,
-          startTime: statusInfo?.startTime,
-          pid: statusInfo?.pid,
-          toolsCount: statusInfo?.toolsCount,
-          resourcesCount: statusInfo?.resourcesCount,
-          version: statusInfo?.version
-        }
+      serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
+        // 获取该服务器名称对应的所有实例
+        const instances = serverInstances[serverName] || []
+
+        instances.forEach((instanceConfig, index) => {
+          const serverId = instanceConfig.id // 使用实例ID作为服务器唯一ID
+          const statusInfo = statuses.find(s => s.id === serverId)?.status
+
+          // 根据 config.enabled 和 statusInfo 来判断状态
+          let status: 'running' | 'stopped' | 'error' | 'starting'
+          if (statusInfo?.connected) {
+            status = 'running'
+          } else if (statusInfo?.error) {
+            status = 'error'
+          } else if (serverConfig.enabled) {
+            // 如果配置为 enabled 但尚未连接，显示为 starting
+            status = 'starting'
+          } else {
+            status = 'stopped'
+          }
+
+          combinedServers.push({
+            id: serverId,
+            name: serverName,
+            status,
+            type: serverConfig.type === 'sse' || serverConfig.type === 'streamable-http' ? 'remote' : 'local',
+            config: serverConfig,
+            instance: instanceConfig,
+            logs: existingLogs.get(serverId) || [],
+            tools: existingTools.get(serverId),
+            resources: existingResources.get(serverId),
+            uptime: statusInfo?.connected ? 'Active' : undefined,
+            startTime: statusInfo?.startTime,
+            pid: statusInfo?.pid,
+            toolsCount: statusInfo?.toolsCount,
+            resourcesCount: statusInfo?.resourcesCount,
+            version: statusInfo?.version
+          })
+        })
       })
+
+      servers.value = combinedServers
     } catch (e: any) {
       error.value = e.message || 'Failed to fetch servers'
       console.error('Fetch servers error:', e)
@@ -149,26 +152,20 @@ export const useServerStore = defineStore('server', () => {
   async function addServer(serverData: Partial<Server>) {
     loading.value = true
     try {
-      const payload = {
-        name: serverData.name,
-        type: serverData.config?.transport || 'stdio',
-        command: serverData.config?.command,
-        args: serverData.config?.args,
-        env: serverData.config?.env,
-        url: serverData.config?.url,
-        timeout: serverData.config?.timeout,
-        enabled: serverData.config?.enabled ?? true,
-        allowedTools: serverData.config?.allowedTools ?? [],
-        longRunning: true
+      // 第一步：创建服务器基础配置
+      const serverBasePayload = {
+        name: serverData.name || 'Unnamed Server',
+        config: serverData.config || {}
       }
 
-      // 发送 POST 请求添加服务器
-      const response = await http.post('/web/servers', payload)
+      const serverResponse = await http.post<{ name: string; config: McpServerConfig }>('/web/servers', serverBasePayload)
+
+      // 第二步：添加服务器实例配置（现在自动在后端完成）
 
       // 如果启用了自动启动，立即更新状态为 starting，提供更好的用户体验
-      if (payload.enabled) {
+      if (serverData.config?.enabled) {
         await fetchServers() // 先获取服务器列表以获取新服务器的 ID
-        const newServer = servers.value.find(s => s.name === payload.name)
+        const newServer = servers.value.find(s => s.name === serverData.name)
         if (newServer) {
           updateServerStatus(newServer.id, 'starting')
 
@@ -191,10 +188,19 @@ export const useServerStore = defineStore('server', () => {
   async function updateServer(id: string, serverData: Partial<Server>) {
     loading.value = true
     try {
-      const payload: any = {}
-      if (serverData.name) payload.name = serverData.name
+      const server = servers.value.find(s => s.id === id)
+      if (!server) {
+        throw new Error('Server not found')
+      }
+
+      if (serverData.name && serverData.name !== server.name) {
+        // 更新服务器基础配置（名称）
+        await http.put(`/web/servers/${server.name}`, { name: serverData.name })
+      }
+
       if (serverData.config) {
-        if (serverData.config.transport) payload.type = serverData.config.transport
+        // 更新服务器配置
+        const payload: any = {}
         if (serverData.config.command) payload.command = serverData.config.command
         if (serverData.config.args) payload.args = serverData.config.args
         if (serverData.config.env) payload.env = serverData.config.env
@@ -202,10 +208,12 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout
         if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled
         if (serverData.config.allowedTools !== undefined) payload.allowedTools = serverData.config.allowedTools
+        if (serverData.config.type) payload.type = serverData.config.type
+        if (serverData.config.tags) payload.tags = serverData.config.tags
+
+        await http.put(`/web/servers/${server.name}`, payload)
       }
-      
-      console.log('Update server payload:', payload)
-      await http.put(`/web/servers/${id}`, payload)
+
       await fetchServers()
     } catch (e: any) {
       error.value = e.message || 'Failed to update server'
@@ -238,18 +246,65 @@ export const useServerStore = defineStore('server', () => {
       throw e
     }
   }
-  
+
   async function deleteServer(id: string) {
-     try {
-       await http.delete(`/web/servers/${id}`)
-       await fetchServers()
-       if (selectedServerId.value === id) {
-         selectedServerId.value = null
-       }
-     } catch (e: any) {
-       error.value = e.message || 'Failed to delete server'
-       throw e
-     }
+    try {
+      const server = servers.value.find(s => s.id === id)
+      if (server) {
+        // 检查是否还有其他实例
+        const serverInstances = await http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances')
+        const instances = serverInstances[server.name] || []
+
+        if (instances.length > 1) {
+          // 如果还有其他实例，只删除该实例
+          const instanceIndex = instances.findIndex(inst => inst.id === id)
+          if (instanceIndex !== -1) {
+            await http.delete(`/web/server-instances/${server.name}/${instanceIndex}`)
+          }
+        } else {
+          // 如果是最后一个实例，删除整个服务器
+          await http.delete(`/web/servers/${server.name}`)
+        }
+      }
+
+      await fetchServers()
+      if (selectedServerId.value === id) {
+        selectedServerId.value = null
+      }
+    } catch (e: any) {
+      error.value = e.message || 'Failed to delete server'
+      throw e
+    }
+  }
+
+  async function importServersFromJson(jsonData: { mcpServers: Record<string, any> }) {
+    loading.value = true
+    try {
+      // 转换为新的配置结构
+      const formattedData = {
+        mcpServers: Object.entries(jsonData.mcpServers).map(([key, config]) => ({
+          name: key,
+          config: config
+        }))
+      }
+
+      const response = await http.post<{
+        code: number
+        message: string
+        data: {
+          success: any[]
+          errors: { name: string; error: string }[]
+        }
+      }>('/web/servers/batch', formattedData)
+
+      await fetchServers()
+      return response.data
+    } catch (e: any) {
+      error.value = e.message || 'Failed to import servers'
+      throw e
+    } finally {
+      loading.value = false
+    }
   }
 
   function updateServerStatus(id: string, status: 'running' | 'stopped' | 'error' | 'starting') {
@@ -327,6 +382,7 @@ export const useServerStore = defineStore('server', () => {
     startServer,
     stopServer,
     deleteServer,
+    importServersFromJson,
     updateServerStatus,
     fetchTools,
     fetchResources,

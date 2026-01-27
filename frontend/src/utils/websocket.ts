@@ -6,7 +6,7 @@
 // 客户端到服务器的消息类型
 export interface SubscribeMessage {
   type: 'subscribe';
-  eventTypes: Array<'server-status' | 'logs' | 'tools' | 'resources' | 'server-added' | 'server-updated' | 'server-deleted' | 'server-connected' | 'server-disconnected'>;
+  eventTypes: Array<'server-status' | 'logs' | 'tools' | 'resources' | 'server-added' | 'server-updated' | 'server-deleted' | 'server-connected' | 'server-disconnected' | 'tool-call-started' | 'tool-call-completed' | 'tool-call-error' | 'configuration-updated' | 'client-connected' | 'client-disconnected'>;
 }
 
 export interface UnsubscribeMessage {
@@ -105,6 +105,76 @@ export interface PongMessage {
   timestamp: number;
 }
 
+export interface ToolCallStartedEvent {
+  type: 'tool-call-started';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    args: Record<string, unknown>;
+  };
+}
+
+export interface ToolCallCompletedEvent {
+  type: 'tool-call-completed';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    result: any;
+  };
+}
+
+export interface ToolCallErrorEvent {
+  type: 'tool-call-error';
+  data: {
+    requestId: string;
+    serverId: string;
+    serverName: string;
+    toolName: string;
+    timestamp: number;
+    error: string;
+    stack?: string;
+  };
+}
+
+export interface ConfigurationUpdatedEvent {
+  type: 'configuration-updated';
+  data: {
+    timestamp: number;
+    config: any;
+    changes?: any;
+  };
+}
+
+export interface ClientConnectedEvent {
+  type: 'client-connected';
+  data: {
+    timestamp: number;
+    client: any;
+  };
+}
+
+export interface ClientDisconnectedEvent {
+  type: 'client-disconnected';
+  data: {
+    timestamp: number;
+    clientId: string;
+    client?: any;
+  };
+}
+
+export interface ErrorMessage {
+  type: 'error';
+  data: {
+    message: string;
+  };
+}
+
 export type ServerMessage =
   | ServerStatusEvent
   | LogEvent
@@ -115,7 +185,14 @@ export type ServerMessage =
   | ServerDeletedEvent
   | ServerConnectedEvent
   | ServerDisconnectedEvent
-  | PongMessage;
+  | PongMessage
+  | ToolCallStartedEvent
+  | ToolCallCompletedEvent
+  | ToolCallErrorEvent
+  | ConfigurationUpdatedEvent
+  | ClientConnectedEvent
+  | ClientDisconnectedEvent
+  | ErrorMessage;
 
 export class WebSocketClient {
   private ws: WebSocket | null = null;

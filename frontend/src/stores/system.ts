@@ -3,17 +3,19 @@ import { ref } from 'vue'
 import { http } from '../utils/http'
 
 export interface SystemConfig {
-  host: string
-  port: number
-  language: string
-  theme: string
-  logging: {
-    level: string
-    rotation: {
-      enabled: boolean
-      maxAge: string
-      maxSize: string
-      compress: boolean
+  system: {
+    host: string
+    port: number
+    language: string
+    theme: string
+    logging: {
+      level: string
+      rotation: {
+        enabled: boolean
+        maxAge: string
+        maxSize: string
+        compress: boolean
+      }
     }
   }
   security: {
@@ -28,17 +30,19 @@ export interface SystemConfig {
 
 export const useSystemStore = defineStore('system', () => {
   const config = ref<SystemConfig>({
-    host: 'localhost',
-    port: 7788,
-    language: 'zh',
-    theme: 'system',
-    logging: {
-      level: 'info',
-      rotation: {
-        enabled: true,
-        maxAge: '7d',
-        maxSize: '100MB',
-        compress: false
+    system: {
+      host: 'localhost',
+      port: 7788,
+      language: 'zh',
+      theme: 'system',
+      logging: {
+        level: 'info',
+        rotation: {
+          enabled: true,
+          maxAge: '7d',
+          maxSize: '100MB',
+          compress: false
+        }
       }
     },
     security: {
@@ -57,17 +61,21 @@ export const useSystemStore = defineStore('system', () => {
     loading.value = true
     try {
       const data = await http.get<SystemConfig>('/web/config')
-      
-      // Merge with default/current config
+
+      // Merge with default/current config - 修复属性路径错误
       config.value = {
         ...config.value,
         ...data,
-        logging: {
-          ...config.value.logging,
-          ...(data.logging || {}),
-          rotation: {
-            ...config.value.logging.rotation,
-            ...(data.logging?.rotation || {})
+        system: {
+          ...config.value.system,
+          ...(data.system || {}),
+          logging: {
+            ...config.value.system.logging,
+            ...(data.system?.logging || {}),
+            rotation: {
+              ...config.value.system.logging.rotation,
+              ...(data.system?.logging?.rotation || {})
+            }
           }
         },
         security: {
