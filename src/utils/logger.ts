@@ -55,10 +55,74 @@ export class Logger {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
+  // ANSI 颜色代码
+  private getColorCodeForLevel(level: LogLevel): string {
+    switch (level) {
+      case 'debug': return '\x1b[36m'; // 青色
+      case 'info': return '\x1b[32m';  // 绿色
+      case 'warn': return '\x1b[33m';  // 黄色
+      case 'error': return '\x1b[31m'; // 红色
+      default: return '\x1b[0m';
+    }
+  }
+
+  private getResetColor(): string {
+    return '\x1b[0m';
+  }
+
+  private formatLogLevel(level: LogLevel): string {
+    switch (level) {
+      case 'debug': return 'DBG';
+      case 'info': return 'INF';
+      case 'warn': return 'WRN';
+      case 'error': return 'ERR';
+      default:
+        // 这个分支在TypeScript中实际上不会到达，因为LogLevel是联合类型
+        // 但为了编译通过，我们返回一个默认值
+        return 'UNK';
+    }
+  }
+
+  private formatPid(pid: number): string {
+    // 固定5个字符宽度用于数字部分，右对齐，不足补空格
+    const pidStr = pid.toString();
+    if (pidStr.length > 5) {
+      return `PID:${pidStr.substring(0, 5)}`; // 截断超长的PID
+    }
+    return `PID:${pidStr.padStart(5, ' ')}`;
+  }
+
+  private createColoredLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string): string {
+    const timestamp = this.formatTimestamp(new Date());
+    const processPid = pid ?? process.pid;
+    const formattedLevel = this.formatLogLevel(level);
+    const formattedPid = this.formatPid(processPid);
+
+    // 时间戳 - 白色/灰色
+    const timestampColor = '\x1b[90m';
+    // 日志级别 - 根据级别着色
+    const levelColor = this.getColorCodeForLevel(level);
+    // PID - 青色
+    const pidColor = '\x1b[36m';
+    // 服务器名称或 mcp-hub - 淡青色（亮青色）
+    const serverColor = '\x1b[96m';
+    // 重置颜色
+    const resetColor = this.getResetColor();
+
+    if (serverName) {
+      return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${serverName}]${resetColor} ${message}`;
+    } else {
+      return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[mcp-hub]${resetColor} ${message}`;
+    }
+  }
+
   private createLogMessage(level: LogLevel, message: string, pid?: number): string {
     const timestamp = this.formatTimestamp(new Date());
     const processPid = pid ?? process.pid;
-    return `[${timestamp}] [${level.toUpperCase()}] [PID:${processPid}] ${message}`;
+    const formattedLevel = this.formatLogLevel(level);
+    // 对于纯文本日志，PID 格式保持简单
+    const pidStr = processPid.toString().padStart(5, ' ');
+    return `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${message}`;
   }
 
   // 辅助方法：格式化错误对象
@@ -86,16 +150,18 @@ export class Logger {
         fullMessage = `${message} ${formattedArgs}`;
       }
 
-      const logMsg = this.createLogMessage('debug', fullMessage);
+      const coloredLogMsg = this.createColoredLogMessage('debug', fullMessage);
+      const plainLogMsg = this.createLogMessage('debug', fullMessage);
+
       if (this.useStderr) {
-          console.error(logMsg);
+          console.error(coloredLogMsg);
       } else {
-          console.debug(logMsg);
+          console.debug(coloredLogMsg);
       }
 
-      // 文件输出（如果启用）
+      // 文件输出（如果启用）- 使用纯文本格式
       if (this.logFileStream) {
-        this.logFileStream.write(logMsg + '\n');
+        this.logFileStream.write(plainLogMsg + '\n');
       }
     }
   }
@@ -109,16 +175,18 @@ export class Logger {
         fullMessage = `${message} ${formattedArgs}`;
       }
 
-      const logMsg = this.createLogMessage('info', fullMessage);
+      const coloredLogMsg = this.createColoredLogMessage('info', fullMessage);
+      const plainLogMsg = this.createLogMessage('info', fullMessage);
+
       if (this.useStderr) {
-          console.error(logMsg);
+          console.error(coloredLogMsg);
       } else {
-          console.info(logMsg);
+          console.info(coloredLogMsg);
       }
 
-      // 文件输出（如果启用）
+      // 文件输出（如果启用）- 使用纯文本格式
       if (this.logFileStream) {
-        this.logFileStream.write(logMsg + '\n');
+        this.logFileStream.write(plainLogMsg + '\n');
       }
     }
   }
@@ -132,12 +200,14 @@ export class Logger {
         fullMessage = `${message} ${formattedArgs}`;
       }
 
-      const logMsg = this.createLogMessage('warn', fullMessage);
-      console.warn(logMsg);
+      const coloredLogMsg = this.createColoredLogMessage('warn', fullMessage);
+      const plainLogMsg = this.createLogMessage('warn', fullMessage);
 
-      // 文件输出（如果启用）
+      console.warn(coloredLogMsg);
+
+      // 文件输出（如果启用）- 使用纯文本格式
       if (this.logFileStream) {
-        this.logFileStream.write(logMsg + '\n');
+        this.logFileStream.write(plainLogMsg + '\n');
       }
     }
   }
@@ -151,12 +221,14 @@ export class Logger {
         fullMessage = `${message} ${formattedArgs}`;
       }
 
-      const logMsg = this.createLogMessage('error', fullMessage);
-      console.error(logMsg);
+      const coloredLogMsg = this.createColoredLogMessage('error', fullMessage);
+      const plainLogMsg = this.createLogMessage('error', fullMessage);
 
-      // 文件输出（如果启用）
+      console.error(coloredLogMsg);
+
+      // 文件输出（如果启用）- 使用纯文本格式
       if (this.logFileStream) {
-        this.logFileStream.write(logMsg + '\n');
+        this.logFileStream.write(plainLogMsg + '\n');
       }
     }
   }
@@ -164,9 +236,48 @@ export class Logger {
   setLevel(level: LogLevel): void {
     this.level = level;
   }
+
+  // 专门用于MCP Server日志的方法
+  serverLog(level: LogLevel, serverName: string, message: string, pid?: number): void {
+    if (this.shouldLog(level)) {
+      const coloredLogMsg = this.createColoredLogMessage(level, message, pid, serverName);
+      const formattedLevel = this.formatLogLevel(level);
+      const processPid = pid ?? process.pid;
+      // 对于纯文本日志，PID 格式保持简单
+      const pidStr = processPid.toString().padStart(5, ' ');
+      const plainLogMsg = `[${this.formatTimestamp(new Date())}] [${formattedLevel}] [PID:${pidStr}] [${serverName}] ${message}`;
+
+      console.info(coloredLogMsg);
+
+      // 文件输出（如果启用）- 使用纯文本格式
+      if (this.logFileStream) {
+        this.logFileStream.write(plainLogMsg + '\n');
+      }
+    }
+  }
 }
 
 export const logger = new Logger();
+
+/**
+ * 带颜色的日志记录函数
+ * @param coloredMessage 控制台显示的消息（包含 ANSI 颜色代码）
+ * @param plainMessage 文件日志的消息（纯文本）
+ */
+export function logWithColor(coloredMessage: string, plainMessage: string): void {
+  // 使用新的颜色格式
+  const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage);
+  console.info(coloredLogMsg);
+
+  // 文件输出（无颜色）
+  if (logger['logFileStream']) {
+    const timestamp = logger['formatTimestamp'](new Date());
+    const formattedLevel = logger['formatLogLevel']('info');
+    const pidStr = process.pid.toString().padStart(5, ' ');
+    const fileLogMsg = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${plainMessage}`;
+    logger['logFileStream'].write(fileLogMsg + '\n');
+  }
+}
 
 /**
  * 检查数据是否为 tools/list 响应

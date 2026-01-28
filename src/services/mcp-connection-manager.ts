@@ -74,7 +74,8 @@ class McpConnectionManager {
 
       // Create transport based on server type
       const transport = TransportFactory.createTransport({
-        ...server
+        ...server,
+        name: serverInfo.name
       });
 
       // Handle transport close events

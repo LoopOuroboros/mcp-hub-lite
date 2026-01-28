@@ -64,7 +64,7 @@ function extractClientContext(request: any): ClientContext {
   // Priority 4: Generate new unique session ID only if no other method works
   if (!clientId) {
       // Use client name as prefix if available, but ensure uniqueness with UUID
-      const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'anon-';
+      const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
       clientId = `${prefix}${randomUUID().substring(0, 8)}`;
       logger.debug(`Generated new clientId: ${clientId}`);
   }

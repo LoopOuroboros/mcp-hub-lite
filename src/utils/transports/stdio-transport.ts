@@ -123,15 +123,15 @@ export class StdioTransport implements Transport {
 
                 if (this._serverName) {
                     if (isToolsListResp) {
-                        logger.debug(`[${this._serverName}] [PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
+                        logger.serverLog('debug', this._serverName, dataStr.trim(), this._process?.pid);
                     } else {
-                        logger.info(`[${this._serverName}] [PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
+                        logger.serverLog('info', this._serverName, dataStr.trim(), this._process?.pid);
                     }
                 } else {
                     if (isToolsListResp) {
-                        logger.debug(`[PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
+                        logger.serverLog('debug', 'Unknown Server', dataStr.trim(), this._process?.pid);
                     } else {
-                        logger.info(`[PID:${this._process?.pid}] [STDOUT] ${dataStr.trim()}`);
+                        logger.serverLog('info', 'Unknown Server', dataStr.trim(), this._process?.pid);
                     }
                 }
 
@@ -150,9 +150,9 @@ export class StdioTransport implements Transport {
                     // 转发原始 stderr 数据
                     this.onstderr?.(dataStr);
                     if (this._serverName) {
-                        logger.error(`[${this._serverName}] [PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
+                        logger.serverLog('error', this._serverName, dataStr.trim(), this._process?.pid);
                     } else {
-                        logger.error(`[PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
+                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), this._process?.pid);
                     }
                     // 也可以将 stderr 数据写入 PassThrough 流
                     this._stderrStream?.write(chunk);
@@ -163,9 +163,9 @@ export class StdioTransport implements Transport {
                     const dataStr = chunk.toString('utf8');
                     this.onstderr?.(dataStr);
                     if (this._serverName) {
-                        logger.error(`[${this._serverName}] [PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
+                        logger.serverLog('error', this._serverName, dataStr.trim(), this._process?.pid);
                     } else {
-                        logger.error(`[PID:${this._process?.pid}] [STDERR] ${dataStr.trim()}`);
+                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), this._process?.pid);
                     }
                 });
             }
