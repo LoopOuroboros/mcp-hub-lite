@@ -502,6 +502,101 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(allTools).toEqual({
+        'mcp-hub-lite': {
+          tools: [
+            {
+              name: 'list-servers',
+              description: '[System] List all connected servers',
+              inputSchema: {
+                type: 'object',
+                properties: {}
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'find-servers',
+              description: '[System] Find servers matching a pattern',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  pattern: { type: 'string', description: 'Regex pattern to search for' },
+                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                  caseSensitive: { type: 'boolean', default: false }
+                },
+                required: ['pattern']
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'list-all-tools-in-server',
+              description: '[System] List all tools from a specific server',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  serverName: { type: 'string', description: 'Name of the MCP server' }
+                },
+                required: ['serverName']
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'find-tools-in-server',
+              description: '[System] Find tools matching a pattern in a specific server',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  serverName: { type: 'string', description: 'Name of the MCP server' },
+                  pattern: { type: 'string', description: 'Regex pattern to search for' },
+                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                  caseSensitive: { type: 'boolean', default: false }
+                },
+                required: ['serverName', 'pattern']
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'get-tool',
+              description: '[System] Get complete schema for a specific tool from a specific server',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  serverName: { type: 'string', description: 'Name of the MCP server' },
+                  toolName: { type: 'string', description: 'Exact name of the tool' }
+                },
+                required: ['serverName', 'toolName']
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'call-tool',
+              description: '[System] Call a specific tool from a specific server',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  serverName: { type: 'string', description: 'Name of the MCP server' },
+                  toolName: { type: 'string', description: 'Name of the tool to call' },
+                  toolArgs: { type: 'object', description: 'Arguments to pass to the tool' }
+                },
+                required: ['serverName', 'toolName', 'toolArgs']
+              },
+              serverId: 'mcp-hub-lite'
+            },
+            {
+              name: 'find-tools',
+              description: '[System] Find tools matching a pattern across all connected servers',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  pattern: { type: 'string', description: 'Regex pattern to search for' },
+                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                  caseSensitive: { type: 'boolean', default: false }
+                },
+                required: ['pattern']
+              },
+              serverId: 'mcp-hub-lite'
+            }
+          ]
+        },
         'Server 1': {
           tools: mockTools[0]
         },
