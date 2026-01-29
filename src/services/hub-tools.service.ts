@@ -3,6 +3,20 @@ import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { McpTool } from '../models/tool.model.js';
 import type { McpServerConfig } from '../config/config.schema.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
+import { gateway } from './gateway.service.js';
+import {
+  SYSTEM_TOOL_NAMES,
+  GATEWAY_SERVER_NAMES,
+  SystemToolName,
+  GatewayServerName,
+  LIST_SERVERS_TOOL,
+  FIND_SERVERS_TOOL,
+  LIST_ALL_TOOLS_IN_SERVER_TOOL,
+  FIND_TOOLS_IN_SERVER_TOOL,
+  GET_TOOL_TOOL,
+  CALL_TOOL_TOOL,
+  FIND_TOOLS_TOOL
+} from '../models/system-tools.constants.js';
 
 // Type guard for servers with valid name and config
 function hasValidId(server: any): server is { name: string; config: McpServerConfig } {
@@ -13,93 +27,125 @@ export class HubToolsService {
   /**
    * Get list of system tools provided by this service
    */
+  /**
+   * Get system tools configuration based on SYSTEM_TOOL_NAMES constant
+   * This ensures consistency with the system tool names defined in constants
+   */
   getSystemTools() {
-    return [
-      {
-        name: 'list-servers',
-        description: 'List all connected servers',
-        inputSchema: {
-          type: 'object',
-          properties: {}
-        }
-      },
-      {
-        name: 'find-servers',
-        description: 'Find servers matching a pattern',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            pattern: { type: 'string', description: 'Regex pattern to search for' },
-            searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-            caseSensitive: { type: 'boolean', default: false }
-          },
-          required: ['pattern']
-        }
-      },
-      {
-        name: 'list-all-tools-in-server',
-        description: 'List all tools from a specific server',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            serverName: { type: 'string', description: 'Name of the MCP server' }
-          },
-          required: ['serverName']
-        }
-      },
-      {
-        name: 'find-tools-in-server',
-        description: 'Find tools matching a pattern in a specific server',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            serverName: { type: 'string', description: 'Name of the MCP server' },
-            pattern: { type: 'string', description: 'Regex pattern to search for' },
-            searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-            caseSensitive: { type: 'boolean', default: false }
-          },
-          required: ['serverName', 'pattern']
-        }
-      },
-      {
-        name: 'get-tool',
-        description: 'Get complete schema for a specific tool from a specific server',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            serverName: { type: 'string', description: 'Name of the MCP server' },
-            toolName: { type: 'string', description: 'Exact name of the tool' }
-          },
-          required: ['serverName', 'toolName']
-        }
-      },
-      {
-        name: 'call-tool',
-        description: 'Call a specific tool from a specific server',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            serverName: { type: 'string', description: 'Name of the MCP server' },
-            toolName: { type: 'string', description: 'Name of the tool to call' },
-            toolArgs: { type: 'object', description: 'Arguments to pass to the tool' }
-          },
-          required: ['serverName', 'toolName', 'toolArgs']
-        }
-      },
-      {
-        name: 'find-tools',
-        description: 'Find tools matching a pattern across all connected servers',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            pattern: { type: 'string', description: 'Regex pattern to search for' },
-            searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-            caseSensitive: { type: 'boolean', default: false }
-          },
-          required: ['pattern']
-        }
+    const systemTools: Array<{
+      name: string;
+      description: string;
+      inputSchema: any;
+    }> = [];
+
+    // Build system tools based on the constant array to ensure consistency
+    for (const toolName of SYSTEM_TOOL_NAMES) {
+      switch (toolName) {
+        case LIST_SERVERS_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'List all connected servers',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          });
+          break;
+        case FIND_SERVERS_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Find servers matching a pattern',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                pattern: { type: 'string', description: 'Regex pattern to search for' },
+                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                caseSensitive: { type: 'boolean', default: false }
+              },
+              required: ['pattern']
+            }
+          });
+          break;
+        case LIST_ALL_TOOLS_IN_SERVER_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'List all tools from a specific server',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                serverName: { type: 'string', description: 'Name of the MCP server' }
+              },
+              required: ['serverName']
+            }
+          });
+          break;
+        case FIND_TOOLS_IN_SERVER_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Find tools matching a pattern in a specific server',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                serverName: { type: 'string', description: 'Name of the MCP server' },
+                pattern: { type: 'string', description: 'Regex pattern to search for' },
+                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                caseSensitive: { type: 'boolean', default: false }
+              },
+              required: ['serverName', 'pattern']
+            }
+          });
+          break;
+        case GET_TOOL_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Get complete schema for a specific tool from a specific server',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                serverName: { type: 'string', description: 'Name of the MCP server' },
+                toolName: { type: 'string', description: 'Exact name of the tool' }
+              },
+              required: ['serverName', 'toolName']
+            }
+          });
+          break;
+        case CALL_TOOL_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Call a specific tool from a specific server',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                serverName: { type: 'string', description: 'Name of the MCP server' },
+                toolName: { type: 'string', description: 'Name of the tool to call' },
+                toolArgs: { type: 'object', description: 'Arguments to pass to the tool' }
+              },
+              required: ['serverName', 'toolName', 'toolArgs']
+            }
+          });
+          break;
+        case FIND_TOOLS_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Find tools matching a pattern across all connected servers',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                pattern: { type: 'string', description: 'Regex pattern to search for' },
+                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                caseSensitive: { type: 'boolean', default: false }
+              },
+              required: ['pattern']
+            }
+          });
+          break;
+        default:
+          // This should never happen due to TypeScript type checking
+          throw new Error(`Unknown system tool: ${toolName}`);
       }
-    ];
+    }
+
+    return systemTools;
   }
 
   /**
@@ -169,6 +215,27 @@ export class HubToolsService {
     serverName: string;
     tools: McpTool[];
   }> {
+    // 处理 mcp-hub-lite 服务器（返回系统工具列表）
+    // 同时处理网关服务器名称（gateway server name）
+    if (typeof serverName === 'string' && GATEWAY_SERVER_NAMES.includes(serverName as GatewayServerName)) {
+      // 使用与 tools/list 相同的逻辑生成工具列表
+      const toolMap = new Map<string, { serverId: string; realToolName: string }>();
+      const gatewayTools = gateway.generateGatewayToolsList(toolMap);
+
+      // 转换为 McpTool 格式
+      const tools: McpTool[] = gatewayTools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        serverId: 'mcp-hub-lite'
+      }));
+
+      return {
+        serverName,
+        tools
+      };
+    }
+
     const instances = hubManager.getServerInstanceByName(serverName);
 
     if (instances.length === 0) {
@@ -229,6 +296,51 @@ export class HubToolsService {
   }
 
   /**
+   * Call a specific system tool directly
+   * @param toolName Name of the system tool to call
+   * @param toolArgs Arguments to pass to the tool
+   * @returns Result of the system tool call
+   */
+  private async callSystemTool(toolName: SystemToolName, toolArgs: Record<string, unknown>): Promise<any> {
+    switch (toolName) {
+      case LIST_SERVERS_TOOL:
+        return await this.listServers();
+      case FIND_SERVERS_TOOL:
+        return await this.findServers(
+          toolArgs.pattern as string,
+          toolArgs.searchIn as 'name' | 'description' | 'both',
+          toolArgs.caseSensitive as boolean
+        );
+      case LIST_ALL_TOOLS_IN_SERVER_TOOL:
+        return await this.listAllToolsInServer(toolArgs.serverName as string);
+      case FIND_TOOLS_IN_SERVER_TOOL:
+        return await this.findToolsInServer(
+          toolArgs.serverName as string,
+          toolArgs.pattern as string,
+          toolArgs.searchIn as 'name' | 'description' | 'both',
+          toolArgs.caseSensitive as boolean
+        );
+      case GET_TOOL_TOOL:
+        return await this.getTool(toolArgs.serverName as string, toolArgs.toolName as string);
+      case CALL_TOOL_TOOL:
+        // Handle nested call-tool calls
+        return await this.callTool(
+          toolArgs.serverName as string,
+          toolArgs.toolName as string,
+          toolArgs.toolArgs as Record<string, unknown>
+        );
+      case FIND_TOOLS_TOOL:
+        return await this.findTools(
+          toolArgs.pattern as string,
+          toolArgs.searchIn as 'name' | 'description' | 'both',
+          toolArgs.caseSensitive as boolean
+        );
+      default:
+        throw new Error(`System tool "${toolName}" not found`);
+    }
+  }
+
+  /**
    * Call a specific tool from a specific server
    * @param serverName Name of the MCP server to call tool from
    * @param toolName Name of the tool to call
@@ -236,6 +348,11 @@ export class HubToolsService {
    * @returns Result of the tool call
    */
   async callTool(serverName: string, toolName: string, toolArgs: Record<string, unknown>): Promise<any> {
+    // 处理 mcp-hub-lite 服务器（系统工具调用）
+    if (typeof serverName === 'string' && GATEWAY_SERVER_NAMES.includes(serverName as GatewayServerName)) {
+      return await this.callSystemTool(toolName as SystemToolName, toolArgs);
+    }
+
     const instances = hubManager.getServerInstanceByName(serverName);
 
     if (instances.length === 0) {
@@ -286,7 +403,7 @@ export class HubToolsService {
   }
 
   /**
-   * List all available tools from all connected servers
+   * List all available tools from all connected servers including system tools
    * @returns All tools grouped by server name
    */
   async listAllTools(): Promise<Record<string, {
@@ -294,6 +411,17 @@ export class HubToolsService {
   }>> {
     const servers = hubManager.getAllServers();
     const allTools: Record<string, { tools: McpTool[] }> = {};
+
+    // Add system tools under mcp-hub-lite server
+    const systemTools = this.getSystemTools().map(tool => ({
+      ...tool,
+      serverId: 'mcp-hub-lite',
+      description: `[System] ${tool.description}`
+    }));
+
+    allTools['mcp-hub-lite'] = {
+      tools: systemTools
+    };
 
     for (const server of servers) {
       if (!hasValidId(server)) {

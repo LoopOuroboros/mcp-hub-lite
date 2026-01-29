@@ -9,6 +9,17 @@ import { searchCoreService } from "./search/search-core.service.js";
 import { hubToolsService } from "./hub-tools.service.js";
 import { getClientCwd, getClientContext } from "../utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
+import {
+  SYSTEM_TOOL_NAMES,
+  SystemToolName,
+  LIST_SERVERS_TOOL,
+  FIND_SERVERS_TOOL,
+  LIST_ALL_TOOLS_IN_SERVER_TOOL,
+  FIND_TOOLS_IN_SERVER_TOOL,
+  GET_TOOL_TOOL,
+  CALL_TOOL_TOOL,
+  FIND_TOOLS_TOOL
+} from "../models/system-tools.constants.js";
 
 export class GatewayService {
   private server: McpServer;
@@ -363,111 +374,7 @@ export class GatewayService {
 
     // Original list tools handler (for compatibility)
     server.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const allTools = mcpConnectionManager.getAllTools();
-      const gatewayTools = [];
-      toolMap.clear();
-
-      // Add system tools
-      const systemTools = hubToolsService.getSystemTools();
-      const usedNames = new Set<string>();
-
-      for (const tool of systemTools) {
-        gatewayTools.push({
-          name: tool.name,
-          description: `[System] ${tool.description}`,
-          inputSchema: tool.inputSchema
-        });
-        usedNames.add(tool.name);
-      }
-      
-      // Add list-clients tool manually
-      const listClientsTool = {
-          name: 'list-clients',
-          description: '[System] List all connected MCP clients',
-          inputSchema: {
-              type: 'object',
-              properties: {}
-          }
-      };
-      
-      gatewayTools.push(listClientsTool);
-      usedNames.add(listClientsTool.name);
-
-      // First pass: Count tool name frequencies to determine uniqueness
-      const toolNameCounts = new Map<string, number>();
-      for (const tool of allTools) {
-        // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
-        const serverConfig = hubManager.getServerById(tool.serverId);
-        if (serverConfig) {
-          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
-            continue;
-          }
-        }
-        toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
-      }
-
-      for (const tool of allTools) {
-          // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
-          const serverConfig = hubManager.getServerById(tool.serverId);
-
-          if (serverConfig) {
-            if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
-              continue;
-            }
-          }
-
-          const serverName = serverConfig ? serverConfig.name : tool.serverId;
-
-          let gatewayToolName = tool.name;
-          const isUnique = toolNameCounts.get(tool.name) === 1;
-          const isSystemConflict = usedNames.has(tool.name);
-
-          // If tool name is not unique or conflicts with system tool, append server hash
-          if (!isUnique || isSystemConflict) {
-              // 从 serverConfig 中获取实例的 hash
-              const hash = serverConfig?.instance?.hash || 'xxxx';
-              gatewayToolName = `${tool.name}_${hash}`;
-          }
-
-          // Ensure name doesn't exceed 60 chars
-          if (gatewayToolName.length > 60) {
-              // 直接从 serverConfig 中获取实例的 hash
-              const hash = serverConfig?.instance?.hash || 'xxxx';
-              // Reserve space for hash and separator
-              const maxToolNameLen = 60 - hash.length - 1;
-              const truncatedToolName = tool.name.substring(0, maxToolNameLen);
-              gatewayToolName = `${truncatedToolName}_${hash}`;
-          }
-
-          // Final uniqueness check (in case of hash collision or previous renaming conflict)
-          let finalName = gatewayToolName;
-          let counter = 1;
-          while (usedNames.has(finalName)) {
-              const suffix = `_${counter}`;
-              if (gatewayToolName.length + suffix.length > 60) {
-                  const availableLen = 60 - suffix.length;
-                  finalName = gatewayToolName.substring(0, availableLen) + suffix;
-              } else {
-                  finalName = gatewayToolName + suffix;
-              }
-              counter++;
-          }
-          gatewayToolName = finalName;
-
-          usedNames.add(gatewayToolName);
-
-          toolMap.set(gatewayToolName, {
-              serverId: tool.serverId,
-              realToolName: tool.name
-          });
-
-          gatewayTools.push({
-              name: gatewayToolName,
-              description: `[From ${serverName}] ${tool.description || ''}`,
-              inputSchema: tool.inputSchema
-          });
-      }
-
+      const gatewayTools = this.generateGatewayToolsList(toolMap);
       return {
         tools: gatewayTools
       };
@@ -478,28 +385,31 @@ export class GatewayService {
       const toolName = request.params.name;
       const toolArgs: any = request.params.arguments || {};
 
+      logger.info(`Received tools/call request: toolName=${toolName}, args=${JSON.stringify(toolArgs)}, toolMap size=${toolMap.size}`);
+
+      // Log all available tool names in toolMap for debugging
+      const availableTools = Array.from(toolMap.keys());
+      logger.debug(`Available tools in toolMap: [${availableTools.join(', ')}]`);
+
       // Handle system tools
-      if (['list-servers', 'find-servers', 'list-all-tools-in-server', 'find-tools-in-server', 'get-tool', 'call-tool', 'find-tools', 'list-clients'].includes(toolName)) {
+      if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
         try {
           let result;
           switch (toolName) {
-            case 'list-clients':
-              result = clientTrackerService.getClients();
-              break;
-            case 'list-servers':
+            case LIST_SERVERS_TOOL:
               result = await hubToolsService.listServers();
               break;
-            case 'find-servers':
+            case FIND_SERVERS_TOOL:
               result = await hubToolsService.findServers(
                 toolArgs.pattern,
                 toolArgs.searchIn,
                 toolArgs.caseSensitive
               );
               break;
-            case 'list-all-tools-in-server':
+            case LIST_ALL_TOOLS_IN_SERVER_TOOL:
               result = await hubToolsService.listAllToolsInServer(toolArgs.serverName);
               break;
-            case 'find-tools-in-server':
+            case FIND_TOOLS_IN_SERVER_TOOL:
               result = await hubToolsService.findToolsInServer(
                 toolArgs.serverName,
                 toolArgs.pattern,
@@ -507,10 +417,10 @@ export class GatewayService {
                 toolArgs.caseSensitive
               );
               break;
-            case 'get-tool':
+            case GET_TOOL_TOOL:
               result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName);
               break;
-            case 'call-tool':
+            case CALL_TOOL_TOOL:
               // Inject CWD for nested call-tool
               const cwd = getClientCwd();
               if (cwd && toolArgs.toolArgs && !toolArgs.toolArgs.cwd) {
@@ -519,7 +429,7 @@ export class GatewayService {
               }
               result = await hubToolsService.callTool(toolArgs.serverName, toolArgs.toolName, toolArgs.toolArgs);
               break;
-            case 'find-tools':
+            case FIND_TOOLS_TOOL:
               result = await hubToolsService.findTools(
                 toolArgs.pattern,
                 toolArgs.searchIn,
@@ -549,7 +459,10 @@ export class GatewayService {
 
       const target = toolMap.get(toolName);
 
+      logger.info(`Tool lookup result for ${toolName}:`, target);
+
       if (!target) {
+          logger.error(`Tool not found: ${toolName}, available tools: [${Array.from(toolMap.keys()).join(', ')}]`);
           throw new McpError(-32801, `Tool ${toolName} not found`);
       }
 
@@ -561,7 +474,11 @@ export class GatewayService {
             logger.debug(`Injected CWD into tool call [${toolName}]: ${cwd}`);
         }
         
+        logger.info(`Calling tool: serverId=${target.serverId}, realToolName=${target.realToolName}`);
+
         const result = await mcpConnectionManager.callTool(target.serverId, target.realToolName, toolArgs);
+
+        logger.info(`Tool call succeeded: serverId=${target.serverId}, realToolName=${target.realToolName}, result=${JSON.stringify(result)}`);
         return result;
       } catch (error: any) {
          logger.error(`Gateway call tool error:`, error);
@@ -578,6 +495,112 @@ export class GatewayService {
          throw new McpError(-32802, error.message || "Internal Gateway Error");
       }
     });
+  }
+
+  /**
+   * Generate gateway tools list with consistent naming and mapping logic
+   * This function is used by both tools/list MCP request handler and
+   * hub-tools.service listAllToolsInServer method for mcp-hub-lite server
+   */
+  public generateGatewayToolsList(toolMap: Map<string, { serverId: string; realToolName: string }>): Array<{
+    name: string;
+    description: string;
+    inputSchema?: any;
+  }> {
+    const allTools = mcpConnectionManager.getAllTools();
+    const gatewayTools = [];
+    toolMap.clear();
+
+    // Add system tools
+    const systemTools = hubToolsService.getSystemTools();
+    const usedNames = new Set<string>();
+
+    for (const tool of systemTools) {
+      gatewayTools.push({
+        name: tool.name,
+        description: `[System] ${tool.description}`,
+        inputSchema: tool.inputSchema
+      });
+      usedNames.add(tool.name);
+    }
+
+
+    // First pass: Count tool name frequencies to determine uniqueness
+    const toolNameCounts = new Map<string, number>();
+    for (const tool of allTools) {
+      // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
+      const serverConfig = hubManager.getServerById(tool.serverId);
+      if (serverConfig) {
+        if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+          continue;
+        }
+      }
+      toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
+    }
+
+    for (const tool of allTools) {
+        // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
+        const serverConfig = hubManager.getServerById(tool.serverId);
+
+        if (serverConfig) {
+          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+            continue;
+          }
+        }
+
+        const serverName = serverConfig ? serverConfig.name : tool.serverId;
+
+        let gatewayToolName = tool.name;
+        const isUnique = toolNameCounts.get(tool.name) === 1;
+        const isSystemConflict = usedNames.has(tool.name);
+
+        // If tool name is not unique or conflicts with system tool, append server hash
+        if (!isUnique || isSystemConflict) {
+            // 从 serverConfig 中获取实例的 hash
+            const hash = serverConfig?.instance?.hash || 'xxxx';
+            gatewayToolName = `${tool.name}_${hash}`;
+        }
+
+        // Ensure name doesn't exceed 60 chars
+        if (gatewayToolName.length > 60) {
+            // 直接从 serverConfig 中获取实例的 hash
+            const hash = serverConfig?.instance?.hash || 'xxxx';
+            // Reserve space for hash and separator
+            const maxToolNameLen = 60 - hash.length - 1;
+            const truncatedToolName = tool.name.substring(0, maxToolNameLen);
+            gatewayToolName = `${truncatedToolName}_${hash}`;
+        }
+
+        // Final uniqueness check (in case of hash collision or previous renaming conflict)
+        let finalName = gatewayToolName;
+        let counter = 1;
+        while (usedNames.has(finalName)) {
+            const suffix = `_${counter}`;
+            if (gatewayToolName.length + suffix.length > 60) {
+                const availableLen = 60 - suffix.length;
+                finalName = gatewayToolName.substring(0, availableLen) + suffix;
+            } else {
+                finalName = gatewayToolName + suffix;
+            }
+            counter++;
+        }
+        gatewayToolName = finalName;
+
+        usedNames.add(gatewayToolName);
+
+        toolMap.set(gatewayToolName, {
+            serverId: tool.serverId,
+            realToolName: tool.name
+        });
+
+        gatewayTools.push({
+            name: gatewayToolName,
+            description: `[From ${serverName}] ${tool.description || ''}`,
+            inputSchema: tool.inputSchema
+        });
+    }
+
+    return gatewayTools;
   }
 
   private setupHandlers() {

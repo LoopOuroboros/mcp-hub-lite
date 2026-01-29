@@ -123,6 +123,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
       reply.hijack();
 
+      // 创建响应跟踪
+      const startTime = Date.now();
+
       try {
           // Get or create session for this client
           const session = await mcpSessionManager.getSession(context.clientId);
@@ -139,6 +142,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
               await session.transport.handleRequest(request.raw, reply.raw, request.body);
           });
+
+          const duration = Date.now() - startTime;
+          logger.info(`MCP Gateway response for ${context.clientId}: handled in ${duration}ms`);
       } catch (error) {
           logger.error(`Error handling MCP request for client ${context.clientId}:`, error);
           if (!reply.raw.headersSent) {

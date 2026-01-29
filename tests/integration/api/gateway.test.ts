@@ -150,9 +150,9 @@ describe('GatewayService', () => {
       method: 'tools/list'
     });
 
-    // We expect 2 tools: 1 from mockTools + 1 manual (list-clients)
+    // We expect 1 tool: 1 from mockTools
     // The name should be 'testTool' because it's unique
-    expect(result.tools).toHaveLength(2);
+    expect(result.tools).toHaveLength(1);
     const testTool = result.tools.find((t: any) => t.name === 'testTool');
     expect(testTool).toBeDefined();
     expect(testTool.description).toContain('[From Test Server]');
@@ -244,10 +244,9 @@ describe('GatewayService', () => {
       method: 'tools/list'
     });
 
-    // Expect 2 tools: list-servers + list-clients
-    expect(result.tools).toHaveLength(2);
+    // Expect 1 tool: list-servers
+    expect(result.tools).toHaveLength(1);
     expect(result.tools.some((t: any) => t.name === 'list-servers')).toBe(true);
-    expect(result.tools.some((t: any) => t.name === 'list-clients')).toBe(true);
   });
 
   it('should fetch roots on initialized notification', async () => {
