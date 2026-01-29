@@ -82,9 +82,16 @@ graph TD
     click CONFIG "./src/config/CLAUDE.md" "查看 config 模块文档"
     click UTILS "./src/utils/CLAUDE.md" "查看 utils 模块文档"
     click CLI "./src/cli/CLAUDE.md" "查看 cli 模块文档"
+    click PID "./src/pid/CLAUDE.md" "查看 pid 模块文档"
+    click SERVER "./src/server/CLAUDE.md" "查看 server 模块文档"
     click STORES "./frontend/src/stores/CLAUDE.md" "查看 stores 模块文档"
+    click COMPONENTS "./frontend/src/components/CLAUDE.md" "查看 components 模块文档"
+    click VIEWS "./frontend/src/views/CLAUDE.md" "查看 views 模块文档"
+    click ROUTER "./frontend/src/router/CLAUDE.md" "查看 router 模块文档"
+    click I18N "./frontend/src/i18n/CLAUDE.md" "查看 i18n 模块文档"
     click UNIT "./tests/unit/CLAUDE.md" "查看 unit 测试文档"
     click INTEGRATION "./tests/integration/CLAUDE.md" "查看 integration 测试文档"
+    click CONTRACT "./tests/contract/CLAUDE.md" "查看 contract 测试文档"
 ```
 
 ## 模块索引
@@ -104,6 +111,8 @@ graph TD
 | `frontend/src/components/` | 可复用 UI 组件 | Vue |
 | `frontend/src/views/` | 页面视图组件 | Vue |
 | `frontend/src/stores/` | Pinia 状态管理 | TypeScript |
+| `frontend/src/router/` | Vue Router 路由配置 | TypeScript |
+| `frontend/src/i18n/` | 国际化支持 | TypeScript |
 | `tests/unit/` | 单元测试 | TypeScript |
 | `tests/integration/` | 集成测试 | TypeScript |
 | `tests/contract/` | 契约测试 | TypeScript |
@@ -358,6 +367,14 @@ npm run test:coverage
 详细规范请参见：[`.claude/rules/git.md`](.claude/rules/git.md)
 
 ## 变更记录 (Changelog)
+
+### 2026-01-29
+- 更新摘要
+- 完善模块结构图，添加缺失的模块链接（包括 CONTRACT 模块）
+- 为 src/server 和 src/pid 模块创建详细的 CLAUDE.md 文档
+- 为 frontend/router 和 frontend/i18n 模块创建详细的 CLAUDE.md 文档
+- 为 tests/contract 模块创建详细的 CLAUDE.md 文档
+- 更新模块索引，包含所有子模块
 
 ### 2026-01-20
 - 优化 HubTools 调用逻辑，将所有方法中的 serverName 参数替换为 serverId，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销
