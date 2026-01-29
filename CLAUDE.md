@@ -375,6 +375,9 @@ npm run test:coverage
 - 为 frontend/router 和 frontend/i18n 模块创建详细的 CLAUDE.md 文档
 - 为 tests/contract 模块创建详细的 CLAUDE.md 文档
 - 更新模块索引，包含所有子模块
+- **添加前端测试覆盖**：为 Dashboard 组件、ToolCard 组件和 Server Store 添加单元测试
+- **更新测试配置**：配置 Vue Test Utils 和 JSDOM 环境用于前端组件测试
+- **更新项目文档**：反映前端测试状态的改进
 
 ### 2026-01-20
 - 优化 HubTools 调用逻辑，将所有方法中的 serverName 参数替换为 serverId，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销

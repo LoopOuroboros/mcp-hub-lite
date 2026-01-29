@@ -102,12 +102,18 @@ stores/
 
 ### 单元测试
 
-**状态**: 待添加
+**状态**: 已实现 Server Store 基础测试
+
+**已实现测试**:
+- Store 初始化测试（空服务器数组、加载状态、错误状态）
+- 计算属性测试（stats 统计信息、选中服务器）
+- Action 功能测试（fetchServers、addServer、updateServerStatus）
+- 错误处理测试（网络错误处理）
 
 **建议测试**:
-- Store 初始化测试
-- Action 功能测试
-- 计算属性测试
+- 完整的 Action 测试覆盖（startServer、stopServer、deleteServer 等）
+- WebSocket 相关功能测试
+- 复杂场景的集成测试
 
 ## 常见问题 (FAQ)
 

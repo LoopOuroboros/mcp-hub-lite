@@ -9,6 +9,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/']
     },
-    include: ['tests/**/*.test.ts', 'src/**/*.test.ts']
+    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts', 'tests/contract/**/*.test.ts', 'src/**/*.test.ts'],
+    exclude: ['tests/unit/frontend/**/*']
   }
 });

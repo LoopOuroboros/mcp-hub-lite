@@ -8,9 +8,15 @@ vi.mock('../../../src/services/hub-manager.service.js', () => ({
   hubManager: {
     getAllServers: vi.fn(),
     getServerById: vi.fn(),
+    getServerByName: vi.fn(),
+    getServerInstances: vi.fn(),
+    getServerInstanceByName: vi.fn(),
     addServer: vi.fn(),
+    addServerInstance: vi.fn(),
     updateServer: vi.fn(),
+    updateServerInstance: vi.fn(),
     removeServer: vi.fn(),
+    removeServerInstance: vi.fn(),
   }
 }));
 

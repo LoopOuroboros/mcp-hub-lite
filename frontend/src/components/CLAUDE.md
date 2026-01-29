@@ -182,13 +182,16 @@ components/
 
 ### 单元测试
 
-**状态**: 待添加
+**状态**: 已实现 Dashboard 和 ToolCard 组件测试
+
+**已实现测试**:
+- Dashboard 组件：服务器统计卡片、加载状态、活动日志显示
+- ToolCard 组件：标题/描述渲染、标签显示、点击事件触发
 
 **建议测试**:
-- 组件渲染测试
-- Props 传递测试
-- Events 触发测试
-- 表单验证测试
+- ServerDetail 组件测试
+- ToolCallDialog 组件测试
+- 其他组件的完整测试覆盖
 
 ## 常见问题 (FAQ)
 
