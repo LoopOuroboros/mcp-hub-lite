@@ -10,6 +10,8 @@ Unit Tests 模块包含单元测试，用于测试代码中的最小可测试单
 
 ```
 unit/
+├── server/                # 服务器运行时单元测试
+│   └── runner.test.ts
 ├── services/              # 服务层单元测试
 │   ├── hub-manager.test.ts
 │   ├── hub-tools.service.test.ts
@@ -17,11 +19,41 @@ unit/
 │       ├── search-cache.test.ts
 │       ├── search-core.service.test.ts
 │       └── search-scorer.test.ts
-└── utils/                 # 工具层单元测试
-    └── config.test.ts
+├── utils/                 # 工具层单元测试
+│   ├── config.test.ts
+│   ├── logger.test.ts
+│   ├── log-rotator.test.ts
+│   ├── mcp-error-handler.test.ts
+│   └── request-context.test.ts
+└── frontend/              # 前端单元测试
+    ├── components/         # 组件测试
+    │   ├── dashboard.test.ts
+    │   └── tool-card.test.ts
+    ├── mocks/             # 测试 Mock
+    │   └── http.mock.ts
+    └── stores/            # Store 测试
+        └── server.test.ts
 ```
 
 ## 测试文件
+
+### Server Runner Test (`server/runner.test.ts`)
+
+**被**测模块**: `src/server/runner.ts`
+
+**测试覆盖**:
+- HTTP 模式服务器启动
+- stdio 模式服务器启动
+- 端口冲突检测和处理
+- 自动连接启用的服务器
+- 信号处理（SIGTERM, SIGINT）
+- 启动错误处理
+- PID 文件管理
+
+**运行**:
+```bash
+npx vitest tests/unit/server/runner.test.ts
+```
 
 ### Hub Manager Test (`services/hub-manager.test.ts`)
 
@@ -109,12 +141,118 @@ npx vitest tests/unit/services/search/search-scorer.test.ts
 npx vitest tests/unit/utils/config.test.ts
 ```
 
+### Logger Test (`utils/logger.test.ts`)
+
+**被测模块**: `src/utils/logger.ts`
+
+**测试覆盖**:
+- 日志级别过滤
+- 日志格式化
+- 日志输出
+
+**运行**:
+```bash
+npx vitest tests/unit/utils/logger.test.ts
+```
+
+### Log Rotator Test (`utils/log-rotator.test.ts`)
+
+**被测模块**: `src/utils/log-rotator.ts`
+
+**测试覆盖**:
+- 日志轮转逻辑
+- 文件大小检测
+- 日志清理
+
+**运行**:
+```bash
+npx vitest tests/unit/utils/log-rotator.test.ts
+```
+
+### MCP Error Handler Test (`utils/mcp-error-handler.test.ts`)
+
+**被测模块**: `src/utils/mcp-error-handler.ts`
+
+**测试覆盖**:
+- MCP 错误转换
+- 错误码映射
+- 错误格式标准化
+
+**运行**:
+```bash
+npx vitest tests/unit/utils/mcp-error-handler.test.ts
+```
+
+### Request Context Test (`utils/request-context.test.ts`)
+
+**被测模块**: `src/utils/request-context.ts`
+
+**测试覆盖**:
+- 异步上下文存储和检索
+- 客户端上下文管理
+- 工作目录获取
+- 上下文隔离和并发处理
+
+**运行**:
+```bash
+npx vitest tests/unit/utils/request-context.test.ts
+```
+
+### Dashboard Component Test (`frontend/components/dashboard.test.ts`)
+
+**被测模块**: `frontend/src/components/Dashboard.vue`
+
+**测试覆盖**:
+- 组件渲染
+- 服务器列表显示
+- 状态处理
+- 用户交互
+
+**运行**:
+```bash
+npx vitest tests/unit/frontend/components/dashboard.test.ts --config vitest.frontend.config.ts
+```
+
+### Tool Card Component Test (`frontend/components/tool-card.test.ts`)
+
+**被测模块**: `frontend/src/components/ToolCard.vue`
+
+**测试覆盖**:
+- 组件渲染
+- 工具信息显示
+- 工具调用事件
+
+**运行**:
+```bash
+npx vitest tests/unit/frontend/components/tool-card.test.ts --config vitest.frontend.config.ts
+```
+
+### Server Store Test (`frontend/stores/server.test.ts`)
+
+**被测模块**: `frontend/src/stores/server.ts`
+
+**测试覆盖**:
+- Server Store 状态管理
+- 服务器数据获取
+- 状态更新
+
+
+
+**运行**:
+```bash
+npx vitest tests/unit/frontend/stores/server.test.ts --config vitest.frontend.config.ts
+```
+
 ## 测试框架
 
 - **Vitest**: 单元测试框架
 - **@vitest/coverage-v8**: 代码覆盖率工具
+- **@vue/test-utils**: Vue 组件测试工具
+- **jsdom**: DOM 环境模拟
 
 ## 测试配置
+
+### 后端测试配置
 
 配置文件: `vitest.config.ts`
 
@@ -132,10 +270,32 @@ export default defineConfig({
 });
 ```
 
+### 前端测试配置
+
+配置文件: `vitest.frontend.config.ts`
+
+```typescript
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: 'tests/unit/frontend/setup.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      all: true
+    }
+  }
+});
+```
+
 ## 依赖关系
 
 ```
 unit/
+├── server/
+│   └── runner.test.ts
+│       └── tests: src/server/runner.ts
 ├── services/
 │   ├── hub-manager.test.ts
 │   │   └── tests: src/services/hub-manager.service.ts
@@ -148,31 +308,53 @@ unit/
 │       │   └── tests: src/services/search/search-core.service.ts
 │       └── search-scorer.test.ts
 │           └── tests: src/services/search/search-scorer.ts
-└── utils/
-    └── config.test.ts
-        └── tests: src/config/config-manager.ts
+├── utils/
+│   ├── config.test.ts
+│   │   └── tests: src/config/config-manager.ts
+│   ├── logger.test.ts
+│   │   └── tests: src/utils/logger.ts
+│   ├── log-rotator.test.ts
+│   │   └── tests: src/utils/log-rotator.ts
+│   ├── mcp-error-handler.test.ts
+│   │   └── tests: src/utils/mcp-error-handler.ts
+│   └── request-context.test.ts
+│       └── tests: src/utils/request-context.ts
+└── frontend/
+    ├── components/
+    │   ├── dashboard.test.ts
+    │   │   └── tests: frontend/src/components/Dashboard.vue
+    │   └── tool-card.test.ts
+    │       └── tests: frontend/src/components/ToolCard.vue
+    └── stores/
+        └── server.test.ts
+            └── tests: frontend/src/stores/server.ts
 ```
 
 ## 测试覆盖目标
 
 | 模块 | 目标覆盖率 | 当前状态 |
 |-------|-----------|---------|
+| `server/runner` | 80% | 已实现部分 |
 | `services/hub-manager` | 80% | 部分实现 |
 | `services/hub-tools` | 80% | 部分实现 |
 | `services/search/*` | 80% | 已实现 |
 | `utils/config` | 80% | 已实现 |
+| `utils/logger` | 80% | 已实现 |
+| `utils/log-rotator` | 80% | 已实现 |
+| `utils/mcp-error-handler` | 80% | 已实现 |
+| `utils/request-context` | 100% | 已实现 |
 | `models/*` | 80% | 待实现 |
 | `api/*` | 70% | 待实现 |
-| `cli/*` | 70.0% | 待实现 |
+| `cli/*` | 70% | 待实现 |
 | `pid/*` | 70% | 待实现 |
-| `utils/logger` | 70% | 待实现 |
-| `utils/port-checker` | 70% | 待实现 |
+| `frontend/components/*` | 70% | 部分实现 |
+| `frontend/stores/*` | 70% | 部分实现 |
 
 ## 常见问题 (FAQ)
 
 ### Q: 如何运行所有单元测试？
 
-A: `npx vitest tests/unit/`
+A: `npm run test:backend` (仅后端) 或 `npm run test:frontend` (仅前端) 或 `npm test` (全部)
 
 ### Q: 如何生成覆盖率报告？
 
@@ -180,24 +362,47 @@ A: `npx vitest --coverage tests/unit/`
 
 ### Q: 如何运行特定测试文件？
 
-A: `npx vitest <文件路径>`
+A: `npx vitest <文件路径>` 或 `npx vitest <文件路径> --config vitest.frontend.config.ts` (前端)
 
 ### Q: 如何调试失败的测试？
 
 A: 添加 `.only` 到测试函数，或使用 `--inspect` 参数运行测试。
 
+### Q: 前端测试需要什么配置？
+
+A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件配置了 jsdom 环境和 Vue Test Utils。
+
 ## 相关文件清单
 
 | 文件路径 | 描述 |
 |---------|------|
+| `unit/server/runner.test.ts` | 服务器运行器测试 |
 | `unit/services/hub-manager.test.ts` | Hub Manager 服务测试 |
 | `unit/services/hub-tools.service.test.ts` | Hub Tools 服务测试 |
 | `unit/services/search/search-cache.test.ts` | 搜索缓存测试 |
 | `unit/services/search/search-core.service.test.ts` | 搜索核心服务测试 |
 | `unit/services/search/search-scorer.test.ts` | 搜索评分器测试 |
 | `unit/utils/config.test.ts` | 配置管理器测试 |
+| `unit/utils/logger.test.ts` | Logger 测试 |
+| `unit/utils/log-rotator.test.ts` | 日志轮转测试 |
+| `unit/utils/mcp-error-handler.test.ts` | MCP 错误处理器测试 |
+| `unit/utils/request-context.test.ts` | 请求上下文测试 |
+| `unit/frontend/components/dashboard.test.ts` | Dashboard 组件测试 |
+| `unit/frontend/components/tool-card.test.ts` | ToolCard 组件测试 |
+| `unit/frontend/stores/server.test.ts` | Server Store 测试 |
+| `unit/frontend/mocks/http.mock.ts` | HTTP Mock |
+| `unit/frontend/setup.ts` | 前端测试设置 |
 
 ## 变更记录 (Changelog)
+
+### 2026-01-29
+- 为 utils/logger 模块添加单元测试
+- 为 utils/log-rotator 模块添加单元测试
+- 为 utils/mcp-error-handler 模块添加单元测试
+- 为 frontend/components/Dashboard 组件添加单元测试
+- 为 frontend/components/ToolCard 组件添加单元测试
+- 为 frontend/stores/server 添加单元测试
+- 更新 Unit Tests 模块文档，包含所有新增测试
 
 ### 2026-01-20
 - 更新 Unit Tests 模块文档
