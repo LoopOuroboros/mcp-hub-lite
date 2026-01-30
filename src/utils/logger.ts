@@ -100,6 +100,7 @@ export class Logger {
     const processPid = pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     const formattedPid = this.formatPid(processPid);
+    const actualServerName = serverName || 'mcp-hub';
 
     // 时间戳 - 白色/灰色
     const timestampColor = '\x1b[90m';
@@ -112,20 +113,17 @@ export class Logger {
     // 重置颜色
     const resetColor = this.getResetColor();
 
-    if (serverName) {
-      return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${serverName}]${resetColor} ${message}`;
-    } else {
-      return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[mcp-hub]${resetColor} ${message}`;
-    }
+    return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${actualServerName}]${resetColor} ${message}`;
   }
 
-  private createLogMessage(level: LogLevel, message: string, pid?: number): string {
+  private createLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string): string {
     const timestamp = this.formatTimestamp(new Date());
     const processPid = pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     // 对于纯文本日志，PID 格式保持简单
     const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
-    return `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${message}`;
+    const serverIdentifier = serverName || 'mcp-hub';
+    return `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [${serverIdentifier}] ${message}`;
   }
 
   // 辅助方法：格式化错误对象
@@ -144,96 +142,62 @@ export class Logger {
     return String(error);
   }
 
-  debug(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('debug')) {
-      // 处理多个参数
-      let fullMessage = message;
-      if (args.length > 0) {
-        const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
-        fullMessage = `${message} ${formattedArgs}`;
-      }
+  // 通用日志方法，消除代码重复
+  private log(level: LogLevel, message: string, args: unknown[]): void {
+    if (!this.shouldLog(level)) {
+      return;
+    }
 
-      const coloredLogMsg = this.createColoredLogMessage('debug', fullMessage);
-      const plainLogMsg = this.createLogMessage('debug', fullMessage);
+    // 处理多个参数
+    let fullMessage = message;
+    if (args.length > 0) {
+      const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
+      fullMessage = `${message} ${formattedArgs}`;
+    }
 
-      if (this.useStderr) {
-          console.error(coloredLogMsg);
-      } else {
+    const coloredLogMsg = this.createColoredLogMessage(level, fullMessage);
+    const plainLogMsg = this.createLogMessage(level, fullMessage, undefined);
+
+    // 控制台输出
+    if (this.useStderr) {
+      console.error(coloredLogMsg);
+    } else {
+      switch (level) {
+        case 'debug':
           console.debug(coloredLogMsg);
-      }
-
-      // 文件输出（如果启用）- 使用纯文本格式
-      if (this.logFileStream) {
-        this.logFileStream.write(plainLogMsg + '\n');
+          break;
+        case 'info':
+          console.info(coloredLogMsg);
+          break;
+        case 'warn':
+          console.warn(coloredLogMsg);
+          break;
+        case 'error':
+          console.error(coloredLogMsg);
+          break;
       }
     }
+
+    // 文件输出（如果启用）- 使用纯文本格式
+    if (this.logFileStream) {
+      this.logFileStream.write(plainLogMsg + '\n');
+    }
+  }
+
+  debug(message: string, ...args: unknown[]): void {
+    this.log('debug', message, args);
   }
 
   info(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('info')) {
-      // 处理多个参数
-      let fullMessage = message;
-      if (args.length > 0) {
-        const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
-        fullMessage = `${message} ${formattedArgs}`;
-      }
-
-      const coloredLogMsg = this.createColoredLogMessage('info', fullMessage);
-      const plainLogMsg = this.createLogMessage('info', fullMessage);
-
-      if (this.useStderr) {
-          console.error(coloredLogMsg);
-      } else {
-          console.info(coloredLogMsg);
-      }
-
-      // 文件输出（如果启用）- 使用纯文本格式
-      if (this.logFileStream) {
-        this.logFileStream.write(plainLogMsg + '\n');
-      }
-    }
+    this.log('info', message, args);
   }
 
   warn(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('warn')) {
-      // 处理多个参数
-      let fullMessage = message;
-      if (args.length > 0) {
-        const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
-        fullMessage = `${message} ${formattedArgs}`;
-      }
-
-      const coloredLogMsg = this.createColoredLogMessage('warn', fullMessage);
-      const plainLogMsg = this.createLogMessage('warn', fullMessage);
-
-      console.warn(coloredLogMsg);
-
-      // 文件输出（如果启用）- 使用纯文本格式
-      if (this.logFileStream) {
-        this.logFileStream.write(plainLogMsg + '\n');
-      }
-    }
+    this.log('warn', message, args);
   }
 
   error(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('error')) {
-      // 处理多个参数
-      let fullMessage = message;
-      if (args.length > 0) {
-        const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
-        fullMessage = `${message} ${formattedArgs}`;
-      }
-
-      const coloredLogMsg = this.createColoredLogMessage('error', fullMessage);
-      const plainLogMsg = this.createLogMessage('error', fullMessage);
-
-      console.error(coloredLogMsg);
-
-      // 文件输出（如果启用）- 使用纯文本格式
-      if (this.logFileStream) {
-        this.logFileStream.write(plainLogMsg + '\n');
-      }
-    }
+    this.log('error', message, args);
   }
 
   setLevel(level: LogLevel): void {
@@ -244,11 +208,7 @@ export class Logger {
   serverLog(level: LogLevel, serverName: string, message: string, pid?: number): void {
     if (this.shouldLog(level)) {
       const coloredLogMsg = this.createColoredLogMessage(level, message, pid, serverName);
-      const formattedLevel = this.formatLogLevel(level);
-      const processPid = pid ?? process.pid;
-      // 对于纯文本日志，PID 格式保持简单
-      const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
-      const plainLogMsg = `[${this.formatTimestamp(new Date())}] [${formattedLevel}] [PID:${pidStr}] [${serverName}] ${message}`;
+      const plainLogMsg = this.createLogMessage(level, message, pid, serverName);
 
       console.info(coloredLogMsg);
 
@@ -272,13 +232,10 @@ export function logWithColor(coloredMessage: string, plainMessage: string): void
   const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage);
   console.info(coloredLogMsg);
 
-  // 文件输出（无颜色）
+  // 文件输出（无颜色）- 直接使用 createLogMessage 方法
   if (logger['logFileStream']) {
-    const timestamp = logger['formatTimestamp'](new Date());
-    const formattedLevel = logger['formatLogLevel']('info');
-    const pidStr = process.pid.toString().padStart(PID_WIDTH, ' ');
-    const fileLogMsg = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${plainMessage}`;
-    logger['logFileStream'].write(fileLogMsg + '\n');
+    const plainLogMsg = logger['createLogMessage']('info', plainMessage);
+    logger['logFileStream'].write(plainLogMsg + '\n');
   }
 }
 
