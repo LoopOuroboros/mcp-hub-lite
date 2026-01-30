@@ -15,5 +15,5 @@
     "noUnusedParameters": true
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["frontend", "node_modules", "dist"]
+  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"]
 }
