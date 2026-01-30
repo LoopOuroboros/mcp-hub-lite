@@ -85,7 +85,21 @@ describe('ConfigManager', () => {
 
   it('should validate config with Zod schema', () => {
     const invalidConfig = {
-      port: 'invalid-port', // Should be number
+      system: {
+        port: 'invalid-port', // Should be number
+        host: 'localhost',
+        language: 'zh',
+        theme: 'system',
+        logging: {
+          level: 'info',
+          rotation: {
+            enabled: true,
+            maxAge: '7d',
+            maxSize: '100MB',
+            compress: false
+          }
+        }
+      },
       servers: {},
       serverInstances: {}
     };
@@ -176,5 +190,82 @@ describe('ConfigManager', () => {
 
     const serverInstancesAfterDelete = manager.getServerInstances();
     expect(serverInstancesAfterDelete[serverName]).toBeUndefined();
+  });
+
+  it('should create backup for default config', () => {
+    const manager = new ConfigManager(tempConfigPath);
+    const backupPath = manager.createBackup();
+    expect(backupPath).not.toBeNull();
+    expect(fs.existsSync(backupPath)).toBe(true);
+  });
+
+  it('should create backup when config is modified', async () => {
+    const manager = new ConfigManager(tempConfigPath);
+
+    // 第一次创建备份
+    const firstBackup = manager.createBackup();
+    expect(firstBackup).not.toBeNull();
+
+    const initialBackups = manager.listBackups();
+    expect(initialBackups.length).toBe(1);
+
+    // 修改配置
+    await manager.updateConfig({
+      system: {
+        port: 8899,
+        host: 'localhost',
+        language: 'zh',
+        theme: 'system',
+        logging: {
+          level: 'info',
+          rotation: {
+            enabled: true,
+            maxAge: '7d',
+            maxSize: '100MB',
+            compress: false
+          }
+        }
+      }
+    });
+
+    const afterUpdateBackups = manager.listBackups();
+    expect(afterUpdateBackups.length).toBeGreaterThan(1);
+    expect(fs.existsSync(afterUpdateBackups[0].path)).toBe(true);
+  });
+
+  it('should not create duplicate backup for identical config', () => {
+    const manager = new ConfigManager(tempConfigPath);
+
+    // 第一次创建备份
+    const firstBackup = manager.createBackup();
+    expect(firstBackup).not.toBeNull();
+
+    const initialBackups = manager.listBackups();
+    expect(initialBackups.length).toBe(1);
+
+    // 再次尝试创建备份（内容相同）
+    const secondBackup = manager.createBackup();
+    expect(secondBackup).toBeNull(); // 应该返回 null，表示没有创建新备份
+
+    const afterSecondBackup = manager.listBackups();
+    expect(afterSecondBackup.length).toBe(1); // 备份数量应该保持不变
+  });
+
+  it('should limit number of backup files', async () => {
+    const manager = new ConfigManager(tempConfigPath);
+
+    // 创建多个备份
+    for (let i = 0; i < 6; i++) {
+      // 修改配置以确保创建新备份
+      await manager.updateConfig({
+        system: {
+          port: 7788 + i
+        }
+      });
+    }
+
+    const backups = manager.listBackups();
+    // 最大备份数量是 5（包括最新的）
+    expect(backups.length).toBe(5);
   });
 });

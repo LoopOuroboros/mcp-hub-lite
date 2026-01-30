@@ -47,6 +47,13 @@ class ConfigBackupManager {
         return null;
       }
 
+      // 检查文件是否为空
+      const stat = fs.statSync(this.configPath);
+      if (stat.size === 0) {
+        logger.warn(`Config file ${this.configPath} is empty, skipping backup`);
+        return null;
+      }
+
       // 计算当前文件的哈希值
       const currentHash = this.computeFileHash(this.configPath);
       if (!currentHash) {
@@ -54,18 +61,6 @@ class ConfigBackupManager {
         return null;
       }
 
-      // 计算默认配置的 MD5 值（直接从 SystemConfigSchema 获取，防止硬编码不一致）
-      const defaultConfig = SystemConfigSchema.parse({});
-      const defaultConfigStr = JSON.stringify(defaultConfig, null, 2);
-      const hash = crypto.createHash('md5');
-      hash.update(defaultConfigStr);
-      const DEFAULT_CONFIG_MD5 = hash.digest('hex');
-
-      // 如果当前配置是默认配置，则跳过备份
-      if (currentHash === DEFAULT_CONFIG_MD5) {
-        logger.debug('Config file is default configuration, skipping backup');
-        return null;
-      }
 
       // 检查最新的备份文件是否与当前内容相同
       const backups = this.listBackups();
@@ -79,10 +74,20 @@ class ConfigBackupManager {
         }
       }
 
-      // 生成备份文件名：.mcp-hub.json.YYYYMMDDHHMMSS.bak
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
-      const backupFileName = `.mcp-hub.json.${timestamp}.bak`;
-      const backupPath = path.join(this.backupDir, backupFileName);
+      // 生成备份文件名：.mcp-hub.json.YYYYMMDDHHMMSSmmm.bak (包含毫秒)
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '').slice(0, 17) +
+                       now.getMilliseconds().toString().padStart(3, '0');
+      let backupFileName = `.mcp-hub.json.${timestamp}.bak`;
+      let backupPath = path.join(this.backupDir, backupFileName);
+
+      // 确保文件名唯一性（防止在同一毫秒内创建多个备份）
+      let counter = 1;
+      while (fs.existsSync(backupPath)) {
+        backupFileName = `.mcp-hub.json.${timestamp}_${counter}.bak`;
+        backupPath = path.join(this.backupDir, backupFileName);
+        counter++;
+      }
 
       fs.copyFileSync(this.configPath, backupPath);
       logger.info(`Config backup created: ${backupPath}`);
@@ -212,7 +217,11 @@ export class ConfigManager {
   private serverInstances: Record<string, ServerInstanceConfig[]> = {};
 
   constructor(configPath?: string) {
-    this.configPath = configPath || this.getDefaultConfigPath();
+    if (configPath) {
+      this.configPath = configPath;
+    } else {
+      this.configPath = this.getDefaultConfigPath();
+    }
     this.backupManager = new ConfigBackupManager(this.configPath);
     this.config = this.loadConfig();
   }
@@ -367,11 +376,8 @@ export class ConfigManager {
     return orderedServer as McpServerConfig;
   }
 
-  private saveConfigSync(config: SystemConfig): void {
+  private saveConfigSync(config: SystemConfig, skipBackup: boolean = false): void {
     try {
-      // 在保存前自动创建备份
-      this.createBackup();
-
       // Sort servers by name alphabetically and ensure keys are ordered according to schema
       if (config.servers && typeof config.servers === 'object') {
         // 将记录转换为数组，排序后再转换回记录
@@ -386,17 +392,23 @@ export class ConfigManager {
       const dir = path.dirname(this.configPath);
       fs.mkdirSync(dir, { recursive: true });
 
+      // 检查是否需要备份（在保存之前检查）
+      const needsBackup = !skipBackup && this.fileExists(this.configPath);
+
+      // 保存配置到文件
       fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
+
+      // 在保存之后创建备份
+      if (needsBackup) {
+        this.createBackup();
+      }
     } catch (error) {
       logger.error(`Failed to save config synchronously: ${error}`);
     }
   }
 
-  private async saveConfig(config?: SystemConfig): Promise<void> {
+  private async saveConfig(config?: SystemConfig, skipBackup: boolean = false): Promise<void> {
     const configToSave = config || this.config;
-
-    // 在保存前自动创建备份
-    this.createBackup();
 
     // Sort servers by name alphabetically and ensure keys are ordered according to schema
     if (configToSave.servers && typeof configToSave.servers === 'object') {
@@ -413,8 +425,16 @@ export class ConfigManager {
       const dir = path.dirname(this.configPath);
       await fsPromises.mkdir(dir, { recursive: true });
 
+      // 检查是否需要备份（在保存之前检查）
+      const needsBackup = !skipBackup && this.fileExists(this.configPath);
+
       logger.info(`Saving config to ${this.configPath}`);
       await fsPromises.writeFile(this.configPath, JSON.stringify(configToSave, null, 2));
+
+      // 在保存之后创建备份
+      if (needsBackup) {
+        this.createBackup();
+      }
     } catch (error) {
       logger.error(`Failed to save config: ${error}`);
     }
@@ -552,12 +572,24 @@ export class ConfigManager {
    * Update the entire configuration
    */
   public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
-    // Merge with existing config
-    this.config = SystemConfigSchema.parse({
+    // 首先检查当前配置和新配置是否都是默认配置
+    const currentConfigStr = JSON.stringify(this.config, null, 2);
+    const newConfigStr = JSON.stringify(SystemConfigSchema.parse({
       ...this.config,
       ...newConfig
-    });
-    await this.saveConfig();
+    }), null, 2);
+
+    // 只有当新配置与当前配置不同时，才进行更新和备份
+    if (currentConfigStr !== newConfigStr) {
+      // 先合并新配置到内存中
+      this.config = SystemConfigSchema.parse({
+        ...this.config,
+        ...newConfig
+      });
+
+      // 保存到文件（不跳过备份）
+      await this.saveConfig();
+    }
   }
 
   private generateServerIdentity(name?: string): { id: string, timestamp: number, hash: string } {
@@ -651,5 +683,22 @@ export class ConfigManager {
   }
 }
 
-// Singleton instance
-export const configManager = new ConfigManager();
+// Singleton instance - lazily created
+let configManagerInstance: ConfigManager | undefined;
+
+export function getConfigManager(configPath?: string): ConfigManager {
+  if (configManagerInstance) {
+    return configManagerInstance;
+  }
+  configManagerInstance = new ConfigManager(configPath);
+  return configManagerInstance;
+}
+
+// 注意：不再在模块顶层自动创建实例，避免不必要的默认配置路径查找
+// 保持向后兼容的导出 - 使用 getter 延迟创建
+export const configManager = new Proxy({}, {
+  get(_, prop) {
+    const instance = getConfigManager();
+    return (instance as any)[prop];
+  }
+}) as ConfigManager;
