@@ -27,7 +27,8 @@ vi.mock('../../../src/utils/logger.js', () => ({
     info: vi.fn(),
     error: vi.fn(),
     setUseStderr: vi.fn(),
-    enableDevLog: vi.fn()
+    enableDevLog: vi.fn(),
+    setLevel: vi.fn()
   }
 }));
 
@@ -81,7 +82,10 @@ describe('Server Runner', () => {
       const mockConfig = {
         system: {
           host: 'localhost',
-          port: 3000
+          port: 3000,
+          logging: {
+            level: 'info'
+          }
         }
       } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
@@ -103,7 +107,10 @@ describe('Server Runner', () => {
       const mockConfig = {
         system: {
           host: 'localhost',
-          port: 3000
+          port: 3000,
+          logging: {
+            level: 'info'
+          }
         }
       } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
@@ -128,7 +135,10 @@ describe('Server Runner', () => {
       const mockConfig = {
         system: {
           host: 'localhost',
-          port: 3000
+          port: 3000,
+          logging: {
+            level: 'info'
+          }
         }
       } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
@@ -163,7 +173,10 @@ describe('Server Runner', () => {
       const mockConfig = {
         system: {
           host: 'localhost',
-          port: 3000
+          port: 3000,
+          logging: {
+            level: 'info'
+          }
         }
       } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
@@ -205,7 +218,10 @@ describe('Server Runner', () => {
       const mockConfig = {
         system: {
           host: 'localhost',
-          port: 3000
+          port: 3000,
+          logging: {
+            level: 'info'
+          }
         }
       } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
