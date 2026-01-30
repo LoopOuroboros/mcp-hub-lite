@@ -169,9 +169,12 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       const existingServers = hubManager.getAllServers();
       const existingNames = new Set(existingServers.map(server => server.name.toLowerCase()));
 
+      const serversToAdd = [];
+      const serversToConnect = [];
+
+      // 阶段 1: 收集和验证所有服务器
       for (const { name, config: serverConfig } of body.mcpServers) {
         try {
-          // 预处理配置
           const processedName = name.toLowerCase();
 
           // 检查名称是否重复
@@ -186,19 +189,10 @@ export async function webServerRoutes(fastify: FastifyInstance) {
           // 使用 Zod 验证服务器配置（现在支持 "http" 类型）
           const validatedConfig = McpServerConfigSchema.partial().parse(serverConfig);
 
-          // 添加服务器配置（这会触发 SERVER_ADDED 事件）
-          await hubManager.addServer(processedName, validatedConfig);
-
-          // 如果启用了自动启动，添加服务器实例（addServerInstance 会自动检查并处理启动）
+          serversToAdd.push({ name: processedName, config: validatedConfig });
           if (validatedConfig.enabled !== false && validatedConfig.enabled !== undefined) {
-            try {
-              await hubManager.addServerInstance(processedName, {});
-            } catch (error) {
-              // 自动启动失败不影响服务器添加操作
-              logger.warn(`Failed to auto-start server instance for ${processedName}:`, error);
-            }
+            serversToConnect.push(processedName);
           }
-
           results.success.push({ name: processedName, config: validatedConfig });
           existingNames.add(processedName); // 防止同一批次中的重复
         } catch (error) {
@@ -207,6 +201,21 @@ export async function webServerRoutes(fastify: FastifyInstance) {
             error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
+      }
+
+      // 阶段 2: 批量保存配置（只保存一次）
+      if (serversToAdd.length > 0) {
+        await hubManager.addServersWithoutAutoStart(serversToAdd);
+      }
+
+      // 阶段 3: 批量创建服务器实例（不自动连接）
+      if (serversToAdd.length > 0) {
+        await hubManager.addServerInstancesWithoutConnect(serversToAdd.map(s => s.name));
+      }
+
+      // 阶段 4: 并发启动所有需要连接的服务器实例
+      if (serversToConnect.length > 0) {
+        await hubManager.connectServerInstances(serversToConnect);
       }
 
       return reply.code(200).send({

@@ -461,6 +461,19 @@ export class ConfigManager {
     return undefined;
   }
 
+  /**
+   * 批量添加服务器（不立即保存，用于优化批量操作）
+   */
+  public async addServers(servers: Array<{name: string, config: Partial<McpServerConfig>}>): Promise<void> {
+    for (const {name, config} of servers) {
+      const validatedConfig = McpServerConfigSchema.parse(config);
+      this.config.servers[name] = validatedConfig;
+      if (!this.serverInstances[name]) {
+        this.serverInstances[name] = [];
+      }
+    }
+  }
+
   public async addServer(name: string, config: Partial<McpServerConfig>): Promise<McpServerConfig> {
     // 使用 McpServerConfigSchema 来确保所有字段都有默认值
     const validatedConfig = McpServerConfigSchema.parse(config);

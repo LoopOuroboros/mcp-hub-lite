@@ -10,6 +10,56 @@ export class HubManagerService {
     this.configManager = manager;
   }
 
+  /**
+   * 批量添加服务器配置（不自动启动，用于优化批量操作性能）
+   */
+  async addServersWithoutAutoStart(servers: Array<{ name: string; config: Partial<McpServerConfig> }>): Promise<void> {
+    await this.configManager.addServers(servers);
+    // 为所有新增的服务器发布 SERVER_ADDED 事件
+    for (const { name } of servers) {
+      const serverConfig = this.getServerByName(name);
+      if (serverConfig) {
+        eventBus.publish(EventTypes.SERVER_ADDED, { name, config: serverConfig });
+      }
+    }
+    // 保存配置（只保存一次）
+    await this.configManager['saveConfig'](); // 调用私有方法
+  }
+
+  /**
+   * 批量创建服务器实例（不自动连接）
+   */
+  async addServerInstancesWithoutConnect(serverNames: string[]): Promise<void> {
+    for (const name of serverNames) {
+      await this.configManager.addServerInstance(name, {});
+      const instances = this.getServerInstanceByName(name);
+      const lastInstance = instances[instances.length - 1];
+      eventBus.publish(EventTypes.SERVER_INSTANCE_ADDED, { name, instance: lastInstance });
+    }
+  }
+
+  /**
+   * 并发启动多个服务器实例（使用 Promise.all 提高效率）
+   */
+  async connectServerInstances(serverNames: string[]): Promise<void> {
+    const connectPromises = serverNames.map(async (name) => {
+      const server = this.getServerByName(name);
+      if (server && server.enabled !== false) {
+        const instances = this.getServerInstanceByName(name);
+        for (const instance of instances) {
+          try {
+            await mcpConnectionManager.connect({ ...server, ...instance });
+          } catch (error) {
+            logger.error(`Failed to connect server instance for ${name}:`, error);
+          }
+        }
+      }
+    });
+
+    // 使用 Promise.all 并发执行
+    await Promise.all(connectPromises);
+  }
+
   getAllServers(): Array<{ name: string; config: McpServerConfig }> {
     return this.configManager.getServers();
   }
