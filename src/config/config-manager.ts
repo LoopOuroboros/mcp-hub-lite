@@ -54,6 +54,19 @@ class ConfigBackupManager {
         return null;
       }
 
+      // 计算默认配置的 MD5 值（直接从 SystemConfigSchema 获取，防止硬编码不一致）
+      const defaultConfig = SystemConfigSchema.parse({});
+      const defaultConfigStr = JSON.stringify(defaultConfig, null, 2);
+      const hash = crypto.createHash('md5');
+      hash.update(defaultConfigStr);
+      const DEFAULT_CONFIG_MD5 = hash.digest('hex');
+
+      // 如果当前配置是默认配置，则跳过备份
+      if (currentHash === DEFAULT_CONFIG_MD5) {
+        logger.debug('Config file is default configuration, skipping backup');
+        return null;
+      }
+
       // 检查最新的备份文件是否与当前内容相同
       const backups = this.listBackups();
       if (backups.length > 0) {
