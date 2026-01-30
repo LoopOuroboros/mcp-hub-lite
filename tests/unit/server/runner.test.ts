@@ -75,7 +75,7 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      };
+      } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
@@ -83,7 +83,7 @@ describe('Server Runner', () => {
           host: 'localhost',
           port: 3000
         }
-      };
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
@@ -105,7 +105,7 @@ describe('Server Runner', () => {
           host: 'localhost',
           port: 3000
         }
-      };
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
 
@@ -122,7 +122,7 @@ describe('Server Runner', () => {
 
     it('should handle port already in use by self project', async () => {
       // Setup mocks
-      const mockApp = { listen: vi.fn(), close: vi.fn() };
+      const mockApp = { listen: vi.fn(), close: vi.fn() } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
@@ -130,7 +130,7 @@ describe('Server Runner', () => {
           host: 'localhost',
           port: 3000
         }
-      };
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({
@@ -140,7 +140,7 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('process.exit called'); });
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
@@ -157,7 +157,7 @@ describe('Server Runner', () => {
 
     it('should handle port already in use by other application', async () => {
       // Setup mocks
-      const mockApp = { listen: vi.fn(), close: vi.fn() };
+      const mockApp = { listen: vi.fn(), close: vi.fn() } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
@@ -165,7 +165,7 @@ describe('Server Runner', () => {
           host: 'localhost',
           port: 3000
         }
-      };
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({
@@ -177,7 +177,7 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('process.exit called'); });
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
@@ -199,7 +199,7 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      };
+      } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
@@ -207,7 +207,7 @@ describe('Server Runner', () => {
           host: 'localhost',
           port: 3000
         }
-      };
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
@@ -226,13 +226,13 @@ describe('Server Runner', () => {
             command: 'test-command'
           }
         }
-      ];
+      ] as any;
       vi.mocked(configManager.getServers).mockReturnValue(mockServers);
-      vi.mocked(configManager.getServerInstanceByName).mockImplementation((name) => {
+      vi.mocked(configManager.getServerInstanceByName).mockImplementation(((name: string) => {
         if (name === 'enabled-server') return [];
         return [{ id: 'instance-1' }];
-      });
-      vi.mocked(configManager.addServerInstance).mockResolvedValue({ id: 'new-instance' });
+      }) as any);
+      vi.mocked(configManager.addServerInstance).mockResolvedValue({ id: 'new-instance' } as any);
 
       // Execute
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -255,21 +255,30 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      };
+      } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
-          port: 3000
-        }
-      };
+          port: 3000,
+          language: 'zh',
+          theme: 'light',
+          logging: {
+            level: 'info',
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+          }
+        },
+        security: { cors: { origin: '*' } },
+        servers: {}
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -296,21 +305,30 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      };
+      } as any;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
-          port: 3000
-        }
-      };
+          port: 3000,
+          language: 'zh',
+          theme: 'light',
+          logging: {
+            level: 'info',
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+          }
+        },
+        security: { cors: { origin: '*' } },
+        servers: {}
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -337,15 +355,24 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockRejectedValue(new Error('Startup failed'));
 
       const mockConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
-          port: 3000
-        }
-      };
+          port: 3000,
+          language: 'zh',
+          theme: 'light',
+          logging: {
+            level: 'info',
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+          }
+        },
+        security: { cors: { origin: '*' } },
+        servers: {}
+      } as any;
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('process.exit called'); });
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))

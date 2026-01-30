@@ -139,8 +139,8 @@ describe('Logger', () => {
       process.env.DEV_LOG_FILE = 'true';
 
       // Mock fs和path模块以避免文件系统操作
-      const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
-      const existsSyncSpy = vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation((() => {}) as any);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
       const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
         return { write: vi.fn(), end: vi.fn() } as any;
       });
