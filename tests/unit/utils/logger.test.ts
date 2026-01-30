@@ -73,8 +73,9 @@ describe('Logger', () => {
 
   it('should format PID correctly', () => {
     logger = new Logger();
-    expect((logger as any).formatPid(123)).toBe('PID:  123');
-    expect((logger as any).formatPid(123456)).toBe('PID:12345');
+    expect((logger as any).formatPid(123)).toBe('PID:     123');
+    expect((logger as any).formatPid(123456)).toBe('PID:  123456');
+    expect((logger as any).formatPid(123456789)).toBe('PID:12345678'); // 测试超长PID截断
   });
 
   it('should determine if message should be logged based on level', () => {
@@ -98,7 +99,7 @@ describe('Logger', () => {
     // 验证消息包含正确的组件（不验证具体时间戳）
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
     expect(message).toContain('[INF]');
-    expect(message).toContain('[PID:  123]');
+    expect(message).toContain('[PID:     123]');
     expect(message).toContain('[test-server]');
     expect(message).toContain('test message');
   });
@@ -110,7 +111,7 @@ describe('Logger', () => {
     // 验证消息包含正确的组件（不验证具体时间戳）
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
     expect(message).toContain('[INF]');
-    expect(message).toContain('[PID:  123]');
+    expect(message).toContain('[PID:     123]');
     expect(message).toContain('[mcp-hub]');
     expect(message).toContain('test message');
   });

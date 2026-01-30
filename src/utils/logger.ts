@@ -3,6 +3,9 @@ import path from 'path';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+// PID 格式化配置
+const PID_WIDTH = 8;
+
 export class Logger {
   private level: LogLevel = 'info';
   private useStderr: boolean = false;
@@ -84,12 +87,12 @@ export class Logger {
   }
 
   private formatPid(pid: number): string {
-    // 固定5个字符宽度用于数字部分，右对齐，不足补空格
+    // 固定宽度用于数字部分，右对齐，不足补空格
     const pidStr = pid.toString();
-    if (pidStr.length > 5) {
-      return `PID:${pidStr.substring(0, 5)}`; // 截断超长的PID
+    if (pidStr.length > PID_WIDTH) {
+      return `PID:${pidStr.substring(0, PID_WIDTH)}`; // 截断超长的PID
     }
-    return `PID:${pidStr.padStart(5, ' ')}`;
+    return `PID:${pidStr.padStart(PID_WIDTH, ' ')}`;
   }
 
   private createColoredLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string): string {
@@ -121,7 +124,7 @@ export class Logger {
     const processPid = pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     // 对于纯文本日志，PID 格式保持简单
-    const pidStr = processPid.toString().padStart(5, ' ');
+    const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
     return `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${message}`;
   }
 
@@ -244,7 +247,7 @@ export class Logger {
       const formattedLevel = this.formatLogLevel(level);
       const processPid = pid ?? process.pid;
       // 对于纯文本日志，PID 格式保持简单
-      const pidStr = processPid.toString().padStart(5, ' ');
+      const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
       const plainLogMsg = `[${this.formatTimestamp(new Date())}] [${formattedLevel}] [PID:${pidStr}] [${serverName}] ${message}`;
 
       console.info(coloredLogMsg);
@@ -273,7 +276,7 @@ export function logWithColor(coloredMessage: string, plainMessage: string): void
   if (logger['logFileStream']) {
     const timestamp = logger['formatTimestamp'](new Date());
     const formattedLevel = logger['formatLogLevel']('info');
-    const pidStr = process.pid.toString().padStart(5, ' ');
+    const pidStr = process.pid.toString().padStart(PID_WIDTH, ' ');
     const fileLogMsg = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [mcp-hub] ${plainMessage}`;
     logger['logFileStream'].write(fileLogMsg + '\n');
   }
