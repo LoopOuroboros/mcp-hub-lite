@@ -18,7 +18,7 @@ describe('HubToolsService', () => {
   });
 
   describe('listServers', () => {
-    it('should return list of servers with basic information', async () => {
+    it('should return array of server names only', async () => {
       // Arrange
       const mockServers = [
         {
@@ -44,67 +44,15 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockServerInstances: Record<string, any[]> = {
-        'Test Server 1': [
-          {
-            id: '1',
-            timestamp: Date.now(),
-            hash: 'hash1'
-          }
-        ],
-        'Test Server 2': [
-          {
-            id: '2',
-            timestamp: Date.now(),
-            hash: 'hash2'
-          }
-        ]
-      };
-
-      const mockStatuses = [
-        {
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
-        },
-        {
-          connected: false,
-          toolsCount: 0
-        }
-      ];
-
       (hubManager.getAllServers as any).mockReturnValue(mockServers);
-      (hubManager.getServerInstanceByName as any)
-        .mockImplementation((name: string) => mockServerInstances[name]);
-      (mcpConnectionManager.getStatus as any)
-        .mockImplementation((id: string) => id === '1' ? mockStatuses[0] : mockStatuses[1]);
 
       // Act
       const servers = await hubToolsService.listServers();
 
       // Assert
-      expect(servers).toEqual([
-        {
-          id: '1',
-          name: 'Test Server 1',
-          type: 'stdio',
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
-        },
-        {
-          id: '2',
-          name: 'Test Server 2',
-          type: 'sse',
-          connected: false,
-          toolsCount: 0,
-          version: undefined
-        }
-      ]);
+      expect(servers).toEqual(['Test Server 1', 'Test Server 2']);
 
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
-      expect(hubManager.getServerInstanceByName).toHaveBeenCalledTimes(2);
-      expect(mcpConnectionManager.getStatus).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -113,101 +61,84 @@ describe('HubToolsService', () => {
       // Arrange
       const mockServers = [
         {
-          id: '1',
           name: 'Test Server 1',
-          type: 'stdio',
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
+          config: {
+            type: 'stdio',
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         },
         {
-          id: '2',
           name: 'Production Server',
-          type: 'sse',
-          connected: true,
-          toolsCount: 10,
-          version: '2.1.3'
+          config: {
+            type: 'sse',
+            url: 'http://example.com',
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         },
         {
-          id: '3',
           name: 'Development Server',
-          type: 'http',
-          connected: false,
-          toolsCount: 0
+          config: {
+            type: 'http',
+            url: 'http://dev.example.com',
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         }
       ];
 
-      // Spy on and mock the instance method
-      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+      (hubManager.getAllServers as any).mockReturnValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('server', 'name', false);
 
       // Assert
-      expect(results).toEqual([
-        {
-          id: '1',
-          name: 'Test Server 1',
-          type: 'stdio',
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
-        },
-        {
-          id: '2',
-          name: 'Production Server',
-          type: 'sse',
-          connected: true,
-          toolsCount: 10,
-          version: '2.1.3'
-        },
-        {
-          id: '3',
-          name: 'Development Server',
-          type: 'http',
-          connected: false,
-          toolsCount: 0
-        }
-      ]);
+      expect(results).toEqual(['Test Server 1', 'Production Server', 'Development Server']);
+
+      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
 
     it('should find servers matching name pattern (case-sensitive)', async () => {
       // Arrange
       const mockServers = [
         {
-          id: '1',
           name: 'Test Server 1',
-          type: 'stdio',
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
+          config: {
+            type: 'stdio',
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         },
         {
-          id: '2',
           name: 'production server',
-          type: 'sse',
-          connected: true,
-          toolsCount: 10,
-          version: '2.1.3'
+          config: {
+            type: 'sse',
+            url: 'http://example.com',
+            enabled: true,
+            allowedTools: [],
+            longRunning: true
+          }
         }
       ];
 
-      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+      (hubManager.getAllServers as any).mockReturnValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('Server', 'name', true);
 
       // Assert
-      expect(results).toEqual([
-        {
-          id: '1',
-          name: 'Test Server 1',
-          type: 'stdio',
-          connected: true,
-          toolsCount: 5,
-          version: '1.0.0'
-        }
-      ]);
+      expect(results).toEqual(['Test Server 1']);
+
+      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -423,6 +354,40 @@ describe('HubToolsService', () => {
       await expect(hubToolsService.callTool(serverName, 'readFile', {})).rejects.toThrow(
         `Server with name "${serverName}" not found`
       );
+    });
+
+    it('should handle call-tool system tool with undefined serverName', async () => {
+      // Arrange
+      const mockServers = ['Test Server 1', 'Test Server 2'];
+      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+
+      // Act
+      const result = await hubToolsService.callSystemTool('call-tool', {
+        serverName: undefined,
+        toolName: 'list-servers',
+        toolArgs: {}
+      });
+
+      // Assert
+      expect(result).toEqual(mockServers);
+      expect(hubToolsService.listServers).toHaveBeenCalled();
+    });
+
+    it('should handle call-tool system tool with "undefined" string serverName', async () => {
+      // Arrange
+      const mockServers = ['Test Server 1', 'Test Server 2'];
+      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
+
+      // Act
+      const result = await hubToolsService.callSystemTool('call-tool', {
+        serverName: 'undefined',
+        toolName: 'list-servers',
+        toolArgs: {}
+      });
+
+      // Assert
+      expect(result).toEqual(mockServers);
+      expect(hubToolsService.listServers).toHaveBeenCalled();
     });
   });
 

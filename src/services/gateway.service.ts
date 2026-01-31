@@ -18,7 +18,8 @@ import {
   FIND_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  FIND_TOOLS_TOOL,
+  MCP_HUB_LITE_SERVER
 } from "../models/system-tools.constants.js";
 
 export class GatewayService {
@@ -30,7 +31,7 @@ export class GatewayService {
   constructor() {
     this.server = new McpServer(
       {
-        name: "mcp-hub-lite-gateway",
+        name: MCP_HUB_LITE_SERVER,
         version: "1.0.0",
       },
       {
@@ -83,7 +84,7 @@ export class GatewayService {
       return {
         protocolVersion: "2024-11-05",
         serverInfo: {
-          name: "mcp-hub-lite-gateway",
+          name: MCP_HUB_LITE_SERVER,
           version: "1.0.0",
           mcpVersion: "2024-11-05"
         },
@@ -421,13 +422,19 @@ export class GatewayService {
               result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName);
               break;
             case CALL_TOOL_TOOL:
+              // Handle undefined or "undefined" serverName for system tools
+              let serverName = toolArgs.serverName;
+              if (!serverName || serverName === 'undefined') {
+                serverName = MCP_HUB_LITE_SERVER;
+              }
+
               // Inject CWD for nested call-tool
               const cwd = getClientCwd();
               if (cwd && toolArgs.toolArgs && !toolArgs.toolArgs.cwd) {
                   toolArgs.toolArgs.cwd = cwd;
                   logger.debug(`Injected CWD into nested tool call: ${cwd}`);
               }
-              result = await hubToolsService.callTool(toolArgs.serverName, toolArgs.toolName, toolArgs.toolArgs);
+              result = await hubToolsService.callTool(serverName, toolArgs.toolName, toolArgs.toolArgs);
               break;
             case FIND_TOOLS_TOOL:
               result = await hubToolsService.findTools(
@@ -610,7 +617,7 @@ export class GatewayService {
   public createConnectionServer(): McpServer {
     const server = new McpServer(
       {
-        name: "mcp-hub-lite-gateway",
+        name: MCP_HUB_LITE_SERVER,
         version: "1.0.0",
       },
       {

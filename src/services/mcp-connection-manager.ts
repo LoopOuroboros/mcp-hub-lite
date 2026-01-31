@@ -6,6 +6,7 @@ import { McpResource } from '../models/resource.model.js';
 import { logStorage } from './log-storage.service.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { hubManager } from './hub-manager.service.js';
+import { MCP_HUB_LITE_SERVER } from '../models/system-tools.constants.js';
 
 export interface ServerStatus {
   connected: boolean;
@@ -124,7 +125,7 @@ class McpConnectionManager {
       }
 
       const client = new Client({
-        name: "mcp-hub-lite",
+        name: MCP_HUB_LITE_SERVER,
         version: "1.0.0"
       }, {
         capabilities: {}

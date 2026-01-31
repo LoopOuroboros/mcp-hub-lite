@@ -32,17 +32,9 @@ export const SYSTEM_TOOL_NAMES = [
  */
 export type SystemToolName = typeof SYSTEM_TOOL_NAMES[number];
 
+// Individual gateway server name constant
 /**
- * List of gateway server names that should be handled as system servers
- * These server names are used to identify when to use system tool logic
+ * MCP Hub Lite server name - represents both the system tools server and the gateway server
+ * This single name is used for both system tool identification and gateway server naming
  */
-export const GATEWAY_SERVER_NAMES = [
-  'mcp-hub-lite',
-  'mcp-hub-lite-gateway'
-] as const;
-
-/**
- * Type definition for gateway server names
- * Provides type safety when working with gateway server names
- */
-export type GatewayServerName = typeof GATEWAY_SERVER_NAMES[number];
+export const MCP_HUB_LITE_SERVER = 'mcp-hub-lite';

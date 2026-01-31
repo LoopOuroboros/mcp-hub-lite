@@ -6,16 +6,15 @@ import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import {
   SYSTEM_TOOL_NAMES,
-  GATEWAY_SERVER_NAMES,
   SystemToolName,
-  GatewayServerName,
   LIST_SERVERS_TOOL,
   FIND_SERVERS_TOOL,
   LIST_ALL_TOOLS_IN_SERVER_TOOL,
   FIND_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  FIND_TOOLS_TOOL,
+  MCP_HUB_LITE_SERVER
 } from '../models/system-tools.constants.js';
 
 // Type guard for servers with valid name and config
@@ -150,31 +149,11 @@ export class HubToolsService {
 
   /**
    * List all connected servers
-   * @returns List of servers with basic information
+   * @returns Array of server names only
    */
-  async listServers(): Promise<Array<{
-    id: string;
-    name: string;
-    type: string;
-    connected: boolean;
-    toolsCount: number;
-    version?: string;
-  }>> {
+  async listServers(): Promise<string[]> {
     const servers = hubManager.getAllServers();
-    return servers.filter(hasValidId).flatMap(server => {
-      const instances = hubManager.getServerInstanceByName(server.name);
-      return instances.map(instance => {
-        const status = mcpConnectionManager.getStatus(instance.id);
-        return {
-          id: instance.id,
-          name: server.name,
-          type: server.config.type || 'stdio',
-          connected: status?.connected ?? false,
-          toolsCount: status?.toolsCount ?? 0,
-          version: status?.version
-        };
-      });
-    });
+    return servers.filter(hasValidId).map(server => server.name);
   }
 
   /**
@@ -182,28 +161,22 @@ export class HubToolsService {
    * @param pattern Regex pattern to search for in server names and descriptions
    * @param searchIn Where to search: 'name', 'description', or 'both' (default: 'both')
    * @param caseSensitive Whether the search should be case-sensitive (default: false)
-   * @returns List of matching servers
+   * @returns Array of matching server names only
    */
   async findServers(
     pattern: string,
     searchIn: 'name' | 'description' | 'both' = 'both',
     caseSensitive: boolean = false
-  ): Promise<Array<{
-    id: string;
-    name: string;
-    type: string;
-    connected: boolean;
-    toolsCount: number;
-    version?: string;
-  }>> {
-    const servers = await this.listServers();
+  ): Promise<string[]> {
+    const allServers = hubManager.getAllServers();
+    const validServers = allServers.filter(hasValidId);
     const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
-    return servers.filter(server => {
+    return validServers.filter(server => {
       const matchName = searchIn !== 'description' && regex.test(server.name);
       const matchDescription = searchIn !== 'name' && server.name && regex.test(server.name); // Using name as fallback if no description
       return matchName || matchDescription;
-    });
+    }).map(server => server.name);
   }
 
   /**
@@ -215,9 +188,8 @@ export class HubToolsService {
     serverName: string;
     tools: McpTool[];
   }> {
-    // 处理 mcp-hub-lite 服务器（返回系统工具列表）
-    // 同时处理网关服务器名称（gateway server name）
-    if (typeof serverName === 'string' && GATEWAY_SERVER_NAMES.includes(serverName as GatewayServerName)) {
+    // 处理 MCP Hub Lite 服务器（返回系统工具列表）
+    if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       // 使用与 tools/list 相同的逻辑生成工具列表
       const toolMap = new Map<string, { serverId: string; realToolName: string }>();
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
@@ -227,7 +199,7 @@ export class HubToolsService {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        serverId: 'mcp-hub-lite'
+        serverId: MCP_HUB_LITE_SERVER
       }));
 
       return {
@@ -301,7 +273,7 @@ export class HubToolsService {
    * @param toolArgs Arguments to pass to the tool
    * @returns Result of the system tool call
    */
-  private async callSystemTool(toolName: SystemToolName, toolArgs: Record<string, unknown>): Promise<any> {
+  async callSystemTool(toolName: SystemToolName, toolArgs: Record<string, unknown>): Promise<any> {
     switch (toolName) {
       case LIST_SERVERS_TOOL:
         return await this.listServers();
@@ -324,8 +296,13 @@ export class HubToolsService {
         return await this.getTool(toolArgs.serverName as string, toolArgs.toolName as string);
       case CALL_TOOL_TOOL:
         // Handle nested call-tool calls
+        // If serverName is undefined or "undefined", default to mcp-hub-lite for system tools
+        let serverName = toolArgs.serverName as string;
+        if (!serverName || serverName === 'undefined') {
+          serverName = MCP_HUB_LITE_SERVER;
+        }
         return await this.callTool(
-          toolArgs.serverName as string,
+          serverName,
           toolArgs.toolName as string,
           toolArgs.toolArgs as Record<string, unknown>
         );
@@ -348,8 +325,8 @@ export class HubToolsService {
    * @returns Result of the tool call
    */
   async callTool(serverName: string, toolName: string, toolArgs: Record<string, unknown>): Promise<any> {
-    // 处理 mcp-hub-lite 服务器（系统工具调用）
-    if (typeof serverName === 'string' && GATEWAY_SERVER_NAMES.includes(serverName as GatewayServerName)) {
+    // 处理 MCP Hub Lite 服务器（系统工具调用）
+    if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       return await this.callSystemTool(toolName as SystemToolName, toolArgs);
     }
 
@@ -415,11 +392,11 @@ export class HubToolsService {
     // Add system tools under mcp-hub-lite server
     const systemTools = this.getSystemTools().map(tool => ({
       ...tool,
-      serverId: 'mcp-hub-lite',
+      serverId: MCP_HUB_LITE_SERVER,
       description: `[System] ${tool.description}`
     }));
 
-    allTools['mcp-hub-lite'] = {
+    allTools[MCP_HUB_LITE_SERVER] = {
       tools: systemTools
     };
 

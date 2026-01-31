@@ -290,7 +290,7 @@ describe('GatewayService', () => {
 
     expect(callToolHandler).toBeDefined();
 
-    vi.mocked(mocks.listServers).mockResolvedValue([{ name: 'server1' }]);
+    vi.mocked(mocks.listServers).mockResolvedValue(['server1']);
 
     const result = await callToolHandler!({
       params: {
@@ -304,5 +304,56 @@ describe('GatewayService', () => {
 
     expect(mocks.listServers).toHaveBeenCalled();
     expect(result.content[0].text).toContain('server1');
+  });
+
+  it('should call call-tool system tool with undefined serverName', async () => {
+    // Find call tool handler
+    let callToolHandler: Function | undefined;
+    for (const call of mocks.setRequestHandler.mock.calls) {
+      const schemaStr = JSON.stringify(call[0]);
+      if (schemaStr.includes('"tools/call"')) {
+        callToolHandler = call[1];
+        break;
+      }
+    }
+    expect(callToolHandler).toBeDefined();
+
+    // Mock the actual listServers implementation to return expected result
+    // Note: listServers returns server names, not server IDs
+    vi.mocked(mocks.listServers).mockImplementation(async () => ['Test Server']);
+    // Mock callToolDirect to return the expected result format
+    vi.mocked(mocks.callToolDirect).mockImplementation(async (_serverName, toolName, _toolArgs) => {
+      if (toolName === 'list-servers') {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(['Test Server'], null, 2)
+            }
+          ]
+        };
+      }
+      return { content: [] };
+    });
+
+    const result = await callToolHandler!({
+      params: {
+        name: 'call-tool',
+        arguments: {
+          serverName: undefined,
+          toolName: 'list-servers',
+          toolArgs: {}
+        }
+      },
+      id: 'test-id',
+      jsonrpc: '2.0',
+      method: 'tools/call'
+    });
+
+    // Verify the result contains the expected content
+    expect(result).toBeDefined();
+    expect(result.content).toBeDefined();
+    expect(result.content[0]).toBeDefined();
+    expect(result.content[0].text).toContain('Test Server');
   });
 });

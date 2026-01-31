@@ -2,6 +2,15 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubToolsService } from '../../services/hub-tools.service.js';
 import { hubManager } from '../../services/hub-manager.service.js';
+import {
+  LIST_SERVERS_TOOL,
+  FIND_SERVERS_TOOL,
+  LIST_ALL_TOOLS_IN_SERVER_TOOL,
+  FIND_TOOLS_IN_SERVER_TOOL,
+  GET_TOOL_TOOL,
+  CALL_TOOL_TOOL,
+  FIND_TOOLS_TOOL
+} from '../../models/system-tools.constants.js';
 
 /**
  * Web API routes for MCP Hub tools operations
@@ -23,35 +32,35 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       const { toolArgs = {} } = request.body;
 
       switch (toolName) {
-        case 'list-servers':
+        case LIST_SERVERS_TOOL:
           return await hubToolsService.listServers();
-        case 'find-servers':
+        case FIND_SERVERS_TOOL:
           return await hubToolsService.findServers(
             toolArgs.pattern as string,
             toolArgs.searchIn as 'name' | 'description' | 'both',
             toolArgs.caseSensitive as boolean
           );
-        case 'list-all-tools-in-server':
+        case LIST_ALL_TOOLS_IN_SERVER_TOOL:
           return await hubToolsService.listAllToolsInServer(toolArgs.serverId as string);
-        case 'find-tools-in-server':
+        case FIND_TOOLS_IN_SERVER_TOOL:
           return await hubToolsService.findToolsInServer(
             toolArgs.serverId as string,
             toolArgs.pattern as string,
             toolArgs.searchIn as 'name' | 'description' | 'both',
             toolArgs.caseSensitive as boolean
           );
-        case 'get-tool':
+        case GET_TOOL_TOOL:
           return await hubToolsService.getTool(
             toolArgs.serverId as string,
             toolArgs.toolName as string
           );
-        case 'call-tool':
+        case CALL_TOOL_TOOL:
           return await hubToolsService.callTool(
             toolArgs.serverId as string,
             toolArgs.toolName as string,
             toolArgs.toolArgs as Record<string, unknown>
           );
-        case 'find-tools':
+        case FIND_TOOLS_TOOL:
           return await hubToolsService.findTools(
             toolArgs.pattern as string,
             toolArgs.searchIn as 'name' | 'description' | 'both',
