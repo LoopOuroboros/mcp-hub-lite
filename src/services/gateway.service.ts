@@ -237,7 +237,11 @@ export class GatewayService {
     const ListAllToolsInServerRequestSchema = z.object({
       method: z.literal('list-all-tools-in-server'),
       params: z.object({
-        serverName: z.string()
+        serverName: z.string(),
+        requestOptions: z.object({
+          sessionId: z.string().optional(),
+          tags: z.record(z.string(), z.string()).optional()
+        }).optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -245,8 +249,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(ListAllToolsInServerRequestSchema, async (request) => {
       try {
-        const { serverName } = request.params;
-        const result = await hubToolsService.listAllToolsInServer(serverName);
+        const { serverName, requestOptions } = request.params;
+        const result = await hubToolsService.listAllToolsInServer(serverName, requestOptions);
         return result;
       } catch (error: any) {
         logger.error(`List tools in server error:`, error);
@@ -261,7 +265,11 @@ export class GatewayService {
         serverName: z.string(),
         pattern: z.string(),
         searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
-        caseSensitive: z.boolean().optional().default(false)
+        caseSensitive: z.boolean().optional().default(false),
+        requestOptions: z.object({
+          sessionId: z.string().optional(),
+          tags: z.record(z.string(), z.string()).optional()
+        }).optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -269,8 +277,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(FindToolsInServerRequestSchema, async (request) => {
       try {
-        const { serverName, pattern, searchIn, caseSensitive } = request.params;
-        const result = await hubToolsService.findToolsInServer(serverName, pattern, searchIn, caseSensitive);
+        const { serverName, pattern, searchIn, caseSensitive, requestOptions } = request.params;
+        const result = await hubToolsService.findToolsInServer(serverName, pattern, searchIn, caseSensitive, requestOptions);
         return result;
       } catch (error: any) {
         logger.error(`Find tools in server error:`, error);
@@ -283,7 +291,11 @@ export class GatewayService {
       method: z.literal('get-tool'),
       params: z.object({
         serverName: z.string(),
-        toolName: z.string()
+        toolName: z.string(),
+        requestOptions: z.object({
+          sessionId: z.string().optional(),
+          tags: z.record(z.string(), z.string()).optional()
+        }).optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -291,8 +303,8 @@ export class GatewayService {
 
     server.server.setRequestHandler(GetToolRequestSchema, async (request) => {
       try {
-        const { serverName, toolName } = request.params;
-        const tool = await hubToolsService.getTool(serverName, toolName);
+        const { serverName, toolName, requestOptions } = request.params;
+        const tool = await hubToolsService.getTool(serverName, toolName, requestOptions);
 
         if (!tool) {
           throw new McpError(-32801, `Tool "${toolName}" not found on server "${serverName}"`);
@@ -314,7 +326,11 @@ export class GatewayService {
       params: z.object({
         serverName: z.string(),
         toolName: z.string(),
-        toolArgs: z.record(z.string(), z.any())
+        toolArgs: z.record(z.string(), z.any()),
+        requestOptions: z.object({
+          sessionId: z.string().optional(),
+          tags: z.record(z.string(), z.string()).optional()
+        }).optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -322,7 +338,7 @@ export class GatewayService {
 
     server.server.setRequestHandler(CallToolDirectRequestSchema, async (request) => {
       try {
-        const { serverName, toolName, toolArgs } = request.params;
+        const { serverName, toolName, toolArgs, requestOptions } = request.params;
 
         // Inject CWD if available and not present in args
         const cwd = getClientCwd();
@@ -331,7 +347,7 @@ export class GatewayService {
             logger.debug(`Injected CWD into direct tool call: ${cwd}`);
         }
 
-        const result = await hubToolsService.callTool(serverName, toolName, toolArgs);
+        const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
         return result;
       } catch (error: any) {
         logger.error(`Call tool error:`, error);
@@ -386,14 +402,13 @@ export class GatewayService {
       const toolName = request.params.name;
       const toolArgs: any = request.params.arguments || {};
 
-      logger.info(`Received tools/call request: toolName=${toolName}, args=${JSON.stringify(toolArgs)}, toolMap size=${toolMap.size}`);
-
-      // Log all available tool names in toolMap for debugging
-      const availableTools = Array.from(toolMap.keys());
-      logger.debug(`Available tools in toolMap: [${availableTools.join(', ')}]`);
+      // Log incoming tool request with full context
+      logger.info(`[GATEWAY] Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`);
+      logger.debug(`[GATEWAY] Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`);
 
       // Handle system tools
       if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
+        logger.info(`[GATEWAY] System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`);
         try {
           let result;
           switch (toolName) {
@@ -408,18 +423,19 @@ export class GatewayService {
               );
               break;
             case LIST_ALL_TOOLS_IN_SERVER_TOOL:
-              result = await hubToolsService.listAllToolsInServer(toolArgs.serverName);
+              result = await hubToolsService.listAllToolsInServer(toolArgs.serverName, toolArgs.requestOptions);
               break;
             case FIND_TOOLS_IN_SERVER_TOOL:
               result = await hubToolsService.findToolsInServer(
                 toolArgs.serverName,
                 toolArgs.pattern,
                 toolArgs.searchIn,
-                toolArgs.caseSensitive
+                toolArgs.caseSensitive,
+                toolArgs.requestOptions
               );
               break;
             case GET_TOOL_TOOL:
-              result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName);
+              result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName, toolArgs.requestOptions);
               break;
             case CALL_TOOL_TOOL:
               // Handle undefined or "undefined" serverName for system tools
@@ -434,7 +450,7 @@ export class GatewayService {
                   toolArgs.toolArgs.cwd = cwd;
                   logger.debug(`Injected CWD into nested tool call: ${cwd}`);
               }
-              result = await hubToolsService.callTool(serverName, toolArgs.toolName, toolArgs.toolArgs);
+              result = await hubToolsService.callTool(serverName, toolArgs.toolName, toolArgs.toolArgs, toolArgs.requestOptions);
               break;
             case FIND_TOOLS_TOOL:
               result = await hubToolsService.findTools(
@@ -444,6 +460,8 @@ export class GatewayService {
               );
               break;
           }
+
+          logger.info(`[GATEWAY] System tool SUCCESS: ${toolName}`);
 
           // Check if result is already in Mcp content format (especially for call-tool)
           if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
@@ -459,20 +477,21 @@ export class GatewayService {
             ]
           };
         } catch (error: any) {
-          logger.error(`System tool execution error:`, error);
+          logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error);
           throw new McpError(-32802, error.message || "System Tool Error");
         }
       }
 
       const target = toolMap.get(toolName);
 
-      logger.info(`Tool lookup result for ${toolName}:`, target);
+      logger.debug(`[GATEWAY] Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`);
 
       if (!target) {
-          logger.error(`Tool not found: ${toolName}, available tools: [${Array.from(toolMap.keys()).join(', ')}]`);
+          logger.error(`[GATEWAY] Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`);
           throw new McpError(-32801, `Tool ${toolName} not found`);
       }
 
+      const startTime = Date.now();
       try {
         // Inject CWD if available and not present in args
         const cwd = getClientCwd();
@@ -480,15 +499,20 @@ export class GatewayService {
             toolArgs.cwd = cwd;
             logger.debug(`Injected CWD into tool call [${toolName}]: ${cwd}`);
         }
-        
-        logger.info(`Calling tool: serverId=${target.serverId}, realToolName=${target.realToolName}`);
+        logger.info(`[GATEWAY] Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`);
 
         const result = await mcpConnectionManager.callTool(target.serverId, target.realToolName, toolArgs);
 
-        logger.info(`Tool call succeeded: serverId=${target.serverId}, realToolName=${target.realToolName}, result=${JSON.stringify(result)}`);
+        const duration = Date.now() - startTime;
+        logger.info(`[GATEWAY] Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`);
         return result;
       } catch (error: any) {
-         logger.error(`Gateway call tool error:`, error);
+         const duration = Date.now() - startTime;
+         logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error instanceof Error ? error.message : String(error)}`);
+
+         if (error instanceof Error && error.stack) {
+           logger.debug(`[GATEWAY] Error stack for ${target.realToolName}:`, error.stack);
+         }
 
          if (error instanceof McpError) {
              throw error;
@@ -514,7 +538,6 @@ export class GatewayService {
     description: string;
     inputSchema?: any;
   }> {
-    const allTools = mcpConnectionManager.getAllTools();
     const gatewayTools = [];
     toolMap.clear();
 
@@ -531,23 +554,25 @@ export class GatewayService {
       usedNames.add(tool.name);
     }
 
-
     // First pass: Count tool name frequencies to determine uniqueness
     const toolNameCounts = new Map<string, number>();
-    for (const tool of allTools) {
-      // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
-      const serverConfig = hubManager.getServerById(tool.serverId);
-      if (serverConfig) {
-        if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
-          continue;
+    // 遍历 toolCache 来获取所有工具及其服务器ID
+    for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
+      for (const tool of tools) {
+        const serverConfig = hubManager.getServerById(serverId);
+        if (serverConfig) {
+          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+            continue;
+          }
         }
+        toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
       }
-      toolNameCounts.set(tool.name, (toolNameCounts.get(tool.name) || 0) + 1);
     }
 
-    for (const tool of allTools) {
-        // 直接使用 tool.serverId 作为完整的实例ID查找服务器配置
-        const serverConfig = hubManager.getServerById(tool.serverId);
+    // Second pass: Generate gateway tools with proper naming
+    for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
+      for (const tool of tools) {
+        const serverConfig = hubManager.getServerById(serverId);
 
         if (serverConfig) {
           if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
@@ -555,7 +580,7 @@ export class GatewayService {
           }
         }
 
-        const serverName = serverConfig ? serverConfig.name : tool.serverId;
+        const serverName = serverConfig ? serverConfig.name : serverId;
 
         let gatewayToolName = tool.name;
         const isUnique = toolNameCounts.get(tool.name) === 1;
@@ -596,7 +621,7 @@ export class GatewayService {
         usedNames.add(gatewayToolName);
 
         toolMap.set(gatewayToolName, {
-            serverId: tool.serverId,
+            serverId: serverId,
             realToolName: tool.name
         });
 
@@ -605,9 +630,58 @@ export class GatewayService {
             description: `[From ${serverName}] ${tool.description || ''}`,
             inputSchema: tool.inputSchema
         });
+      }
     }
 
     return gatewayTools;
+  }
+
+  /**
+   * Safely format tool arguments for logging
+   * Handles circular references and limits output size
+   */
+  private formatToolArgs(args: any): string {
+    try {
+      const seen = new WeakSet();
+      const replacer = (_key: string, value: any) => {
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) {
+            return '[Circular Reference]';
+          }
+          seen.add(value);
+        }
+        // Limit string length and truncate large objects
+        if (typeof value === 'string' && value.length > 500) {
+          return value.substring(0, 500) + '... [truncated]';
+        }
+        return value;
+      };
+
+      const formatted = JSON.stringify(args, replacer, 2);
+      // Limit total output length
+      if (formatted.length > 2000) {
+        return formatted.substring(0, 2000) + '... [truncated]';
+      }
+      return formatted;
+    } catch (error) {
+      return '[Error formatting args: ' + (error instanceof Error ? error.message : String(error)) + ']';
+    }
+  }
+
+  /**
+   * Safely format tool response for logging
+   */
+  private formatToolResponse(response: any): string {
+    try {
+      const formatted = JSON.stringify(response, null, 2);
+      // Limit total output length
+      if (formatted.length > 2000) {
+        return formatted.substring(0, 2000) + '... [truncated]';
+      }
+      return formatted;
+    } catch (error) {
+      return '[Error formatting response: ' + (error instanceof Error ? error.message : String(error)) + ']';
+    }
   }
 
   private setupHandlers() {

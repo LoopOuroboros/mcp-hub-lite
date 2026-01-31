@@ -1,26 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Define mocks first
-const mocks = vi.hoisted(() => ({
-  setRequestHandler: vi.fn(),
-  setNotificationHandler: vi.fn(),
-  request: vi.fn(),
-  connect: vi.fn(),
-  getAllTools: vi.fn(),
-  callTool: vi.fn(),
-  getServerById: vi.fn(),
-  listAllToolsInServer: vi.fn(),
-  findToolsInServer: vi.fn(),
-  getTool: vi.fn(),
-  callToolDirect: vi.fn(),
-  listAllTools: vi.fn(),
-  findTools: vi.fn(),
-  listServers: vi.fn(),
-  findServers: vi.fn(),
-  getSystemTools: vi.fn().mockReturnValue([]),
-  updateClientRoots: vi.fn(),
-  getClientContext: vi.fn().mockReturnValue({ clientId: 'test-client' }),
-}));
+const mocks = vi.hoisted(() => {
+  const mockToolCache = new Map();
+
+  return {
+    setRequestHandler: vi.fn(),
+    setNotificationHandler: vi.fn(),
+    request: vi.fn(),
+    connect: vi.fn(),
+    getAllTools: vi.fn(),
+    callTool: vi.fn(),
+    getServerById: vi.fn(),
+    listAllToolsInServer: vi.fn(),
+    findToolsInServer: vi.fn(),
+    getTool: vi.fn(),
+    callToolDirect: vi.fn(),
+    listAllTools: vi.fn(),
+    findTools: vi.fn(),
+    listServers: vi.fn(),
+    findServers: vi.fn(),
+    getSystemTools: vi.fn().mockReturnValue([]),
+    updateClientRoots: vi.fn(),
+    getClientContext: vi.fn().mockReturnValue({ clientId: 'test-client' }),
+    mockToolCache
+  };
+});
 
 // Mock dependencies
 vi.mock('../../../src/services/client-tracker.service.js', () => ({
@@ -30,12 +35,10 @@ vi.mock('../../../src/services/client-tracker.service.js', () => ({
   }
 }));
 
-vi.mock('../../../src/utils/request-context.js', () => {
-  return {
-    getClientContext: mocks.getClientContext,
-    getClientCwd: vi.fn()
-  };
-});
+vi.mock('../../../src/utils/request-context.js', () => ({
+  getClientContext: mocks.getClientContext,
+  getClientCwd: vi.fn()
+}));
 
 vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
@@ -50,6 +53,9 @@ vi.mock('../../../src/services/mcp-connection-manager.js', () => ({
   mcpConnectionManager: {
     getAllTools: mocks.getAllTools,
     callTool: mocks.callTool,
+    toolCache: mocks.mockToolCache,
+    // Add method to access the mock toolCache
+    getToolCache: () => mocks.mockToolCache
   }
 }));
 
@@ -95,6 +101,7 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 
 // Import after mocks
 import { GatewayService } from '../../../src/services/gateway.service.js';
+// Don't import actual mcpConnectionManager, use the mocked version through vi.mocked
 
 
 describe('GatewayService', () => {
@@ -122,6 +129,9 @@ describe('GatewayService', () => {
       config: { allowedTools: ['testTool'] },
       instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
     } as any);
+
+    // Populate toolCache for the test
+    mocks.mockToolCache.set('server1', mockTools);
 
     // Find the registered handler for ListTools
     // We can identify ListTools handler by checking if the schema has 'method' literal 'tools/list'
@@ -222,8 +232,17 @@ describe('GatewayService', () => {
     const mockTools: any[] = [];
     vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
     vi.mocked(mocks.getSystemTools).mockReturnValue([
-        { name: 'list-servers', description: 'List all servers', inputSchema: {} }
+        { name: 'list-servers', description: 'List all servers', inputSchema: {} },
+        { name: 'find-servers', description: 'Find servers matching a pattern', inputSchema: {} },
+        { name: 'list-all-tools-in-server', description: 'List all tools from a specific server', inputSchema: {} },
+        { name: 'find-tools-in-server', description: 'Find tools matching a pattern in a specific server', inputSchema: {} },
+        { name: 'get-tool', description: 'Get complete schema for a specific tool from a specific server', inputSchema: {} },
+        { name: 'call-tool', description: 'Call a specific tool from a specific server', inputSchema: {} },
+        { name: 'find-tools', description: 'Find tools matching a pattern across all connected servers', inputSchema: {} }
     ]);
+
+    // Clear toolCache to ensure only system tools are returned
+    mocks.mockToolCache.clear();
 
     // Find list tools handler
     let listToolsHandler: Function | undefined;
@@ -244,8 +263,8 @@ describe('GatewayService', () => {
       method: 'tools/list'
     });
 
-    // Expect 1 tool: list-servers
-    expect(result.tools).toHaveLength(1);
+    // Expect 7 system tools
+    expect(result.tools).toHaveLength(7);
     expect(result.tools.some((t: any) => t.name === 'list-servers')).toBe(true);
   });
 

@@ -24,7 +24,7 @@ class McpConnectionManager {
   private clients: Map<string, Client> = new Map();
   private transports: Map<string, any> = new Map(); // Using 'any' for transport types
   private serverStatus: Map<string, ServerStatus> = new Map();
-  private toolCache: Map<string, McpTool[]> = new Map();
+  public toolCache: Map<string, McpTool[]> = new Map();
   private resourceCache: Map<string, McpResource[]> = new Map();
   private nameToIdMap: Map<string, string> = new Map(); // 服务器名称到ID的映射
 
@@ -305,8 +305,7 @@ class McpConnectionManager {
       const tools: McpTool[] = result.tools.map(t => ({
         name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema as any,
-        serverId: serverId
+        inputSchema: t.inputSchema as any
       }));
 
       this.toolCache.set(serverId, tools);
@@ -344,8 +343,7 @@ class McpConnectionManager {
         name: r.name,
         uri: r.uri,
         mimeType: r.mimeType,
-        description: r.description,
-        serverId: serverId
+        description: r.description
       }));
 
       this.resourceCache.set(serverId, resources);
@@ -394,8 +392,8 @@ class McpConnectionManager {
     return allTools;
   }
 
-  public getClient(serverId: string): Client | undefined {
-    return this.clients.get(serverId);
+  public getToolCacheEntries(): [string, McpTool[]][] {
+    return Array.from(this.toolCache.entries());
   }
 
   public getServerIdByName(name: string): string | undefined {
