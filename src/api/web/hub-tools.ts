@@ -1,16 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubToolsService } from '../../services/hub-tools.service.js';
-import { hubManager } from '../../services/hub-manager.service.js';
-import {
-  LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
-  GET_TOOL_TOOL,
-  CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
-} from '../../models/system-tools.constants.js';
+import { SystemToolName } from '../../models/system-tools.constants.js';
+
+// 请求选项接口
+interface RequestOptions {
+  sessionId?: string;  // 会话 ID（用于选择特定实例）
+  tags?: Record<string, string>;  // 标签（后续支持）
+}
 
 /**
  * Web API routes for MCP Hub tools operations
@@ -31,48 +28,15 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       const { toolName } = request.params;
       const { toolArgs = {} } = request.body;
 
-      switch (toolName) {
-        case LIST_SERVERS_TOOL:
-          return await hubToolsService.listServers();
-        case FIND_SERVERS_TOOL:
-          return await hubToolsService.findServers(
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean
-          );
-        case LIST_ALL_TOOLS_IN_SERVER_TOOL:
-          return await hubToolsService.listAllToolsInServer(toolArgs.serverId as string);
-        case FIND_TOOLS_IN_SERVER_TOOL:
-          return await hubToolsService.findToolsInServer(
-            toolArgs.serverId as string,
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean
-          );
-        case GET_TOOL_TOOL:
-          return await hubToolsService.getTool(
-            toolArgs.serverId as string,
-            toolArgs.toolName as string
-          );
-        case CALL_TOOL_TOOL:
-          return await hubToolsService.callTool(
-            toolArgs.serverId as string,
-            toolArgs.toolName as string,
-            toolArgs.toolArgs as Record<string, unknown>
-          );
-        case FIND_TOOLS_TOOL:
-          return await hubToolsService.findTools(
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean
-          );
-        default:
-          return reply.code(404).send({
-            error: 'Tool not found',
-            message: `System tool "${toolName}" not found`
-          });
-      }
+      // 通过 callSystemTool 方法统一处理系统工具调用，确保日志记录
+      return await hubToolsService.callSystemTool(toolName as SystemToolName, toolArgs);
     } catch (error) {
+      if (error instanceof Error && error.message.includes('System tool')) {
+        return reply.code(404).send({
+          error: 'Tool not found',
+          message: error.message
+        });
+      }
       return reply.code(500).send({
         error: 'Internal Server Error',
         message: error instanceof Error ? error.message : 'Unknown error'
@@ -109,13 +73,21 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     return servers;
   });
 
-  // GET /web/hub-tools/servers/:serverId/tools - List all tools in a specific server
+  // GET /web/hub-tools/servers/:serverName/tools - List all tools in a specific server
   fastify.get<{
-    Params: { serverId: string }
-  }>('/web/hub-tools/servers/:serverId/tools', async (request, reply) => {
+    Params: { serverName: string };
+    Querystring: { sessionId?: string; tags?: string }
+  }>('/web/hub-tools/servers/:serverName/tools', async (request, reply) => {
     try {
-      const { serverId } = request.params;
-      const result = await hubToolsService.listAllToolsInServer(serverId);
+      const { serverName } = request.params;
+      const { sessionId, tags } = request.query;
+
+      const requestOptions = {
+        sessionId,
+        tags: tags ? JSON.parse(tags) : undefined
+      };
+
+      const result = await hubToolsService.listAllToolsInServer(serverName, requestOptions);
       return result;
     } catch (error) {
       return reply.code(404).send({
@@ -125,28 +97,38 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // GET /web/hub-tools/servers/:serverId/tools/find - Find tools in a specific server
+  // GET /web/hub-tools/servers/:serverName/tools/find - Find tools in a specific server
   fastify.get<{
-    Params: { serverId: string };
+    Params: { serverName: string };
     Querystring: {
       pattern: string;
       searchIn?: 'name' | 'description' | 'both';
       caseSensitive?: string;
+      sessionId?: string;
+      tags?: string;
     }
-  }>('/web/hub-tools/servers/:serverId/tools/find', async (request, reply) => {
+  }>('/web/hub-tools/servers/:serverName/tools/find', async (request, reply) => {
     try {
-      const { serverId } = request.params;
+      const { serverName } = request.params;
       const {
         pattern,
         searchIn = 'both',
-        caseSensitive = 'false'
+        caseSensitive = 'false',
+        sessionId,
+        tags
       } = request.query;
 
+      const requestOptions = {
+        sessionId,
+        tags: tags ? JSON.parse(tags) : undefined
+      };
+
       const result = await hubToolsService.findToolsInServer(
-        serverId,
+        serverName,
         pattern,
         searchIn as 'name' | 'description' | 'both',
-        caseSensitive === 'true'
+        caseSensitive === 'true',
+        requestOptions
       );
 
       return result;
@@ -164,17 +146,23 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // GET /web/hub-tools/servers/:serverId/tools/:toolName - Get specific tool details
+  // GET /web/hub-tools/servers/:serverName/tools/:toolName - Get specific tool details
   fastify.get<{
-    Params: { serverId: string; toolName: string }
-  }>('/web/hub-tools/servers/:serverId/tools/:toolName', async (request, reply) => {
+    Params: { serverName: string; toolName: string };
+    Querystring: { sessionId?: string; tags?: string }
+  }>('/web/hub-tools/servers/:serverName/tools/:toolName', async (request, reply) => {
     try {
-      const { serverId, toolName } = request.params;
-      const tool = await hubToolsService.getTool(serverId, toolName);
+      const { serverName, toolName } = request.params;
+      const { sessionId, tags } = request.query;
+
+      const requestOptions = {
+        sessionId,
+        tags: tags ? JSON.parse(tags) : undefined
+      };
+
+      const tool = await hubToolsService.getTool(serverName, toolName, requestOptions);
 
       if (!tool) {
-        const server = hubManager.getServerById(serverId);
-        const serverName = server ? server.name : serverId;
         return reply.code(404).send({
           error: 'Tool not found',
           message: `Tool "${toolName}" not found on server "${serverName}"`
@@ -196,20 +184,24 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /web/hub-tools/servers/:serverId/tools/:toolName/call - Call a specific tool
+  // POST /web/hub-tools/servers/:serverName/tools/:toolName/call - Call a specific tool
   const CallToolBodySchema = z.object({
-    toolArgs: z.record(z.string(), z.any())
+    toolArgs: z.record(z.string(), z.any()),
+    requestOptions: z.object({
+      sessionId: z.string().optional(),
+      tags: z.record(z.string(), z.string()).optional()
+    }).optional()
   });
 
   fastify.post<{
-    Params: { serverId: string; toolName: string };
-    Body: { toolArgs: Record<string, unknown> }
-  }>('/web/hub-tools/servers/:serverId/tools/:toolName/call', async (request, reply) => {
+    Params: { serverName: string; toolName: string };
+    Body: { toolArgs: Record<string, unknown>; requestOptions?: RequestOptions }
+  }>('/web/hub-tools/servers/:serverName/tools/:toolName/call', async (request, reply) => {
     try {
-      const { serverId, toolName } = request.params;
-      const { toolArgs } = CallToolBodySchema.parse(request.body);
+      const { serverName, toolName } = request.params;
+      const { toolArgs, requestOptions } = CallToolBodySchema.parse(request.body);
 
-      const result = await hubToolsService.callTool(serverId, toolName, toolArgs);
+      const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
       return result;
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {

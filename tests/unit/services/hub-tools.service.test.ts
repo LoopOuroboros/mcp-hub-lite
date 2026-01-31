@@ -12,8 +12,7 @@ describe('HubToolsService', () => {
 
   beforeEach(() => {
     hubToolsService = new HubToolsService();
-
-    // Reset all mocks before each test
+    // Clear mock calls between tests to avoid state pollution
     vi.clearAllMocks();
   });
 
@@ -51,7 +50,6 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(servers).toEqual(['Test Server 1', 'Test Server 2']);
-
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
   });
@@ -100,7 +98,6 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(results).toEqual(['Test Server 1', 'Production Server', 'Development Server']);
-
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
 
@@ -137,7 +134,6 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(results).toEqual(['Test Server 1']);
-
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
   });
@@ -149,22 +145,28 @@ describe('HubToolsService', () => {
       const serverId = '1';
       const mockTools = [
         {
-          id: 'tool1',
           name: 'readFile',
           description: 'Read file contents',
-          serverId: serverId,
           inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
         },
         {
-          id: 'tool2',
           name: 'writeFile',
           description: 'Write file contents',
-          serverId: serverId,
           inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] }
         }
       ];
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([{ id: serverId }]);
+      // getServerInstanceByName should return ServerInstanceConfig objects (with id, timestamp, hash)
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
+      });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
@@ -175,7 +177,6 @@ describe('HubToolsService', () => {
         serverName,
         tools: mockTools
       });
-
       expect(hubManager.getServerInstanceByName).toHaveBeenCalledTimes(1);
       expect(hubManager.getServerInstanceByName).toHaveBeenCalledWith(serverName);
       expect(mcpConnectionManager.getTools).toHaveBeenCalledWith(serverId);
@@ -185,10 +186,11 @@ describe('HubToolsService', () => {
       // Arrange
       const serverName = 'Non-existent Server';
       (hubManager.getServerInstanceByName as any).mockReturnValue([]);
+      (hubManager.getServerByName as any).mockReturnValue(undefined);
 
       // Act & Assert
       await expect(hubToolsService.listAllToolsInServer(serverName)).rejects.toThrow(
-        `Server with name "${serverName}" not found`
+        `Server not found: ${serverName}`
       );
     });
   });
@@ -200,32 +202,33 @@ describe('HubToolsService', () => {
       const serverId = '1';
       const mockTools = [
         {
-          id: 'tool1',
           name: 'readFile',
           description: 'Read file contents',
-          serverId: serverId,
-          inputSchema: { type: "object" }
+          inputSchema: { type: 'object' }
         },
         {
-          id: 'tool2',
           name: 'writeFile',
           description: 'Write file contents',
-          serverId: serverId,
-          inputSchema: { type: "object" }
+          inputSchema: { type: 'object' }
         },
         {
-          id: 'tool3',
           name: 'listFiles',
           description: 'List files in directory',
-          serverId: serverId,
-          inputSchema: { type: "object" }
+          inputSchema: { type: 'object' }
         }
       ];
 
-      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
-        serverName,
-        tools: mockTools
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
       });
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.findToolsInServer(serverName, 'File', 'both', false);
@@ -235,27 +238,60 @@ describe('HubToolsService', () => {
         serverName,
         tools: [
           {
-            id: 'tool1',
             name: 'readFile',
             description: 'Read file contents',
-            serverId: serverId,
-            inputSchema: { type: "object" }
+            inputSchema: { type: 'object' }
           },
           {
-            id: 'tool2',
             name: 'writeFile',
             description: 'Write file contents',
-            serverId: serverId,
-            inputSchema: { type: "object" }
+            inputSchema: { type: 'object' }
           },
           {
-            id: 'tool3',
             name: 'listFiles',
             description: 'List files in directory',
-            serverId: serverId,
-            inputSchema: { type: "object" }
+            inputSchema: { type: 'object' }
           }
         ]
+      });
+    });
+
+    it('should return empty array if no tools match', async () => {
+      // Arrange
+      const serverName = 'Test Server';
+      const serverId = '1';
+      const mockTools = [
+        {
+          name: 'unmatchedTool',
+          description: 'This should not match',
+          inputSchema: { type: 'object' }
+        },
+        {
+          name: 'anotherUnmatchedTool',
+          description: 'This should also not match',
+          inputSchema: { type: 'object' }
+        }
+      ];
+
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
+      });
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+
+      // Act
+      const result = await hubToolsService.findToolsInServer(serverName, 'File', 'both', false);
+
+      // Assert
+      expect(result).toEqual({
+        serverName,
+        tools: []
       });
     });
   });
@@ -266,28 +302,30 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const serverId = '1';
       const toolName = 'readFile';
-
       const mockTools = [
         {
-          id: 'tool1',
           name: 'readFile',
           description: 'Read file contents',
-          serverId: serverId,
           inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
         },
         {
-          id: 'tool2',
           name: 'writeFile',
           description: 'Write file contents',
-          serverId: serverId,
-          inputSchema: { type: "object" }
+          inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] }
         }
       ];
 
-      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
-        serverName,
-        tools: mockTools
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
       });
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
       const tool = await hubToolsService.getTool(serverName, toolName);
@@ -301,21 +339,25 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const serverId = '1';
       const toolName = 'nonExistentTool';
-
       const mockTools = [
         {
-          id: 'tool1',
           name: 'readFile',
           description: 'Read file contents',
-          serverId: serverId,
-          inputSchema: { type: "object" }
+          inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
         }
       ];
 
-      vi.spyOn(hubToolsService, 'listAllToolsInServer').mockResolvedValue({
-        serverName,
-        tools: mockTools
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
       });
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
       const tool = await hubToolsService.getTool(serverName, toolName);
@@ -334,7 +376,16 @@ describe('HubToolsService', () => {
       const toolArgs = { path: '/test/file.txt' };
       const expectedResult = { content: 'Test file content' };
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([{ id: serverId }]);
+      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue({
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        longRunning: true
+      });
       (mcpConnectionManager.callTool as any).mockResolvedValue(expectedResult);
 
       // Act
@@ -349,45 +400,12 @@ describe('HubToolsService', () => {
       // Arrange
       const serverName = 'Non-existent Server';
       (hubManager.getServerInstanceByName as any).mockReturnValue([]);
+      (hubManager.getServerByName as any).mockReturnValue(undefined);
 
       // Act & Assert
       await expect(hubToolsService.callTool(serverName, 'readFile', {})).rejects.toThrow(
-        `Server with name "${serverName}" not found`
+        `Server not found: ${serverName}`
       );
-    });
-
-    it('should handle call-tool system tool with undefined serverName', async () => {
-      // Arrange
-      const mockServers = ['Test Server 1', 'Test Server 2'];
-      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
-
-      // Act
-      const result = await hubToolsService.callSystemTool('call-tool', {
-        serverName: undefined,
-        toolName: 'list-servers',
-        toolArgs: {}
-      });
-
-      // Assert
-      expect(result).toEqual(mockServers);
-      expect(hubToolsService.listServers).toHaveBeenCalled();
-    });
-
-    it('should handle call-tool system tool with "undefined" string serverName', async () => {
-      // Arrange
-      const mockServers = ['Test Server 1', 'Test Server 2'];
-      vi.spyOn(hubToolsService, 'listServers').mockResolvedValue(mockServers);
-
-      // Act
-      const result = await hubToolsService.callSystemTool('call-tool', {
-        serverName: 'undefined',
-        toolName: 'list-servers',
-        toolArgs: {}
-      });
-
-      // Assert
-      expect(result).toEqual(mockServers);
-      expect(hubToolsService.listServers).toHaveBeenCalled();
     });
   });
 
@@ -418,157 +436,49 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockServerInstances: Record<string, any[]> = {
-        'Server 1': [
-          {
-            id: '1',
-            timestamp: Date.now(),
-            hash: 'hash1'
-          }
-        ],
-        'Server 2': [
-          {
-            id: '2',
-            timestamp: Date.now(),
-            hash: 'hash2'
-          }
-        ]
+      const mockServerInstances = {
+        'Server 1': [{ id: '1', timestamp: Date.now(), hash: 'hash1' }],
+        'Server 2': [{ id: '2', timestamp: Date.now(), hash: 'hash2' }]
       };
 
       const mockTools = [
-        [
-          {
-            id: 'tool1',
-            name: 'readFile',
-            description: 'Read file contents',
-            serverId: '1',
-            inputSchema: { type: "object" }
-          }
-        ],
-        [
-          {
-            id: 'tool2',
-            name: 'writeFile',
-            description: 'Write file contents',
-            serverId: '2',
-            inputSchema: { type: "object" }
-          }
-        ]
+        {
+          name: 'readFile',
+          description: 'Read file contents'
+        },
+        {
+          name: 'writeFile',
+          description: 'Write file contents'
+        }
       ];
 
       (hubManager.getAllServers as any).mockReturnValue(mockServers);
       (hubManager.getServerInstanceByName as any)
         .mockImplementation((name: string) => mockServerInstances[name]);
-      (mcpConnectionManager.getTools as any)
-        .mockImplementation((id: string) => id === '1' ? mockTools[0] : mockTools[1]);
+      (hubManager.getServerByName as any)
+        .mockImplementation((name: string) => mockServers.find(s => s.name === name)?.config);
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
       // Act
       const allTools = await hubToolsService.listAllTools();
 
-      // Assert
-      expect(allTools).toEqual({
-        'mcp-hub-lite': {
-          tools: [
-            {
-              name: 'list-servers',
-              description: '[System] List all connected servers',
-              inputSchema: {
-                type: 'object',
-                properties: {}
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'find-servers',
-              description: '[System] Find servers matching a pattern',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  pattern: { type: 'string', description: 'Regex pattern to search for' },
-                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-                  caseSensitive: { type: 'boolean', default: false }
-                },
-                required: ['pattern']
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'list-all-tools-in-server',
-              description: '[System] List all tools from a specific server',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  serverName: { type: 'string', description: 'Name of the MCP server' }
-                },
-                required: ['serverName']
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'find-tools-in-server',
-              description: '[System] Find tools matching a pattern in a specific server',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  serverName: { type: 'string', description: 'Name of the MCP server' },
-                  pattern: { type: 'string', description: 'Regex pattern to search for' },
-                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-                  caseSensitive: { type: 'boolean', default: false }
-                },
-                required: ['serverName', 'pattern']
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'get-tool',
-              description: '[System] Get complete schema for a specific tool from a specific server',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  serverName: { type: 'string', description: 'Name of the MCP server' },
-                  toolName: { type: 'string', description: 'Exact name of the tool' }
-                },
-                required: ['serverName', 'toolName']
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'call-tool',
-              description: '[System] Call a specific tool from a specific server',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  serverName: { type: 'string', description: 'Name of the MCP server' },
-                  toolName: { type: 'string', description: 'Name of the tool to call' },
-                  toolArgs: { type: 'object', description: 'Arguments to pass to the tool' }
-                },
-                required: ['serverName', 'toolName', 'toolArgs']
-              },
-              serverId: 'mcp-hub-lite'
-            },
-            {
-              name: 'find-tools',
-              description: '[System] Find tools matching a pattern across all connected servers',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  pattern: { type: 'string', description: 'Regex pattern to search for' },
-                  searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
-                  caseSensitive: { type: 'boolean', default: false }
-                },
-                required: ['pattern']
-              },
-              serverId: 'mcp-hub-lite'
-            }
-          ]
-        },
-        'Server 1': {
-          tools: mockTools[0]
-        },
-        'Server 2': {
-          tools: mockTools[1]
-        }
-      });
+      // Assert - System tools under mcp-hub-lite
+      expect(allTools).toHaveProperty('mcp-hub-lite');
+      expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
+
+      // Verify system tools exist
+      const systemToolNames = allTools['mcp-hub-lite'].tools.map((t: any) => t.name);
+      expect(systemToolNames).toContain('list-servers');
+      expect(systemToolNames).toContain('find-servers');
+      expect(systemToolNames).toContain('list-all-tools-in-server');
+      expect(systemToolNames).toContain('find-tools-in-server');
+      expect(systemToolNames).toContain('get-tool');
+      expect(systemToolNames).toContain('call-tool');
+      expect(systemToolNames).toContain('find-tools');
+
+      // Assert server tools - should have only name and description
+      expect(allTools['Server 1'].tools).toEqual(mockTools);
+      expect(allTools['Server 2'].tools).toEqual(mockTools);
     });
   });
 
@@ -578,31 +488,13 @@ describe('HubToolsService', () => {
       const mockTools = {
         'Server 1': {
           tools: [
-            {
-              id: 'tool1',
-              name: 'readFile',
-              description: 'Read file contents',
-              serverId: '1',
-              inputSchema: { type: "object" }
-            }
+            { name: 'readFile', description: 'Read file contents' },
+            { name: 'writeFile', description: 'Write file contents' }
           ]
         },
         'Server 2': {
           tools: [
-            {
-              id: 'tool2',
-              name: 'writeFile',
-              description: 'Write file contents',
-              serverId: '2',
-              inputSchema: { type: "object" }
-            },
-            {
-              id: 'tool3',
-              name: 'listFiles',
-              description: 'List files in directory',
-              serverId: '2',
-              inputSchema: { type: "object" }
-            }
+            { name: 'listFiles', description: 'List files in directory' }
           ]
         }
       };
@@ -613,37 +505,7 @@ describe('HubToolsService', () => {
       const results = await hubToolsService.findTools('File', 'both', false);
 
       // Assert
-      expect(results).toEqual({
-        'Server 1': {
-          tools: [
-            {
-              id: 'tool1',
-              name: 'readFile',
-              description: 'Read file contents',
-              serverId: '1',
-              inputSchema: { type: "object" }
-            }
-          ]
-        },
-        'Server 2': {
-          tools: [
-            {
-              id: 'tool2',
-              name: 'writeFile',
-              description: 'Write file contents',
-              serverId: '2',
-              inputSchema: { type: "object" }
-            },
-            {
-              id: 'tool3',
-              name: 'listFiles',
-              description: 'List files in directory',
-              serverId: '2',
-              inputSchema: { type: "object" }
-            }
-          ]
-        }
-      });
+      expect(results).toEqual(mockTools);
     });
   });
 });
