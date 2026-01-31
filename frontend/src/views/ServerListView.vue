@@ -38,70 +38,72 @@
     </div>
 
     <div v-else class="overflow-y-auto flex-1 custom-scrollbar">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 pr-2">
         <div
           v-for="server in store.servers"
           :key="server.id"
-          class="server-card bg-white dark:bg-[#1e293b] rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col"
+          class="server-card bg-white dark:bg-[#1e293b] rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
+          @click="handleCardClick(server)"
         >
           <!-- Card Header -->
-          <div class="flex items-start justify-between mb-4">
-            <div class="min-w-0">
-              <h3 class="font-bold text-gray-900 dark:text-white truncate text-lg" :title="server.name">
+          <div class="flex flex-col gap-2 mb-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-gray-900 dark:text-white truncate text-lg mr-2" :title="server.name">
                 {{ server.name }}
               </h3>
-              <!-- Server Info Tags -->
-              <ServerStatusTags :server="server" :include-uptime="false" />
+
+              <!-- Top-right action buttons -->
+              <div class="flex gap-1 shrink-0">
+                <el-button
+                  v-if="server.status === 'running'"
+                  type="danger"
+                  plain
+                  size="small"
+                  :icon="SwitchButton"
+                  @click.stop="stopServer(server)"
+                  class="!p-1 !h-8"
+                  :title="$t('action.stop')"
+                >
+                  <span class="text-xs">{{ $t('action.stop') }}</span>
+                </el-button>
+                <el-button
+                  v-else-if="server.status === 'stopped'"
+                  type="success"
+                  plain
+                  size="small"
+                  :icon="VideoPlay"
+                  @click.stop="startServer(server)"
+                  class="!p-1 !h-8"
+                  :title="$t('action.start')"
+                >
+                  <span class="text-xs">{{ $t('action.start') }}</span>
+                </el-button>
+                <el-button
+                  v-if="server.status === 'running'"
+                  plain
+                  size="small"
+                  :icon="Refresh"
+                  @click.stop="restartServer(server)"
+                  class="!p-1 !h-8"
+                  :title="$t('action.restart')"
+                >
+                  <span class="text-xs">{{ $t('action.restart') }}</span>
+                </el-button>
+              </div>
             </div>
 
-            <!-- Top-right action buttons -->
-            <div class="flex gap-1">
-              <el-button
-                v-if="server.status === 'running'"
-                type="danger"
-                plain
-                size="small"
-                :icon="SwitchButton"
-                @click.stop="stopServer(server)"
-                class="!p-1 !h-8"
-                :title="$t('action.stop')"
-              >
-                <span class="text-xs">{{ $t('action.stop') }}</span>
-              </el-button>
-              <el-button
-                v-else-if="server.status === 'stopped'"
-                type="success"
-                plain
-                size="small"
-                :icon="VideoPlay"
-                @click.stop="startServer(server)"
-                class="!p-1 !h-8"
-                :title="$t('action.start')"
-              >
-                <span class="text-xs">{{ $t('action.start') }}</span>
-              </el-button>
-              <el-button
-                v-if="server.status === 'running'"
-                plain
-                size="small"
-                :icon="Refresh"
-                @click.stop="restartServer(server)"
-                class="!p-1 !h-8"
-                :title="$t('action.restart')"
-              >
-                <span class="text-xs">{{ $t('action.restart') }}</span>
-              </el-button>
-            </div>
+            <!-- Server Info Tags -->
+            <ServerStatusTags :server="server" :include-uptime="false" />
           </div>
 
           <!-- CardFooter - Action buttons -->
-          <div class="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+          <div class="grid grid-cols-2 xl:grid-cols-4 gap-2 pt-4 border-t border-gray-100 dark:border-gray-700/50 mt-auto">
             <el-button
               plain
               size="small"
               :icon="Setting"
               @click.stop="navigateToTab(server.id, 'config')"
-              class="!flex-1"
+              class="!w-full !ml-0"
             >
               {{ $t('action.configure') }}
             </el-button>
@@ -111,7 +113,7 @@
               size="small"
               :icon="Memo"
               @click.stop="navigateToTab(server.id, 'logs')"
-              class="!flex-1"
+              class="!w-full !ml-0"
             >
               {{ $t('serverDetail.tabs.logs') }}
             </el-button>
@@ -121,7 +123,7 @@
               size="small"
               :icon="Tools"
               @click.stop="navigateToTab(server.id, 'tools')"
-              class="!flex-1"
+              class="!w-full !ml-0"
             >
               {{ $t('serverDetail.tabs.tools') }} ({{ server.toolsCount || 0 }})
             </el-button>
@@ -131,7 +133,7 @@
               size="small"
               :icon="Files"
               @click.stop="navigateToTab(server.id, 'resources')"
-              class="!flex-1"
+              class="!w-full !ml-0"
             >
               {{ $t('serverDetail.tabs.resources') }} ({{ server.resourcesCount || 0 }})
             </el-button>
@@ -183,6 +185,14 @@ function configureServer(id: string) {
   store.selectServer(id)
   // Navigate to dashboard where ServerDetail is shown
   router.push({ name: 'dashboard' })
+}
+
+function handleCardClick(server: any) {
+  if (server.status === 'running') {
+    navigateToTab(server.id, 'logs')
+  } else {
+    navigateToTab(server.id, 'config')
+  }
 }
 
 async function startServer(server: any) {
