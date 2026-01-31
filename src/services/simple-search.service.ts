@@ -20,17 +20,12 @@ export class SimpleSearchService {
         let score = 0;
         const name = tool.name.toLowerCase();
         const desc = (tool.description || '').toLowerCase();
-        const tags = (tool.tags || []).map(t => t.toLowerCase());
 
         if (name === lowerQuery) score += 10;
         else if (name.startsWith(lowerQuery)) score += 5;
         else if (name.includes(lowerQuery)) score += 3;
-        
+
         if (desc.includes(lowerQuery)) score += 1;
-        
-        // Tag matching
-        if (tags.some(t => t === lowerQuery)) score += 5;
-        else if (tags.some(t => t.includes(lowerQuery))) score += 2;
 
         return { tool, score };
       })
