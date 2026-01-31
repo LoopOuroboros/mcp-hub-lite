@@ -199,7 +199,7 @@ describe('ConfigManager', () => {
     expect(fs.existsSync(backupPath)).toBe(true);
   });
 
-  it('should create backup when config is modified', async () => {
+  it('should create backup when config is modified with actual changes', async () => {
     const manager = new ConfigManager(tempConfigPath);
 
     // 第一次创建备份
@@ -209,26 +209,17 @@ describe('ConfigManager', () => {
     const initialBackups = manager.listBackups();
     expect(initialBackups.length).toBe(1);
 
-    // 修改配置
+    // 修改配置 - 使用不同的端口确保实际变化
+    const originalPort = manager.getConfig().system.port;
     await manager.updateConfig({
       system: {
-        port: 8899,
-        host: 'localhost',
-        language: 'zh',
-        theme: 'system',
-        logging: {
-          level: 'info',
-          rotation: {
-            enabled: true,
-            maxAge: '7d',
-            maxSize: '100MB',
-            compress: false
-          }
-        }
+        port: originalPort + 1000, // 确保与原始端口不同
+        host: 'localhost'
       }
     });
 
     const afterUpdateBackups = manager.listBackups();
+    // 由于我们的智能重复检测，只有当内容实际变化时才会创建新备份
     expect(afterUpdateBackups.length).toBeGreaterThan(1);
     expect(fs.existsSync(afterUpdateBackups[0].path)).toBe(true);
   });

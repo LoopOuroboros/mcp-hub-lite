@@ -13,12 +13,37 @@ import { logger } from '../utils/logger.js';
 class ConfigBackupManager {
   private readonly backupDir: string;
   private readonly maxBackupCount = 5;
+  // 添加内存MD5缓存
+  private fileHashCache = new Map<string, string>();
 
   constructor(private configPath: string) {
     // 备份目录应该与配置文件在同一个目录
     this.backupDir = path.dirname(configPath);
     // 确保备份目录存在
     fs.mkdirSync(this.backupDir, { recursive: true });
+    // 初始化时加载现有备份的MD5
+    this.initializeHashCache();
+  }
+
+  private initializeHashCache(): void {
+    try {
+      const backups = this.listBackups();
+      for (const backup of backups) {
+        const hash = this.computeFileHash(backup.path);
+        if (hash) {
+          this.fileHashCache.set(backup.name, hash);
+        }
+      }
+      // 缓存当前配置文件
+      if (fs.existsSync(this.configPath)) {
+        const currentHash = this.computeFileHash(this.configPath);
+        if (currentHash) {
+          this.fileHashCache.set(path.basename(this.configPath), currentHash);
+        }
+      }
+    } catch (error) {
+      logger.warn(`Failed to initialize hash cache: ${error}`);
+    }
   }
 
   /**
@@ -35,7 +60,6 @@ class ConfigBackupManager {
       return null;
     }
   }
-
 
   /**
    * 创建配置文件备份
@@ -54,34 +78,43 @@ class ConfigBackupManager {
         return null;
       }
 
-      // 计算当前文件的哈希值
-      const currentHash = this.computeFileHash(this.configPath);
+      // 获取当前文件哈希（使用缓存）
+      let currentHash = this.fileHashCache.get(path.basename(this.configPath));
       if (!currentHash) {
-        logger.error('Failed to compute current config file hash, skipping backup');
+        const computedHash = this.computeFileHash(this.configPath);
+        if (!computedHash) {
+          logger.error('Failed to compute current config file hash, skipping backup');
+          return null;
+        }
+        currentHash = computedHash;
+        this.fileHashCache.set(path.basename(this.configPath), currentHash);
+      }
+
+      // 检查所有备份是否已有相同内容（使用缓存）
+      const backups = this.listBackups();
+      const hasDuplicate = backups.some(backup => {
+        let backupHash = this.fileHashCache.get(backup.name);
+        if (!backupHash) {
+          const computedHash = this.computeFileHash(backup.path);
+          if (computedHash) {
+            backupHash = computedHash;
+            this.fileHashCache.set(backup.name, backupHash);
+          }
+        }
+        return backupHash === currentHash;
+      });
+
+      if (hasDuplicate) {
+        logger.debug('Config file content already exists in backups, skipping backup');
         return null;
       }
 
-
-      // 检查最新的备份文件是否与当前内容相同
-      const backups = this.listBackups();
-      if (backups.length > 0) {
-        const latestBackup = backups[0];
-        const latestHash = this.computeFileHash(latestBackup.path);
-
-        if (latestHash && latestHash === currentHash) {
-          logger.debug('Config file content has not changed, skipping backup');
-          return null;
-        }
-      }
-
-      // 生成备份文件名：.mcp-hub.json.YYYYMMDDHHMMSSmmm.bak (包含毫秒)
-      const now = new Date();
-      const timestamp = now.toISOString().replace(/[:.]/g, '').slice(0, 17) +
-                       now.getMilliseconds().toString().padStart(3, '0');
+      // 简化备份文件名：使用纯毫秒时间戳
+      const timestamp = Date.now();
       let backupFileName = `.mcp-hub.json.${timestamp}.bak`;
       let backupPath = path.join(this.backupDir, backupFileName);
 
-      // 确保文件名唯一性（防止在同一毫秒内创建多个备份）
+      // 确保唯一性
       let counter = 1;
       while (fs.existsSync(backupPath)) {
         backupFileName = `.mcp-hub.json.${timestamp}_${counter}.bak`;
@@ -91,6 +124,9 @@ class ConfigBackupManager {
 
       fs.copyFileSync(this.configPath, backupPath);
       logger.info(`Config backup created: ${backupPath}`);
+
+      // 更新缓存
+      this.fileHashCache.set(backupFileName, currentHash);
 
       // 清理旧的备份文件
       this.cleanupOldBackups();
@@ -127,6 +163,8 @@ class ConfigBackupManager {
         filesToDelete.forEach(file => {
           fs.unlinkSync(file.path);
           logger.debug(`Old backup deleted: ${file.path}`);
+          // 同步清理MD5缓存
+          this.fileHashCache.delete(file.name);
         });
       }
     } catch (error) {
@@ -179,6 +217,13 @@ class ConfigBackupManager {
 
       fs.copyFileSync(backupPath, this.configPath);
       logger.info(`Config restored from backup: ${backupPath}`);
+
+      // 更新缓存
+      const currentHash = this.computeFileHash(this.configPath);
+      if (currentHash) {
+        this.fileHashCache.set(path.basename(this.configPath), currentHash);
+      }
+
       return true;
     } catch (error) {
       logger.error(`Failed to restore backup: ${error}`);
@@ -251,6 +296,23 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * 检测是否处于 TypeScript 编译阶段
+   */
+  private isCompilationPhase(): boolean {
+    // 检测是否是 TypeScript 编译过程
+    const isTsc = process.argv.some(arg =>
+      arg.includes('tsc') || arg.includes('type-check') || arg.includes('vue-tsc')
+    );
+
+    // 检测是否是构建过程
+    const isBuild = process.argv.some(arg =>
+      arg.includes('build') || process.env.npm_lifecycle_event === 'build'
+    );
+
+    return isTsc || isBuild;
+  }
+
   private loadConfig(): SystemConfig {
     let baseConfig: SystemConfig;
 
@@ -265,15 +327,24 @@ export class ConfigManager {
         baseConfig = SystemConfigSchema.parse(migratedConfig);
       } else {
         // Config file doesn't exist, use default
-        logger.info(`Config file not found, creating new configuration at: ${this.configPath}`);
+        logger.info(`Config file not found, using default configuration`);
         baseConfig = SystemConfigSchema.parse({});
-        this.saveConfigSync(baseConfig);
+
+        // 只有在非编译阶段才会自动创建配置文件
+        if (!this.isCompilationPhase()) {
+          logger.info(`Creating new configuration file at: ${this.configPath}`);
+          this.saveConfigSync(baseConfig);
+        }
       }
     } catch (error) {
       logger.warn(`Failed to load config from ${this.configPath}: ${error}`);
       // Initialize with default config
       baseConfig = SystemConfigSchema.parse({});
-      this.saveConfigSync(baseConfig);
+
+      // 只有在非编译阶段才会自动保存配置文件
+      if (!this.isCompilationPhase()) {
+        this.saveConfigSync(baseConfig);
+      }
     }
 
     // 统一类型转换：将 http 转换为 streamable-http，保持内部一致性
@@ -400,7 +471,7 @@ export class ConfigManager {
 
       // 在保存之后创建备份
       if (needsBackup) {
-        this.createBackup();
+        this.backupManager.createBackup();
       }
     } catch (error) {
       logger.error(`Failed to save config synchronously: ${error}`);
@@ -433,7 +504,7 @@ export class ConfigManager {
 
       // 在保存之后创建备份
       if (needsBackup) {
-        this.createBackup();
+        this.backupManager.createBackup();
       }
     } catch (error) {
       logger.error(`Failed to save config: ${error}`);
