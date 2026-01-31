@@ -11,14 +11,11 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
   fastify.get<{
     Querystring: {
       q: string;
-      serverId?: string;
-      tags?: string;
-      status?: string;
       limit?: number;
       offset?: number;
     }
   }>('/web/search', async (request) => {
-    const { q, serverId, tags, status, limit, offset } = request.query;
+    const { q, limit, offset } = request.query;
 
     // Parse search options
     const options: Partial<SearchOptions> = {
@@ -27,25 +24,6 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
       offset: offset ? Number(offset) : 0,
       filters: {}
     };
-
-    if (serverId) {
-      options.filters!.serverId = serverId;
-    }
-
-    if (tags) {
-      const tagPairs = tags.split(',').map(pair => pair.trim());
-      options.filters!.tags = {};
-      tagPairs.forEach(pair => {
-        const [key, value] = pair.split(':');
-        if (key && value) {
-          options.filters!.tags![key.trim()] = value.trim();
-        }
-      });
-    }
-
-    if (status) {
-      options.filters!.status = status.split(',').map(s => s.trim() as 'online' | 'offline' | 'error');
-    }
 
     // Perform search
     const results = await searchCoreService.search(q || '', options);

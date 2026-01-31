@@ -14,7 +14,7 @@ describe('SearchCacheService', () => {
 
     it('should set and retrieve cache data', () => {
       const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
+        { name: 'Tool 1', description: 'Description' }
       ];
 
       cacheService.set(mockTools);
@@ -26,7 +26,7 @@ describe('SearchCacheService', () => {
 
     it('should invalidate cache', () => {
       const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
+        { name: 'Tool 1', description: 'Description' }
       ];
 
       cacheService.set(mockTools);
@@ -41,7 +41,7 @@ describe('SearchCacheService', () => {
   describe('cache expiration', () => {
     it('should invalidate cache after TTL', () => {
       const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
+        { name: 'Tool 1', description: 'Description' }
       ];
 
       cacheService.set(mockTools);
@@ -59,7 +59,7 @@ describe('SearchCacheService', () => {
 
     it('should return valid data before TTL expires', () => {
       const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
+        { name: 'Tool 1', description: 'Description' }
       ];
 
       cacheService.set(mockTools);
@@ -75,41 +75,4 @@ describe('SearchCacheService', () => {
     });
   });
 
-  describe('update tool', () => {
-    it('should update existing tool in cache', () => {
-      const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
-      ];
-
-      cacheService.set(mockTools);
-
-      const updatedTool = { id: '1', name: 'Updated Tool', description: 'New Description', serverId: 'server1' };
-      cacheService.updateTool('server1', 'Tool 1', updatedTool);
-
-      const data = cacheService.get();
-      expect(data).toEqual([updatedTool]);
-    });
-
-    it('should handle update for non-existent tool', () => {
-      const mockTools: McpTool[] = [
-        { id: '1', name: 'Tool 1', description: 'Description', serverId: 'server1' }
-      ];
-
-      cacheService.set(mockTools);
-
-      cacheService.updateTool('server1', 'Non-existent', { id: '2', name: 'New Tool' });
-
-      const data = cacheService.get();
-      expect(data).toEqual(mockTools);
-    });
-
-    it('should handle update on invalid cache', () => {
-      // 缓存失效
-      cacheService.invalidate();
-
-      // 尝试更新工具
-      expect(() => cacheService.updateTool('server1', 'Tool', {})).not.toThrow();
-      expect(cacheService.get()).toBeNull();
-    });
-  });
 });

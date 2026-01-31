@@ -8,11 +8,8 @@ describe('SearchScorer', () => {
   describe('scoreTool()', () => {
     it('should score exact match with highest value', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const score = scorer.scoreTool(tool, 'MySQL Query');
@@ -22,11 +19,8 @@ describe('SearchScorer', () => {
 
     it('should score partial match with lower value', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const exactScore = scorer.scoreTool(tool, 'MySQL Query');
@@ -38,11 +32,8 @@ describe('SearchScorer', () => {
 
     it('should score description matches', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'Database Tool',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const nameScore = scorer.scoreTool(tool, 'Database');
@@ -53,11 +44,8 @@ describe('SearchScorer', () => {
 
     it('should score tag matches', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'Database Tool',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const tagScore = scorer.scoreTool(tool, 'mysql');
@@ -66,11 +54,8 @@ describe('SearchScorer', () => {
 
     it('should handle no matches', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const score = scorer.scoreTool(tool, 'nonexistent');
@@ -79,11 +64,8 @@ describe('SearchScorer', () => {
 
     it('should score tools with no description', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: '',
-        serverId: 'server1',
-        tags: ['database', 'mysql']
       };
 
       const score = scorer.scoreTool(tool, 'MySQL');
@@ -92,11 +74,8 @@ describe('SearchScorer', () => {
 
     it('should score tools with no tags', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
-        serverId: 'server1',
-        tags: []
       };
 
       const score = scorer.scoreTool(tool, 'MySQL');
@@ -105,31 +84,23 @@ describe('SearchScorer', () => {
   });
 
   describe('score calculation', () => {
-    it('should weight name higher than tags and description', () => {
+    it('should weight name higher than description', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute database queries',
-        serverId: 'server1',
-        tags: ['postgresql']
       };
 
-      // 模拟只匹配名称、只匹配标签、只匹配描述的情况
+      // 模拟只匹配名称、只匹配描述的情况
       const nameMatch = scorer.scoreTool(tool, 'MySQL');
-      const tagMatch = scorer.scoreTool(tool, 'postgresql');
       const descMatch = scorer.scoreTool(tool, 'database');
 
-      expect(nameMatch).toBeGreaterThan(tagMatch);
-      expect(tagMatch).toBeGreaterThan(descMatch);
+      expect(nameMatch).toBeGreaterThan(descMatch);
     });
 
     it('should sum scores from multiple matches', () => {
       const tool: McpTool = {
-        id: '1',
         name: 'MySQL Query',
         description: 'Execute MySQL database queries',
-        serverId: 'server1',
-        tags: ['mysql', 'database']
       };
 
       const singleMatch = scorer.scoreTool(tool, 'Query');

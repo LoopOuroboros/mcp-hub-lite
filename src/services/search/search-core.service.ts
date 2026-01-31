@@ -45,24 +45,27 @@ export class SearchCoreService {
       return cached;
     }
 
-    const allTools = mcpConnectionManager.getAllTools();
+    // 由于 McpTool 接口已移除 serverId 字段，需要修改过滤逻辑
+    // 直接使用 mcpConnectionManager 的 toolCache 来获取工具及其服务器信息
+    const allowedTools: McpTool[] = [];
 
-    // Filter tools based on server configuration (allowedTools)
-    const allowedTools = allTools.filter(tool => {
+    for (const [serverId, tools] of mcpConnectionManager['toolCache'].entries()) {
       // 从服务器 ID 中解析原始服务器 ID 和实例索引
-      const [originalId, indexStr] = tool.serverId.split('-');
+      const [originalId, indexStr] = serverId.split('-');
       const index = parseInt(indexStr);
 
       // 获取服务器基本配置
       const server = hubManager.getServerById(originalId);
       if (!server) {
-        return true; // 服务器不存在，允许所有工具（安全策略）
+        allowedTools.push(...tools);
+        continue;
       }
 
       // 获取服务器实例配置
       const instances = hubManager.getServerInstanceByName(server.name);
       if (!instances || instances.length <= index) {
-        return true; // 实例不存在，允许所有工具
+        allowedTools.push(...tools);
+        continue;
       }
 
       const allowed = server.config.allowedTools;
@@ -70,12 +73,11 @@ export class SearchCoreService {
       // If allowedTools is explicitly defined (not null/undefined), use it to filter
       // If it's an empty array, it will filter out all tools
       if (allowed != null) {
-        return allowed.includes(tool.name);
+        allowedTools.push(...tools.filter(tool => allowed.includes(tool.name)));
+      } else {
+        allowedTools.push(...tools);
       }
-
-      // If allowedTools is undefined/null, allow all tools
-      return true;
-    });
+    }
 
     this.cacheService.set(allowedTools);
     return allowedTools;
@@ -86,26 +88,7 @@ export class SearchCoreService {
 
     let filtered = tools;
 
-    if (filters.serverId) {
-      filtered = filtered.filter(t => t.serverId === filters!.serverId);
-    }
-
-    if (filters.tags) {
-      filtered = filtered.filter(tool => {
-        const toolTags = tool.tags || [];
-        return Object.entries(filters!.tags!).every(([key, value]) => {
-          const tagKey = `${key}:${value}`;
-          // 精确匹配标签格式：key:value 或简单字符串
-          return toolTags.includes(tagKey) || toolTags.includes(value);
-        });
-      });
-    }
-
-    if (filters.status && filters.status.length > 0) {
-      filtered = filtered.filter(tool =>
-        tool.status && filters!.status!.includes(tool.status)
-      );
-    }
+    // serverId 和 status 字段已从 McpTool 接口中移除，如需按服务器或状态筛选，请使用其他方法
 
     return filtered;
   }

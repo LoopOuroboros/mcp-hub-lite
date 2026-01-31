@@ -5,28 +5,16 @@ import { McpTool } from '../../../../src/models/tool.model.js';
 // 创建模拟工具数据
 const mockTools: McpTool[] = [
   {
-    id: 'tool1',
     name: 'MySQL Query',
-    description: 'Execute MySQL queries',
-    serverId: 'server1',
-    tags: ['database', 'mysql'],
-    status: 'online'
+    description: 'Execute MySQL queries'
   },
   {
-    id: 'tool2',
     name: 'PostgreSQL Query',
-    description: 'Execute PostgreSQL queries',
-    serverId: 'server2',
-    tags: ['database', 'postgresql'],
-    status: 'online'
+    description: 'Execute PostgreSQL queries'
   },
   {
-    id: 'tool3',
     name: 'Redis Command',
-    description: 'Execute Redis commands',
-    serverId: 'server3',
-    tags: ['database', 'redis'],
-    status: 'offline'
+    description: 'Execute Redis commands'
   }
 ];
 
@@ -68,25 +56,7 @@ describe('SearchCoreService', () => {
       expect(results.every(r => r.tool.name.includes('Query'))).toBe(true);
     });
 
-    it('should filter tools by serverId', async () => {
-      const results = await searchService.search('', {
-        filters: { serverId: 'server1' }
-      });
 
-      expect(results).toBeInstanceOf(Array);
-      expect(results.length).toBe(1);
-      expect(results[0].tool.serverId).toBe('server1');
-    });
-
-    it('should filter tools by tags', async () => {
-      const results = await searchService.search('', {
-        filters: { tags: { database: 'mysql' } }
-      });
-
-      expect(results).toBeInstanceOf(Array);
-      expect(results.length).toBe(1);
-      expect(results[0].tool.tags).toEqual(['database', 'mysql']);
-    });
 
     it('should respect limit and offset parameters', async () => {
       const results = await searchService.search('', {
@@ -113,12 +83,8 @@ describe('SearchCoreService', () => {
       const largeMockTools: McpTool[] = [];
       for (let i = 1; i <= 200; i++) {
         largeMockTools.push({
-          id: `tool${i}`,
           name: `Tool ${i}`,
-          description: `Description for tool ${i}`,
-          serverId: `server${(i % 5) + 1}`,
-          tags: ['tool', `category${(i % 3) + 1}`],
-          status: 'online'
+          description: `Description for tool ${i}`
         });
       }
 

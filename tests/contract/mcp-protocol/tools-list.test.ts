@@ -102,8 +102,7 @@ describe('MCP Protocol Contract - tools/list', () => {
       expect(typeof tool.name).toBe('string');
       expect(tool.name.length).toBeGreaterThan(0);
 
-      expect(tool).toHaveProperty('serverId');
-      expect(typeof tool.serverId).toBe('string');
+      // serverId 字段已从 McpTool 接口中移除
 
       // Description is optional in MCP spec
       if (tool.description !== undefined) {

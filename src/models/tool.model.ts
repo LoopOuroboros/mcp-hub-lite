@@ -12,11 +12,7 @@ export interface McpToolSchema {
 }
 
 export interface McpTool {
-  id?: string;
   name: string;
   description?: string;
   inputSchema?: McpToolSchema;
-  serverId: string;
-  tags?: string[];
-  status?: 'online' | 'offline' | 'error';
 }

@@ -30,15 +30,9 @@ export class SearchCacheService {
     this.lastUpdate = 0;
   }
 
-  updateTool(serverId: string, toolName: string, updates: Partial<McpTool>): void {
-    if (!this.cache) return;
-
-    const index = this.cache.findIndex(
-      t => t.serverId === serverId && t.name === toolName
-    );
-
-    if (index !== -1) {
-      this.cache[index] = { ...this.cache[index], ...updates };
-    }
+  updateTool(): void {
+    // 由于 McpTool 接口已移除 serverId 字段，此方法需要重构
+    // 目前暂时保留但不执行任何操作，或根据实际需求修改
+    console.warn('updateTool method is deprecated because serverId field is removed from McpTool');
   }
 }
