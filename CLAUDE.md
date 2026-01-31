@@ -150,10 +150,10 @@ graph TD
 
 ### 核心服务组件
 
-- **HubManagerService** (`src`/services/hub-manager.service.ts): MCP服务器管理器，管理所有MCP服务器生命周期
+- **HubManagerService** (`src/services/hub-manager.service.ts`): MCP服务器管理器，管理所有MCP服务器生命周期
 - **GatewayService** (`src/services/gateway.service.ts`): MCP网关服务，支持HTTP-Stream传输协议
 - **McpConnectionManager** (`src/services/mcp-connection-manager.ts`): MCP连接管理器，处理服务器连接和工具调用
-- **HubToolsService** (`src/services/hub-tools`[.service.ts](src/services/hub-tools.service.ts)): 提供系统工具和服务器管理工具的统一接口
+- **HubToolsService** (`src/services/hub-tools.service.ts`): 提供系统工具和服务器管理工具的统一接口
 - **SearchCoreService** (`src/services/search/search-core.service.ts`): 核心搜索服务，支持模糊搜索和过滤器
 - **LogStorageService** (`src/services/log-storage.service.ts`): 日志存储服务
 
@@ -360,6 +360,7 @@ npm run test:coverage
 - **修改 API**：确保更新对应的类型定义和测试
 - **添加新页面**：在 `frontend/src/views/` 创建组件并注册路由
 - **编写测试脚本**：将临时测试脚本写入 `tests/temp/` 目录下
+- **创建中间文档**：如果需要创建分析结论、临时文档或中间产物，务必使用 `docs/temp/` 目录
 
 ## Git 提交规范
 
@@ -369,37 +370,4 @@ npm run test:coverage
 
 ## 变更记录 (Changelog)
 
-### 2026-01-29
-- **项目索引更新**：执行完整扫描，更新项目文档索引
-- **文件统计**：识别 94 个源代码文件（47 后端 + 27 前端 + 20 测试）
-- **模块覆盖**：16 个模块全部已识别并创建 CLAUDE.md 文档
-- **覆盖率**：100% 模块覆盖，100% 文件扫描完成
-- **完善模块结构图**：添加缺失的模块链接（包括 CONTRACT 模块）
-- **更新模块索引**：包含所有子模块
-
-### 2026-01-28
-- 更新摘要
-- 完善模块结构图，添加缺失的模块链接（包括 CONTRACT 模块）
-- 为 src/server 和 src/pid 模块创建详细的 CLAUDE.md 文档
-- 为 frontend/router 和 frontend/i18n 模块创建详细的 CLAUDE.md 文档
-- 为 tests/contract 模块创建详细的 CLAUDE.md 文档
-- 更新模块索引，包含所有子模块
-- **添加前端测试覆盖**：为 Dashboard 组件、ToolCard 组件和 Server Store 添加单元测试
-- **更新测试配置**：配置 Vue Test Utils 和 JSDOM 环境用于前端组件测试
-- **更新项目文档**：反映前端测试状态的改进
-- **添加服务器运行时测试**：为 src/server/runner.ts 添加完整的单元测试覆盖
-- **更新测试文档**：在 tests/unit/CLAUDE.md 中添加 server 模块测试文档
-
-### 2026-01-20
-- 优化 HubTools 调用逻辑，将所有方法中的 serverName 参数替换为 serverId，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销
-- 添加 HubToolsService 文档
-- 更新项目架构文档
-
-### 2026-01-19
-- 初始化项目 AI 上下文文档
-- 生成模块结构图和索引
-- 整合架构规范和开发流程
-
----
-
-*此文档由 AI 自动生成和维护。*
+完整的变更记录请参见：[CHANGELOG_zh-CN.md](CHANGELOG_zh-CN.md)

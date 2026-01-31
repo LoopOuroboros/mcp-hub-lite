@@ -13,6 +13,7 @@ unit/
 ├── server/                # 服务器运行时单元测试
 │   └── runner.test.ts
 ├── services/              # 服务层单元测试
+│   ├── hub-manager-service.test.ts
 │   ├── hub-manager.test.ts
 │   ├── hub-tools.service.test.ts
 │   └── search/            # 搜索服务单元测试
@@ -55,14 +56,31 @@ unit/
 npx vitest tests/unit/server/runner.test.ts
 ```
 
-### Hub Manager Test (`services/hub-manager.test.ts`)
+### Hub Manager Service Test (`services/hub-manager-service.test.ts`)
 
 **被测模块**: `src/services/hub-manager.service.ts`
 
 **测试覆盖**:
 - 服务器 CRUD 操作
+- 自动连接/断开逻辑
+- 服务器实例管理
 - 错误处理
 - 边界条件
+
+**运行**:
+```bash
+npx vitest tests/unit/services/hub-manager-service.test.ts
+```
+
+### Hub Manager API Test (`services/hub-manager.test.ts`)
+
+**被测模块**: `src/api/web/servers.ts` (Web API 路由)
+
+**测试覆盖**:
+- 服务器 API 路由功能
+- 输入验证
+- 服务器 CRUD 操作
+- 错误处理
 
 **运行**:
 ```bash
@@ -314,8 +332,10 @@ unit/
 │   └── runner.test.ts
 │       └── tests: src/server/runner.ts
 ├── services/
-│   ├── hub-manager.test.ts
+│   ├── hub-manager-service.test.ts
 │   │   └── tests: src/services/hub-manager.service.ts
+│   ├── hub-manager.test.ts
+│   │   └── tests: src/api/web/servers.ts
 │   ├── hub-tools.service.test.ts
 │   │   └── tests: src/services/hub-tools.service.ts
 │   └── search/
@@ -352,7 +372,8 @@ unit/
 | 模块 | 目标覆盖率 | 当前状态 |
 |-------|-----------|---------|
 | `server/runner` | 80% | 已实现部分 |
-| `services/hub-manager` | 80% | 部分实现 |
+| `services/hub-manager.service` | 80% | 部分实现 |
+| `api/web/servers` | 80% | 部分实现 |
 | `services/hub-tools` | 80% | 部分实现 |
 | `services/search/*` | 80% | 已实现 |
 | `utils/config` | 80% | 已实现 |
@@ -394,7 +415,8 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 | 文件路径 | 描述 |
 |---------|------|
 | `unit/server/runner.test.ts` | 服务器运行器测试 |
-| `unit/services/hub-manager.test.ts` | Hub Manager 服务测试 |
+| `unit/services/hub-manager-service.test.ts` | Hub Manager 服务单元测试 |
+| `unit/services/hub-manager.test.ts` | Hub Manager API 路由测试 |
 | `unit/services/hub-tools.service.test.ts` | Hub Tools 服务测试 |
 | `unit/services/search/search-cache.test.ts` | 搜索缓存测试 |
 | `unit/services/search/search-core.service.test.ts` | 搜索核心服务测试 |
