@@ -1,5 +1,5 @@
 <template>
-  <div class="tools-view p-6 h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300">
+  <div class="tools-view py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300">
     <!-- Header -->
     <div class="mb-6 shrink-0">
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">{{ $t('tools.title') }}</h2>

@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ServerDashboard from '../views/ServerDashboard.vue'
+import ServerListView from '../views/ServerListView.vue'
 import ToolsView from '../views/ToolsView.vue'
 import ClientsView from '../views/ClientsView.vue'
 
@@ -16,6 +17,11 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: ServerDashboard
+        },
+        {
+          path: 'servers',
+          name: 'servers',
+          component: ServerListView
         },
         {
           path: 'tools',

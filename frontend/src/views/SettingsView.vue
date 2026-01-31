@@ -1,6 +1,6 @@
 <template>
   <div class="h-full w-full overflow-y-auto">
-    <div class="p-6">
+    <div class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
       <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('settings.title') }}</h1>
       <el-button type="primary" @click="saveConfig" :loading="saving">

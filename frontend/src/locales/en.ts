@@ -1,4 +1,27 @@
 export default {
+  action: {
+    back: 'Back',
+    start: 'Start',
+    stop: 'Stop',
+    restart: 'Restart',
+    delete: 'Delete',
+    edit: 'Edit',
+    save: 'Save',
+    cancel: 'Cancel',
+    configure: 'Configure',
+    create: 'Create Server',
+    view: 'View',
+    restarted: 'Server restarted',
+    stopped: 'Server stopped',
+    started: 'Server started',
+    saved: 'Configuration saved',
+    configSaved: 'Configuration saved',
+    serverDeleted: 'Server deleted',
+    logsCleared: 'Logs cleared',
+    logsCopied: 'Logs copied to clipboard',
+    serverAdded: 'Server added successfully',
+    configImported: 'Configuration imported successfully'
+  },
   sidebar: {
     title: 'MCP Server Manager',
     dashboard: 'Dashboard',
@@ -62,6 +85,8 @@ export default {
     noServerSelected: 'No server selected',
     deleteConfirm: 'Are you sure you want to delete this server?',
     version: 'Version',
+    pid: 'PID',
+    uptime: 'Uptime',
     tabs: {
       config: 'Configuration',
       logs: 'Logs',
@@ -127,26 +152,6 @@ export default {
     importBatch: 'Import Batch',
     batchImportTitle: 'Batch Import MCP Servers',
     importAll: 'Import All'
-  },
-  action: {
-    restart: 'Restart',
-    stop: 'Stop',
-    start: 'Start',
-    cancel: 'Cancel',
-    create: 'Create Server',
-    delete: 'Delete',
-    save: 'Save',
-    view: 'View',
-    restarted: 'Server restarted',
-    stopped: 'Server stopped',
-    started: 'Server started',
-    saved: 'Configuration saved',
-    configSaved: 'Configuration saved',
-    serverDeleted: 'Server deleted',
-    logsCleared: 'Logs cleared',
-    logsCopied: 'Logs copied to clipboard',
-    serverAdded: 'Server added successfully',
-    configImported: 'Configuration imported successfully'
   },
   error: {
     stdioCommandRequired: 'STDIO server requires a valid command',

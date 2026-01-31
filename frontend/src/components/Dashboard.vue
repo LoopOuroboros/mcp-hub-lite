@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard p-6 h-full flex flex-col overflow-hidden transition-colors duration-300">
+  <div class="dashboard py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden transition-colors duration-300">
     <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 shrink-0">{{ $t('dashboard.title') }}</h2>
     
     <!-- Stats Cards -->

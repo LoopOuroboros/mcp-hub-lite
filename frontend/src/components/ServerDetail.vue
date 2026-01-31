@@ -1,41 +1,20 @@
 <template>
-  <div v-if="server" class="server-detail h-full flex flex-col p-6 overflow-hidden transition-colors duration-300">
+  <div v-if="server" class="server-detail py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden transition-colors duration-300">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 shrink-0">
-      <div class="flex flex-col items-start gap-2">
+      <div class="flex items-center gap-4">
+        <el-button
+          :icon="ArrowLeft"
+          plain
+          @click="navigateBack"
+          class="shrink-0"
+        >
+          {{ $t('action.back') }}
+        </el-button>
+        <div class="flex flex-col items-start gap-2">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ server.name }}</h2>
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Status -->
-          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm transition-colors border border-transparent"
-               :class="getStatusBadgeClass(server.status)">
-            <div class="w-2 h-2 rounded-full" :class="getStatusDotClass(server.status)"></div>
-            {{ $t(`serverDetail.status.${server.status}`) }}
-          </div>
-
-          <!-- Transport -->
-          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-            <span class="opacity-75">{{ $t('serverDetail.config.transport') }}:</span>
-            <span class="font-medium">{{ server.config.type }}</span>
-          </div>
-
-          <!-- Version -->
-          <div v-if="server.version" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-            <span class="opacity-75">{{ $t('serverDetail.version') }}:</span>
-            <span class="font-medium">{{ server.version }}</span>
-          </div>
-
-          <!-- PID (Only for stdio) -->
-          <div v-if="server.config.type === 'stdio'" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-            <span class="opacity-75">PID:</span>
-            <span class="font-mono">{{ server.pid || 'N/A' }}</span>
-          </div>
-
-          <!-- Uptime -->
-          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-            <span class="opacity-75">Uptime:</span>
-            <span class="font-mono">{{ formattedUptime }}</span>
-          </div>
-        </div>
+        <ServerStatusTags :server="server" :include-uptime="true" :formatted-uptime="formattedUptime" />
+      </div>
       </div>
       <div class="flex gap-2">
         <el-button :icon="Refresh" plain @click="restartServer">{{ $t('action.restart') }}</el-button>
@@ -48,7 +27,13 @@
     <!-- Tabs -->
     <el-tabs v-model="activeTab" class="flex-1 flex flex-col overflow-hidden custom-tabs">
       <!-- Config Tab -->
-      <el-tab-pane :label="$t('serverDetail.tabs.config')" name="config" class="h-full overflow-y-auto">
+      <el-tab-pane name="config" class="h-full overflow-y-auto">
+        <template #label>
+          <span class="custom-tabs-label">
+            <el-icon><Setting /></el-icon>
+            <span>{{ $t('serverDetail.tabs.config') }}</span>
+          </span>
+        </template>
         <div class="max-w-3xl">
           <el-form label-position="top" class="mt-4">
             <el-form-item :label="$t('serverDetail.config.transport')">
@@ -58,7 +43,7 @@
                 <el-option :label="$t('serverDetail.config.transportHttp')" value="streamable-http" />
               </el-select>
             </el-form-item>
-            
+
             <template v-if="server.config.type === 'stdio'">
               <el-form-item :label="$t('serverDetail.config.executable')">
                 <el-input v-model="server.config.command" />
@@ -75,7 +60,7 @@
                 </div>
               </el-form-item>
             </template>
-            
+
             <template v-else>
               <el-form-item :label="$t('serverDetail.config.url')">
                 <el-input v-model="server.config.url" />
@@ -112,7 +97,13 @@
       </el-tab-pane>
 
       <!-- Logs Tab -->
-      <el-tab-pane :label="$t('serverDetail.tabs.logs')" name="logs" class="h-full flex flex-col">
+      <el-tab-pane name="logs" class="h-full flex flex-col">
+        <template #label>
+          <span class="custom-tabs-label">
+            <el-icon><Memo /></el-icon>
+            <span>{{ $t('serverDetail.tabs.logs') }}</span>
+          </span>
+        </template>
         <div class="flex justify-end gap-2 mb-2">
             <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
             <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
@@ -128,14 +119,20 @@
       </el-tab-pane>
 
       <!-- Tools Tab -->
-      <el-tab-pane :label="`${$t('serverDetail.tabs.tools')} (${server.toolsCount || 0})`" name="tools" class="h-full flex flex-col">
+      <el-tab-pane name="tools" class="h-full flex flex-col">
+        <template #label>
+          <span class="custom-tabs-label">
+            <el-icon><Tools /></el-icon>
+            <span>{{ $t('serverDetail.tabs.tools') }} ({{ server.toolsCount || 0 }})</span>
+          </span>
+        </template>
          <div class="flex h-full gap-4">
             <!-- Available Tools List -->
             <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
                <h3 class="font-bold mb-4">{{ $t('serverDetail.tools.available') }}</h3>
                <div v-if="server.tools && server.tools.length > 0" class="space-y-2">
-                  <div 
-                    v-for="tool in server.tools" 
+                  <div
+                    v-for="tool in server.tools"
                     :key="tool.name"
                     class="p-3 rounded-lg cursor-pointer transition-colors flex items-center justify-between group"
                     :class="selectedTool?.name === tool.name ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'"
@@ -156,7 +153,7 @@
                   {{ $t('serverDetail.tools.none') }}
                </div>
             </div>
-            
+
             <!-- Tool Details -->
             <div class="flex-1 overflow-y-auto pl-2">
                <div class="flex justify-between items-center mb-4">
@@ -167,7 +164,7 @@
                </div>
                <div v-if="selectedTool">
                   <p class="mb-4 text-gray-600 dark:text-gray-300">{{ selectedTool.description }}</p>
-                  
+
                   <h4 class="font-medium mb-2">{{ $t('serverDetail.tools.schema') }}</h4>
                   <pre class="bg-gray-50 dark:bg-[#0f172a] p-4 rounded-lg overflow-x-auto text-sm font-mono border border-gray-200 dark:border-gray-700">{{ JSON.stringify(selectedTool.inputSchema, null, 2) }}</pre>
                </div>
@@ -179,7 +176,13 @@
       </el-tab-pane>
 
       <!-- Resources Tab -->
-      <el-tab-pane :label="`${$t('serverDetail.tabs.resources')} (${server.resourcesCount || 0})`" name="resources" class="h-full flex flex-col">
+      <el-tab-pane name="resources" class="h-full flex flex-col">
+        <template #label>
+          <span class="custom-tabs-label">
+            <el-icon><Files /></el-icon>
+            <span>{{ $t('serverDetail.tabs.resources') }} ({{ server.resourcesCount || 0 }})</span>
+          </span>
+        </template>
          <div class="h-full overflow-y-auto">
              <el-table :data="server.resources || []" style="width: 100%" class="custom-table">
                 <el-table-column prop="name" :label="$t('serverDetail.resources.name')" width="200">
@@ -241,17 +244,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeMount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useServerStore } from '../stores/server'
 import { useWebSocketStore } from '../stores/websocket'
 import ToolCallDialog from './ToolCallDialog.vue'
-import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document } from '@element-plus/icons-vue'
+import ServerStatusTags from './ServerStatusTags.vue'
+import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document, ArrowLeft, Memo, Files } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatUptime } from '../../../src/utils/format-utils.js'
 
 const store = useServerStore()
 const wsStore = useWebSocketStore()
 const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
+
+function navigateBack() {
+  store.selectedServerId = null
+  router.push({ name: 'servers' })
+}
 
 // Computed property for the selected server
 const server = computed(() => store.selectedServer)
@@ -265,6 +278,14 @@ const showEditJson = ref(false)
 const jsonConfig = ref('')
 const selectedTool = ref<any>(null)
 const showCallDialog = ref(false)
+
+// Initialize active tab from route query parameter
+onBeforeMount(() => {
+  const tabFromQuery = route.query.tab as string
+  if (tabFromQuery && ['config', 'logs', 'tools', 'resources'].includes(tabFromQuery)) {
+    activeTab.value = tabFromQuery
+  }
+})
 
 // Computed property for timeout in seconds
 const timeoutInSeconds = computed({
@@ -294,7 +315,10 @@ watch(server, (newServer) => {
 // Auto-switch tabs based on status when server changes
 watch(() => server.value?.id, (newId, oldId) => {
   if (newId && newId !== oldId) {
-    activeTab.value = server.value?.status === 'running' ? 'logs' : 'config'
+    // Only set default tab if not already set by route query
+    if (!route.query.tab) {
+      activeTab.value = server.value?.status === 'running' ? 'logs' : 'config'
+    }
     selectedTool.value = null
   }
 }, { immediate: true })
@@ -342,27 +366,6 @@ function isToolAllowed(toolName: string) {
   return false
 }
 
-// Helper functions for status styling
-function getStatusBadgeClass(status: string) {
-  switch (status) {
-    case 'running': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    case 'stopped': return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-    case 'error': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-    case 'starting': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-  }
-}
-
-function getStatusDotClass(status: string) {
-  switch (status) {
-    case 'running': return 'bg-green-500'
-    case 'stopped': return 'bg-gray-500'
-    case 'error': return 'bg-red-500'
-    case 'starting': return 'bg-yellow-500'
-    default: return 'bg-gray-500'
-  }
-}
-
 // Helper functions for log styling
 function getLogLevelColor(level: string) {
   switch (level) {
@@ -391,19 +394,7 @@ const formattedUptime = ref('00:00:00')
 let uptimeInterval: ReturnType<typeof setInterval> | null = null
 
 const updateUptime = () => {
-  if (server.value?.startTime && server.value.status === 'running') {
-    const diff = Math.floor((Date.now() - server.value.startTime) / 1000)
-    if (diff < 0) {
-       formattedUptime.value = '00:00:00'
-       return
-    }
-    const hours = Math.floor(diff / 3600)
-    const minutes = Math.floor((diff % 3600) / 60)
-    const seconds = diff % 60
-    formattedUptime.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-  } else {
-    formattedUptime.value = '00:00:00'
-  }
+  formattedUptime.value = formatUptime(server.value?.startTime, server.value?.status)
 }
 
 onMounted(() => {
@@ -468,7 +459,7 @@ const deleteServer = async () => {
           type: 'warning'
         }
       )
-      
+
       await store.deleteServer(server.value.id)
       ElMessage.success(t('action.serverDeleted'))
       store.selectedServerId = null
@@ -532,7 +523,7 @@ const saveConfig = async () => {
 
 const openEditJson = () => {
   if (!server.value) return
-  
+
   const configObj: any = {
     env: server.value.config.env || {},
     enabled: server.value.config.enabled
@@ -541,7 +532,7 @@ const openEditJson = () => {
   if (server.value.config.timeout) {
     configObj.timeout = server.value.config.timeout
   }
-  
+
   if (server.value.config.type === 'stdio') {
     configObj.command = server.value.config.command
     configObj.args = server.value.config.args || []
@@ -554,7 +545,7 @@ const openEditJson = () => {
       [server.value.name]: configObj
     }
   }
-  
+
   jsonConfig.value = JSON.stringify(fullConfig, null, 2)
   showEditJson.value = true
 }
@@ -563,13 +554,13 @@ const saveJsonConfig = async () => {
   try {
     const parsed = JSON.parse(jsonConfig.value)
     if (!parsed.mcpServers) throw new Error('Missing mcpServers key')
-    
+
     const names = Object.keys(parsed.mcpServers)
     if (names.length === 0) throw new Error('No server config found')
-    
+
     const name = names[0] || ''
     const newConfig = parsed.mcpServers[name]
-    
+
     if (server.value) {
       const updatedConfig = { ...server.value.config }
 
@@ -588,7 +579,7 @@ const saveJsonConfig = async () => {
         delete (updatedConfig as any).command
         delete (updatedConfig as any).args
       }
-      
+
       if (newConfig.env) {
         updatedConfig.env = newConfig.env
       }
@@ -612,7 +603,7 @@ const saveJsonConfig = async () => {
           envKeys.value[k] = k
         })
       }
-      
+
       showEditJson.value = false
       ElMessage.success(t('action.configSaved'))
     }
@@ -679,5 +670,14 @@ const copyLogs = () => {
   flex: 1;
   overflow: hidden;
   padding-top: 1rem;
+}
+
+/* Custom tab label styling with icons */
+.custom-tabs-label .el-icon {
+  vertical-align: middle;
+}
+.custom-tabs-label span {
+  vertical-align: middle;
+  margin-left: 4px;
 }
 </style>

@@ -1,4 +1,27 @@
 export default {
+  action: {
+    back: '返回',
+    start: '启动',
+    stop: '停止',
+    restart: '重启',
+    delete: '删除',
+    edit: '编辑',
+    save: '保存',
+    cancel: '取消',
+    configure: '配置',
+    create: '创建服务器',
+    view: '查看',
+    restarted: '服务器已重启',
+    stopped: '服务器已停止',
+    started: '服务器已启动',
+    saved: '配置已保存',
+    configSaved: '配置已保存',
+    serverDeleted: '服务器已删除',
+    logsCleared: '日志已清空',
+    logsCopied: '日志已复制到剪贴板',
+    serverAdded: '服务器添加成功',
+    configImported: '配置导入成功'
+  },
   sidebar: {
     title: 'MCP 服务器管理器',
     dashboard: '仪表板',
@@ -62,6 +85,8 @@ export default {
     noServerSelected: '未选择服务器',
     deleteConfirm: '确定要删除此服务器吗？',
     version: '版本',
+    pid: '进程ID',
+    uptime: '运行时间',
     tabs: {
       config: '配置',
       logs: '日志',
@@ -127,26 +152,6 @@ export default {
     importBatch: '批量导入',
     batchImportTitle: '批量导入 MCP 服务器',
     importAll: '全部导入'
-  },
-  action: {
-    restart: '重启',
-    stop: '停止',
-    start: '启动',
-    cancel: '取消',
-    create: '创建服务器',
-    delete: '删除',
-    save: '保存',
-    view: '查看',
-    restarted: '服务器已重启',
-    stopped: '服务器已停止',
-    started: '服务器已启动',
-    saved: '配置已保存',
-    configSaved: '配置已保存',
-    serverDeleted: '服务器已删除',
-    logsCleared: '日志已清空',
-    logsCopied: '日志已复制到剪贴板',
-    serverAdded: '服务器添加成功',
-    configImported: '配置导入成功'
   },
   error: {
     stdioCommandRequired: 'STDIO 服务器需要有效的命令',

@@ -227,6 +227,23 @@ npx vitest tests/unit/frontend/components/dashboard.test.ts --config vitest.fron
 npx vitest tests/unit/frontend/components/tool-card.test.ts --config vitest.frontend.config.ts
 ```
 
+### Server Status Tags Component Test (`frontend/components/server-status-tags.test.ts`)
+
+**被测模块**: `frontend/src/components/ServerStatusTags.vue`
+
+**测试覆盖**:
+- 组件渲染
+- 服务器状态显示（running/stopped/error/starting）
+- 传输类型显示（stdio/sse/streamable-http）
+- 版本和 PID 信息显示
+- 运行时间显示（可选）
+- 不同配置的处理
+
+**运行**:
+```bash
+npx vitest tests/unit/frontend/components/server-status-tags.test.ts --config vitest.frontend.config.ts
+```
+
 ### Server Store Test (`frontend/stores/server.test.ts`)
 
 **被测模块**: `frontend/src/stores/server.ts`
@@ -389,6 +406,7 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 | `unit/utils/request-context.test.ts` | 请求上下文测试 |
 | `unit/frontend/components/dashboard.test.ts` | Dashboard 组件测试 |
 | `unit/frontend/components/tool-card.test.ts` | ToolCard 组件测试 |
+| `unit/frontend/components/server-status-tags.test.ts` | ServerStatusTags 组件测试 |
 | `unit/frontend/stores/server.test.ts` | Server Store 测试 |
 | `unit/frontend/mocks/http.mock.ts` | HTTP Mock |
 | `unit/frontend/setup.ts` | 前端测试设置 |
