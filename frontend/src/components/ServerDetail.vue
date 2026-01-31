@@ -246,14 +246,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useServerStore } from '../stores/server'
-import { useWebSocketStore } from '../stores/websocket'
-import ToolCallDialog from './ToolCallDialog.vue'
-import ServerStatusTags from './ServerStatusTags.vue'
+import { useServerStore } from '@stores/server'
+import { useWebSocketStore } from '@stores/websocket'
+import ToolCallDialog from '@components/ToolCallDialog.vue'
+import ServerStatusTags from '@components/ServerStatusTags.vue'
 import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Document, ArrowLeft, Memo, Files } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { formatUptime } from '../../../src/utils/format-utils.js'
+import { formatUptime } from '@utils/format-utils'
 
 const store = useServerStore()
 const wsStore = useWebSocketStore()

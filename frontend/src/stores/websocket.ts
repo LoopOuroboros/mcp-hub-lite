@@ -5,12 +5,12 @@
 
 import { defineStore } from 'pinia'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { WebSocketClient, createWebSocketClient } from '../utils/websocket'
-import type { ServerMessage } from '../utils/websocket'
-import { useServerStore } from './server'
-import { useToolCallsStore } from './tool-calls'
-import { useSystemStore } from './system'
-import { useClientStore } from './client'
+import { WebSocketClient, createWebSocketClient } from '@utils/websocket'
+import type { ServerMessage } from '@utils/websocket'
+import { useServerStore } from '@stores/server'
+import { useToolCallsStore } from '@stores/tool-calls'
+import { useSystemStore } from '@stores/system'
+import { useClientStore } from '@stores/client'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const connected = ref(false)

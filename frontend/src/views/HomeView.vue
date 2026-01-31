@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import { useServerStore } from '../stores/server'
+import { useServerStore } from '@stores/server'
 import { ElMessage } from 'element-plus'
 
 const store = useServerStore()

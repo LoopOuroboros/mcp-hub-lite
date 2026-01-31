@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { http, HttpError } from '../utils/http';
+import { http, HttpError } from '@utils/http';
 import { ElMessage } from 'element-plus';
 
 const props = defineProps<{

@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { getExecutableName } from '../../../src/utils/format-utils.js'
+import { getExecutableName } from '@utils/format-utils'
 
 const { t } = useI18n()
 

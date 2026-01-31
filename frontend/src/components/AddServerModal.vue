@@ -187,7 +187,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, Delete } from '@element-plus/icons-vue'
-import { useServerStore } from '../stores/server'
+import { useServerStore } from '@stores/server'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{

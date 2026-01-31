@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { http } from '../utils/http'
+import { http } from '@utils/http'
 
 export interface SystemConfig {
   system: {

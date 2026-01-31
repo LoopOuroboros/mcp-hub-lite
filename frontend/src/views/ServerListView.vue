@@ -147,15 +147,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useServerStore } from '../stores/server'
+import { useServerStore } from '@stores/server'
 import { useI18n } from 'vue-i18n'
 import {
   Plus, Platform, VideoPlay, SwitchButton, Refresh, Setting,
   CircleCheckFilled, WarningFilled, CircleCloseFilled, InfoFilled,
   Memo, Tools, Files
 } from '@element-plus/icons-vue'
-import AddServerModal from '../components/AddServerModal.vue'
-import ServerStatusTags from '../components/ServerStatusTags.vue'
+import AddServerModal from '@components/AddServerModal.vue'
+import ServerStatusTags from '@components/ServerStatusTags.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useServerStore()

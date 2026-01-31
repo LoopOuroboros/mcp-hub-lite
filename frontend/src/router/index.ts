@@ -1,42 +1,37 @@
 /// <reference types="vite/client" />
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import ServerDashboard from '../views/ServerDashboard.vue'
-import ServerListView from '../views/ServerListView.vue'
-import ToolsView from '../views/ToolsView.vue'
-import ClientsView from '../views/ClientsView.vue'
 
 const router = createRouter({
   history: createWebHistory((import.meta as any).env.BASE_URL),
   routes: [
     {
       path: '/',
-      component: HomeView,
+      component: () => import('@views/HomeView.vue'),
       children: [
         {
           path: '',
           name: 'dashboard',
-          component: ServerDashboard
+          component: () => import('@views/ServerDashboard.vue')
         },
         {
           path: 'servers',
           name: 'servers',
-          component: ServerListView
+          component: () => import('@views/ServerListView.vue')
         },
         {
           path: 'tools',
           name: 'tools',
-          component: ToolsView
+          component: () => import('@views/ToolsView.vue')
         },
         {
           path: 'clients',
           name: 'clients',
-          component: ClientsView
+          component: () => import('@views/ClientsView.vue')
         },
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('../views/SettingsView.vue')
+          component: () => import('@views/SettingsView.vue')
         }
       ]
     }

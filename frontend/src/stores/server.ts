@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { http } from '../utils/http'
-import { useWebSocketStore } from './websocket'
+import { http } from '@utils/http'
+import { useWebSocketStore } from '@stores/websocket'
 
 // 服务器配置接口（以服务器名称为 key）
 export interface McpServerConfig {

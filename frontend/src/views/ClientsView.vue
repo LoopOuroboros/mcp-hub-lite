@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useClientStore } from '../stores/client'
+import { useClientStore } from '@stores/client'
 
 const store = useClientStore()
 

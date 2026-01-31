@@ -93,9 +93,9 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useTheme, type Theme } from '../composables/useTheme'
-import { useServerStore } from '../stores/server'
-import { useSystemStore } from '../stores/system'
+import { useTheme, type Theme } from '@composables/useTheme'
+import { useServerStore } from '@stores/server'
+import { useSystemStore } from '@stores/system'
 import { Sunny, Moon, Monitor, ArrowDown, ElementPlus } from '@element-plus/icons-vue'
 
 const { locale } = useI18n()

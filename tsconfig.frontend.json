@@ -8,7 +8,15 @@
     "baseUrl": ".",
     "types": ["node", "vite/client"],
     "paths": {
-      "@/*": ["./frontend/src/*"]
+      "@/*": ["./frontend/src/*"],
+      "@components/*": ["./frontend/src/components/*"],
+      "@views/*": ["./frontend/src/views/*"],
+      "@stores/*": ["./frontend/src/stores/*"],
+      "@router/*": ["./frontend/src/router/*"],
+      "@i18n/*": ["./frontend/src/i18n/*"],
+      "@locales/*": ["./frontend/src/locales/*"],
+      "@composables/*": ["./frontend/src/composables/*"],
+      "@utils/*": ["./frontend/src/utils/*"]
     }
   }
 }

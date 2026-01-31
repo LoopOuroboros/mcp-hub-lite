@@ -124,11 +124,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus/icons-vue'
-import { http } from '../utils/http'
-import { useServerStore } from '../stores/server'
+import { http } from '@utils/http'
+import { useServerStore } from '@stores/server'
 import { useI18n } from 'vue-i18n'
-import ToolCallDialog from '../components/ToolCallDialog.vue'
-import ToolCard from '../components/ToolCard.vue'
+import ToolCallDialog from '@components/ToolCallDialog.vue'
+import ToolCard from '@components/ToolCard.vue'
 
 const { t } = useI18n()
 

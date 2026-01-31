@@ -183,8 +183,8 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Check, Document, Lock, Setting, Sunny, Moon, Monitor } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { useTheme } from '../composables/useTheme';
-import { useSystemStore } from '../stores/system';
+import { useTheme } from '@composables/useTheme';
+import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
 
 const { t, locale } = useI18n();

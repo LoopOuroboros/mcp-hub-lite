@@ -98,7 +98,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useServerStore } from '../stores/server'
+import { useServerStore } from '@stores/server'
 import { VideoPlay, CircleClose, Warning, Plus, SwitchButton } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
