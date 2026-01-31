@@ -98,16 +98,28 @@ class McpConnectionManager {
 
       // 添加日志监听器
       if ('onstdout' in transport) {
+        // 获取安全的服务器名称（处理可能的 undefined 情况）
+        const safeServerName = server?.name ?? server?.id ?? 'unknown';
+        const safeServerId = server?.id ?? 'unknown';
+
         transport.onstdout = (data: string) => {
           // 检查是否为 tools/list 响应
           const isToolsListResp = isToolsListResponse(data);
-          const logLevel = isToolsListResp ? 'debug' : 'info';
-          logStorage.append(server.id!, logLevel, `[${server.name}] [STDOUT] ${data}`);
+          if (isToolsListResp) {
+            // 完全跳过 tools/list 响应的日志存储，仅在控制台输出 debug 级别日志
+            logger.debug(`[${safeServerName}] [STDOUT] ${data}`);
+            return;
+          }
+          logStorage.append(safeServerId, 'info', `[${safeServerName}] [STDOUT] ${data}`);
         };
       }
       if ('onstderr' in transport) {
+        // 获取安全的服务器名称（处理可能的 undefined 情况）
+        const safeServerName = server?.name ?? server?.id ?? 'unknown';
+        const safeServerId = server?.id ?? 'unknown';
+
         transport.onstderr = (data: string) => {
-          logStorage.append(server.id!, 'error', `[${server.name}] [STDERR] ${data}`);
+          logStorage.append(safeServerId, 'error', `[${safeServerName}] [STDERR] ${data}`);
         };
       }
 
