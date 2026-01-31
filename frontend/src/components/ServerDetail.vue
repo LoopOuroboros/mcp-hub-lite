@@ -155,8 +155,8 @@
             </div>
 
             <!-- Tool Details -->
-            <div class="flex-1 overflow-y-auto pl-2">
-               <div class="flex justify-between items-center mb-4">
+            <div class="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col">
+               <div class="flex justify-between items-center mb-4 shrink-0">
                   <h3 class="font-bold">{{ $t('serverDetail.tools.details') }}: {{ selectedTool?.name || '' }}</h3>
                   <el-button v-if="selectedTool" type="primary" size="small" @click="showCallDialog = true">
                     {{ $t('serverDetail.tools.call') }}
@@ -168,7 +168,7 @@
                   <h4 class="font-medium mb-2">{{ $t('serverDetail.tools.schema') }}</h4>
                   <pre class="bg-gray-50 dark:bg-[#0f172a] p-4 rounded-lg overflow-x-auto text-sm font-mono border border-gray-200 dark:border-gray-700">{{ JSON.stringify(selectedTool.inputSchema, null, 2) }}</pre>
                </div>
-               <div v-else class="flex h-full items-center justify-center text-gray-400">
+               <div v-else class="flex-1 flex items-center justify-center text-gray-400">
                   {{ $t('serverDetail.tools.selectHint') }}
                </div>
             </div>

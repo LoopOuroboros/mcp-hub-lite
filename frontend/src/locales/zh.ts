@@ -175,5 +175,21 @@ export default {
     systemTag: '系统',
     online: '在线',
     offline: '离线'
+  },
+  toolCallDialog: {
+    title: '调用工具: {toolName}',
+    arguments: '参数 (JSON)',
+    jsonPlaceholder: '{ "key": "value" }',
+    formatJson: '格式化 JSON',
+    response: '响应',
+    inputSchema: '输入 Schema',
+    showResponse: '显示响应',
+    showInputSchema: '显示输入 Schema',
+    executing: '执行中...',
+    execute: '执行',
+    invalidJson: '无效的 JSON',
+    invalidJsonArguments: '无效的 JSON 参数',
+    executionSuccessful: '工具执行成功',
+    executionFailed: '工具执行失败'
   }
 }

@@ -174,5 +174,21 @@ export default {
     systemTag: 'System',
     online: 'Online',
     offline: 'Offline'
+  },
+  toolCallDialog: {
+    title: 'Call Tool: {toolName}',
+    arguments: 'Arguments (JSON)',
+    jsonPlaceholder: '{ "key": "value" }',
+    formatJson: 'Format JSON',
+    response: 'Response',
+    inputSchema: 'Input Schema',
+    showResponse: 'Show Response',
+    showInputSchema: 'Show Input Schema',
+    executing: 'Executing...',
+    execute: 'Execute',
+    invalidJson: 'Invalid JSON',
+    invalidJsonArguments: 'Invalid JSON arguments',
+    executionSuccessful: 'Tool execution successful',
+    executionFailed: 'Tool execution failed'
   }
 }
