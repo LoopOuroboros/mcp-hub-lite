@@ -113,7 +113,7 @@
     <ToolCallDialog
       v-if="selectedTool"
       v-model="showCallDialog"
-      :server-id="selectedTool.serverId"
+      :server-name="selectedTool.serverName"
       :tool-name="selectedTool.name"
       :description="selectedTool.description"
       :input-schema="selectedTool.inputSchema"
@@ -174,7 +174,12 @@ async function fetchSystemTools() {
 }
 
 function openCallDialog(tool: any) {
-  selectedTool.value = tool
+  // 找到工具对应的服务器名称
+  const server = store.servers.find(s => s.id === tool.serverId)
+  selectedTool.value = {
+    ...tool,
+    serverName: server?.name || tool.serverId // 如果找不到服务器，使用 serverId 作为 fallback
+  }
   showCallDialog.value = true
 }
 

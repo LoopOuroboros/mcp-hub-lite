@@ -12,6 +12,25 @@
         {{ description }}
       </div>
 
+      <!-- Server Instance Selection -->
+      <div v-if="serverName" class="mb-4 flex items-center">
+        <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{ t('toolCallDialog.instance') }}</span>
+        <el-select
+          v-model="selectedInstanceId"
+          :placeholder="t('toolCallDialog.selectInstance')"
+          size="small"
+          class="flex-1"
+          @change="handleInstanceChange"
+        >
+          <el-option
+            v-for="instance in serverInstances"
+            :key="instance.id"
+            :label="formatInstanceLabel(instance)"
+            :value="instance.id"
+          />
+        </el-select>
+      </div>
+
       <div class="flex-1 flex gap-4 min-h-0">
         <!-- Input Area -->
         <div class="flex-1 flex flex-col min-w-0">
@@ -24,7 +43,7 @@
             type="textarea"
             class="flex-1 font-mono custom-textarea"
             :input-style="{ height: '100%', fontFamily: 'monospace' }"
-            :placeholder="t('toolCallDialog.jsonPlaceholder')"
+            placeholder='{"key": "value"}'
             resize="none"
             maxlength="1000000"
             show-word-limit
@@ -73,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { http, HttpError } from '@utils/http';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
@@ -81,7 +100,7 @@ const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: boolean;
-  serverId?: string;
+  serverName?: string;
   toolName: string;
   description?: string;
   inputSchema?: any;
@@ -99,10 +118,34 @@ const result = ref<string | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const showInputSchema = ref(false);
+const serverInstances = ref<any[]>([]);
+const selectedInstanceId = ref<string | null>(null);
 
 const formattedSchema = computed(() => {
   if (!props.inputSchema) return '{}';
   return JSON.stringify(props.inputSchema, null, 2);
+});
+
+// Fetch server instances when serverName is provided
+const fetchServerInstances = async () => {
+  if (props.serverName) {
+    try {
+      const instances = await http.get(`/web/server-instances/${props.serverName}`) as any[];
+      serverInstances.value = instances;
+      if (instances.length > 0) {
+        selectedInstanceId.value = instances[0].id;
+      }
+    } catch (error) {
+      console.error('Failed to fetch server instances:', error);
+      serverInstances.value = [];
+      selectedInstanceId.value = null;
+    }
+  }
+};
+
+// Watch for serverName changes
+watch(() => props.serverName, () => {
+  fetchServerInstances();
 });
 
 watch(() => props.modelValue, (val) => {
@@ -112,13 +155,15 @@ watch(() => props.modelValue, (val) => {
     argsJson.value = JSON.stringify(template, null, 2);
     result.value = null;
     error.value = null;
+    // Fetch instances when dialog is opened
+    fetchServerInstances();
   }
 });
 
 function generateTemplate(schema: any) {
   if (!schema || !schema.properties) return {};
   const template: Record<string, any> = {};
-  
+
   for (const [key, value] of Object.entries(schema.properties)) {
     const prop = value as any;
     if (prop.default !== undefined) {
@@ -159,6 +204,14 @@ function toggleSchemaView() {
   showInputSchema.value = !showInputSchema.value;
 }
 
+function formatInstanceLabel(instance: any) {
+  return `${instance.id}`;
+}
+
+function handleInstanceChange() {
+  console.log('Selected instance:', selectedInstanceId.value);
+}
+
 async function handleCall() {
   try {
     let args: any;
@@ -175,9 +228,12 @@ async function handleCall() {
     showInputSchema.value = false;
 
     let response;
-    if (props.serverId) {
-        response = await http.post(`/web/hub-tools/servers/${props.serverId}/tools/${props.toolName}/call`, {
-            toolArgs: args
+    if (props.serverName) {
+        response = await http.post(`/web/hub-tools/servers/${props.serverName}/tools/${props.toolName}/call`, {
+            toolArgs: args,
+            requestOptions: {
+              sessionId: selectedInstanceId.value // Use selected instance ID as sessionId
+            }
         });
     } else {
          response = await http.post(`/web/hub-tools/system/${props.toolName}/call`, { toolArgs: args });
@@ -187,21 +243,21 @@ async function handleCall() {
     ElMessage.success(t('toolCallDialog.executionSuccessful'));
   } catch (e: any) {
     console.error('Tool execution failed:', e);
-    
+
     // Default error message
     error.value = e.message || String(e);
 
     // Handle HttpError with detailed data
     if (e instanceof HttpError && e.data) {
-        error.value = typeof e.data === 'string' 
-            ? e.data 
+        error.value = typeof e.data === 'string'
+            ? e.data
             : JSON.stringify(e.data, null, 2);
-    } 
+    }
     // Legacy/Axios fallback (just in case)
     else if (e.response && e.response.data) {
         error.value = JSON.stringify(e.response.data, null, 2);
     }
-    
+
     ElMessage.error(t('toolCallDialog.executionFailed'));
   } finally {
     loading.value = false;

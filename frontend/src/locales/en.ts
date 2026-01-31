@@ -178,7 +178,7 @@ export default {
   toolCallDialog: {
     title: 'Call Tool: {toolName}',
     arguments: 'Arguments (JSON)',
-    jsonPlaceholder: '{ "key": "value" }',
+    jsonPlaceholder: '{"key": "value"}',
     formatJson: 'Format JSON',
     response: 'Response',
     inputSchema: 'Input Schema',
@@ -189,6 +189,8 @@ export default {
     invalidJson: 'Invalid JSON',
     invalidJsonArguments: 'Invalid JSON arguments',
     executionSuccessful: 'Tool execution successful',
-    executionFailed: 'Tool execution failed'
+    executionFailed: 'Tool execution failed',
+    instance: 'Instance',
+    selectInstance: 'Select an instance'
   }
 }

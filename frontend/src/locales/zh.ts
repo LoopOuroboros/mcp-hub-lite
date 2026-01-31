@@ -179,7 +179,7 @@ export default {
   toolCallDialog: {
     title: '调用工具: {toolName}',
     arguments: '参数 (JSON)',
-    jsonPlaceholder: '{ "key": "value" }',
+    jsonPlaceholder: '{"key": "value"}',
     formatJson: '格式化 JSON',
     response: '响应',
     inputSchema: '输入 Schema',
@@ -190,6 +190,8 @@ export default {
     invalidJson: '无效的 JSON',
     invalidJsonArguments: '无效的 JSON 参数',
     executionSuccessful: '工具执行成功',
-    executionFailed: '工具执行失败'
+    executionFailed: '工具执行失败',
+    instance: '实例',
+    selectInstance: '选择一个实例'
   }
 }
