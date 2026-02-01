@@ -2,6 +2,14 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'path'
+import { mkdirSync, existsSync } from 'fs'
+
+// 确保 logs 目录存在
+const logDir = resolve(fileURLToPath(new URL('.', import.meta.url)), 'logs')
+if (!existsSync(logDir)) {
+  mkdirSync(logDir, { recursive: true })
+}
 
 export default defineConfig({
   plugins: [vue()],
@@ -24,10 +32,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    reporters: ['default', 'json'],
+    outputFile: {
+      json: resolve(logDir, 'test-frontend-results.json')
+    },
     setupFiles: ['./tests/unit/frontend/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      reportsDirectory: resolve(logDir, 'coverage-frontend'),
       exclude: ['node_modules/', 'dist/', 'tests/']
     },
     include: ['tests/unit/frontend/**/*.test.ts']

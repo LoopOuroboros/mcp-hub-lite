@@ -23,6 +23,7 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "vitest run",
     "test:frontend": "vitest run --config vitest.frontend.config.ts",
+    "test:summary": "npm run test && node scripts/generate-test-summary.js",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
     "prepare": "husky",
