@@ -157,14 +157,26 @@ const formatDuration = (ms) => {
     return `${minutes}m ${remainingSeconds}.${String(milliseconds).padStart(3, '0')}s`;
   } else {
     return `${seconds}.${String(milliseconds).padStart(3, '0')}s`;
-  }
+  };
+};
+
+// 格式化日期为 ISO 9075 (YYYY-MM-DD HH:MM:SS) - 使用本地时间
+const formatDate = (date) => {
+  const pad = (n) => n.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
 // 生成摘要内容
 let summaryContent = `
  Test Files  ${passedFiles} passed, ${failedFiles} failed (${totalFiles} total)
       Tests  ${passedTests} passed, ${failedTests} failed (${totalTests} total)
-   Start at  ${startTime ? startTime.toISOString().replace('T', ' ').substring(0, 19) : 'Unknown'}
+   Start at  ${startTime ? formatDate(startTime) : 'Unknown'}
    Duration  ${formatDuration(durationMs)}
 `;
 
