@@ -63,7 +63,7 @@
           <el-icon class="text-gray-900 dark:text-white" :size="20"><Connection /></el-icon>
           <h3 class="text-lg font-bold text-gray-900 dark:text-white">
             {{ $t('tools.aggregatedTools') }}
-            <span class="text-sm font-normal text-gray-500 ml-2">({{ Object.keys(groupedTools).length }})</span>
+            <span class="text-sm font-normal text-gray-500 ml-2">({{ Object.values(groupedTools).flat().length }})</span>
           </h3>
         </div>
 
@@ -122,10 +122,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus/icons-vue'
 import { http } from '@utils/http'
 import { useServerStore } from '@stores/server'
+import { useWebSocketStore } from '@stores/websocket'
 import { useI18n } from 'vue-i18n'
 import ToolCallDialog from '@components/ToolCallDialog.vue'
 import ToolCard from '@components/ToolCard.vue'
@@ -136,7 +137,7 @@ export interface Tool {
   name: string
   description?: string
   inputSchema?: any
-  serverId: string
+  serverName: string
   tags?: string[]
 }
 
@@ -203,37 +204,21 @@ function handleSearch() {
 // Group tools by Server Name
 const groupedTools = computed(() => {
   const groups: Record<string, SearchResult[]> = {}
-  
+
   searchResults.value.forEach(result => {
-    // Find server name from store
-    const server = store.servers.find(s => s.id === result.tool.serverId)
+    // 直接使用 tool.serverName 进行分组（后端已处理 allowedTools 过滤）
+    const server = store.servers.find(s => s.name === result.tool.serverName);
 
-    // If server is not found (e.g. not loaded yet, or ID mismatch), 
-    // we cannot verify allowedTools config. 
-    // Default to HIDE to respect potential restrictions and avoid showing unverified tools.
-    if (!server) {
-      return
-    }
+    const statusText = server?.status === 'running' ? t('tools.online') : t('tools.offline');
+    const serverName = result.tool.serverName ? `${result.tool.serverName} (${statusText})` : 'Unknown';
 
-    // Filter by allowedTools (Aggregated Logic)
-    // If allowedTools is empty (default), hide all tools (default deny)
-    // If allowedTools is defined and non-empty, strictly filter by it
-    const allowed = server.config?.allowedTools
-
-    if (!allowed || allowed.length === 0 || !allowed.includes(result.tool.name)) {
-      return
-    }
-
-    const statusText = server?.status === 'running' ? t('tools.online') : t('tools.offline')
-    const serverName = server ? `${server.name} (${statusText})` : result.tool.serverId
-    
     if (!groups[serverName]) {
-      groups[serverName] = []
+      groups[serverName] = [];
     }
-    groups[serverName].push(result)
-  })
-  
-  return groups
+    groups[serverName].push(result);
+  });
+
+  return groups;
 })
 
 function getServerBadgeClass(serverName: string) {
