@@ -6,6 +6,7 @@
 import { WebSocket } from 'ws';
 import { EventTypes } from '../../services/event-bus.service.js';
 import { logStorage } from '../../services/log-storage.service.js';
+import { logger } from '../../utils/logger.js';
 
 // 事件类型映射
 const eventTypeMap: Record<string, string> = {
@@ -237,7 +238,7 @@ export class WebSocketHandler {
     // 启动心跳检测
     this.startHeartbeat();
 
-    console.log('WebSocket connection established');
+    logger.info('connection established', { subModule: 'WebSocket' });
   }
 
   /**
@@ -261,10 +262,10 @@ export class WebSocketHandler {
           this.handleFetchLogs(message);
           break;
         default:
-          console.warn('Unknown message type:', (message as any).type);
+          logger.warn(`Unknown message type: ${(message as any).type}`, { subModule: 'WebSocket' });
       }
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      logger.error(`Failed to parse WebSocket message: ${error}`, { subModule: 'WebSocket' });
       this.sendError('Invalid message format');
     }
   }
@@ -308,7 +309,7 @@ export class WebSocketHandler {
       }
     });
 
-    console.log('Subscribed to events:', Array.from(this.subscriptions.keys()).sort());
+    logger.info(`Subscribed to events: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`, { subModule: 'WebSocket' });
   }
 
   /**
@@ -323,14 +324,14 @@ export class WebSocketHandler {
       }
     });
 
-    console.log('Remaining subscriptions:', Array.from(this.subscriptions.keys()).sort());
+    logger.info(`Remaining subscriptions: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`, { subModule: 'WebSocket' });
   }
 
   /**
    * 处理连接关闭
    */
   private handleClose(): void {
-    console.log('WebSocket connection closed');
+    logger.info('connection closed', { subModule: 'WebSocket' });
     this.stopHeartbeat();
 
     // 取消所有订阅
@@ -355,7 +356,7 @@ export class WebSocketHandler {
    * 处理连接错误
    */
   private handleError(error: Event): void {
-    console.error('WebSocket error:', error);
+    logger.error(`error: ${error}`, { subModule: 'WebSocket' });
   }
 
   /**

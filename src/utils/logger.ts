@@ -3,6 +3,10 @@ import path from 'path';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+export interface LogOptions {
+  subModule?: string;
+}
+
 // PID 格式化配置
 const PID_WIDTH = 8;
 
@@ -95,7 +99,7 @@ export class Logger {
     return `PID:${pidStr.padStart(PID_WIDTH, ' ')}`;
   }
 
-  private createColoredLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string): string {
+  private createColoredLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string, subModule?: string): string {
     const timestamp = this.formatTimestamp(new Date());
     const processPid = pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
@@ -110,20 +114,37 @@ export class Logger {
     const pidColor = '\x1b[36m';
     // 服务器名称或 mcp-hub - 淡青色（亮青色）
     const serverColor = '\x1b[96m';
+    // 子模块 - 淡紫色
+    const subModuleColor = '\x1b[95m';
     // 重置颜色
     const resetColor = this.getResetColor();
 
-    return `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${actualServerName}]${resetColor} ${message}`;
+    let result = `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${actualServerName}]${resetColor}`;
+
+    if (subModule) {
+      result += ` ${subModuleColor}[${subModule}]${resetColor}`;
+    }
+
+    result += ` ${message}`;
+    return result;
   }
 
-  private createLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string): string {
+  private createLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string, subModule?: string): string {
     const timestamp = this.formatTimestamp(new Date());
     const processPid = pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     // 对于纯文本日志，PID 格式保持简单
     const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
     const serverIdentifier = serverName || 'mcp-hub';
-    return `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [${serverIdentifier}] ${message}`;
+
+    let result = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [${serverIdentifier}]`;
+
+    if (subModule) {
+      result += ` [${subModule}]`;
+    }
+
+    result += ` ${message}`;
+    return result;
   }
 
   // 辅助方法：格式化错误对象
@@ -143,7 +164,7 @@ export class Logger {
   }
 
   // 通用日志方法，消除代码重复
-  private log(level: LogLevel, message: string, args: unknown[]): void {
+  private log(level: LogLevel, message: string, args: unknown[], options?: LogOptions): void {
     if (!this.shouldLog(level)) {
       return;
     }
@@ -155,8 +176,8 @@ export class Logger {
       fullMessage = `${message} ${formattedArgs}`;
     }
 
-    const coloredLogMsg = this.createColoredLogMessage(level, fullMessage);
-    const plainLogMsg = this.createLogMessage(level, fullMessage, undefined);
+    const coloredLogMsg = this.createColoredLogMessage(level, fullMessage, undefined, undefined, options?.subModule);
+    const plainLogMsg = this.createLogMessage(level, fullMessage, undefined, undefined, options?.subModule);
 
     // 控制台输出
     if (this.useStderr) {
@@ -184,20 +205,20 @@ export class Logger {
     }
   }
 
-  debug(message: string, ...args: unknown[]): void {
-    this.log('debug', message, args);
+  debug(message: string, options?: LogOptions, ...args: unknown[]): void {
+    this.log('debug', message, args, options);
   }
 
-  info(message: string, ...args: unknown[]): void {
-    this.log('info', message, args);
+  info(message: string, options?: LogOptions, ...args: unknown[]): void {
+    this.log('info', message, args, options);
   }
 
-  warn(message: string, ...args: unknown[]): void {
-    this.log('warn', message, args);
+  warn(message: string, options?: LogOptions, ...args: unknown[]): void {
+    this.log('warn', message, args, options);
   }
 
-  error(message: string, ...args: unknown[]): void {
-    this.log('error', message, args);
+  error(message: string, options?: LogOptions, ...args: unknown[]): void {
+    this.log('error', message, args, options);
   }
 
   setLevel(level: LogLevel): void {
@@ -205,10 +226,10 @@ export class Logger {
   }
 
   // 专门用于MCP Server日志的方法
-  serverLog(level: LogLevel, serverName: string, message: string, pid?: number): void {
+  serverLog(level: LogLevel, serverName: string, message: string, pid?: number, subModule?: string): void {
     if (this.shouldLog(level)) {
-      const coloredLogMsg = this.createColoredLogMessage(level, message, pid, serverName);
-      const plainLogMsg = this.createLogMessage(level, message, pid, serverName);
+      const coloredLogMsg = this.createColoredLogMessage(level, message, pid, serverName, subModule);
+      const plainLogMsg = this.createLogMessage(level, message, pid, serverName, subModule);
 
       console.info(coloredLogMsg);
 
