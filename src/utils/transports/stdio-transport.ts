@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@utils/logger.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {

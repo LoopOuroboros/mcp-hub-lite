@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { restartServer } from '../server.js';
+import { restartServer } from '@cli/server.js';
 
 export const restartCommand = new Command('restart')
   .description('Restart the MCP Hub Lite server')

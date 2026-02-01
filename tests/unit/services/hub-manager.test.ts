@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Fastify from 'fastify';
-import { webServerRoutes } from '../../../src/api/web/servers.js';
-import { hubManager } from '../../../src/services/hub-manager.service.js';
+import { webServerRoutes } from '@api/web/servers.js';
+import { hubManager } from '@services/hub-manager.service.js';
 
 // Mock hubManager
-vi.mock('../../../src/services/hub-manager.service.js', () => ({
+vi.mock('@services/hub-manager.service.js', () => ({
   hubManager: {
     getAllServers: vi.fn(),
     getServerById: vi.fn(),

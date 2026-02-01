@@ -1,6 +1,6 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from './transport.interface.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@utils/logger.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { URL } from 'url';
 

@@ -1,7 +1,7 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { gateway } from './gateway.service.js';
-import { logger } from '../utils/logger.js';
+import { gateway } from '@services/gateway.service.js';
+import { logger } from '@utils/logger.js';
 
 interface Session {
     server: McpServer;

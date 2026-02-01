@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ToolCallDialog from '../../../../frontend/src/components/ToolCallDialog.vue'
+import ToolCallDialog from '@frontend/components/ToolCallDialog.vue'
 
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({

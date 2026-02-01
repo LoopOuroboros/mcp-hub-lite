@@ -28,19 +28,19 @@ const mocks = vi.hoisted(() => {
 });
 
 // Mock dependencies
-vi.mock('../../../src/services/client-tracker.service.js', () => ({
+vi.mock('@services/client-tracker.service.js', () => ({
   clientTrackerService: {
     updateClientRoots: mocks.updateClientRoots,
     getClients: vi.fn().mockReturnValue([])
   }
 }));
 
-vi.mock('../../../src/utils/request-context.js', () => ({
+vi.mock('@utils/request-context.js', () => ({
   getClientContext: mocks.getClientContext,
   getClientCwd: vi.fn()
 }));
 
-vi.mock('../../../src/utils/logger.js', () => ({
+vi.mock('@utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -49,7 +49,7 @@ vi.mock('../../../src/utils/logger.js', () => ({
   }
 }));
 
-vi.mock('../../../src/services/mcp-connection-manager.js', () => ({
+vi.mock('@services/mcp-connection-manager.js', () => ({
   mcpConnectionManager: {
     getAllTools: mocks.getAllTools,
     callTool: mocks.callTool,
@@ -59,14 +59,14 @@ vi.mock('../../../src/services/mcp-connection-manager.js', () => ({
   }
 }));
 
-vi.mock('../../../src/services/hub-manager.service.js', () => ({
+vi.mock('@services/hub-manager.service.js', () => ({
   hubManager: {
     getServerById: mocks.getServerById,
     getAllServers: vi.fn().mockReturnValue([{ id: 'server1', name: 'Test Server' }]),
   }
 }));
 
-vi.mock('../../../src/services/hub-tools.service.js', () => ({
+vi.mock('@services/hub-tools.service.js', () => ({
   hubToolsService: {
     listAllToolsInServer: mocks.listAllToolsInServer,
     findToolsInServer: mocks.findToolsInServer,
@@ -100,7 +100,7 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 });
 
 // Import after mocks
-import { GatewayService } from '../../../src/services/gateway.service.js';
+import { GatewayService } from '@services/gateway.service.js';
 // Don't import actual mcpConnectionManager, use the mocked version through vi.mocked
 
 

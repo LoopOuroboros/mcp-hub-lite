@@ -1,5 +1,5 @@
-import { McpTool } from '../models/tool.model.js';
-import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { McpTool } from '@models/tool.model.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 
 export interface SearchResult {
   tool: McpTool;

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useServerStore } from '../../../../frontend/src/stores/server'
+import { useServerStore } from '@frontend/stores/server'
 
 // Mock the http module at the top level
-vi.mock('../../../../frontend/src/utils/http', () => ({
+vi.mock('@frontend/utils/http', () => ({
   http: {
     get: vi.fn(),
     post: vi.fn(),
@@ -55,7 +55,7 @@ describe('Server Store', () => {
     const mockStatuses = [{ id: 'instance-1', status: { connected: true, toolsCount: 2, resourcesCount: 1 } }]
 
     // Import the actual http module to access its methods
-    const { http } = await import('../../../../frontend/src/utils/http')
+    const { http } = await import('@frontend/utils/http')
 
     // Mock the implementations
     ;(http.get as any).mockImplementation((url: string) => {
@@ -77,7 +77,7 @@ describe('Server Store', () => {
   it('should handle fetch servers error', async () => {
     const store = useServerStore()
 
-    const { http } = await import('../../../../frontend/src/utils/http')
+    const { http } = await import('@frontend/utils/http')
     ;(http.get as any).mockImplementation(() => Promise.reject(new Error('Network error')))
 
     await store.fetchServers()
@@ -89,7 +89,7 @@ describe('Server Store', () => {
   it('should add server successfully', async () => {
     const store = useServerStore()
 
-    const { http } = await import('../../../../frontend/src/utils/http')
+    const { http } = await import('@frontend/utils/http')
 
     // Mock the HTTP responses
     ;(http.post as any).mockImplementation((url: string) => {
@@ -119,7 +119,7 @@ describe('Server Store', () => {
   it('should handle add server error', async () => {
     const store = useServerStore()
 
-    const { http } = await import('../../../../frontend/src/utils/http')
+    const { http } = await import('@frontend/utils/http')
     ;(http.post as any).mockImplementation(() => Promise.reject(new Error('Server error')))
 
     await expect(store.addServer({ name: 'test', config: { type: 'stdio' } }))

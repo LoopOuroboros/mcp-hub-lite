@@ -5,7 +5,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { PidManager } from '../pid/manager.js';
+import { PidManager } from '@pid/manager.js';
 
 const execAsync = promisify(exec);
 

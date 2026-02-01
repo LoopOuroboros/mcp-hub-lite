@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { buildApp } from '../../../src/app.js';
+import { buildApp } from '@src/app.js';
 
 describe('MCP Protocol Contract - initialize', () => {
   let app: FastifyInstance;

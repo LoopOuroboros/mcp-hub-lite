@@ -1,11 +1,11 @@
-import { McpTool } from '../../models/tool.model.js';
-import { mcpConnectionManager } from '../mcp-connection-manager.js';
-import { hubManager } from '../hub-manager.service.js';
+import { McpTool } from '@models/tool.model.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { hubManager } from '@services/hub-manager.service.js';
 import { SearchResult, SearchOptions } from './types.js';
 import { SearchScorer } from './search-scorer.js';
 import { SearchCacheService } from './search-cache.js';
-import { eventBus, EventTypes } from '../event-bus.service.js';
-import { logger } from '../../utils/logger.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
+import { logger } from '@utils/logger.js';
 
 export class SearchCoreService {
   private cacheService = new SearchCacheService();

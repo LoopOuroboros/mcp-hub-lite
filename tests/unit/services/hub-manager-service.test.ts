@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HubManagerService } from '../../../src/services/hub-manager.service.js';
-import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
-import { configManager } from '../../../src/config/config-manager.js';
+import { HubManagerService } from '@services/hub-manager.service.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { configManager } from '@config/config-manager.js';
 
 // Mock dependencies
-vi.mock('../../../src/config/config-manager.js', () => ({
+vi.mock('@config/config-manager.js', () => ({
   ConfigManager: vi.fn(),
   configManager: {
     addServer: vi.fn(),
@@ -20,14 +20,14 @@ vi.mock('../../../src/config/config-manager.js', () => ({
   }
 }));
 
-vi.mock('../../../src/services/mcp-connection-manager.js', () => ({
+vi.mock('@services/mcp-connection-manager.js', () => ({
   mcpConnectionManager: {
     connect: vi.fn(),
     disconnect: vi.fn(() => Promise.resolve()),
   }
 }));
 
-vi.mock('../../../src/utils/logger.js', () => ({
+vi.mock('@utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

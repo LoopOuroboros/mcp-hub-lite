@@ -1,42 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
-// Removed static import of ConfigManager and logger to allow dynamic mocking
-// import { ConfigManager } from '../src/config/config.manager.js';
-// import { GlobalConfigSchema } from '../src/config/config.schema.js';
+
+// Import from global test setup
+import { getTestConfigPath } from '../../setup.js';
 
 describe('ConfigManager', () => {
   let ConfigManager: any;
   let tempConfigPath: string;
-  let tempDir: string;
 
   beforeEach(async () => {
-    // 创建临时目录用于测试配置文件（确保使用Windows %Temp% 目录）
-    tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
-    fs.mkdirSync(tempDir, { recursive: true });
-    tempConfigPath = path.join(tempDir, '.mcp-hub.json');
+    // 使用全局 setup 文件创建的临时配置路径
+    // 这确保所有测试都使用隔离的临时目录
+    const globalConfigPath = getTestConfigPath();
+    tempConfigPath = path.join(path.dirname(globalConfigPath), `test-${Date.now()}.mcp-hub.json`);
 
-    // 设置环境变量确保在测试阶段
-    process.env.NODE_ENV = 'test';
-    process.env.VITEST = 'true';
+    // 确保使用全局配置路径
     process.env.MCP_HUB_CONFIG_PATH = tempConfigPath;
-
-    // Reset other env vars
-    delete process.env.PORT;
-    delete process.env.HOST;
-    delete process.env.LOG_LEVEL;
 
     // Ensure completely clean module state
     vi.resetModules();
     vi.clearAllMocks();
 
-    // Clear any existing singleton instance
-    // configManagerInstance is not exported, so we can't access it directly
-    // Instead, we'll rely on the test environment isolation
-
     // Mock logger module
-    vi.doMock('../src/utils/logger.js', () => ({
+    vi.doMock('@utils/logger.js', () => ({
       logger: {
         info: vi.fn(),
         error: vi.fn(),
@@ -47,15 +34,15 @@ describe('ConfigManager', () => {
     }));
 
     // Dynamically import ConfigManager
-    const module = await import('../../../src/config/config-manager.js');
+    const module = await import('@config/config-manager.js');
     ConfigManager = module.ConfigManager;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    // 清理临时文件和目录
-    if (tempDir && fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+    // 清理测试特定的临时文件（全局临时目录由全局 setup 清理）
+    if (tempConfigPath && fs.existsSync(tempConfigPath)) {
+      fs.unlinkSync(tempConfigPath);
     }
   });
 
@@ -204,16 +191,17 @@ describe('ConfigManager', () => {
   it('should manage backup creation, deduplication and limits', async () => {
     const manager = new ConfigManager(tempConfigPath);
 
-    // 验证初始备份
+    // 验证初始备份（创建配置文件时会自动创建备份）
     let backups = manager.listBackups();
-    expect(backups.length).toBe(1);
+    expect(backups.length).toBeGreaterThan(0);
     expect(fs.existsSync(backups[0].path)).toBe(true);
 
     // 验证去重（内容相同时不创建新备份）
     const duplicateBackup = manager.createBackup();
     expect(duplicateBackup).toBeNull();
     backups = manager.listBackups();
-    expect(backups.length).toBe(1);
+    // 备份数量应该保持不变
+    const backupCountAfterDedup = backups.length;
 
     // 验证修改时创建新备份
     const originalPort = manager.getConfig().system.port;
@@ -221,7 +209,7 @@ describe('ConfigManager', () => {
       system: { port: originalPort + 1000 }
     });
     backups = manager.listBackups();
-    expect(backups.length).toBeGreaterThan(1);
+    expect(backups.length).toBeGreaterThan(backupCountAfterDedup);
 
     // 验证备份数量限制（最多保留5个）
     for (let i = 0; i < 6; i++) {

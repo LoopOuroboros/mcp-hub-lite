@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { MCPErrorHandler, MCPError, MCPHubLiteErrorMap, MCPErrorsMiddleware } from '../../../src/utils/mcp-error-handler.js';
-import { CMDError } from '../../../src/models/types.js';
+import { MCPErrorHandler, MCPError, MCPHubLiteErrorMap, MCPErrorsMiddleware } from '@utils/mcp-error-handler.js';
+import { CMDError } from '@models/types.js';
 
 describe('MCPErrorHandler', () => {
   describe('toMCPError', () => {

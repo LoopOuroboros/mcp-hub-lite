@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { stopServer } from '../server.js';
+import { stopServer } from '@cli/server.js';
 
 export const stopCommand = new Command('stop')
   .description('Stop the MCP Hub Lite server')

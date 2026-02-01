@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { logStorage } from '../../services/log-storage.service.js';
+import { logStorage } from '@services/log-storage.service.js';
 
 /**
  * Web API routes for server logs

@@ -1,13 +1,13 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { TransportFactory } from '../utils/transports/transport-factory.js';
-import { logger } from '../utils/logger.js';
-import { withSpan, createMcpSpanOptions } from '../utils/index.js';
-import { McpTool } from '../models/tool.model.js';
-import { McpResource } from '../models/resource.model.js';
-import { logStorage } from './log-storage.service.js';
-import { eventBus, EventTypes } from './event-bus.service.js';
-import { hubManager } from './hub-manager.service.js';
-import { MCP_HUB_LITE_SERVER } from '../models/system-tools.constants.js';
+import { TransportFactory } from '@utils/transports/transport-factory.js';
+import { logger } from '@utils/logger.js';
+import { withSpan, createMcpSpanOptions } from '@utils/index.js';
+import { McpTool } from '@models/tool.model.js';
+import { McpResource } from '@models/resource.model.js';
+import { logStorage } from '@services/log-storage.service.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
+import { hubManager } from '@services/hub-manager.service.js';
+import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 
 export interface ServerStatus {
   connected: boolean;

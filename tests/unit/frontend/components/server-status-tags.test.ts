@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ServerStatusTags from '../../../../frontend/src/components/ServerStatusTags.vue'
-import i18n from '../../../../frontend/src/i18n/index'
+import ServerStatusTags from '@frontend/components/ServerStatusTags.vue'
+import i18n from '@frontend/i18n/index'
 
 describe('ServerStatusTags', () => {
   const mockServer = {

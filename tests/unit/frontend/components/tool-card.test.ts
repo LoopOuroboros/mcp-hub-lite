@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ToolCard from '../../../../frontend/src/components/ToolCard.vue'
+import ToolCard from '@frontend/components/ToolCard.vue'
 
 describe('ToolCard Component', () => {
   it('should render title correctly', () => {

@@ -1,5 +1,5 @@
-import { McpTool } from '../../models/tool.model.js';
-import { logger } from '../../utils/logger.js';
+import { McpTool } from '@models/tool.model.js';
+import { logger } from '@utils/logger.js';
 
 export class SearchCacheService {
   private cache: McpTool[] | null = null;

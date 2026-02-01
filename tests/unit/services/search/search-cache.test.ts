@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SearchCacheService } from '../../../../src/services/search/search-cache.js';
-import { McpTool } from '../../../../src/models/tool.model.js';
+import { SearchCacheService } from '@services/search/search-cache.js';
+import { McpTool } from '@models/tool.model.js';
 
 describe('SearchCacheService', () => {
   const cacheService = new SearchCacheService();

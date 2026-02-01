@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { clientTrackerService } from '../../services/client-tracker.service.js';
-import { logger } from '../../utils/logger.js';
+import { clientTrackerService } from '@services/client-tracker.service.js';
+import { logger } from '@utils/logger.js';
 
 export async function webClientRoutes(fastify: FastifyInstance) {
   fastify.get('/api/clients', async (_request, reply) => {

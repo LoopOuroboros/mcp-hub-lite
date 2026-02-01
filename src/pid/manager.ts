@@ -3,7 +3,7 @@
  * 职责：进程生命周期管理、信号处理
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@utils/logger.js';
 import { writePidFile, readPidFile, removePidFile, pidFileExists } from './file.js';
 import type { PidFileOptions } from './types.js';
 

@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { listServers } from '../server.js';
+import { listServers } from '@cli/server.js';
 
 export const listCommand = new Command('list')
   .description('List all configured MCP servers')

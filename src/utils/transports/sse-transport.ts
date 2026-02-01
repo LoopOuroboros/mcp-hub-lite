@@ -1,6 +1,6 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from './transport.interface.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@utils/logger.js';
 
 // Use EventSource from the 'eventsource' package for Node.js compatibility
 import { EventSource } from 'eventsource';

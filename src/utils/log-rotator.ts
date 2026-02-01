@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { configManager } from '../config/config-manager.js';
+import { configManager } from '@config/config-manager.js';
 
 /**
  * Log Rotator for MCP Hub Lite

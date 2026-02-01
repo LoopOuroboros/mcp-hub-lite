@@ -3,9 +3,9 @@
  * Handles start, stop, status, restart operations
  */
 
-import { buildApp } from '../app.js';
-import { PidManager } from '../pid/manager.js';
-import { hubManager } from '../services/hub-manager.service.js';
+import { buildApp } from '@src/app.js';
+import { PidManager } from '@pid/manager.js';
+import { hubManager } from '@services/hub-manager.service.js';
 
 interface ServerOptions {
   port: number;

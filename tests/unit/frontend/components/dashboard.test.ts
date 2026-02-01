@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Dashboard from '../../../../frontend/src/components/Dashboard.vue'
+import Dashboard from '@frontend/components/Dashboard.vue'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Mock the stores
@@ -15,11 +15,11 @@ const mockServerStore = {
   fetchAllLogs: vi.fn()
 }
 
-vi.mock('../../../../frontend/src/stores/server', () => ({
+vi.mock('@frontend/stores/server', () => ({
   useServerStore: () => mockServerStore
 }))
 
-vi.mock('../../../../frontend/src/stores/websocket', () => ({
+vi.mock('@frontend/stores/websocket', () => ({
   useWebSocketStore: () => ({})
 }))
 

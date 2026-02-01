@@ -1,5 +1,5 @@
-import { ConfigManager, configManager, McpServerConfig, ServerInstanceConfig } from '../config/config-manager.js';
-import { logger } from '../utils/logger.js';
+import { ConfigManager, configManager, McpServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
+import { logger } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 

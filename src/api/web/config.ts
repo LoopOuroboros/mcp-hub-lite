@@ -4,8 +4,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { configManager } from '../../config/config-manager.js';
-import { eventBus, EventTypes } from '../../services/event-bus.service.js';
+import { configManager } from '@config/config-manager.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
 
 export async function configRoutes(fastify: FastifyInstance) {
   // GET /web/config - 获取当前配置

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { GatewayService } from '../../../src/services/gateway.service.js';
+import { GatewayService } from '@services/gateway.service.js';
 
 describe('GatewayService Logging Helpers', () => {
   // Access private methods using any for testing

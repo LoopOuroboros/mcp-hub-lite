@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { hubManager } from '../../services/hub-manager.service.js';
-import { McpServerConfigSchema, ServerInstanceConfigSchema } from '../../config/config.schema.js';
-import { logger } from '../../utils/logger.js';
+import { hubManager } from '@services/hub-manager.service.js';
+import { McpServerConfigSchema, ServerInstanceConfigSchema } from '@config/config.schema.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * Web API routes for server management

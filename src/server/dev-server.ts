@@ -1,9 +1,9 @@
-import { buildApp } from '../app.js';
-import { configManager } from '../config/config-manager.js';
-import { logger } from '../utils/logger.js';
-import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
-import { PidManager } from '../pid/manager.js';
-import { telemetryManager } from '../utils/telemetry/index.js';
+import { buildApp } from '@src/app.js';
+import { configManager } from '@config/config-manager.js';
+import { logger } from '@utils/logger.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { PidManager } from '@pid/manager.js';
+import { telemetryManager } from '@utils/telemetry/index.js';
 
 // Enable dev logging to file
 logger.enableDevLog();

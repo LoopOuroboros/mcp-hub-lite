@@ -1,10 +1,10 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
-import { McpTool } from '../models/tool.model.js';
-import type { McpServerConfig } from '../config/config.schema.js';
+import { McpTool } from '@models/tool.model.js';
+import type { McpServerConfig } from '@config/config.schema.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@utils/logger.js';
 import {
   SYSTEM_TOOL_NAMES,
   SystemToolName,
@@ -16,7 +16,7 @@ import {
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
   MCP_HUB_LITE_SERVER
-} from '../models/system-tools.constants.js';
+} from '@models/system-tools.constants.js';
 
 // 请求选项接口
 interface RequestOptions {

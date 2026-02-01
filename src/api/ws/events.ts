@@ -6,8 +6,8 @@
 import type { FastifyInstance } from 'fastify';
 import fastifyWebSocket from '@fastify/websocket';
 import { WebSocketHandler } from './ws-handler.js';
-import { eventBus } from '../../services/event-bus.service.js';
-import { logger } from '../../utils/logger.js';
+import { eventBus } from '@services/event-bus.service.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * WebSocket 路由配置

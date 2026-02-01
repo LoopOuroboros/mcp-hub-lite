@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { getServerStatus } from '../server.js';
+import { getServerStatus } from '@cli/server.js';
 
 export const statusCommand = new Command('status')
   .description('Get the status of MCP Hub Lite server')

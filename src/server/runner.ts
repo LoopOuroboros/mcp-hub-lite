@@ -1,11 +1,11 @@
-import { buildApp } from '../app.js';
-import { configManager } from '../config/config-manager.js';
-import { logger } from '../utils/logger.js';
-import { telemetryManager } from '../utils/telemetry/index.js';
-import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
-import { gateway } from '../services/gateway.service.js';
-import { PidManager } from '../pid/manager.js';
-import { checkPort } from '../utils/port-checker.js';
+import { buildApp } from '@src/app.js';
+import { configManager } from '@config/config-manager.js';
+import { logger } from '@utils/logger.js';
+import { telemetryManager } from '@utils/telemetry/index.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { gateway } from '@services/gateway.service.js';
+import { PidManager } from '@pid/manager.js';
+import { checkPort } from '@utils/port-checker.js';
 
 export async function runServer(options: { stdio?: boolean, port?: number, host?: string } = {}) {
   try {

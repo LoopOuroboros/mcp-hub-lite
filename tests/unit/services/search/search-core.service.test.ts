@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SearchCoreService } from '../../../../src/services/search/search-core.service.js';
-import { McpTool } from '../../../../src/models/tool.model.js';
+import { SearchCoreService } from '@services/search/search-core.service.js';
+import { McpTool } from '@models/tool.model.js';
 
 // 创建模拟工具数据
 const mockTools: McpTool[] = [

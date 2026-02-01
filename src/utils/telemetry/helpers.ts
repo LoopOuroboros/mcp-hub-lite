@@ -1,6 +1,6 @@
 import { trace, Span, SpanOptions } from '@opentelemetry/api';
-import { telemetryManager } from './index.js';
-import { logger } from '../logger.js';
+import { telemetryManager } from '@utils/telemetry/index.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * Helper function to create and manage spans with automatic error handling

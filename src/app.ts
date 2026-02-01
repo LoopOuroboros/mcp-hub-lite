@@ -4,20 +4,20 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // MCP Protocol Routes
-import { mcpGatewayRoutes } from './api/mcp/gateway.js';
+import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
 
 // Web API Routes
-import { webServerRoutes } from './api/web/servers.js';
-import { webSearchRoutes } from './api/web/search.js';
-import { webHealthRoutes } from './api/web/health.js';
-import { webMcpStatusRoutes } from './api/web/mcp-status.js';
-import { configRoutes } from './api/web/config.js';
-import { webLogRoutes } from './api/web/logs.js';
-import { webHubToolsRoutes } from './api/web/hub-tools.js';
-import { webClientRoutes } from './api/web/clients.js';
+import { webServerRoutes } from '@api/web/servers.js';
+import { webSearchRoutes } from '@api/web/search.js';
+import { webHealthRoutes } from '@api/web/health.js';
+import { webMcpStatusRoutes } from '@api/web/mcp-status.js';
+import { configRoutes } from '@api/web/config.js';
+import { webLogRoutes } from '@api/web/logs.js';
+import { webHubToolsRoutes } from '@api/web/hub-tools.js';
+import { webClientRoutes } from '@api/web/clients.js';
 
 // WebSocket Routes
-import { webSocketRoutes } from './api/ws/events.js';
+import { webSocketRoutes } from '@api/ws/events.js';
 
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { LogRotator } from '../../../src/utils/log-rotator.js';
-import { configManager } from '../../../src/config/config-manager.js';
+import { LogRotator } from '@utils/log-rotator.js';
+import { configManager } from '@config/config-manager.js';
 
 // Mock configManager
-vi.mock('../../../src/config/config-manager.js', () => ({
+vi.mock('@config/config-manager.js', () => ({
   configManager: {
     getConfig: vi.fn()
   }

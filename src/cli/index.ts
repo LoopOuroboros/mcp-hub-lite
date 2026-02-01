@@ -6,12 +6,12 @@
  */
 
 import { Command } from 'commander';
-import { startCommand } from './commands/start.js';
-import { stopCommand } from './commands/stop.js';
-import { statusCommand } from './commands/status.js';
-import { uiCommand } from './commands/ui.js';
-import { listCommand } from './commands/list.js';
-import { restartCommand } from './commands/restart.js';
+import { startCommand } from '@cli/commands/start.js';
+import { stopCommand } from '@cli/commands/stop.js';
+import { statusCommand } from '@cli/commands/status.js';
+import { uiCommand } from '@cli/commands/ui.js';
+import { listCommand } from '@cli/commands/list.js';
+import { restartCommand } from '@cli/commands/restart.js';
 
 const program = new Command();
 

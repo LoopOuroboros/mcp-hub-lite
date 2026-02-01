@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { searchCoreService } from '../../services/search/search-core.service.js';
-import type { SearchOptions } from '../../services/search/types.js';
+import { searchCoreService } from '@services/search/search-core.service.js';
+import type { SearchOptions } from '@services/search/types.js';
 
 /**
  * Web API routes for tool search

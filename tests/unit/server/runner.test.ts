@@ -1,19 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { runServer } from '../../../src/server/runner.js';
-import { buildApp } from '../../../src/app.js';
-import { configManager } from '../../../src/config/config-manager.js';
-import { logger } from '../../../src/utils/logger.js';
-import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
-import { gateway } from '../../../src/services/gateway.service.js';
-import { PidManager } from '../../../src/pid/manager.js';
-import { checkPort } from '../../../src/utils/port-checker.js';
+import { runServer } from '@server/runner.js';
+import { buildApp } from '@src/app.js';
+import { configManager } from '@config/config-manager.js';
+import { logger } from '@utils/logger.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { gateway } from '@services/gateway.service.js';
+import { PidManager } from '@pid/manager.js';
+import { checkPort } from '@utils/port-checker.js';
 
 // Mock all dependencies
-vi.mock('../../../src/app.js', () => ({
+vi.mock('@src/app.js', () => ({
   buildApp: vi.fn()
 }));
 
-vi.mock('../../../src/config/config-manager.js', () => ({
+vi.mock('@config/config-manager.js', () => ({
   configManager: {
     getConfig: vi.fn(),
     getServers: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('../../../src/config/config-manager.js', () => ({
   }
 }));
 
-vi.mock('../../../src/utils/logger.js', () => ({
+vi.mock('@utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -32,27 +32,27 @@ vi.mock('../../../src/utils/logger.js', () => ({
   }
 }));
 
-vi.mock('../../../src/services/mcp-connection-manager.js', () => ({
+vi.mock('@services/mcp-connection-manager.js', () => ({
   mcpConnectionManager: {
     connect: vi.fn(),
     disconnectAll: vi.fn()
   }
 }));
 
-vi.mock('../../../src/services/gateway.service.js', () => ({
+vi.mock('@services/gateway.service.js', () => ({
   gateway: {
     start: vi.fn()
   }
 }));
 
-vi.mock('../../../src/pid/manager.js', () => ({
+vi.mock('@pid/manager.js', () => ({
   PidManager: {
     writePid: vi.fn(),
     removePid: vi.fn()
   }
 }));
 
-vi.mock('../../../src/utils/port-checker.js', () => ({
+vi.mock('@utils/port-checker.js', () => ({
   checkPort: vi.fn()
 }));
 

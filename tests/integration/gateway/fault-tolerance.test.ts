@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
-import { hubManager } from '../../../src/services/hub-manager.service.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { hubManager } from '@services/hub-manager.service.js';
 
 // We need to mock BEFORE import
 const mockConnect = vi.fn();

@@ -25,8 +25,8 @@ import {
 import {
   FastifyInstrumentation
 } from '@opentelemetry/instrumentation-fastify';
-import type { SystemConfig } from '../../config/config.schema.js';
-import { logger } from '../logger.js';
+import type { SystemConfig } from '@config/config.schema.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * OpenTelemetry Tracing Configuration and Initialization

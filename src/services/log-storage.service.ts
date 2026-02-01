@@ -1,5 +1,5 @@
-import { logger } from '../utils/logger.js';
-import { eventBus, EventTypes } from './event-bus.service.js';
+import { logger } from '@utils/logger.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { requestContext, getClientContext, getClientCwd } from '../../../src/utils/request-context.js';
+import { requestContext, getClientContext, getClientCwd } from '@utils/request-context.js';
 
 describe('Request Context', () => {
   beforeEach(() => {

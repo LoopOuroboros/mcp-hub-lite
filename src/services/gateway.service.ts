@@ -3,11 +3,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ListRootsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
-import { logger, withSpan, createMcpSpanOptions } from "../utils/index.js";
+import { logger, withSpan, createMcpSpanOptions } from "@utils/index.js";
 import { z } from "zod";
 import { searchCoreService } from "./search/search-core.service.js";
 import { hubToolsService } from "./hub-tools.service.js";
-import { getClientCwd, getClientContext } from "../utils/request-context.js";
+import { getClientCwd, getClientContext } from "@utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
 import {
   SYSTEM_TOOL_NAMES,
@@ -20,7 +20,7 @@ import {
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
   MCP_HUB_LITE_SERVER
-} from "../models/system-tools.constants.js";
+} from "@models/system-tools.constants.js";
 
 export class GatewayService {
   private server: McpServer;

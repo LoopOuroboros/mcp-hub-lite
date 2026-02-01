@@ -5,7 +5,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema } from './config.schema.js';
 import type { McpServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig } from './config.schema.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * 配置文件备份管理器

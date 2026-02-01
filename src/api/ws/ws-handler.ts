@@ -4,9 +4,9 @@
  */
 
 import { WebSocket } from 'ws';
-import { EventTypes } from '../../services/event-bus.service.js';
-import { logStorage } from '../../services/log-storage.service.js';
-import { logger } from '../../utils/logger.js';
+import { EventTypes } from '@services/event-bus.service.js';
+import { logStorage } from '@services/log-storage.service.js';
+import { logger } from '@utils/logger.js';
 
 // 事件类型映射
 const eventTypeMap: Record<string, string> = {

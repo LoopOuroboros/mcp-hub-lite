@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { hubToolsService } from '../../services/hub-tools.service.js';
-import { SystemToolName } from '../../models/system-tools.constants.js';
+import { hubToolsService } from '@services/hub-tools.service.js';
+import { SystemToolName } from '@models/system-tools.constants.js';
 
 // 请求选项接口
 interface RequestOptions {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { SearchScorer } from '../../../../src/services/search/search-scorer.js';
-import { McpTool } from '../../../../src/models/tool.model.js';
+import { SearchScorer } from '@services/search/search-scorer.js';
+import { McpTool } from '@models/tool.model.js';
 
 describe('SearchScorer', () => {
   const scorer = new SearchScorer();

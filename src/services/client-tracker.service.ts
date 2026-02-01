@@ -1,5 +1,5 @@
-import { ClientContext } from '../utils/request-context.js';
-import { logger } from '../utils/logger.js';
+import { ClientContext } from '@utils/request-context.js';
+import { logger } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
 
 export interface ClientInfo extends ClientContext {

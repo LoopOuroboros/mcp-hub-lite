@@ -2,11 +2,11 @@
 import { Command } from 'commander';
 import { runServer } from './server/runner.js';
 import { configManager } from './config/config-manager.js';
-import { PidManager } from './pid/manager.js';
+import { PidManager } from '@pid/manager.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { LogRotator } from './utils/log-rotator.js';
+import { LogRotator } from '@utils/log-rotator.js';
 
 const program = new Command();
 

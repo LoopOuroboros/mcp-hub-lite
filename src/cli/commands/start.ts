@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { startServer } from '../server.js';
-import { parsePort, parseHost, validateConfigPath } from '../parse-args.js';
+import { startServer } from '@cli/server.js';
+import { parsePort, parseHost, validateConfigPath } from '@cli/parse-args.js';
 
 export const startCommand = new Command('start')
   .description('Start the MCP Hub Lite server')

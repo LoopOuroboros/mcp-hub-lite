@@ -1,4 +1,4 @@
-import { McpTool } from '../../models/tool.model.js';
+import { McpTool } from '@models/tool.model.js';
 
 export class SearchScorer {
   scoreTool(tool: McpTool, query: string): number {

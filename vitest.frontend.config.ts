@@ -27,6 +27,9 @@ export default defineConfig({
       '@locales': fileURLToPath(new URL('./frontend/src/locales', import.meta.url)),
       '@composables': fileURLToPath(new URL('./frontend/src/composables', import.meta.url)),
       '@utils': fileURLToPath(new URL('./frontend/src/utils', import.meta.url)),
+
+      // @frontend/* 别名（用于测试文件）
+      '@frontend': fileURLToPath(new URL('./frontend/src', import.meta.url)),
     }
   },
   test: {

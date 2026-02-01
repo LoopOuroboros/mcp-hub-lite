@@ -12,7 +12,19 @@
     "target": "ES2020",
     "downlevelIteration": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["./src/*"],
+      "@api/*": ["./src/api/*"],
+      "@cli/*": ["./src/cli/*"],
+      "@config/*": ["./src/config/*"],
+      "@models/*": ["./src/models/*"],
+      "@pid/*": ["./src/pid/*"],
+      "@services/*": ["./src/services/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@server/*": ["./src/server/*"]
+    }
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"],
   "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"]

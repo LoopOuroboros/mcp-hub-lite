@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { logger } from '../../utils/logger.js';
-import { requestContext, ClientContext } from '../../utils/request-context.js';
-import { clientTrackerService } from '../../services/client-tracker.service.js';
-import { mcpSessionManager } from '../../services/mcp-session-manager.js';
+import { logger } from '@utils/logger.js';
+import { requestContext, ClientContext } from '@utils/request-context.js';
+import { clientTrackerService } from '@services/client-tracker.service.js';
+import { mcpSessionManager } from '@services/mcp-session-manager.js';
 import { randomUUID } from 'crypto';
 
 function extractClientContext(request: any): ClientContext {

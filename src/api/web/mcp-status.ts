@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { hubManager } from '../../services/hub-manager.service.js';
-import { mcpConnectionManager } from '../../services/mcp-connection-manager.js';
-import { logger } from '../../utils/logger.js';
+import { hubManager } from '@services/hub-manager.service.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * Web API routes for MCP connection status

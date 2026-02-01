@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mcpConnectionManager } from '../../../src/services/mcp-connection-manager.js';
-import { simpleSearchService } from '../../../src/services/simple-search.service.js';
-import { hubManager } from '../../../src/services/hub-manager.service.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { simpleSearchService } from '@services/simple-search.service.js';
+import { hubManager } from '@services/hub-manager.service.js';
 
 // Mock SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -27,7 +27,7 @@ vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
   };
 });
 
-import { eventBus, EventTypes } from '../../../src/services/event-bus.service.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
 
 describe('McpConnectionManager', () => {
   const mockServerConfig = {

@@ -9,7 +9,21 @@ if (!existsSync(logDir)) {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@src': resolve(__dirname, './src'),
+      '@api': resolve(__dirname, './src/api'),
+      '@cli': resolve(__dirname, './src/cli'),
+      '@config': resolve(__dirname, './src/config'),
+      '@models': resolve(__dirname, './src/models'),
+      '@pid': resolve(__dirname, './src/pid'),
+      '@services': resolve(__dirname, './src/services'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@server': resolve(__dirname, './src/server')
+    }
+  },
   test: {
+    setupFiles: ['./tests/setup.ts'],
     globals: true,
     environment: 'node',
     reporters: ['default', 'json'],
