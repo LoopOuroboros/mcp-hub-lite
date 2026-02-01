@@ -380,6 +380,9 @@ export class ConfigManager {
         // 迁移旧配置结构到新结构
         const migratedConfig = this.migrateOldConfig(parsedConfig);
         baseConfig = SystemConfigSchema.parse(migratedConfig);
+
+        // 打印系统配置的各子页面参数值
+        this.logConfigSummary(baseConfig);
       } else {
         // Config file doesn't exist, use default
         logger.info(`Config file not found, using default configuration`);
@@ -473,6 +476,38 @@ export class ConfigManager {
   private migrateOldConfig(oldConfig: any): any {
     // 忽略旧配置迁移，当前没有版本发布
     return oldConfig;
+  }
+
+  /**
+   * 打印系统配置摘要
+   */
+  private logConfigSummary(config: SystemConfig): void {
+    // System 配置
+    const system = config.system;
+    logger.info(`[System] host=${system.host}, port=${system.port}, language=${system.language}, theme=${system.theme}`);
+
+    // Logging 配置
+    const logging = system.logging;
+    const rotationInfo = logging.rotation.enabled
+      ? `enabled(maxAge=${logging.rotation.maxAge}, maxSize=${logging.rotation.maxSize}, compress=${logging.rotation.compress})`
+      : 'disabled';
+    logger.info(`[Logging] level=${logging.level}, rotation=${rotationInfo}`);
+
+    // Security 配置
+    const security = config.security;
+    logger.info(`[Security] maxConnections=${security.maxConnections}, maxConcurrentConnections=${security.maxConcurrentConnections}, connectionTimeout=${security.connectionTimeout}ms`);
+
+    // Observability 配置
+    const observability = config.observability;
+    const tracingInfo = observability.tracing.enabled
+      ? `enabled(exporter=${observability.tracing.exporter}, endpoint=${observability.tracing.endpoint}, sampleRate=${observability.tracing.sampleRate})`
+      : 'disabled';
+    logger.info(`[Observability] tracing=${tracingInfo}`);
+
+    // Servers 配置
+    const serverCount = Object.keys(config.servers).length;
+    const enabled = Object.values(config.servers).filter(s => s.enabled).length;
+    logger.info(`[Servers] total=${serverCount}, enabled=${enabled}, disabled=${serverCount - enabled}`);
   }
 
   private reorderServerKeys(server: McpServerConfig): McpServerConfig {

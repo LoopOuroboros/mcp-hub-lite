@@ -3,14 +3,20 @@ import { configManager } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
 import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
 import { PidManager } from '../pid/manager.js';
+import { telemetryManager } from '../utils/telemetry/index.js';
 
 // Enable dev logging to file
 logger.enableDevLog();
 
+let app: any = null;
+
 async function startDevServer() {
   try {
-    const app = await buildApp();
+    app = await buildApp();
     const config = configManager.getConfig();
+
+    // Initialize OpenTelemetry tracing
+    telemetryManager.initialize(config);
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...');
@@ -64,15 +70,29 @@ const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully...`);
   try {
     await mcpConnectionManager.disconnectAll();
+    if (app) {
+      await app.close();
+    }
+    // Shutdown OpenTelemetry gracefully
+    await telemetryManager.shutdown();
+    PidManager.removePid();
+    logger.info('Dev server stopped gracefully');
   } catch (error) {
-    logger.error('Error disconnecting servers:', error);
+    logger.error('Error during shutdown:', error);
+    PidManager.removePid();
   }
   process.exit(0);
 };
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGTERM', () => shutdown('SIGTERM').catch(err => {
+  logger.error('Shutdown failed:', err);
+  process.exit(1);
+}));
 
-process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGINT', () => shutdown('SIGINT').catch(err => {
+  logger.error('Shutdown failed:', err);
+  process.exit(1);
+}));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {

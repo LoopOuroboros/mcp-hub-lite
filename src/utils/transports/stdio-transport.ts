@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger, isToolsListResponse } from '../../utils/logger.js';
+import { logger } from '../../utils/logger.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {
@@ -118,23 +118,8 @@ export class StdioTransport implements Transport {
                 // 转发原始 stdout 数据
                 this.onstdout?.(dataStr);
 
-                // 检查是否为 tools/list 响应，如果是则使用 debug 级别
-                const isToolsListResp = isToolsListResponse(dataStr);
-
-                if (this._serverName) {
-                    if (isToolsListResp) {
-                        logger.serverLog('debug', this._serverName, dataStr.trim(), this._process?.pid);
-                    } else {
-                        logger.serverLog('info', this._serverName, dataStr.trim(), this._process?.pid);
-                    }
-                } else {
-                    if (isToolsListResp) {
-                        logger.serverLog('debug', 'Unknown Server', dataStr.trim(), this._process?.pid);
-                    } else {
-                        logger.serverLog('info', 'Unknown Server', dataStr.trim(), this._process?.pid);
-                    }
-                }
-
+                // 不记录原始的JSON-RPC通信到日志，以避免日志噪音
+                // 只有在开发调试时才需要查看原始通信
                 // 解析 JSON-RPC 消息
                 this._readBuffer.append(chunk);
                 this.processReadBuffer();
@@ -149,10 +134,11 @@ export class StdioTransport implements Transport {
                     const dataStr = chunk.toString('utf8');
                     // 转发原始 stderr 数据
                     this.onstderr?.(dataStr);
+
                     if (this._serverName) {
-                        logger.serverLog('error', this._serverName, dataStr.trim(), this._process?.pid);
+                        logger.serverLog('error', this._serverName, dataStr.trim(), { pid: this._process?.pid });
                     } else {
-                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), this._process?.pid);
+                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), { pid: this._process?.pid });
                     }
                     // 也可以将 stderr 数据写入 PassThrough 流
                     this._stderrStream?.write(chunk);
@@ -162,10 +148,11 @@ export class StdioTransport implements Transport {
                 this._process.stderr.on('data', (chunk: Buffer) => {
                     const dataStr = chunk.toString('utf8');
                     this.onstderr?.(dataStr);
+
                     if (this._serverName) {
-                        logger.serverLog('error', this._serverName, dataStr.trim(), this._process?.pid);
+                        logger.serverLog('error', this._serverName, dataStr.trim(), { pid: this._process?.pid });
                     } else {
-                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), this._process?.pid);
+                        logger.serverLog('error', 'Unknown Server', dataStr.trim(), { pid: this._process?.pid });
                     }
                 });
             }

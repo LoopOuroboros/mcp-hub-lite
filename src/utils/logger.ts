@@ -3,9 +3,15 @@ import path from 'path';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-export interface LogOptions {
+export interface LogContext {
+  pid?: number;
+  serverName?: string;
   subModule?: string;
+  traceId?: string;
+  spanId?: string;
 }
+
+export type LogOptions = Omit<LogContext, 'pid' | 'serverName'>;
 
 // PID 格式化配置
 const PID_WIDTH = 8;
@@ -99,12 +105,12 @@ export class Logger {
     return `PID:${pidStr.padStart(PID_WIDTH, ' ')}`;
   }
 
-  private createColoredLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string, subModule?: string): string {
+  private createColoredLogMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = this.formatTimestamp(new Date());
-    const processPid = pid ?? process.pid;
+    const processPid = context?.pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     const formattedPid = this.formatPid(processPid);
-    const actualServerName = serverName || 'mcp-hub';
+    const actualServerName = context?.serverName || 'mcp-hub';
 
     // 时间戳 - 白色/灰色
     const timestampColor = '\x1b[90m';
@@ -116,31 +122,53 @@ export class Logger {
     const serverColor = '\x1b[96m';
     // 子模块 - 淡紫色
     const subModuleColor = '\x1b[95m';
+    // TraceId 和 SpanId - 黄色
+    const traceColor = '\x1b[33m';
     // 重置颜色
     const resetColor = this.getResetColor();
 
-    let result = `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor} ${serverColor}[${actualServerName}]${resetColor}`;
+    let result = `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor}`;
 
-    if (subModule) {
-      result += ` ${subModuleColor}[${subModule}]${resetColor}`;
+    if (context?.traceId) {
+      result += ` ${traceColor}[TID:${context.traceId}]${resetColor}`;
+    }
+
+    if (context?.spanId) {
+      result += ` ${traceColor}[SID:${context.spanId}]${resetColor}`;
+    }
+
+    result += ` ${serverColor}[${actualServerName}]${resetColor}`;
+
+    if (context?.subModule) {
+      result += ` ${subModuleColor}[${context.subModule}]${resetColor}`;
     }
 
     result += ` ${message}`;
     return result;
   }
 
-  private createLogMessage(level: LogLevel, message: string, pid?: number, serverName?: string, subModule?: string): string {
+  private createLogMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = this.formatTimestamp(new Date());
-    const processPid = pid ?? process.pid;
+    const processPid = context?.pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
     // 对于纯文本日志，PID 格式保持简单
     const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
-    const serverIdentifier = serverName || 'mcp-hub';
+    const serverIdentifier = context?.serverName || 'mcp-hub';
 
-    let result = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}] [${serverIdentifier}]`;
+    let result = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}]`;
 
-    if (subModule) {
-      result += ` [${subModule}]`;
+    if (context?.traceId) {
+      result += ` [TID:${context.traceId}]`;
+    }
+
+    if (context?.spanId) {
+      result += ` [SID:${context.spanId}]`;
+    }
+
+    result += ` [${serverIdentifier}]`;
+
+    if (context?.subModule) {
+      result += ` [${context.subModule}]`;
     }
 
     result += ` ${message}`;
@@ -160,6 +188,27 @@ export class Logger {
       }
       return result;
     }
+    // 对于非 Error 对象的参数，我们需要正确地格式化它们
+    if (typeof error === 'object' && error !== null) {
+      // 检查是否是 LogOptions 对象
+      if ('subModule' in error || 'traceId' in error || 'spanId' in error) {
+        // 如果是 LogOptions 对象，我们应该忽略它，因为它不应该被作为参数输出
+        return '';
+      }
+      // 检查是否是空数组或空对象
+      if (Array.isArray(error) && error.length === 0) {
+        return '';
+      }
+      if (Object.keys(error).length === 0) {
+        return '';
+      }
+      // 对于其他对象，我们应该将其转换为 JSON 字符串
+      try {
+        return JSON.stringify(error);
+      } catch {
+        return String(error);
+      }
+    }
     return String(error);
   }
 
@@ -176,8 +225,15 @@ export class Logger {
       fullMessage = `${message} ${formattedArgs}`;
     }
 
-    const coloredLogMsg = this.createColoredLogMessage(level, fullMessage, undefined, undefined, options?.subModule);
-    const plainLogMsg = this.createLogMessage(level, fullMessage, undefined, undefined, options?.subModule);
+    // 将 LogOptions 转换为 LogContext
+    const context: LogContext | undefined = options ? {
+      subModule: options.subModule,
+      traceId: options.traceId,
+      spanId: options.spanId
+    } : undefined;
+
+    const coloredLogMsg = this.createColoredLogMessage(level, fullMessage, context);
+    const plainLogMsg = this.createLogMessage(level, fullMessage, context);
 
     // 控制台输出
     if (this.useStderr) {
@@ -226,8 +282,11 @@ export class Logger {
   }
 
   private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
-    if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0]) && 'subModule' in args[0]) {
-      return [args[0] as LogOptions, args.slice(1)];
+    if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+      const firstArg = args[0] as any;
+      if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+        return [args[0] as LogOptions, args.slice(1)];
+      }
     }
     return [undefined, args];
   }
@@ -237,12 +296,34 @@ export class Logger {
   }
 
   // 专门用于MCP Server日志的方法
-  serverLog(level: LogLevel, serverName: string, message: string, pid?: number, subModule?: string): void {
+  serverLog(level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>): void {
     if (this.shouldLog(level)) {
-      const coloredLogMsg = this.createColoredLogMessage(level, message, pid, serverName, subModule);
-      const plainLogMsg = this.createLogMessage(level, message, pid, serverName, subModule);
+      const logContext: LogContext = {
+        ...context,
+        serverName
+      };
+      const coloredLogMsg = this.createColoredLogMessage(level, message, logContext);
+      const plainLogMsg = this.createLogMessage(level, message, logContext);
 
-      console.info(coloredLogMsg);
+      // 使用正确的控制台方法
+      if (this.useStderr) {
+        console.error(coloredLogMsg);
+      } else {
+        switch (level) {
+          case 'debug':
+            console.debug(coloredLogMsg);
+            break;
+          case 'info':
+            console.info(coloredLogMsg);
+            break;
+          case 'warn':
+            console.warn(coloredLogMsg);
+            break;
+          case 'error':
+            console.error(coloredLogMsg);
+            break;
+        }
+      }
 
       // 文件输出（如果启用）- 使用纯文本格式
       if (this.logFileStream) {
@@ -259,14 +340,14 @@ export const logger = new Logger();
  * @param coloredMessage 控制台显示的消息（包含 ANSI 颜色代码）
  * @param plainMessage 文件日志的消息（纯文本）
  */
-export function logWithColor(coloredMessage: string, plainMessage: string): void {
+export function logWithColor(coloredMessage: string, plainMessage: string, context?: LogContext): void {
   // 使用新的颜色格式
-  const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage);
+  const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage, context);
   console.info(coloredLogMsg);
 
   // 文件输出（无颜色）- 直接使用 createLogMessage 方法
   if (logger['logFileStream']) {
-    const plainLogMsg = logger['createLogMessage']('info', plainMessage);
+    const plainLogMsg = logger['createLogMessage']('info', plainMessage, context);
     logger['logFileStream'].write(plainLogMsg + '\n');
   }
 }

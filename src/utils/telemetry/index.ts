@@ -70,16 +70,15 @@ export class TelemetryManager {
         [SemanticResourceAttributes.PROCESS_PID]: process.pid
       });
 
+      const spanProcessor = this.createSpanProcessor(tracingConfig);
+
       const providerOptions = {
         resource,
-        sampler: new TraceIdRatioBasedSampler(tracingConfig.sampleRate)
+        sampler: new TraceIdRatioBasedSampler(tracingConfig.sampleRate),
+        spanProcessors: [spanProcessor]
       };
 
       this.provider = new NodeTracerProvider(providerOptions);
-
-      // Create and configure span processor based on exporter type
-      const spanProcessor = this.createSpanProcessor(tracingConfig);
-      this.provider.addSpanProcessor(spanProcessor);
 
       // Register the provider globally
       this.provider.register();

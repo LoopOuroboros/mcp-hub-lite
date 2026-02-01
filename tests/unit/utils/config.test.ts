@@ -27,8 +27,13 @@ describe('ConfigManager', () => {
     delete process.env.HOST;
     delete process.env.LOG_LEVEL;
 
-    // Reset modules to ensure clean mock injection
+    // Ensure completely clean module state
     vi.resetModules();
+    vi.clearAllMocks();
+
+    // Clear any existing singleton instance
+    // configManagerInstance is not exported, so we can't access it directly
+    // Instead, we'll rely on the test environment isolation
 
     // Mock logger module
     vi.doMock('../src/utils/logger.js', () => ({

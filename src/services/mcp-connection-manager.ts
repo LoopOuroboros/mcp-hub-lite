@@ -1,6 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TransportFactory } from '../utils/transports/transport-factory.js';
-import { logger, isToolsListResponse } from '../utils/logger.js';
+import { logger } from '../utils/logger.js';
 import { withSpan, createMcpSpanOptions } from '../utils/index.js';
 import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
@@ -108,28 +108,17 @@ class McpConnectionManager {
 
           // 添加日志监听器
           if ('onstdout' in transport) {
-            // 获取安全的服务器名称（处理可能的 undefined 情况）
-            const safeServerName = server?.name ?? server?.id ?? 'unknown';
-            const safeServerId = server?.id ?? 'unknown';
-
-            transport.onstdout = (data: string) => {
-              // 检查是否为 tools/list 响应
-              const isToolsListResp = isToolsListResponse(data);
-              if (isToolsListResp) {
-                // 完全跳过 tools/list 响应的日志存储，仅在控制台输出 debug 级别日志
-                logger.debug(`[${safeServerName}] [STDOUT] ${data}`);
-                return;
-              }
-              logStorage.append(safeServerId, 'info', `[${safeServerName}] [STDOUT] ${data}`);
+            transport.onstdout = () => {
+              // 不记录原始的JSON-RPC通信到日志或控制台，以避免日志噪音
+              // 只有在开发调试时才需要查看原始通信
             };
           }
           if ('onstderr' in transport) {
-            // 获取安全的服务器名称（处理可能的 undefined 情况）
-            const safeServerName = server?.name ?? server?.id ?? 'unknown';
-            const safeServerId = server?.id ?? 'unknown';
-
             transport.onstderr = (data: string) => {
-              logStorage.append(safeServerId, 'error', `[${safeServerName}] [STDERR] ${data}`);
+              // 使用服务器ID和名称进行日志存储
+              const serverId = server?.id ?? 'unknown';
+              const serverName = server?.name ?? server?.id ?? 'unknown';
+              logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
             };
           }
 
@@ -301,7 +290,19 @@ class McpConnectionManager {
   public async disconnectAll(): Promise<void> {
     logger.info('Disconnecting all servers...');
     const serverIds = Array.from(this.clients.keys());
-    await Promise.all(serverIds.map(id => this.disconnect(id)));
+    logger.info(`Found ${serverIds.length} connected server(s)`);
+
+    const disconnectPromises = serverIds.map(async (id) => {
+      logger.info(`Disconnecting server [${id}]...`);
+      try {
+        await this.disconnect(id);
+        logger.info(`Successfully disconnected server [${id}]`);
+      } catch (error) {
+        logger.error(`Failed to disconnect server [${id}]:`, error);
+      }
+    });
+
+    await Promise.all(disconnectPromises);
     logger.info('All servers disconnected');
   }
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { Logger, LogLevel } from '../../../src/utils/logger.js';
+import { Logger, LogLevel, logWithColor } from '../../../src/utils/logger.js';
 
 describe('Logger', () => {
   let logger: Logger;
@@ -94,7 +94,10 @@ describe('Logger', () => {
 
   it('should create colored log message with server name', () => {
     logger = new Logger();
-    const message = (logger as any).createColoredLogMessage('info', 'test message', 123, 'test-server');
+    const message = (logger as any).createColoredLogMessage('info', 'test message', {
+      pid: 123,
+      serverName: 'test-server'
+    });
 
     // 验证消息包含正确的组件（不验证具体时间戳）
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
@@ -106,7 +109,9 @@ describe('Logger', () => {
 
   it('should create plain log message without server name', () => {
     logger = new Logger();
-    const message = (logger as any).createLogMessage('info', 'test message', 123);
+    const message = (logger as any).createLogMessage('info', 'test message', {
+      pid: 123
+    });
 
     // 验证消息包含正确的组件（不验证具体时间戳）
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
@@ -223,12 +228,123 @@ describe('Logger', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('should create server log messages', () => {
+  it('should include traceId and spanId in log messages when provided', () => {
+    logger = new Logger();
+
+    // 测试彩色日志消息
+    const coloredMessage = (logger as any).createColoredLogMessage('info', 'test message', {
+      pid: 123,
+      serverName: 'test-server',
+      traceId: '1234567890abcdef1234567890abcdef',
+      spanId: 'abcdef1234567890'
+    });
+
+    expect(coloredMessage).toContain('[TID:1234567890abcdef1234567890abcdef]');
+    expect(coloredMessage).toContain('[SID:abcdef1234567890]');
+
+    // 测试纯文本日志消息
+    const plainMessage = (logger as any).createLogMessage('info', 'test message', {
+      pid: 123,
+      serverName: 'test-server',
+      traceId: '1234567890abcdef1234567890abcdef',
+      spanId: 'abcdef1234567890'
+    });
+
+    expect(plainMessage).toContain('[TID:1234567890abcdef1234567890abcdef]');
+    expect(plainMessage).toContain('[SID:abcdef1234567890]');
+  });
+
+  it('should handle log messages without traceId and spanId', () => {
+    logger = new Logger();
+
+    // 测试彩色日志消息
+    const coloredMessage = (logger as any).createColoredLogMessage('info', 'test message', {
+      pid: 123,
+      serverName: 'test-server'
+    });
+
+    expect(coloredMessage).not.toContain('traceId');
+    expect(coloredMessage).not.toContain('spanId');
+
+    // 测试纯文本日志消息
+    const plainMessage = (logger as any).createLogMessage('info', 'test message', {
+      pid: 123,
+      serverName: 'test-server'
+    });
+
+    expect(plainMessage).not.toContain('traceId');
+    expect(plainMessage).not.toContain('spanId');
+  });
+
+  it('should include traceId and spanId in serverLog', () => {
     logger = new Logger('info');
 
     const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
-    logger.serverLog('info', 'test-server', 'server message', 456);
+    logger.serverLog('info', 'test-server', 'server message', {
+      pid: 456,
+      traceId: '1234567890abcdef1234567890abcdef',
+      spanId: 'abcdef1234567890'
+    });
+
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
+
+    // 恢复console方法
+    consoleInfoSpy.mockRestore();
+  });
+
+  it('should respect log level filtering in serverLog method', () => {
+    logger = new Logger('info');
+
+    const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // debug不应该被调用（因为级别是info）
+    logger.serverLog('debug', 'test-server', 'debug message');
+
+    // info、warn、error应该被调用
+    logger.serverLog('info', 'test-server', 'info message');
+    logger.serverLog('warn', 'test-server', 'warn message');
+    logger.serverLog('error', 'test-server', 'error message');
+
+    expect(consoleDebugSpy).not.toHaveBeenCalled();
+    expect(consoleInfoSpy).toHaveBeenCalled();
+    expect(consoleWarnSpy).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    // 恢复console方法
+    consoleDebugSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should handle logWithColor function with traceId and spanId', () => {
+    // 重置 logger 实例以避免测试间的相互影响
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    logWithColor('colored message', 'plain message', {
+      pid: 123,
+      serverName: 'test-server',
+      traceId: '1234567890abcdef1234567890abcdef',
+      spanId: 'abcdef1234567890'
+    });
+
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
+
+    // 恢复console方法
+    consoleInfoSpy.mockRestore();
+  });
+
+  it('should handle logWithColor function without context', () => {
+    // 重置 logger 实例以避免测试间的相互影响
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    logWithColor('colored message', 'plain message');
 
     expect(consoleInfoSpy).toHaveBeenCalled();
 
