@@ -704,7 +704,7 @@ export class ConfigManager {
   /**
    * Update the entire configuration
    */
-  public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
+  public async updateConfig(newConfig: Partial<SystemConfig>, immediate: boolean = true): Promise<void> {
     // 首先检查当前配置和新配置是否都是默认配置
     const currentConfigStr = JSON.stringify(this.config, null, 2);
     const newConfigStr = JSON.stringify(SystemConfigSchema.parse({
@@ -720,8 +720,20 @@ export class ConfigManager {
         ...newConfig
       });
 
-      // 触发延迟保存而不是立即保存
-      this.triggerSaveWithDelay();
+      // 根据参数决定是立即保存还是延迟保存
+      if (immediate) {
+        // 立即保存
+        await this.saveConfig(this.config, false);
+        // 清除待保存状态
+        this.pendingChanges = false;
+        if (this.debounceTimer) {
+          clearTimeout(this.debounceTimer);
+          this.debounceTimer = null;
+        }
+      } else {
+        // 触发延迟保存
+        this.triggerSaveWithDelay();
+      }
     }
   }
 
