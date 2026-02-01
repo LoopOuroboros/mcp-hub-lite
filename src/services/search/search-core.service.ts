@@ -4,10 +4,30 @@ import { hubManager } from '../hub-manager.service.js';
 import { SearchResult, SearchOptions } from './types.js';
 import { SearchScorer } from './search-scorer.js';
 import { SearchCacheService } from './search-cache.js';
+import { eventBus, EventTypes } from '../event-bus.service.js';
 
 export class SearchCoreService {
   private cacheService = new SearchCacheService();
   private scorer = new SearchScorer();
+
+  constructor() {
+    // 监听服务器更新事件，清除搜索缓存以确保结果最新
+    eventBus.subscribe(EventTypes.SERVER_UPDATED, () => {
+      console.log('Server updated event received, clearing search cache');
+      this.cacheService.invalidate();
+    });
+
+    // 监听服务器添加和删除事件，同样清除缓存
+    eventBus.subscribe(EventTypes.SERVER_ADDED, () => {
+      console.log('Server added event received, clearing search cache');
+      this.cacheService.invalidate();
+    });
+
+    eventBus.subscribe(EventTypes.SERVER_DELETED, () => {
+      console.log('Server deleted event received, clearing search cache');
+      this.cacheService.invalidate();
+    });
+  }
 
   async search(query: string, options?: Partial<SearchOptions>): Promise<SearchResult[]> {
     const startTime = Date.now();
@@ -45,42 +65,22 @@ export class SearchCoreService {
       return cached;
     }
 
-    // 由于 McpTool 接口已移除 serverId 字段，需要修改过滤逻辑
-    // 直接使用 mcpConnectionManager 的 toolCache 来获取工具及其服务器信息
-    const allowedTools: McpTool[] = [];
+    // 使用新的服务器名称级别缓存获取所有工具
+    const tools = mcpConnectionManager.getAllToolsByServerName();
 
-    for (const [serverId, tools] of mcpConnectionManager['toolCache'].entries()) {
-      // 从服务器 ID 中解析原始服务器 ID 和实例索引
-      const [originalId, indexStr] = serverId.split('-');
-      const index = parseInt(indexStr);
+    // 基于服务器名称获取配置并应用 allowedTools 过滤
+    const filteredTools = tools.filter(tool => {
+      const serverConfig = hubManager.getServerByName(tool.serverName);
+      if (!serverConfig) return true;
 
-      // 获取服务器基本配置
-      const server = hubManager.getServerById(originalId);
-      if (!server) {
-        allowedTools.push(...tools);
-        continue;
-      }
+      const allowed = serverConfig.allowedTools;
+      if (allowed == null) return true; // 未配置 allowedTools，显示所有工具
+      if (allowed.length === 0) return false; // 空数组，不显示任何工具
+      return allowed.includes(tool.name); // 严格过滤
+    });
 
-      // 获取服务器实例配置
-      const instances = hubManager.getServerInstanceByName(server.name);
-      if (!instances || instances.length <= index) {
-        allowedTools.push(...tools);
-        continue;
-      }
-
-      const allowed = server.config.allowedTools;
-
-      // If allowedTools is explicitly defined (not null/undefined), use it to filter
-      // If it's an empty array, it will filter out all tools
-      if (allowed != null) {
-        allowedTools.push(...tools.filter(tool => allowed.includes(tool.name)));
-      } else {
-        allowedTools.push(...tools);
-      }
-    }
-
-    this.cacheService.set(allowedTools);
-    return allowedTools;
+    this.cacheService.set(filteredTools);
+    return filteredTools;
   }
 
   private applyFilters(tools: McpTool[], filters?: SearchOptions['filters']): McpTool[] {
