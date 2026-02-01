@@ -15,4 +15,5 @@ export interface McpTool {
   name: string;
   description?: string;
   inputSchema?: McpToolSchema;
+  serverName: string;
 }

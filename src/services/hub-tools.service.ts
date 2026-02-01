@@ -289,7 +289,8 @@ export class HubToolsService {
       const tools: McpTool[] = gatewayTools.map(tool => ({
         name: tool.name,
         description: tool.description,
-        inputSchema: tool.inputSchema
+        inputSchema: tool.inputSchema,
+        serverName: MCP_HUB_LITE_SERVER
       }));
 
       return {
@@ -524,7 +525,8 @@ export class HubToolsService {
     // Add system tools under mcp-hub-lite server
     const systemTools = this.getSystemTools().map(tool => ({
       ...tool,
-      description: `[System] ${tool.description}`
+      description: `[System] ${tool.description}`,
+      serverName: MCP_HUB_LITE_SERVER
     }));
 
     allTools[MCP_HUB_LITE_SERVER] = {

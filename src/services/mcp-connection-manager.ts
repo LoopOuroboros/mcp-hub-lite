@@ -26,6 +26,7 @@ class McpConnectionManager {
   private transports: Map<string, any> = new Map(); // Using 'any' for transport types
   private serverStatus: Map<string, ServerStatus> = new Map();
   public toolCache: Map<string, McpTool[]> = new Map();
+  private serverNameToolCache: Map<string, McpTool[]> = new Map(); // 服务器名称级别的工具缓存
   private resourceCache: Map<string, McpResource[]> = new Map();
   private nameToIdMap: Map<string, string> = new Map(); // 服务器名称到ID的映射
 
@@ -254,6 +255,36 @@ class McpConnectionManager {
       this.toolCache.delete(serverId);
       this.resourceCache.delete(serverId);
 
+      // 更新服务器名称级别的工具缓存
+      let disconnectedServerName = 'unknown';
+      for (const [name, id] of this.nameToIdMap.entries()) {
+        if (id === serverId) {
+          disconnectedServerName = name;
+          break;
+        }
+      }
+      if (disconnectedServerName !== 'unknown') {
+        // 重新计算该服务器名称下所有实例的工具
+        const allToolsForServer: McpTool[] = [];
+        for (const [id, cachedTools] of this.toolCache.entries()) {
+          let instanceServerName = 'unknown';
+          for (const [name, instanceId] of this.nameToIdMap.entries()) {
+            if (instanceId === id) {
+              instanceServerName = name;
+              break;
+            }
+          }
+          if (instanceServerName === disconnectedServerName) {
+            allToolsForServer.push(...cachedTools);
+          }
+        }
+        if (allToolsForServer.length > 0) {
+          this.serverNameToolCache.set(disconnectedServerName, allToolsForServer);
+        } else {
+          this.serverNameToolCache.delete(disconnectedServerName);
+        }
+      }
+
       // 删除名称到ID的映射
       for (const [name, id] of this.nameToIdMap.entries()) {
         if (id === serverId) {
@@ -314,13 +345,42 @@ class McpConnectionManager {
 
     try {
       const result = await client.listTools();
+      // 从 serverId 找到对应的服务器名称
+      let serverName = 'unknown';
+      for (const [name, id] of this.nameToIdMap.entries()) {
+        if (id === serverId) {
+          serverName = name;
+          break;
+        }
+      }
       const tools: McpTool[] = result.tools.map(t => ({
         name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema as any
+        inputSchema: t.inputSchema as any,
+        serverName: serverName
       }));
 
       this.toolCache.set(serverId, tools);
+
+      // 更新服务器名称级别的工具缓存
+      if (serverName !== 'unknown') {
+        // 获取该服务器名称下所有实例的工具
+        const allToolsForServer: McpTool[] = [];
+        for (const [id, cachedTools] of this.toolCache.entries()) {
+          // 检查这个 id 是否属于当前服务器名称
+          let instanceServerName = 'unknown';
+          for (const [name, instanceId] of this.nameToIdMap.entries()) {
+            if (instanceId === id) {
+              instanceServerName = name;
+              break;
+            }
+          }
+          if (instanceServerName === serverName) {
+            allToolsForServer.push(...cachedTools);
+          }
+        }
+        this.serverNameToolCache.set(serverName, allToolsForServer);
+      }
 
       // Update status
       const status = this.serverStatus.get(serverId);
@@ -478,6 +538,20 @@ class McpConnectionManager {
         }
       }
     );
+  }
+
+  // 获取基于服务器名称的工具缓存
+  public getToolsByServerName(serverName: string): McpTool[] {
+    return this.serverNameToolCache.get(serverName) || [];
+  }
+
+  // 获取所有服务器名称的工具（用于搜索）
+  public getAllToolsByServerName(): McpTool[] {
+    const allTools: McpTool[] = [];
+    for (const tools of this.serverNameToolCache.values()) {
+      allTools.push(...tools);
+    }
+    return allTools;
   }
 }
 
