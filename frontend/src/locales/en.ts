@@ -71,7 +71,17 @@ export default {
     idleConnectionTimeout: 'Idle Connection Timeout',
     fetchError: 'Failed to fetch configuration',
     saveSuccess: 'Configuration saved successfully',
-    saveError: 'Failed to save configuration'
+    saveError: 'Failed to save configuration',
+    observability: 'Observability',
+    tracing: 'Distributed Tracing',
+    tracingEnabled: 'Enable Tracing',
+    exporter: 'Exporter',
+    exporterConsole: 'Console',
+    exporterOtlp: 'OTLP (OpenTelemetry Protocol)',
+    exporterJaeger: 'Jaeger',
+    exporterZipkin: 'Zipkin',
+    endpoint: 'Endpoint',
+    sampleRate: 'Sample Rate'
   },
   dashboard: {
     title: 'Dashboard',

@@ -18,8 +18,6 @@ export const McpServerConfigSchema = z.object({
   allowedTools: z.array(z.string()).default([])
 });
 
-export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
-
 // 服务器实例 Schema（每个实例包含 id、timestamp、hash）
 export const ServerInstanceConfigSchema = z.object({
   id: z.string(),
@@ -28,8 +26,6 @@ export const ServerInstanceConfigSchema = z.object({
   pid: z.number().optional(), // 进程ID
   startTime: z.number().optional() // 启动时间（与 timestamp 相同，保持兼容性）
 });
-
-export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
 
 /**
  * Logging Configuration Schema
@@ -85,6 +81,30 @@ export const SecurityConfigSchema = z.object({
 });
 
 /**
+ * Observability Configuration Schema
+ */
+export const ObservabilityConfigSchema = z.object({
+  tracing: z.object({
+    enabled: z.boolean().default(false),
+    exporter: z.enum(['console', 'otlp', 'jaeger', 'zipkin']).default('console'),
+    endpoint: z.string().default('http://localhost:4318/v1/traces'),
+    sampleRate: z.number().min(0).max(1).default(1.0)
+  }).default({
+    enabled: false,
+    exporter: 'console',
+    endpoint: 'http://localhost:4318/v1/traces',
+    sampleRate: 1.0
+  })
+}).default({
+  tracing: {
+    enabled: false,
+    exporter: 'console',
+    endpoint: 'http://localhost:4318/v1/traces',
+    sampleRate: 1.0
+  }
+});
+
+/**
  * System Configuration Schema
  */
 export const SystemConfigSchema = z.object({
@@ -111,7 +131,12 @@ export const SystemConfigSchema = z.object({
     }
   }),
   security: SecurityConfigSchema,
-  servers: z.record(z.string(), McpServerConfigSchema).default({})
+  servers: z.record(z.string(), McpServerConfigSchema).default({}),
+  observability: ObservabilityConfigSchema
 });
 
+// Export types
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
+export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
+export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;

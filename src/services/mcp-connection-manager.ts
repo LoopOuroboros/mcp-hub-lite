@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { TransportFactory } from '../utils/transports/transport-factory.js';
 import { logger, isToolsListResponse } from '../utils/logger.js';
+import { withSpan, createMcpSpanOptions } from '../utils/index.js';
 import { McpTool } from '../models/tool.model.js';
 import { McpResource } from '../models/resource.model.js';
 import { logStorage } from './log-storage.service.js';
@@ -42,190 +43,200 @@ class McpConnectionManager {
   }
 
   public async connect(server: any): Promise<boolean> {
-    let serverInfo;
-    try {
-      logger.info(`Connecting to server [${server.id || 'unknown'}]...`);
+    // Use trace helper to wrap the entire connection process
+    return withSpan<boolean>(
+      'mcp.connection.connect',
+      createMcpSpanOptions('connect', server.id || 'unknown', undefined, {
+        'mcp.server.type': server.type,
+        'mcp.server.name': server.name || 'unknown'
+      }),
+      async (_span) => {
+        let serverInfo;
+        try {
+          logger.info(`Connecting to server [${server.id || 'unknown'}]...`);
 
-      // Validate server configuration
-      if (!server.id) {
-        throw new Error('Server ID is required');
-      }
-
-      // 首先设置 starting 状态（connected: false，无 error）
-      this.serverStatus.set(server.id, {
-        connected: false,
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0
-      });
-
-      // 从服务器实例ID中获取服务器名称（通过 hubManager.getServerById）
-      serverInfo = hubManager.getServerById(server.id);
-      if (!serverInfo) {
-        throw new Error(`Server not found for instance: ${server.id}`);
-      }
-
-      if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
-        throw new Error('STDIO server requires a valid command');
-      }
-
-      if ((server.type === 'sse' || server.type === 'streamable-http') && (!server.url || server.url.trim() === '')) {
-        throw new Error(`${server.type.toUpperCase()} server requires a valid URL`);
-      }
-
-      // Create transport based on server type
-      const transport = TransportFactory.createTransport({
-        ...server,
-        name: serverInfo.name
-      });
-
-      // Handle transport close events
-      if ('onclose' in transport) {
-        transport.onclose = () => {
-          logger.info(`Transport closed for server [${server.id}]`);
-          const currentStatus = this.serverStatus.get(server.id!);
-          // Only update status if it was previously connected or starting
-          if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-             this.serverStatus.set(server.id!, {
-               connected: false,
-               lastCheck: Date.now(),
-               toolsCount: 0,
-               resourcesCount: 0,
-               error: 'Connection closed unexpectedly'
-             });
+          // Validate server configuration
+          if (!server.id) {
+            throw new Error('Server ID is required');
           }
-        };
-      }
 
-      // 添加日志监听器
-      if ('onstdout' in transport) {
-        // 获取安全的服务器名称（处理可能的 undefined 情况）
-        const safeServerName = server?.name ?? server?.id ?? 'unknown';
-        const safeServerId = server?.id ?? 'unknown';
+          // 首先设置 starting 状态（connected: false，无 error）
+          this.serverStatus.set(server.id, {
+            connected: false,
+            lastCheck: Date.now(),
+            toolsCount: 0,
+            resourcesCount: 0
+          });
 
-        transport.onstdout = (data: string) => {
-          // 检查是否为 tools/list 响应
-          const isToolsListResp = isToolsListResponse(data);
-          if (isToolsListResp) {
-            // 完全跳过 tools/list 响应的日志存储，仅在控制台输出 debug 级别日志
-            logger.debug(`[${safeServerName}] [STDOUT] ${data}`);
-            return;
+          // 从服务器实例ID中获取服务器名称（通过 hubManager.getServerById）
+          serverInfo = hubManager.getServerById(server.id);
+          if (!serverInfo) {
+            throw new Error(`Server not found for instance: ${server.id}`);
           }
-          logStorage.append(safeServerId, 'info', `[${safeServerName}] [STDOUT] ${data}`);
-        };
+
+          if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
+            throw new Error('STDIO server requires a valid command');
+          }
+
+          if ((server.type === 'sse' || server.type === 'streamable-http') && (!server.url || server.url.trim() === '')) {
+            throw new Error(`${server.type.toUpperCase()} server requires a valid URL`);
+          }
+
+          // Create transport based on server type
+          const transport = TransportFactory.createTransport({
+            ...server,
+            name: serverInfo.name
+          });
+
+          // Handle transport close events
+          if ('onclose' in transport) {
+            transport.onclose = () => {
+              logger.info(`Transport closed for server [${server.id}]`);
+              const currentStatus = this.serverStatus.get(server.id!);
+              // Only update status if it was previously connected or starting
+              if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
+                 this.serverStatus.set(server.id!, {
+                   connected: false,
+                   lastCheck: Date.now(),
+                   toolsCount: 0,
+                   resourcesCount: 0,
+                   error: 'Connection closed unexpectedly'
+                 });
+              }
+            };
+          }
+
+          // 添加日志监听器
+          if ('onstdout' in transport) {
+            // 获取安全的服务器名称（处理可能的 undefined 情况）
+            const safeServerName = server?.name ?? server?.id ?? 'unknown';
+            const safeServerId = server?.id ?? 'unknown';
+
+            transport.onstdout = (data: string) => {
+              // 检查是否为 tools/list 响应
+              const isToolsListResp = isToolsListResponse(data);
+              if (isToolsListResp) {
+                // 完全跳过 tools/list 响应的日志存储，仅在控制台输出 debug 级别日志
+                logger.debug(`[${safeServerName}] [STDOUT] ${data}`);
+                return;
+              }
+              logStorage.append(safeServerId, 'info', `[${safeServerName}] [STDOUT] ${data}`);
+            };
+          }
+          if ('onstderr' in transport) {
+            // 获取安全的服务器名称（处理可能的 undefined 情况）
+            const safeServerName = server?.name ?? server?.id ?? 'unknown';
+            const safeServerId = server?.id ?? 'unknown';
+
+            transport.onstderr = (data: string) => {
+              logStorage.append(safeServerId, 'error', `[${safeServerName}] [STDERR] ${data}`);
+            };
+          }
+
+          const client = new Client({
+            name: MCP_HUB_LITE_SERVER,
+            version: "1.0.0"
+          }, {
+            capabilities: {}
+          });
+
+          await client.connect(transport);
+
+          this.clients.set(server.id, client);
+          this.transports.set(server.id, transport);
+          this.nameToIdMap.set(serverInfo.name, server.id);
+
+          // Get PID if available (only for stdio transport)
+          let pid: number | undefined;
+          if ('pid' in transport && typeof transport.pid === 'number') {
+            pid = transport.pid;
+          }
+
+          // Get server version
+          const clientServerInfo = client.getServerVersion();
+          const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
+
+          // 更新服务器实例信息（合并 pid 和 startTime）
+          const serverName = serverInfo.name;
+          const instances = hubManager.getServerInstanceByName(serverName);
+          const instanceIndex = instances.findIndex(inst => inst.id === server.id);
+          if (instanceIndex !== -1) {
+            hubManager.updateServerInstance(serverName, instanceIndex, {
+              pid: pid,
+              startTime: Date.now() // 启动时间与 timestamp 相同
+            });
+          }
+
+          this.serverStatus.set(server.id, {
+            connected: true,
+            lastCheck: Date.now(),
+            toolsCount: 0,
+            resourcesCount: 0,
+            pid: pid,
+            startTime: Date.now(),
+            version: serverVersion,
+            hash: server.hash
+          });
+
+          logger.info(`Connected to server [${server.id}]`);
+
+          // 发布服务器连接成功事件
+          eventBus.publish(EventTypes.SERVER_CONNECTED, {
+            serverId: server.id,
+            status: 'online',
+            timestamp: Date.now()
+          });
+
+          // 发布服务器状态变化事件
+          eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+            serverId: server.id,
+            status: 'online',
+            timestamp: Date.now()
+          });
+
+          // Fetch tools and resources immediately (only for bidirectional transports)
+          if (server.type !== 'sse') {
+            const tools = await this.refreshTools(server.id);
+            const resources = await this.refreshResources(server.id);
+
+            // 发布工具和资源更新事件
+            eventBus.publish(EventTypes.TOOLS_UPDATED, {
+              serverId: server.id,
+              tools
+            });
+
+            eventBus.publish(EventTypes.RESOURCES_UPDATED, {
+              serverId: server.id,
+              resources
+            });
+          } else {
+            logger.info('SSE transport is unidirectional, skipping tool/resource refresh');
+          }
+
+          return true;
+        } catch (error) {
+          logger.error(`Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`, error);
+          const serverId = server.id || 'unknown';
+          this.serverStatus.set(serverId, {
+            connected: false,
+            error: error instanceof Error ? error.message : String(error),
+            lastCheck: Date.now(),
+            toolsCount: 0,
+            resourcesCount: 0
+          });
+
+          // 发布服务器状态变化事件（错误状态）
+          eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+            serverId,
+            status: 'error',
+            error: error instanceof Error ? error.message : String(error),
+            timestamp: Date.now()
+          });
+
+          return false;
+        }
       }
-      if ('onstderr' in transport) {
-        // 获取安全的服务器名称（处理可能的 undefined 情况）
-        const safeServerName = server?.name ?? server?.id ?? 'unknown';
-        const safeServerId = server?.id ?? 'unknown';
-
-        transport.onstderr = (data: string) => {
-          logStorage.append(safeServerId, 'error', `[${safeServerName}] [STDERR] ${data}`);
-        };
-      }
-
-      const client = new Client({
-        name: MCP_HUB_LITE_SERVER,
-        version: "1.0.0"
-      }, {
-        capabilities: {}
-      });
-
-      await client.connect(transport);
-
-      this.clients.set(server.id, client);
-      this.transports.set(server.id, transport);
-      this.nameToIdMap.set(serverInfo.name, server.id);
-
-      // Get PID if available (only for stdio transport)
-      let pid: number | undefined;
-      if ('pid' in transport && typeof transport.pid === 'number') {
-        pid = transport.pid;
-      }
-
-      // Get server version
-      const clientServerInfo = client.getServerVersion();
-      const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
-
-      // 更新服务器实例信息（合并 pid 和 startTime）
-      const serverName = serverInfo.name;
-      const instances = hubManager.getServerInstanceByName(serverName);
-      const instanceIndex = instances.findIndex(inst => inst.id === server.id);
-      if (instanceIndex !== -1) {
-        hubManager.updateServerInstance(serverName, instanceIndex, {
-          pid: pid,
-          startTime: Date.now() // 启动时间与 timestamp 相同
-        });
-      }
-
-      this.serverStatus.set(server.id, {
-        connected: true,
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0,
-        pid: pid,
-        startTime: Date.now(),
-        version: serverVersion,
-        hash: server.hash
-      });
-
-      logger.info(`Connected to server [${server.id}]`);
-
-      // 发布服务器连接成功事件
-      eventBus.publish(EventTypes.SERVER_CONNECTED, {
-        serverId: server.id,
-        status: 'online',
-        timestamp: Date.now()
-      });
-
-      // 发布服务器状态变化事件
-      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId: server.id,
-        status: 'online',
-        timestamp: Date.now()
-      });
-
-      // Fetch tools and resources immediately (only for bidirectional transports)
-      if (server.type !== 'sse') {
-        const tools = await this.refreshTools(server.id);
-        const resources = await this.refreshResources(server.id);
-
-        // 发布工具和资源更新事件
-        eventBus.publish(EventTypes.TOOLS_UPDATED, {
-          serverId: server.id,
-          tools
-        });
-
-        eventBus.publish(EventTypes.RESOURCES_UPDATED, {
-          serverId: server.id,
-          resources
-        });
-      } else {
-        logger.info('SSE transport is unidirectional, skipping tool/resource refresh');
-      }
-
-      return true;
-    } catch (error) {
-      logger.error(`Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`, error);
-      const serverId = server.id || 'unknown';
-      this.serverStatus.set(serverId, {
-        connected: false,
-        error: error instanceof Error ? error.message : String(error),
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0
-      });
-
-      // 发布服务器状态变化事件（错误状态）
-      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId,
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: Date.now()
-      });
-
-      return false;
-    }
+    );
   }
 
   public async disconnect(serverId: string): Promise<void> {
@@ -442,21 +453,30 @@ class McpConnectionManager {
   }
 
   public async callTool(serverId: string, toolName: string, args: any): Promise<any> {
-    const client = this.clients.get(serverId);
-    if (!client) {
-      throw new Error(`Server ${serverId} not connected`);
-    }
+    // Use trace helper to wrap the tool call
+    return withSpan<any>(
+      'mcp.tool.call',
+      createMcpSpanOptions('call', serverId, toolName, {
+        'mcp.tool.args': JSON.stringify(args)
+      }),
+      async (_span) => {
+        const client = this.clients.get(serverId);
+        if (!client) {
+          throw new Error(`Server ${serverId} not connected`);
+        }
 
-    try {
-      const result = await client.callTool({
-        name: toolName,
-        arguments: args
-      });
-      return result;
-    } catch (error) {
-      logger.error(`Failed to call tool ${toolName} on server [${serverId}]:`, error);
-      throw error;
-    }
+        try {
+          const result = await client.callTool({
+            name: toolName,
+            arguments: args
+          });
+          return result;
+        } catch (error) {
+          logger.error(`Failed to call tool ${toolName} on server [${serverId}]:`, error);
+          throw error;
+        }
+      }
+    );
   }
 }
 

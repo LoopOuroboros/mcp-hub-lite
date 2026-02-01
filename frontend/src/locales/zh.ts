@@ -71,7 +71,17 @@ export default {
     idleConnectionTimeout: '空闲连接超时',
     fetchError: '获取配置失败',
     saveSuccess: '配置保存成功',
-    saveError: '保存配置失败'
+    saveError: '保存配置失败',
+    observability: '可观测性',
+    tracing: '分布式追踪',
+    tracingEnabled: '启用追踪',
+    exporter: '导出器',
+    exporterConsole: '控制台',
+    exporterOtlp: 'OTLP (OpenTelemetry 协议)',
+    exporterJaeger: 'Jaeger',
+    exporterZipkin: 'Zipkin',
+    endpoint: '端点',
+    sampleRate: '采样率'
   },
   dashboard: {
     title: '仪表盘',

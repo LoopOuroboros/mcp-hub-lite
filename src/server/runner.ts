@@ -1,6 +1,7 @@
 import { buildApp } from '../app.js';
 import { configManager } from '../config/config-manager.js';
 import { logger } from '../utils/logger.js';
+import { telemetryManager } from '../utils/telemetry/index.js';
 import { mcpConnectionManager } from '../services/mcp-connection-manager.js';
 import { gateway } from '../services/gateway.service.js';
 import { PidManager } from '../pid/manager.js';
@@ -15,8 +16,12 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
         logger.info('Starting in MCP Gateway mode (stdio)...');
     }
 
-    const app = isStdio ? null : await buildApp();
     const config = configManager.getConfig();
+
+    // Initialize OpenTelemetry tracing
+    telemetryManager.initialize(config);
+
+    const app = isStdio ? null : await buildApp();
 
     // Override config with options if provided
     const host = options.host || config.system.host;
@@ -81,6 +86,8 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
         if (!isStdio && app) {
             await app.close();
         }
+        // Shutdown OpenTelemetry gracefully
+        await telemetryManager.shutdown();
         PidManager.removePid();
         logger.info('Server stopped gracefully');
         process.exit(0);

@@ -205,20 +205,31 @@ export class Logger {
     }
   }
 
-  debug(message: string, options?: LogOptions, ...args: unknown[]): void {
-    this.log('debug', message, args, options);
+  debug(message: string, ...args: unknown[]): void {
+    const [options, ...restArgs] = this.extractOptionsAndArgs(args);
+    this.log('debug', message, restArgs, options);
   }
 
-  info(message: string, options?: LogOptions, ...args: unknown[]): void {
-    this.log('info', message, args, options);
+  info(message: string, ...args: unknown[]): void {
+    const [options, ...restArgs] = this.extractOptionsAndArgs(args);
+    this.log('info', message, restArgs, options);
   }
 
-  warn(message: string, options?: LogOptions, ...args: unknown[]): void {
-    this.log('warn', message, args, options);
+  warn(message: string, ...args: unknown[]): void {
+    const [options, ...restArgs] = this.extractOptionsAndArgs(args);
+    this.log('warn', message, restArgs, options);
   }
 
-  error(message: string, options?: LogOptions, ...args: unknown[]): void {
-    this.log('error', message, args, options);
+  error(message: string, ...args: unknown[]): void {
+    const [options, ...restArgs] = this.extractOptionsAndArgs(args);
+    this.log('error', message, restArgs, options);
+  }
+
+  private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
+    if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0]) && 'subModule' in args[0]) {
+      return [args[0] as LogOptions, args.slice(1)];
+    }
+    return [undefined, args];
   }
 
   setLevel(level: LogLevel): void {

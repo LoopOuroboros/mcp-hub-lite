@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ListRootsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
-import { logger } from "../utils/logger.js";
+import { logger, withSpan, createMcpSpanOptions } from "../utils/index.js";
 import { z } from "zod";
 import { searchCoreService } from "./search/search-core.service.js";
 import { hubToolsService } from "./hub-tools.service.js";
@@ -710,9 +710,15 @@ export class GatewayService {
   }
 
   public async start() {
-      this.transport = new StdioServerTransport();
-      await this.server.connect(this.transport);
-      logger.info("MCP Gateway started on stdio");
+    return withSpan<void>(
+      'mcp.gateway.start',
+      createMcpSpanOptions('gateway_start', 'gateway'),
+      async (_span) => {
+        this.transport = new StdioServerTransport();
+        await this.server.connect(this.transport);
+        logger.info("MCP Gateway started on stdio");
+      }
+    );
   }
 }
 

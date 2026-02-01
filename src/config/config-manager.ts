@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import { SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema } from './config.schema.js';
-import type { McpServerConfig, SystemConfig, ServerInstanceConfig } from './config.schema.js';
+import { SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema } from './config.schema.js';
+import type { McpServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig } from './config.schema.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -246,7 +246,7 @@ class ConfigBackupManager {
 }
 
 // Re-export types for external use
-export { McpServerConfig, SystemConfig, ServerInstanceConfig, SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema };
+export { McpServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig, SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema };
 
 /**
  * Simplified Configuration Manager for MCP-HUB-LITE Lite version

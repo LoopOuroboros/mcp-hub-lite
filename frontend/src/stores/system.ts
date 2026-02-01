@@ -25,6 +25,14 @@ export interface SystemConfig {
     idleConnectionTimeout: number
     maxConnections: number
   }
+  observability: {
+    tracing: {
+      enabled: boolean
+      exporter: 'console' | 'otlp' | 'jaeger' | 'zipkin'
+      endpoint: string
+      sampleRate: number
+    }
+  }
   [key: string]: any
 }
 
@@ -51,6 +59,14 @@ export const useSystemStore = defineStore('system', () => {
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
       maxConnections: 50
+    },
+    observability: {
+      tracing: {
+        enabled: false,
+        exporter: 'console',
+        endpoint: 'http://localhost:4318/v1/traces',
+        sampleRate: 1.0
+      }
     }
   })
   
@@ -81,6 +97,14 @@ export const useSystemStore = defineStore('system', () => {
         security: {
           ...config.value.security,
           ...(data.security || {})
+        },
+        observability: {
+          ...config.value.observability,
+          ...(data.observability || {}),
+          tracing: {
+            ...config.value.observability.tracing,
+            ...(data.observability?.tracing || {})
+          }
         }
       }
       return config.value
