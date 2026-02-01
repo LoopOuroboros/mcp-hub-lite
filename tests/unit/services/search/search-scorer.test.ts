@@ -10,6 +10,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const score = scorer.scoreTool(tool, 'MySQL Query');
@@ -21,6 +22,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const exactScore = scorer.scoreTool(tool, 'MySQL Query');
@@ -34,6 +36,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'Database Tool',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const nameScore = scorer.scoreTool(tool, 'Database');
@@ -46,6 +49,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'Database Tool',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const tagScore = scorer.scoreTool(tool, 'mysql');
@@ -56,6 +60,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const score = scorer.scoreTool(tool, 'nonexistent');
@@ -66,6 +71,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: '',
+        serverName: 'mysql-server'
       };
 
       const score = scorer.scoreTool(tool, 'MySQL');
@@ -76,6 +82,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
+        serverName: 'mysql-server'
       };
 
       const score = scorer.scoreTool(tool, 'MySQL');
@@ -88,6 +95,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute database queries',
+        serverName: 'mysql-server'
       };
 
       // 模拟只匹配名称、只匹配描述的情况
@@ -101,6 +109,7 @@ describe('SearchScorer', () => {
       const tool: McpTool = {
         name: 'MySQL Query',
         description: 'Execute MySQL database queries',
+        serverName: 'mysql-server'
       };
 
       const singleMatch = scorer.scoreTool(tool, 'Query');

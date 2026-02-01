@@ -6,15 +6,18 @@ import { McpTool } from '../../../../src/models/tool.model.js';
 const mockTools: McpTool[] = [
   {
     name: 'MySQL Query',
-    description: 'Execute MySQL queries'
+    description: 'Execute MySQL queries',
+    serverName: 'mysql-server'
   },
   {
     name: 'PostgreSQL Query',
-    description: 'Execute PostgreSQL queries'
+    description: 'Execute PostgreSQL queries',
+    serverName: 'postgresql-server'
   },
   {
     name: 'Redis Command',
-    description: 'Execute Redis commands'
+    description: 'Execute Redis commands',
+    serverName: 'redis-server'
   }
 ];
 
@@ -84,7 +87,8 @@ describe('SearchCoreService', () => {
       for (let i = 1; i <= 200; i++) {
         largeMockTools.push({
           name: `Tool ${i}`,
-          description: `Description for tool ${i}`
+          description: `Description for tool ${i}`,
+          serverName: 'test-server'
         });
       }
 

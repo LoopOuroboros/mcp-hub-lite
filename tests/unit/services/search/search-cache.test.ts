@@ -14,7 +14,7 @@ describe('SearchCacheService', () => {
 
     it('should set and retrieve cache data', () => {
       const mockTools: McpTool[] = [
-        { name: 'Tool 1', description: 'Description' }
+        { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
       cacheService.set(mockTools);
@@ -26,7 +26,7 @@ describe('SearchCacheService', () => {
 
     it('should invalidate cache', () => {
       const mockTools: McpTool[] = [
-        { name: 'Tool 1', description: 'Description' }
+        { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
       cacheService.set(mockTools);
@@ -41,7 +41,7 @@ describe('SearchCacheService', () => {
   describe('cache expiration', () => {
     it('should invalidate cache after TTL', () => {
       const mockTools: McpTool[] = [
-        { name: 'Tool 1', description: 'Description' }
+        { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
       cacheService.set(mockTools);
@@ -59,7 +59,7 @@ describe('SearchCacheService', () => {
 
     it('should return valid data before TTL expires', () => {
       const mockTools: McpTool[] = [
-        { name: 'Tool 1', description: 'Description' }
+        { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
       cacheService.set(mockTools);

@@ -488,13 +488,13 @@ describe('HubToolsService', () => {
       const mockTools = {
         'Server 1': {
           tools: [
-            { name: 'readFile', description: 'Read file contents' },
-            { name: 'writeFile', description: 'Write file contents' }
+            { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' },
+            { name: 'writeFile', description: 'Write file contents', serverName: 'Server 1' }
           ]
         },
         'Server 2': {
           tools: [
-            { name: 'listFiles', description: 'List files in directory' }
+            { name: 'listFiles', description: 'List files in directory', serverName: 'Server 2' }
           ]
         }
       };
