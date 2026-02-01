@@ -245,40 +245,40 @@ const activeTab = ref('system');
 
 const maxAgeDays = computed({
     get: () => {
-      const val = config.value?.logging?.rotation?.maxAge || '7d';
+      const val = config.value?.system?.logging?.rotation?.maxAge || '7d';
       return parseInt(val.replace(/[^\d]/g, '')) || 7;
     },
     set: (val: number | undefined | null) => {
-      if (config.value?.logging?.rotation && val) {
-        config.value.logging.rotation.maxAge = `${val}d`;
+      if (config.value?.system?.logging?.rotation && val) {
+        config.value.system.logging.rotation.maxAge = `${val}d`;
       }
     }
   });
 
   const maxSizeValue = computed({
     get: () => {
-      const val = config.value?.logging?.rotation?.maxSize || '100MB';
+      const val = config.value?.system?.logging?.rotation?.maxSize || '100MB';
       const match = val.match(/^(\d+(\.\d+)?)/);
       return match ? Number(match[1]) : 100;
     },
     set: (val: string | number) => {
       const currentUnit = maxSizeUnit.value;
-      if (config.value?.logging?.rotation) {
-        config.value.logging.rotation.maxSize = `${val}${currentUnit}`;
+      if (config.value?.system?.logging?.rotation) {
+        config.value.system.logging.rotation.maxSize = `${val}${currentUnit}`;
       }
     }
   });
 
   const maxSizeUnit = computed({
     get: () => {
-      const val = config.value?.logging?.rotation?.maxSize || '100MB';
+      const val = config.value?.system?.logging?.rotation?.maxSize || '100MB';
       const match = val.match(/([a-zA-Z]+)$/);
       return (match && match[1]) ? match[1].toUpperCase() : 'MB';
     },
     set: (val: string) => {
       const currentValue = maxSizeValue.value;
-      if (config.value?.logging?.rotation) {
-        config.value.logging.rotation.maxSize = `${currentValue}${val}`;
+      if (config.value?.system?.logging?.rotation) {
+        config.value.system.logging.rotation.maxSize = `${currentValue}${val}`;
       }
     }
   });
