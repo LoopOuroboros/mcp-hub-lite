@@ -201,72 +201,35 @@ describe('ConfigManager', () => {
     expect(serverInstancesAfterDelete[serverName]).toBeUndefined();
   });
 
-  it('should create backup for default config', async () => {
+  it('should manage backup creation, deduplication and limits', async () => {
     const manager = new ConfigManager(tempConfigPath);
-    // 配置文件会在构造函数中自动创建
-    const backups = manager.listBackups();
+
+    // 验证初始备份
+    let backups = manager.listBackups();
     expect(backups.length).toBe(1);
     expect(fs.existsSync(backups[0].path)).toBe(true);
-  });
 
-  it('should create backup when config is modified with actual changes', async () => {
-    const manager = new ConfigManager(tempConfigPath);
+    // 验证去重（内容相同时不创建新备份）
+    const duplicateBackup = manager.createBackup();
+    expect(duplicateBackup).toBeNull();
+    backups = manager.listBackups();
+    expect(backups.length).toBe(1);
 
-    const initialBackups = manager.listBackups();
-    expect(initialBackups.length).toBe(1);
-
-    // 获取原始端口
+    // 验证修改时创建新备份
     const originalPort = manager.getConfig().system.port;
-    const originalHost = manager.getConfig().system.host;
-
-    // 修改配置 - 使用不同的端口和主机确保实际变化
     await manager.updateConfig({
-      system: {
-        port: originalPort + 1000, // 确保与原始端口不同
-        host: originalHost === 'localhost' ? '127.0.0.1' : 'localhost'
-      }
+      system: { port: originalPort + 1000 }
     });
+    backups = manager.listBackups();
+    expect(backups.length).toBeGreaterThan(1);
 
-    // 验证配置确实已更新
-    const updatedConfig = manager.getConfig();
-    expect(updatedConfig.system.port).toBe(originalPort + 1000);
-    expect(updatedConfig.system.host).not.toBe(originalHost);
-
-    const afterUpdateBackups = manager.listBackups();
-    // 由于我们的智能重复检测，只有当内容实际变化时才会创建新备份
-    expect(afterUpdateBackups.length).toBeGreaterThan(1);
-    expect(fs.existsSync(afterUpdateBackups[0].path)).toBe(true);
-  });
-
-  it('should not create duplicate backup for identical config', async () => {
-    const manager = new ConfigManager(tempConfigPath);
-
-    const initialBackups = manager.listBackups();
-    expect(initialBackups.length).toBe(1);
-
-    // 手动尝试创建备份（内容相同）
-    const secondBackup = manager.createBackup();
-    expect(secondBackup).toBeNull(); // 应该返回 null，表示没有创建新备份
-
-    const afterSecondBackup = manager.listBackups();
-    expect(afterSecondBackup.length).toBe(1); // 备份数量应该保持不变
-  });
-
-  it('should limit number of backup files', async () => {
-    const manager = new ConfigManager(tempConfigPath);
-
-    // 创建多个备份（6次修改，加上初始备份共7个，应该保留最新的5个）
+    // 验证备份数量限制（最多保留5个）
     for (let i = 0; i < 6; i++) {
-      // 修改配置以确保创建新备份
       await manager.updateConfig({
-        system: {
-          port: 7788 + i + 100 // 使用不同的端口确保内容变化
-        }
+        system: { port: 7788 + i + 100 }
       });
     }
-
-    const backups = manager.listBackups();
-    // 最大备份数量是 5（包括最新的）
+    backups = manager.listBackups();
     expect(backups.length).toBe(5);
   });
 

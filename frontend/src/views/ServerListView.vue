@@ -3,10 +3,16 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 shrink-0">
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $t('sidebar.servers') }}</h2>
-      <el-button type="primary" @click="openAddModal('form')">
-        <el-icon class="mr-2"><Plus /></el-icon>
-        {{ $t('sidebar.addServer') }}
-      </el-button>
+      <div class="flex gap-2">
+        <el-button type="success" @click="handleSave">
+          <el-icon class="mr-2"><CircleCheckFilled /></el-icon>
+          {{ $t('action.save') }}
+        </el-button>
+        <el-button type="primary" @click="openAddModal('form')">
+          <el-icon class="mr-2"><Plus /></el-icon>
+          {{ $t('sidebar.addServer') }}
+        </el-button>
+      </div>
     </div>
 
     <!-- Content -->
@@ -150,6 +156,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useServerStore } from '@stores/server'
+import { useSystemStore } from '@stores/system'
 import { useI18n } from 'vue-i18n'
 import {
   Plus, Platform, VideoPlay, SwitchButton, Refresh, Setting,
@@ -161,10 +168,33 @@ import ServerStatusTags from '@components/ServerStatusTags.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useServerStore()
+const systemStore = useSystemStore()
 const router = useRouter()
 const { t } = useI18n()
 const showAddModal = ref(false)
 const addModalMode = ref<'form' | 'json'>('form')
+
+async function handleSave() {
+  try {
+    // 获取当前服务器配置
+    const serversConfig = store.servers.map(server => ({
+      name: server.name,
+      config: server.config
+    }))
+
+    // 调用保存配置的API
+    await systemStore.updateConfig({
+      servers: serversConfig.reduce((acc, curr) => {
+        acc[curr.name] = curr.config
+        return acc
+      }, {} as Record<string, any>)
+    })
+
+    ElMessage.success(t('action.saveSuccess'))
+  } catch (err: any) {
+    ElMessage.error(err.message || t('error.saveFailed'))
+  }
+}
 
 onMounted(() => {
   store.fetchServers()

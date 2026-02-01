@@ -20,7 +20,8 @@ export default {
     logsCleared: 'Logs cleared',
     logsCopied: 'Logs copied to clipboard',
     serverAdded: 'Server added successfully',
-    configImported: 'Configuration imported successfully'
+    configImported: 'Configuration imported successfully',
+    saveSuccess: 'Configuration saved successfully'
   },
   sidebar: {
     title: 'MCP Server Manager',
@@ -169,7 +170,8 @@ export default {
     connectionFailed: 'Failed to connect to server',
     invalidServerConfig: 'Invalid server configuration',
     addServerFailed: 'Failed to add server',
-    invalidJsonConfig: 'Invalid JSON configuration'
+    invalidJsonConfig: 'Invalid JSON configuration',
+    saveFailed: 'Failed to save configuration'
   },
   tools: {
     title: 'MCP Tool Gateway',

@@ -20,7 +20,8 @@ export default {
     logsCleared: '日志已清空',
     logsCopied: '日志已复制到剪贴板',
     serverAdded: '服务器添加成功',
-    configImported: '配置导入成功'
+    configImported: '配置导入成功',
+    saveSuccess: '配置保存成功'
   },
   sidebar: {
     title: 'MCP 服务器管理器',
@@ -170,7 +171,8 @@ export default {
     invalidServerConfig: '服务器配置无效',
     addServerFailed: '添加服务器失败',
     invalidJsonConfig: '无效的 JSON 配置',
-    unknown: '发生未知错误'
+    unknown: '发生未知错误',
+    saveFailed: '保存配置失败'
   },
   tools: {
     title: 'MCP 工具网关',
