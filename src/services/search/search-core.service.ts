@@ -5,6 +5,7 @@ import { SearchResult, SearchOptions } from './types.js';
 import { SearchScorer } from './search-scorer.js';
 import { SearchCacheService } from './search-cache.js';
 import { eventBus, EventTypes } from '../event-bus.service.js';
+import { logger } from '../../utils/logger.js';
 
 export class SearchCoreService {
   private cacheService = new SearchCacheService();
@@ -13,18 +14,18 @@ export class SearchCoreService {
   constructor() {
     // 监听服务器更新事件，清除搜索缓存以确保结果最新
     eventBus.subscribe(EventTypes.SERVER_UPDATED, () => {
-      console.log('Server updated event received, clearing search cache');
+      logger.debug('Server updated event received, clearing search cache', { subModule: 'Search' });
       this.cacheService.invalidate();
     });
 
     // 监听服务器添加和删除事件，同样清除缓存
     eventBus.subscribe(EventTypes.SERVER_ADDED, () => {
-      console.log('Server added event received, clearing search cache');
+      logger.debug('Server added event received, clearing search cache', { subModule: 'Search' });
       this.cacheService.invalidate();
     });
 
     eventBus.subscribe(EventTypes.SERVER_DELETED, () => {
-      console.log('Server deleted event received, clearing search cache');
+      logger.debug('Server deleted event received, clearing search cache', { subModule: 'Search' });
       this.cacheService.invalidate();
     });
   }
@@ -54,7 +55,7 @@ export class SearchCoreService {
     const paginatedResults = sortedResults.slice(offset, offset + limit);
 
     const processingTime = Date.now() - startTime;
-    console.log(`Search completed in ${processingTime}ms`);
+    logger.debug(`Search completed in ${processingTime}ms`, { subModule: 'Search' });
 
     return paginatedResults;
   }

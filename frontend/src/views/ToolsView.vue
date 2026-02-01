@@ -175,11 +175,10 @@ async function fetchSystemTools() {
 }
 
 function openCallDialog(tool: any) {
-  // 找到工具对应的服务器名称
-  const server = store.servers.find(s => s.id === tool.serverId)
+  // 直接使用工具对象的 serverName 属性
   selectedTool.value = {
     ...tool,
-    serverName: server?.name || tool.serverId // 如果找不到服务器，使用 serverId 作为 fallback
+    serverName: tool.serverName // 工具对象本身已经包含 serverName 属性
   }
   showCallDialog.value = true
 }

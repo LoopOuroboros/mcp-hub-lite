@@ -158,7 +158,7 @@ watch(() => props.modelValue, (val) => {
     // Fetch instances when dialog is opened
     fetchServerInstances();
   }
-});
+}, { immediate: true });
 
 function generateTemplate(schema: any) {
   if (!schema || !schema.properties) return {};
