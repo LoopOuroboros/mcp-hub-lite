@@ -178,17 +178,20 @@ export const useWebSocketStore = defineStore('websocket', () => {
   function handleLogEntry(message: any): void {
     const { serverId, logs } = message.data
     const server = serverStore.servers.find(s => s.id === serverId)
-    if (server) {
+    if (server && logs && logs.length > 0) {
       // 如果是完整日志（大于1条），替换现有日志
       if (logs.length > 1) {
         server.logs = logs
       } else {
         // 增量日志，追加到现有日志
-        server.logs.push({
-          timestamp: logs[0].timestamp,
-          level: logs[0].level,
-          message: logs[0].message
-        })
+        const logEntry = logs[0]
+        if (logEntry && logEntry.timestamp) {
+          server.logs.push({
+            timestamp: logEntry.timestamp,
+            level: logEntry.level,
+            message: logEntry.message
+          })
+        }
       }
 
       // 限制日志条数，防止内存泄漏
@@ -222,9 +225,32 @@ export const useWebSocketStore = defineStore('websocket', () => {
     serverStore.fetchServers()
   }
 
+  // 服务器更新事件发射器
+  const serverUpdatedListeners = ref<Array<() => void>>([])
+
+  function onServerUpdated(callback: () => void): void {
+    serverUpdatedListeners.value.push(callback)
+  }
+
+  function offServerUpdated(callback: () => void): void {
+    const index = serverUpdatedListeners.value.indexOf(callback)
+    if (index > -1) {
+      serverUpdatedListeners.value.splice(index, 1)
+    }
+  }
+
   function handleServerUpdated(message: any): void {
     console.log('Server updated:', message.data)
     serverStore.fetchServers()
+
+    // 触发服务器更新事件
+    serverUpdatedListeners.value.forEach(callback => {
+      try {
+        callback()
+      } catch (error) {
+        console.error('Error in server updated listener:', error)
+      }
+    })
   }
 
   function handleServerDeleted(message: any): void {
