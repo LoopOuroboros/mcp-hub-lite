@@ -78,8 +78,6 @@ export default {
     exporter: '导出器',
     exporterConsole: '控制台',
     exporterOtlp: 'OTLP (OpenTelemetry 协议)',
-    exporterJaeger: 'Jaeger',
-    exporterZipkin: 'Zipkin',
     endpoint: '端点',
     sampleRate: '采样率'
   },

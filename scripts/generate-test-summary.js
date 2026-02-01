@@ -41,29 +41,50 @@ try {
 // 计算汇总统计
 let totalFiles = 0;
 let passedFiles = 0;
+let failedFiles = 0;
 let totalTests = 0;
 let passedTests = 0;
+let failedTests = 0;
 let startTime = null;
 let endTime = null;
+const failedFileList = [];
+const failedTestDetails = [];
 
 // 处理后端结果
 if (backendResults && backendResults.testResults) {
   const backendTestResults = backendResults.testResults;
   totalFiles += backendTestResults.length;
   passedFiles += backendTestResults.filter(result => result.status === 'passed').length;
+  failedFiles += backendTestResults.filter(result => result.status === 'failed').length;
 
   let backendTotalTests = 0;
   let backendPassedTests = 0;
+  let backendFailedTests = 0;
 
   backendTestResults.forEach(file => {
     if (file.assertionResults) {
       backendTotalTests += file.assertionResults.length;
       backendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
+      backendFailedTests += file.assertionResults.filter(test => test.status === 'failed').length;
+
+      // 收集失败的测试详情
+      const failedAssertions = file.assertionResults.filter(test => test.status === 'failed');
+      if (failedAssertions.length > 0) {
+        failedFileList.push(file.name);
+        failedAssertions.forEach(test => {
+          failedTestDetails.push({
+            file: file.name,
+            test: test.title,
+            error: test.failureMessages?.[0] || 'Unknown error'
+          });
+        });
+      }
     }
   });
 
   totalTests += backendTotalTests;
   passedTests += backendPassedTests;
+  failedTests += backendFailedTests;
 
   // 获取时间信息
   if (backendResults.startTime) {
@@ -79,19 +100,36 @@ if (frontendResults && frontendResults.testResults) {
   const frontendTestResults = frontendResults.testResults;
   totalFiles += frontendTestResults.length;
   passedFiles += frontendTestResults.filter(result => result.status === 'passed').length;
+  failedFiles += frontendTestResults.filter(result => result.status === 'failed').length;
 
   let frontendTotalTests = 0;
   let frontendPassedTests = 0;
+  let frontendFailedTests = 0;
 
   frontendTestResults.forEach(file => {
     if (file.assertionResults) {
       frontendTotalTests += file.assertionResults.length;
       frontendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
+      frontendFailedTests += file.assertionResults.filter(test => test.status === 'failed').length;
+
+      // 收集失败的测试详情
+      const failedAssertions = file.assertionResults.filter(test => test.status === 'failed');
+      if (failedAssertions.length > 0) {
+        failedFileList.push(file.name);
+        failedAssertions.forEach(test => {
+          failedTestDetails.push({
+            file: file.name,
+            test: test.title,
+            error: test.failureMessages?.[0] || 'Unknown error'
+          });
+        });
+      }
     }
   });
 
   totalTests += frontendTotalTests;
   passedTests += frontendPassedTests;
+  failedTests += frontendFailedTests;
 
   // 更新时间信息
   if (frontendResults.startTime && (!startTime || frontendResults.startTime < startTime.getTime())) {
@@ -123,12 +161,41 @@ const formatDuration = (ms) => {
 };
 
 // 生成摘要内容
-const summaryContent = `
- Test Files  ${passedFiles} passed (${totalFiles})
-      Tests  ${passedTests} passed (${totalTests})
+let summaryContent = `
+ Test Files  ${passedFiles} passed, ${failedFiles} failed (${totalFiles} total)
+      Tests  ${passedTests} passed, ${failedTests} failed (${totalTests} total)
    Start at  ${startTime ? startTime.toISOString().replace('T', ' ').substring(0, 19) : 'Unknown'}
    Duration  ${formatDuration(durationMs)}
 `;
+
+// 添加失败文件列表（如果有）
+if (failedFileList.length > 0) {
+  summaryContent += `
+ Failed Files:
+`;
+  // 去重并添加失败文件
+  const uniqueFailedFiles = [...new Set(failedFileList)];
+  uniqueFailedFiles.forEach(file => {
+    summaryContent += `  - ${file}\n`;
+  });
+}
+
+// 添加失败测试详情（如果有）
+if (failedTestDetails.length > 0) {
+  summaryContent += `
+ Failed Tests:
+`;
+  failedTestDetails.forEach(test => {
+    summaryContent += `  - ${test.test} (${test.file})\n`;
+    // 只显示错误消息的前几行，避免摘要过长
+    const errorLines = test.error.split('\n').slice(0, 2);
+    errorLines.forEach(line => {
+      if (line.trim()) {
+        summaryContent += `    ${line.trim()}\n`;
+      }
+    });
+  });
+}
 
 // 写入摘要文件
 const summaryPath = path.join(logsDir, 'test-summary.log');

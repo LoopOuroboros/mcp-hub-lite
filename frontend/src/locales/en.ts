@@ -77,9 +77,7 @@ export default {
     tracingEnabled: 'Enable Tracing',
     exporter: 'Exporter',
     exporterConsole: 'Console',
-    exporterOtlp: 'OTLP (OpenTelemetry Protocol)',
-    exporterJaeger: 'Jaeger',
-    exporterZipkin: 'Zipkin',
+    exporterOtlp: 'OTOTLP (OpenTelemetry Protocol)',
     endpoint: 'Endpoint',
     sampleRate: 'Sample Rate'
   },

@@ -28,7 +28,7 @@ export interface SystemConfig {
   observability: {
     tracing: {
       enabled: boolean
-      exporter: 'console' | 'otlp' | 'jaeger' | 'zipkin'
+      exporter: 'console' | 'otlp'
       endpoint: string
       sampleRate: number
     }

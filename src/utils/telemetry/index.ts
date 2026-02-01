@@ -14,12 +14,6 @@ import {
   OTLPTraceExporter
 } from '@opentelemetry/exporter-trace-otlp-http';
 import {
-  JaegerExporter
-} from '@opentelemetry/exporter-jaeger';
-import {
-  ZipkinExporter
-} from '@opentelemetry/exporter-zipkin';
-import {
   SemanticResourceAttributes
 } from '@opentelemetry/semantic-conventions';
 import {
@@ -101,7 +95,7 @@ export class TelemetryManager {
   }
 
   /**
-   * Create span processor based on exporter configuration
+.   * Create span processor based on exporter configuration
    */
   private createSpanProcessor(tracingConfig: SystemConfig['observability']['tracing']): SpanProcessor {
     let exporter;
@@ -109,16 +103,6 @@ export class TelemetryManager {
     switch (tracingConfig.exporter) {
       case 'otlp':
         exporter = new OTLPTraceExporter({
-          url: tracingConfig.endpoint
-        });
-        break;
-      case 'jaeger':
-        exporter = new JaegerExporter({
-          endpoint: tracingConfig.endpoint
-        });
-        break;
-      case 'zipkin':
-        exporter = new ZipkinExporter({
           url: tracingConfig.endpoint
         });
         break;

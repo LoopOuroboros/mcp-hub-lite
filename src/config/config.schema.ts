@@ -86,7 +86,7 @@ export const SecurityConfigSchema = z.object({
 export const ObservabilityConfigSchema = z.object({
   tracing: z.object({
     enabled: z.boolean().default(false),
-    exporter: z.enum(['console', 'otlp', 'jaeger', 'zipkin']).default('console'),
+    exporter: z.enum(['console', 'otlp']).default('console'),
     endpoint: z.string().default('http://localhost:4318/v1/traces'),
     sampleRate: z.number().min(0).max(1).default(1.0)
   }).default({

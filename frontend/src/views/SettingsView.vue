@@ -148,8 +148,6 @@
                   <el-select v-model="config.observability.tracing.exporter" class="w-full md:w-64">
                     <el-option :label="$t('settings.exporterConsole')" value="console" />
                     <el-option :label="$t('settings.exporterOtlp')" value="otlp" />
-                    <el-option :label="$t('settings.exporterJaeger')" value="jaeger" />
-                    <el-option :label="$t('settings.exporterZipkin')" value="zipkin" />
                   </el-select>
                 </el-form-item>
 
