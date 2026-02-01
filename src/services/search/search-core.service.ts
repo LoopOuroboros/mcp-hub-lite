@@ -86,7 +86,7 @@ export class SearchCoreService {
   private applyFilters(tools: McpTool[], filters?: SearchOptions['filters']): McpTool[] {
     if (!filters) return tools;
 
-    let filtered = tools;
+    const filtered = tools;
 
     // serverId 和 status 字段已从 McpTool 接口中移除，如需按服务器或状态筛选，请使用其他方法
 
