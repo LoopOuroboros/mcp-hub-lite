@@ -259,12 +259,6 @@ export class ConfigManager {
   private backupManager: ConfigBackupManager;
   // 服务器实例存储在内存中，不保存到配置文件
   private serverInstances: Record<string, ServerInstanceConfig[]> = {};
-  // 延迟刷盘相关属性
-  private pendingChanges = false;
-  private debounceTimer: NodeJS.Timeout | null = null;
-  private readonly debounceDelay = 3 * 60 * 1000; // 3分钟延迟
-  // 信号处理器注册状态
-  private static signalHandlersRegistered = false;
 
   constructor(configPath?: string) {
     if (configPath) {
@@ -274,40 +268,6 @@ export class ConfigManager {
     }
     this.backupManager = new ConfigBackupManager(this.configPath);
     this.config = this.loadConfig();
-    // 注册信号处理器以确保退出前保存配置
-    this.registerSignalHandlers();
-  }
-
-  /**
-   * 注册信号处理器，确保程序退出前保存未保存的配置变更
-   */
-  private registerSignalHandlers(): void {
-    // 确保信号处理器只注册一次
-    if (ConfigManager.signalHandlersRegistered) {
-      return;
-    }
-
-    const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-
-    const handleExit = async () => {
-      // 检查所有 ConfigManager 实例是否有待保存的变更
-      if (this.pendingChanges) {
-        logger.info('Pending config changes detected, saving before exit...');
-        await this.flushPendingChanges();
-      }
-      process.exit(0);
-    };
-
-    for (const signal of signals) {
-      process.on(signal, () => {
-        handleExit().catch((error) => {
-          logger.error(`Error during ${signal} handling: ${error}`);
-          process.exit(1);
-        });
-      });
-    }
-
-    ConfigManager.signalHandlersRegistered = true;
   }
 
   private getDefaultConfigPath(): string {
@@ -669,8 +629,8 @@ export class ConfigManager {
       this.serverInstances[name] = [];
     }
 
-    // 触发延迟保存而不是立即保存
-    this.triggerSaveWithDelay();
+    // 立即保存配置
+    await this.saveConfig();
     return validatedConfig;
   }
 
@@ -703,8 +663,8 @@ export class ConfigManager {
   public async updateServer(name: string, updates: Partial<McpServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
       this.config.servers[name] = { ...this.config.servers[name], ...updates };
-      // 触发延迟保存而不是立即保存
-      this.triggerSaveWithDelay();
+      // 立即保存配置
+      await this.saveConfig();
     }
   }
 
@@ -720,8 +680,8 @@ export class ConfigManager {
       // 同时删除服务器和对应的实例
       delete this.config.servers[name];
       delete this.serverInstances[name];
-      // 触发延迟保存而不是立即保存
-      this.triggerSaveWithDelay();
+      // 立即保存配置
+      await this.saveConfig();
     }
   }
 
@@ -739,7 +699,7 @@ export class ConfigManager {
   /**
    * Update the entire configuration
    */
-  public async updateConfig(newConfig: Partial<SystemConfig>, immediate: boolean = true): Promise<void> {
+  public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
     // 首先检查当前配置和新配置是否都是默认配置
     const currentConfigStr = JSON.stringify(this.config, null, 2);
     const newConfigStr = JSON.stringify(SystemConfigSchema.parse({
@@ -755,20 +715,8 @@ export class ConfigManager {
         ...newConfig
       });
 
-      // 根据参数决定是立即保存还是延迟保存
-      if (immediate) {
-        // 立即保存
-        await this.saveConfig(this.config, false);
-        // 清除待保存状态
-        this.pendingChanges = false;
-        if (this.debounceTimer) {
-          clearTimeout(this.debounceTimer);
-          this.debounceTimer = null;
-        }
-      } else {
-        // 触发延迟保存
-        this.triggerSaveWithDelay();
-      }
+      // 立即保存配置
+      await this.saveConfig(this.config, false);
     }
   }
 
@@ -853,54 +801,6 @@ export class ConfigManager {
     return this.backupManager['backupDir']; // 访问私有属性
   }
 
-  /**
-   * 检查是否有未保存的配置变更
-   */
-  public hasPendingChanges(): boolean {
-    return this.pendingChanges;
-  }
-
-  /**
-   * 强制立即保存所有未保存的配置变更
-   */
-  public async flushPendingChanges(): Promise<void> {
-    if (this.pendingChanges) {
-      logger.info('Flushing pending config changes immediately');
-      await this.saveConfig();
-      this.pendingChanges = false;
-      if (this.debounceTimer) {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = null;
-      }
-    }
-  }
-
-  /**
-   * 触发配置保存（带延迟）
-   */
-  private triggerSaveWithDelay(): void {
-    // 如果已经有待保存的变更，重置计时器
-    if (this.pendingChanges && this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-    }
-
-    this.pendingChanges = true;
-
-    // 设置新的延迟计时器
-    this.debounceTimer = setTimeout(async () => {
-      try {
-        logger.info('Delayed config save triggered after 3 minutes of inactivity');
-        await this.saveConfig();
-        this.pendingChanges = false;
-        this.debounceTimer = null;
-      } catch (error) {
-        logger.error(`Failed to save config with delay: ${error}`);
-        // 即使保存失败，也清除状态以避免无限重试
-        this.pendingChanges = false;
-        this.debounceTimer = null;
-      }
-    }, this.debounceDelay);
-  }
 
   /**
    * 同步配置（确保不会自动修改配置文件）
