@@ -436,7 +436,7 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockServerInstances = {
+      const mockServerInstances: Record<string, Array<{ id: string; timestamp: number; hash: string }>> = {
         'Server 1': [{ id: '1', timestamp: Date.now(), hash: 'hash1' }],
         'Server 2': [{ id: '2', timestamp: Date.now(), hash: 'hash2' }]
       };

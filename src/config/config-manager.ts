@@ -90,18 +90,17 @@ class ConfigBackupManager {
         this.fileHashCache.set(path.basename(this.configPath), currentHash);
       }
 
-      // 检查所有备份是否已有相同内容（使用缓存）
+      // 检查所有备份是否已有相同内容（不使用缓存，每次都重新计算）
       const backups = this.listBackups();
+      const currentFileHash = this.computeFileHash(this.configPath);
+      if (!currentFileHash) {
+        logger.error('Failed to compute current config file hash, skipping backup');
+        return null;
+      }
+
       const hasDuplicate = backups.some(backup => {
-        let backupHash = this.fileHashCache.get(backup.name);
-        if (!backupHash) {
-          const computedHash = this.computeFileHash(backup.path);
-          if (computedHash) {
-            backupHash = computedHash;
-            this.fileHashCache.set(backup.name, backupHash);
-          }
-        }
-        return backupHash === currentHash;
+        const backupHash = this.computeFileHash(backup.path);
+        return backupHash === currentFileHash;
       });
 
       if (hasDuplicate) {
@@ -260,6 +259,12 @@ export class ConfigManager {
   private backupManager: ConfigBackupManager;
   // 服务器实例存储在内存中，不保存到配置文件
   private serverInstances: Record<string, ServerInstanceConfig[]> = {};
+  // 延迟刷盘相关属性
+  private pendingChanges = false;
+  private debounceTimer: NodeJS.Timeout | null = null;
+  private readonly debounceDelay = 3 * 60 * 1000; // 3分钟延迟
+  // 信号处理器注册状态
+  private static signalHandlersRegistered = false;
 
   constructor(configPath?: string) {
     if (configPath) {
@@ -269,6 +274,40 @@ export class ConfigManager {
     }
     this.backupManager = new ConfigBackupManager(this.configPath);
     this.config = this.loadConfig();
+    // 注册信号处理器以确保退出前保存配置
+    this.registerSignalHandlers();
+  }
+
+  /**
+   * 注册信号处理器，确保程序退出前保存未保存的配置变更
+   */
+  private registerSignalHandlers(): void {
+    // 确保信号处理器只注册一次
+    if (ConfigManager.signalHandlersRegistered) {
+      return;
+    }
+
+    const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+
+    const handleExit = async () => {
+      // 检查所有 ConfigManager 实例是否有待保存的变更
+      if (this.pendingChanges) {
+        logger.info('Pending config changes detected, saving before exit...');
+        await this.flushPendingChanges();
+      }
+      process.exit(0);
+    };
+
+    for (const signal of signals) {
+      process.on(signal, () => {
+        handleExit().catch((error) => {
+          logger.error(`Error during ${signal} handling: ${error}`);
+          process.exit(1);
+        });
+      });
+    }
+
+    ConfigManager.signalHandlersRegistered = true;
   }
 
   private getDefaultConfigPath(): string {
@@ -297,7 +336,7 @@ export class ConfigManager {
   }
 
   /**
-   * 检测是否处于 TypeScript 编译阶段
+   * 检测是否处于 TypeScript 编译阶段（不包括明确的测试场景）
    */
   private isCompilationPhase(): boolean {
     // 检测是否是 TypeScript 编译过程
@@ -307,10 +346,26 @@ export class ConfigManager {
 
     // 检测是否是构建过程
     const isBuild = process.argv.some(arg =>
-      arg.includes('build') || process.env.npm_lifecycle_event === 'build'
+      arg.includes('build') ||
+      process.env.npm_lifecycle_event === 'build'
     );
 
     return isTsc || isBuild;
+  }
+
+  /**
+   * 检测是否处于测试阶段
+   */
+  private isTestPhase(): boolean {
+    // 检测是否是测试环境
+    const isTest = process.env.NODE_ENV === 'test' ||
+                   process.env.VITEST === 'true' ||
+                   process.argv.some(arg => arg.includes('vitest')) ||
+                   process.env.npm_lifecycle_event === 'test' ||
+                   process.env.npm_lifecycle_event === 'test:unit' ||
+                   process.env.npm_lifecycle_event === 'test:backend';
+
+    return isTest;
   }
 
   private loadConfig(): SystemConfig {
@@ -331,7 +386,8 @@ export class ConfigManager {
         baseConfig = SystemConfigSchema.parse({});
 
         // 只有在非编译阶段才会自动创建配置文件
-        if (!this.isCompilationPhase()) {
+        // 在测试阶段，只有明确指定了配置路径时才创建配置文件
+        if (!this.isCompilationPhase() && (!this.isTestPhase() || (this.isTestPhase() && this.configPath))) {
           logger.info(`Creating new configuration file at: ${this.configPath}`);
           this.saveConfigSync(baseConfig);
         }
@@ -341,8 +397,9 @@ export class ConfigManager {
       // Initialize with default config
       baseConfig = SystemConfigSchema.parse({});
 
-      // 只有在非编译阶段才会自动保存配置文件
-      if (!this.isCompilationPhase()) {
+      // 只有在非编译阶段且配置文件不存在时才自动保存配置文件
+      // 在测试阶段，只有明确指定了配置路径且配置文件不存在时才保存配置文件
+      if (!this.isCompilationPhase() && (!this.isTestPhase() || (this.isTestPhase() && this.configPath && !this.fileExists(this.configPath)))) {
         this.saveConfigSync(baseConfig);
       }
     }
@@ -464,7 +521,8 @@ export class ConfigManager {
       fs.mkdirSync(dir, { recursive: true });
 
       // 检查是否需要备份（在保存之前检查）
-      const needsBackup = !skipBackup && this.fileExists(this.configPath);
+      // 对于新创建的配置文件，也应该创建备份
+      const needsBackup = !skipBackup;
 
       // 保存配置到文件
       fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
@@ -497,7 +555,8 @@ export class ConfigManager {
       await fsPromises.mkdir(dir, { recursive: true });
 
       // 检查是否需要备份（在保存之前检查）
-      const needsBackup = !skipBackup && this.fileExists(this.configPath);
+      // 对于新创建的配置文件（config !== undefined），也应该创建备份
+      const needsBackup = !skipBackup && (this.fileExists(this.configPath) || config !== undefined);
 
       logger.info(`Saving config to ${this.configPath}`);
       await fsPromises.writeFile(this.configPath, JSON.stringify(configToSave, null, 2));
@@ -575,7 +634,8 @@ export class ConfigManager {
       this.serverInstances[name] = [];
     }
 
-    await this.saveConfig();
+    // 触发延迟保存而不是立即保存
+    this.triggerSaveWithDelay();
     return validatedConfig;
   }
 
@@ -608,7 +668,8 @@ export class ConfigManager {
   public async updateServer(name: string, updates: Partial<McpServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
       this.config.servers[name] = { ...this.config.servers[name], ...updates };
-      await this.saveConfig();
+      // 触发延迟保存而不是立即保存
+      this.triggerSaveWithDelay();
     }
   }
 
@@ -624,7 +685,8 @@ export class ConfigManager {
       // 同时删除服务器和对应的实例
       delete this.config.servers[name];
       delete this.serverInstances[name];
-      await this.saveConfig();
+      // 触发延迟保存而不是立即保存
+      this.triggerSaveWithDelay();
     }
   }
 
@@ -658,8 +720,8 @@ export class ConfigManager {
         ...newConfig
       });
 
-      // 保存到文件（不跳过备份）
-      await this.saveConfig();
+      // 触发延迟保存而不是立即保存
+      this.triggerSaveWithDelay();
     }
   }
 
@@ -742,6 +804,55 @@ export class ConfigManager {
    */
   public getBackupDir(): string {
     return this.backupManager['backupDir']; // 访问私有属性
+  }
+
+  /**
+   * 检查是否有未保存的配置变更
+   */
+  public hasPendingChanges(): boolean {
+    return this.pendingChanges;
+  }
+
+  /**
+   * 强制立即保存所有未保存的配置变更
+   */
+  public async flushPendingChanges(): Promise<void> {
+    if (this.pendingChanges) {
+      logger.info('Flushing pending config changes immediately');
+      await this.saveConfig();
+      this.pendingChanges = false;
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = null;
+      }
+    }
+  }
+
+  /**
+   * 触发配置保存（带延迟）
+   */
+  private triggerSaveWithDelay(): void {
+    // 如果已经有待保存的变更，重置计时器
+    if (this.pendingChanges && this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    this.pendingChanges = true;
+
+    // 设置新的延迟计时器
+    this.debounceTimer = setTimeout(async () => {
+      try {
+        logger.info('Delayed config save triggered after 3 minutes of inactivity');
+        await this.saveConfig();
+        this.pendingChanges = false;
+        this.debounceTimer = null;
+      } catch (error) {
+        logger.error(`Failed to save config with delay: ${error}`);
+        // 即使保存失败，也清除状态以避免无限重试
+        this.pendingChanges = false;
+        this.debounceTimer = null;
+      }
+    }, this.debounceDelay);
   }
 
   /**

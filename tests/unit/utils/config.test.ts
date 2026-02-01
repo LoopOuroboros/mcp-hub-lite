@@ -12,13 +12,17 @@ describe('ConfigManager', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    // 创建临时目录用于测试配置文件
+    // 创建临时目录用于测试配置文件（确保使用Windows %Temp% 目录）
     tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
     fs.mkdirSync(tempDir, { recursive: true });
     tempConfigPath = path.join(tempDir, '.mcp-hub.json');
 
-    // Reset env vars
-    delete process.env.MCP_HUB_CONFIG_PATH;
+    // 设置环境变量确保在测试阶段
+    process.env.NODE_ENV = 'test';
+    process.env.VITEST = 'true';
+    process.env.MCP_HUB_CONFIG_PATH = tempConfigPath;
+
+    // Reset other env vars
     delete process.env.PORT;
     delete process.env.HOST;
     delete process.env.LOG_LEVEL;
@@ -134,6 +138,8 @@ describe('ConfigManager', () => {
     };
 
     await manager.addServer(serverName, newServer);
+    // 强制立即保存以验证文件写入
+    await manager.flushPendingChanges();
 
     const updatedConfig = manager.getConfig();
     expect(Object.keys(updatedConfig.servers)).toEqual([serverName]);
@@ -156,6 +162,8 @@ describe('ConfigManager', () => {
       type: 'stdio'
     };
     await manager.addServer(serverName, newServer);
+    // 强制立即保存以确保配置文件更新
+    await manager.flushPendingChanges();
 
     // 验证服务器实例数组已初始化但为空
     const serverInstances = manager.getServerInstances();
@@ -192,31 +200,41 @@ describe('ConfigManager', () => {
     expect(serverInstancesAfterDelete[serverName]).toBeUndefined();
   });
 
-  it('should create backup for default config', () => {
+  it('should create backup for default config', async () => {
     const manager = new ConfigManager(tempConfigPath);
-    const backupPath = manager.createBackup();
-    expect(backupPath).not.toBeNull();
-    expect(fs.existsSync(backupPath)).toBe(true);
+    // 确保配置文件已创建（会自动创建备份）
+    await manager.flushPendingChanges();
+    const backups = manager.listBackups();
+    expect(backups.length).toBe(1);
+    expect(fs.existsSync(backups[0].path)).toBe(true);
   });
 
   it('should create backup when config is modified with actual changes', async () => {
     const manager = new ConfigManager(tempConfigPath);
-
-    // 第一次创建备份
-    const firstBackup = manager.createBackup();
-    expect(firstBackup).not.toBeNull();
+    // 确保初始配置已保存（会自动创建第一个备份）
+    await manager.flushPendingChanges();
 
     const initialBackups = manager.listBackups();
     expect(initialBackups.length).toBe(1);
 
-    // 修改配置 - 使用不同的端口确保实际变化
+    // 获取原始端口
     const originalPort = manager.getConfig().system.port;
+    const originalHost = manager.getConfig().system.host;
+
+    // 修改配置 - 使用不同的端口和主机确保实际变化
     await manager.updateConfig({
       system: {
         port: originalPort + 1000, // 确保与原始端口不同
-        host: 'localhost'
+        host: originalHost === 'localhost' ? '127.0.0.1' : 'localhost'
       }
     });
+    // 强制立即保存以触发自动备份
+    await manager.flushPendingChanges();
+
+    // 验证配置确实已更新
+    const updatedConfig = manager.getConfig();
+    expect(updatedConfig.system.port).toBe(originalPort + 1000);
+    expect(updatedConfig.system.host).not.toBe(originalHost);
 
     const afterUpdateBackups = manager.listBackups();
     // 由于我们的智能重复检测，只有当内容实际变化时才会创建新备份
@@ -224,17 +242,15 @@ describe('ConfigManager', () => {
     expect(fs.existsSync(afterUpdateBackups[0].path)).toBe(true);
   });
 
-  it('should not create duplicate backup for identical config', () => {
+  it('should not create duplicate backup for identical config', async () => {
     const manager = new ConfigManager(tempConfigPath);
-
-    // 第一次创建备份
-    const firstBackup = manager.createBackup();
-    expect(firstBackup).not.toBeNull();
+    // 确保初始配置已保存
+    await manager.flushPendingChanges();
 
     const initialBackups = manager.listBackups();
     expect(initialBackups.length).toBe(1);
 
-    // 再次尝试创建备份（内容相同）
+    // 手动尝试创建备份（内容相同）
     const secondBackup = manager.createBackup();
     expect(secondBackup).toBeNull(); // 应该返回 null，表示没有创建新备份
 
@@ -244,19 +260,59 @@ describe('ConfigManager', () => {
 
   it('should limit number of backup files', async () => {
     const manager = new ConfigManager(tempConfigPath);
+    // 确保初始配置已保存
+    await manager.flushPendingChanges();
 
-    // 创建多个备份
+    // 创建多个备份（6次修改，加上初始备份共7个，应该保留最新的5个）
     for (let i = 0; i < 6; i++) {
       // 修改配置以确保创建新备份
       await manager.updateConfig({
         system: {
-          port: 7788 + i
+          port: 7788 + i + 100 // 使用不同的端口确保内容变化
         }
       });
+      // 强制立即保存以触发自动备份
+      await manager.flushPendingChanges();
     }
 
     const backups = manager.listBackups();
     // 最大备份数量是 5（包括最新的）
     expect(backups.length).toBe(5);
+  });
+
+  it('should support delayed save with flushPendingChanges', async () => {
+    const manager = new ConfigManager(tempConfigPath);
+
+    // 初始状态应该没有待保存的变更
+    expect(manager.hasPendingChanges()).toBe(false);
+
+    // 添加服务器，应该触发延迟保存
+    const serverName = 'Delayed Test Server';
+    await manager.addServer(serverName, {
+      command: 'node',
+      args: ['test.js'],
+      enabled: true,
+      type: 'stdio'
+    });
+
+    // 应该有待保存的变更
+    expect(manager.hasPendingChanges()).toBe(true);
+
+    // 配置文件应该还没有更新（因为延迟保存）
+    if (fs.existsSync(tempConfigPath)) {
+      const fileContent = JSON.parse(fs.readFileSync(tempConfigPath, 'utf-8'));
+      expect(fileContent.servers[serverName]).toBeUndefined();
+    }
+
+    // 强制立即保存
+    await manager.flushPendingChanges();
+
+    // 应该没有待保存的变更
+    expect(manager.hasPendingChanges()).toBe(false);
+
+    // 配置文件应该已经更新
+    const fileContent = JSON.parse(fs.readFileSync(tempConfigPath, 'utf-8'));
+    expect(fileContent.servers[serverName]).toBeDefined();
+    expect(fileContent.servers[serverName].command).toBe('node');
   });
 });
