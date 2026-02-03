@@ -1,5 +1,13 @@
 # MCP Hub Lite - AI 编程助手指南
 
+## 变更记录 (Changelog)
+
+### 2026-02-03
+- 更新项目索引和文档覆盖率
+- 完善所有模块的 CLAUDE.md 文档
+- 更新 .claude/index.json 索引文件
+- 优化模块结构图和索引表格
+
 ## 项目概述
 
 MCP Hub Lite 是一个轻量级的 MCP (Model Context Protocol) 网关系统，专为独立开发者设计。它充当前端和多个后端 MCP 服务器之间的代理，提供统一的访问界面，支持 MCP JSON-RPC 2.0 协议。

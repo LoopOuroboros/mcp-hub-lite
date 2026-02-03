@@ -5,6 +5,9 @@ import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
 import { telemetryManager } from '@utils/telemetry/index.js';
 
+// Set log level to debug for development server
+logger.setLevel('debug');
+
 // Enable dev logging to file
 logger.enableDevLog();
 
