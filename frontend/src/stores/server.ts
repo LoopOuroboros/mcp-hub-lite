@@ -12,7 +12,7 @@ export interface McpServerConfig {
   timeout?: number
   enabled?: boolean
   allowedTools?: string[]
-  type: 'stdio' | 'sse' | 'streamable-http'
+  type: 'stdio' | 'sse' | 'streamable-http' | 'http'
   tags?: Record<string, string>
   description?: string
 }

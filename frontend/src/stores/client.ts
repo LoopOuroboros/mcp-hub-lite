@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import { http } from '@utils/http'
 
 export interface ClientContext {
-  clientId: string
+  sessionId: string
   clientName?: string
+  clientVersion?: string
+  protocolVersion?: string
   cwd?: string
   project?: string
   ip?: string

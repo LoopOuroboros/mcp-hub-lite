@@ -6,27 +6,19 @@
     </div>
 
     <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex-1 overflow-hidden flex flex-col">
-      <el-table 
-        :data="store.clients" 
-        style="width: 100%" 
+      <el-table
+        :data="store.clients"
+        style="width: 100%"
         height="100%"
         v-loading="store.loading"
         class="flex-1"
       >
-        <el-table-column prop="clientId" :label="$t('clients.sessionId')" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="sessionId" :label="$t('clients.sessionId')" min-width="150" show-overflow-tooltip />
         <el-table-column prop="clientName" :label="$t('clients.name')" min-width="120" />
-        <el-table-column prop="cwd" :label="$t('clients.cwd')" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="project" :label="$t('clients.project')" min-width="150" />
-        <el-table-column :label="$t('clients.roots')" min-width="200">
-          <template #default="scope">
-            <div v-if="scope.row.roots && scope.row.roots.length">
-              <el-tag v-for="(root, idx) in scope.row.roots" :key="idx" size="small" class="mr-1 mb-1">
-                {{ root.name || root.uri }}
-              </el-tag>
-            </div>
-            <span v-else class="text-gray-400">{{ $t('clients.noRoots') }}</span>
-          </template>
-        </el-table-column>
+        <el-table-column prop="clientVersion" :label="$t('clients.clientVersion')" min-width="100" />
+        <el-table-column prop="protocolVersion" :label="$t('clients.protocolVersion')" min-width="120" />
+        <el-table-column prop="userAgent" :label="$t('clients.userAgent')" min-width="250" show-overflow-tooltip />
+        <el-table-column prop="ip" :label="$t('clients.ip')" min-width="120" />
         <el-table-column prop="lastSeen" :label="$t('clients.lastSeen')" width="180">
           <template #default="scope">
             {{ formatTime(scope.row.lastSeen) }}
