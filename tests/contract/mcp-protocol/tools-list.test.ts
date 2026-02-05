@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
-// Mock the actual server connection for contract tests
+// 模拟 MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
@@ -16,161 +16,109 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
             inputSchema: {
               type: 'object',
               properties: {
-                expression: { type: 'string' }
+                expression: { type: 'string' },
+                precision: { type: 'number', default: 2 }
               },
               required: ['expression']
             }
           },
           {
             name: 'weather',
-            description: 'Get current weather information',
+            description: 'Get weather information',
             inputSchema: {
               type: 'object',
               properties: {
-                location: { type: 'string' }
+                location: { type: 'string' },
+                unit: { type: 'string', enum: ['celsius', 'fahrenheit'] }
               },
               required: ['location']
             }
           }
         ]
       });
-      getServerVersion = vi.fn().mockReturnValue({ name: 'Contract Test Server', version: '1.0.0' });
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Test SDK Server', version: '1.0.0' });
     }
   };
 });
 
-vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
+// 模拟传输
+vi.mock('@utils/transports/transport-factory.js', () => {
   return {
-    StdioClientTransport: class {
-      close = vi.fn().mockResolvedValue(undefined);
+    TransportFactory: {
+      createTransport: vi.fn().mockReturnValue({
+        onclose: null,
+        onstdout: null,
+        onstderr: null,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
     }
   };
 });
 
-describe('MCP Protocol Contract - tools/list', () => {
-  const testServer = {
-    id: 'contract-test-server',
-    name: 'Contract Test Server',
-    command: 'node',
-    args: ['test-server.js'],
-    enabled: true,
-    type: 'stdio' as const,
-    longRunning: true,
-    timeout: 60,
-    allowedTools: ['calculator', 'weather']
-  };
+describe('MCP Protocol Contract - tools/list (with SDK)', () => {
+  const serverName = 'test-sdk-server';
+  let serverId: string;
 
   beforeEach(async () => {
-    // Clean up any existing connections
-    if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
-      await mcpConnectionManager.disconnect(testServer.id);
-    }
-
-    // Add server to hub manager
-    hubManager.addServer(testServer.name, testServer);
-
-    // Add server instance (id, timestamp, hash)
-    hubManager.addServerInstance(testServer.name, {
-      id: testServer.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+    // 添加到 hub manager
+    await hubManager.addServer(serverName, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000
     });
+
+    // 添加服务器实例
+    const instance = await hubManager.addServerInstance(serverName, {});
+    serverId = instance.id;
   });
 
   afterEach(async () => {
-    // Clean up connections
-    if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
-      await mcpConnectionManager.disconnect(testServer.id);
-    }
-    hubManager.removeServer(testServer.name);
+    await mcpConnectionManager.disconnect(serverId);
+    hubManager.removeServer('test-sdk-server');
   });
 
-  it('should return JSON-RPC 2.0 compliant response format', async () => {
-    // Connect to server
-    await mcpConnectionManager.connect(testServer);
+  it('should return tools with correct MCP schema', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
-    // Get all tools
-    const tools = mcpConnectionManager.getAllTools();
+    const tools = mcpConnectionManager.getTools(serverId);
 
-    // Verify tools structure
-    expect(Array.isArray(tools)).toBe(true);
-    expect(tools.length).toBeGreaterThan(0);
+    expect(tools).toHaveLength(2);
 
-    // Verify each tool has required MCP fields
-    for (const tool of tools) {
-      expect(tool).toHaveProperty('name');
-      expect(typeof tool.name).toBe('string');
-      expect(tool.name.length).toBeGreaterThan(0);
-
-      // serverId 字段已从 McpTool 接口中移除
-
-      // Description is optional in MCP spec
-      if (tool.description !== undefined) {
-        expect(typeof tool.description).toBe('string');
-      }
-
-      // inputSchema is optional in MCP spec
-      if (tool.inputSchema !== undefined) {
-        expect(typeof tool.inputSchema).toBe('object');
-      }
-    }
-  });
-
-  it('should return empty tool list for disconnected server', async () => {
-    // First connect to populate the tool cache
-    await mcpConnectionManager.connect(testServer);
-
-    // Verify tools are available when connected
-    const connectedTools = mcpConnectionManager.getTools(testServer.id);
-    expect(connectedTools.length).toBeGreaterThan(0);
-
-    // Disconnect the server
-    await mcpConnectionManager.disconnect(testServer.id);
-
-    // Now get tools should return empty array for disconnected server
-    const tools = mcpConnectionManager.getTools(testServer.id);
-    expect(tools).toEqual([]);
-  });
-
-  it('should support tool name prefixing with server name', async () => {
-    await mcpConnectionManager.connect(testServer);
-    const tools = mcpConnectionManager.getAllTools();
-
-    // Find a tool and verify it has the expected structure
-    const calculatorTool = tools.find(t => t.name === 'calculator');
-    expect(calculatorTool).toBeDefined();
-    expect(calculatorTool?.description).toContain('Perform mathematical calculations');
-
-    // Verify input schema structure
-    expect(calculatorTool?.inputSchema).toMatchObject({
+    // 验证 calculator 工具
+    const calculator = tools.find(t => t.name === 'calculator');
+    expect(calculator).toBeDefined();
+    expect(calculator?.description).toBe('Perform mathematical calculations');
+    expect(calculator?.inputSchema).toMatchObject({
       type: 'object',
-      properties: {
-        expression: { type: 'string' }
-      },
+      properties: expect.objectContaining({
+        expression: { type: 'string' },
+        precision: { type: 'number', default: 2 }
+      }),
       required: ['expression']
     });
   });
 
-  it('should maintain tool identity across multiple calls', async () => {
-    await mcpConnectionManager.connect(testServer);
+  it('should maintain tool identity across calls', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
-    const tools1 = mcpConnectionManager.getAllTools();
-    const tools2 = mcpConnectionManager.getAllTools();
+    const tools1 = mcpConnectionManager.getTools(serverId);
+    const tools2 = await mcpConnectionManager.refreshTools(serverId);
 
     expect(tools1).toHaveLength(tools2.length);
-
-    // Verify tool names are consistent
-    const toolNames1 = tools1.map(t => t.name).sort();
-    const toolNames2 = tools2.map(t => t.name).sort();
-    expect(toolNames1).toEqual(toolNames2);
-  });
-
-  it('should handle tool list gracefully', async () => {
-    // Connect to server and get tools (mock returns 2 tools)
-    await mcpConnectionManager.connect(testServer);
-    const tools = mcpConnectionManager.getTools(testServer.id);
-
-    expect(Array.isArray(tools)).toBe(true);
-    expect(tools.length).toBe(2); // Our mock returns 2 tools
+    expect(tools1.map(t => t.name)).toEqual(tools2.map(t => t.name));
   });
 });

@@ -50,8 +50,7 @@ describe('HubManagerService', () => {
       command: 'node',
       args: [],
       enabled: true,
-      allowedTools: [],
-      longRunning: true
+      allowedTools: []
     };
 
     const serverInstanceConfig = {
@@ -80,8 +79,7 @@ describe('HubManagerService', () => {
       command: 'node',
       args: [],
       enabled: false,
-      allowedTools: [],
-      longRunning: true
+      allowedTools: []
     };
 
     const serverInstanceConfig = {
@@ -110,8 +108,7 @@ describe('HubManagerService', () => {
       command: 'node',
       args: [],
       enabled: true,
-      allowedTools: [],
-      longRunning: true
+      allowedTools: []
     };
 
     vi.mocked(configManager.getServerByName).mockReturnValue(serverConfig as any);
@@ -154,8 +151,7 @@ describe('HubManagerService', () => {
       command: 'node',
       args: [],
       enabled: true,
-      allowedTools: [],
-      longRunning: true
+      allowedTools: []
     };
 
     vi.mocked(configManager.getServerInstanceByName).mockReturnValue([serverInstanceConfig] as any);

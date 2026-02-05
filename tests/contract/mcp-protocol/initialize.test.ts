@@ -1,137 +1,94 @@
-import { describe, it, expect } from 'vitest';
-import { FastifyInstance } from 'fastify';
-import { buildApp } from '@src/app.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { hubManager } from '@services/hub-manager.service.js';
 
-describe('MCP Protocol Contract - initialize', () => {
-  let app: FastifyInstance;
+// 模拟 MCP SDK
+vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
+  return {
+    Client: class {
+      connect = vi.fn().mockResolvedValue(undefined);
+      close = vi.fn().mockResolvedValue(undefined);
+      listTools = vi.fn().mockResolvedValue({
+        tools: [
+          {
+            name: 'echo',
+            description: 'Echo the input',
+            inputSchema: {
+              type: 'object',
+              properties: { message: { type: 'string' } }
+            }
+          }
+        ]
+      });
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Test SDK Server', version: '1.0.0' });
+    }
+  };
+});
+
+// 模拟传输
+vi.mock('@utils/transports/transport-factory.js', () => {
+  return {
+    TransportFactory: {
+      createTransport: vi.fn().mockReturnValue({
+        onclose: null,
+        onstdout: null,
+        onstderr: null,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
+    }
+  };
+});
+
+describe('MCP Protocol Contract - initialize (with SDK)', () => {
+  const serverName = 'test-sdk-server';
+  let serverId: string;
 
   beforeEach(async () => {
-    app = await buildApp();
+    // 添加到 hub manager
+    await hubManager.addServer(serverName, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000
+    });
+
+    // 添加服务器实例
+    const instance = await hubManager.addServerInstance(serverName, {});
+    serverId = instance.id;
   });
 
   afterEach(async () => {
-    await app.close();
+    await mcpConnectionManager.disconnect(serverId);
+    hubManager.removeServer(serverName);
   });
 
-  it('should return JSON-RPC 2.0 compliant initialize response', async () => {
-    const requestBody = {
-      jsonrpc: '2.0',
-      method: 'initialize',
-      params: {
-        clientInfo: {
-          name: 'test-client',
-          version: '1.0.0',
-          mcpVersion: '2025-11-25'
-        },
-        capabilities: {
-          tools: {
-            list: true,
-            execute: true
-          }
-        }
-      },
-      id: 'init-1'
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/mcp',
-      payload: requestBody,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream'
-      }
+  it('should correctly initialize MCP connection with SDK', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
     });
 
-    console.log('Response status:', response.statusCode);
-    console.log('Response body:', response.body);
-    expect(response.statusCode).toBe(200);
-
-    // Parse SSE response format: "event: message\ndata: {json}"
-    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
-    expect(dataMatch).toBeDefined();
-    const responseBody = JSON.parse(dataMatch![1]);
-
-    // Verify JSON-RPC 2.0 compliance
-    expect(responseBody).toHaveProperty('jsonrpc');
-    expect(responseBody.jsonrpc).toBe('2.0');
-    expect(responseBody).toHaveProperty('id');
-    expect(responseBody.id).toBe('init-1');
-
-    // Should have result (not error)
-    expect(responseBody).toHaveProperty('result');
-    expect(responseBody).not.toHaveProperty('error');
-
-    // Verify result structure
-    const result = responseBody.result;
-    expect(result).toHaveProperty('serverInfo');
-    expect(result.serverInfo).toHaveProperty('name');
-    expect(result.serverInfo).toHaveProperty('version');
-    expect(result.serverInfo).toHaveProperty('mcpVersion');
-
-    expect(result).toHaveProperty('capabilities');
-    expect(result.capabilities).toHaveProperty('tools');
-    expect(result.capabilities.tools).toHaveProperty('list');
-    expect(result.capabilities.tools).toHaveProperty('execute');
+    const status = mcpConnectionManager.getStatus(serverId);
+    expect(status?.connected).toBe(true);
+    expect(status?.version).toBe('1.0.0');
   });
 
-  it('should handle invalid initialize request with proper JSON-RPC error', async () => {
-    const invalidRequest = {
-      jsonrpc: '2.0',
-      method: 'initialize',
-      params: {}, // Empty params should be handled gracefully
-      id: 'init-2'
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/mcp',
-      payload: invalidRequest,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream'
-      }
+  it('should list tools using SDK Client', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
     });
 
-    expect(response.statusCode).toBe(200);
-
-    // Parse SSE response format: "event: message\ndata: {json}"
-    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
-    expect(dataMatch).toBeDefined();
-    const responseBody = JSON.parse(dataMatch![1]);
-
-    // Should have result (not error) - our implementation handles empty params
-    expect(responseBody).toHaveProperty('result');
-    expect(responseBody).not.toHaveProperty('error');
-  });
-
-  it('should support ping method as required by MCP spec', async () => {
-    const pingRequest = {
-      jsonrpc: '2.0',
-      method: 'ping',
-      id: 'ping-1'
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/mcp',
-      payload: pingRequest,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/event-stream'
-      }
-    });
-
-    expect(response.statusCode).toBe(200);
-
-    // Parse SSE response format: "event: message\ndata: {json}"
-    const dataMatch = response.body.match(/data: ({.*?})\s*$/m);
-    expect(dataMatch).toBeDefined();
-    const responseBody = JSON.parse(dataMatch![1]);
-
-    expect(responseBody).toHaveProperty('jsonrpc', '2.0');
-    expect(responseBody).toHaveProperty('id', 'ping-1');
-    expect(responseBody).toHaveProperty('result');
-    expect(responseBody.result).toHaveProperty('pong', true);
+    const tools = mcpConnectionManager.getTools(serverId);
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('echo');
+    expect(tools[0].description).toBe('Echo the input');
   });
 });

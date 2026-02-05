@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { ConfigManager } from '@config/config-manager.js';
-import { McpServerConfigSchema, SystemConfigSchema } from '@config/config.schema.js';
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
@@ -169,7 +168,18 @@ describe('ConfigManager', () => {
       configManager.updateConfig({
         system: {
           host: 'new-host',
-          port: 9090
+          port: 9090,
+          language: 'zh',
+          theme: 'system',
+          logging: {
+            level: 'info',
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
         }
       });
 
@@ -196,7 +206,19 @@ describe('ConfigManager', () => {
       // 修改配置以触发保存
       configManager.updateConfig({
         system: {
-          host: 'test-host'
+          host: 'test-host',
+          port: 7788,
+          language: 'zh' as const,
+          theme: 'system' as const,
+          logging: {
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
         }
       });
 
@@ -451,7 +473,7 @@ describe('ConfigManager', () => {
         type: 'stdio' as const
       });
 
-      const instance = await configManager.addServerInstance('test-server', {
+      await configManager.addServerInstance('test-server', {
         id: 'test-instance-id',
         timestamp: Date.now(),
         hash: 'test-hash',
@@ -510,10 +532,25 @@ describe('ConfigManager', () => {
       const newConfig = {
         system: {
           host: 'new-host',
-          port: 9090
+          port: 9090,
+          language: 'zh' as const,
+          theme: 'system' as const,
+          logging: {
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
         },
         security: {
-          maxConcurrentConnections: 100
+          allowedNetworks: ['127.0.0.1', '::1'],
+          maxConcurrentConnections: 100,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 60000,
+          maxConnections: 1000
         }
       };
 
@@ -531,7 +568,19 @@ describe('ConfigManager', () => {
 
       await configManager.updateConfig({
         system: {
-          host: 'new-host'
+          host: 'new-host',
+          port: 7788,
+          language: 'zh' as const,
+          theme: 'system' as const,
+          logging: {
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
         }
       });
 
@@ -551,7 +600,11 @@ describe('ConfigManager', () => {
       // 只更新部分配置
       await configManager.updateConfig({
         system: {
-          port: 9999
+          port: 9999,
+          host: initialConfig.system.host,
+          language: initialConfig.system.language,
+          theme: initialConfig.system.theme,
+          logging: initialConfig.system.logging
         }
       });
 
@@ -570,7 +623,19 @@ describe('ConfigManager', () => {
       // 修改内存中的配置
       await configManager.updateConfig({
         system: {
-          host: 'memory-host'
+          host: 'memory-host',
+          port: 7788,
+          language: 'zh' as const,
+          theme: 'system' as const,
+          logging: {
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
         }
       });
 

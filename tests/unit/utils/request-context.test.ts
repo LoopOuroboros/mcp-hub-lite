@@ -19,7 +19,7 @@ describe('Request Context', () => {
 
   it('should store and retrieve client context correctly', async () => {
     const testContext = {
-      clientId: 'test-client',
+      sessionId: 'test-session',
       clientName: 'Test Client',
       cwd: '/test/cwd',
       project: 'test-project',
@@ -39,7 +39,7 @@ describe('Request Context', () => {
 
   it('should handle partial context correctly', async () => {
     const partialContext = {
-      clientId: 'partial-client',
+      sessionId: 'partial-session',
       timestamp: Date.now()
     };
 
@@ -54,13 +54,13 @@ describe('Request Context', () => {
 
   it('should maintain context isolation between async operations', async () => {
     const context1 = {
-      clientId: 'client-1',
+      sessionId: 'session-1',
       cwd: '/path/1',
       timestamp: Date.now()
     };
 
     const context2 = {
-      clientId: 'client-2',
+      sessionId: 'session-2',
       cwd: '/path/2',
       timestamp: Date.now()
     };
@@ -88,7 +88,7 @@ describe('Request Context', () => {
 
   it('should return undefined for getClientCwd when cwd is not set', async () => {
     const contextWithoutCwd = {
-      clientId: 'no-cwd-client',
+      sessionId: 'no-cwd-session',
       timestamp: Date.now()
     };
 

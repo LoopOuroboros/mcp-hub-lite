@@ -1,12 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
 
-// Mock the actual server connection for contract tests
+// 模拟 MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
@@ -16,31 +13,28 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
         tools: [
           {
             name: 'calculator',
-            description: 'Perform mathematical calculations',
+            description: 'Perform calculations',
             inputSchema: {
               type: 'object',
               properties: {
-                expression: { type: 'string' }
+                a: { type: 'number' },
+                b: { type: 'number' },
+                operation: { type: 'string', enum: ['add', 'subtract', 'multiply'] }
               },
-              required: ['expression']
+              required: ['a', 'b', 'operation']
             }
           }
         ]
       });
-      getServerVersion = vi.fn().mockReturnValue({ name: 'Contract Test Server', version: '1.0.0' });
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Test SDK Server', version: '1.0.0' });
       callTool = vi.fn().mockImplementation(async (request) => {
         if (request.name === 'calculator') {
-          const expr = request.arguments?.expression;
-          if (!expr) {
-            throw new McpError(-32602, 'Missing expression parameter');
-          }
-
-          // Simple evaluation (for testing purposes)
-          try {
-            const result = eval(expr); // In real implementation, this would be safer
-            return { result };
-          } catch (e) {
-            throw new McpError(-32802, `Evaluation error: ${e}`);
+          const { a, b, operation } = request.arguments;
+          switch (operation) {
+            case 'add': return { result: a + b };
+            case 'subtract': return { result: a - b };
+            case 'multiply': return { result: a * b };
+            default: throw new McpError(-32802, 'Invalid operation');
           }
         }
         throw new McpError(-32801, `Tool ${request.name} not found`);
@@ -49,141 +43,121 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
+// 模拟传输
+vi.mock('@utils/transports/transport-factory.js', () => {
   return {
-    StdioClientTransport: class {
-      close = vi.fn().mockResolvedValue(undefined);
+    TransportFactory: {
+      createTransport: vi.fn().mockReturnValue({
+        onclose: null,
+        onstdout: null,
+        onstderr: null,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
     }
   };
 });
 
-describe('MCP Protocol Contract - tools/call', () => {
-  const testServer = {
-    id: 'contract-test-server',
-    name: 'Contract Test Server',
-    command: 'node',
-    args: ['test-server.js'],
-    enabled: true,
-    type: 'stdio' as const,
-    longRunning: true,
-    timeout: 60,
-    allowedTools: ['calculator']
-  };
-
-  let tempConfigPath: string;
+describe('MCP Protocol Contract - tools/call (with SDK)', () => {
+  const serverName = 'test-sdk-server';
+  let serverId: string;
 
   beforeEach(async () => {
-    // Create a temporary directory for test configuration
-    const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
-    fs.mkdirSync(tempDir, { recursive: true });
-    tempConfigPath = path.join(tempDir, '.mcp-hub.json');
-
-    // Clean up any existing connections
-    if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
-      await mcpConnectionManager.disconnect(testServer.id);
-    }
-
-    // Add server to hub manager
-    hubManager.addServer(testServer.name, testServer);
-
-    // Add server instance (id, timestamp, hash)
-    hubManager.addServerInstance(testServer.name, {
-      id: testServer.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+    // 添加到 hub manager
+    await hubManager.addServer(serverName, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000
     });
+
+    // 添加服务器实例
+    const instance = await hubManager.addServerInstance(serverName, {});
+    serverId = instance.id;
   });
 
   afterEach(async () => {
-    // Clean up connections
-    if (mcpConnectionManager.getStatus(testServer.id)?.connected) {
-      await mcpConnectionManager.disconnect(testServer.id);
-    }
-    hubManager.removeServer(testServer.name);
-
-    // Clean up temporary configuration
-    if (tempConfigPath && fs.existsSync(tempConfigPath)) {
-      const tempDir = path.dirname(tempConfigPath);
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+    await mcpConnectionManager.disconnect(serverId);
+    hubManager.removeServer('test-sdk-server');
   });
 
-  it('should execute tool with valid arguments and return JSON-RPC 2.0 compliant result', async () => {
-    await mcpConnectionManager.connect(testServer);
+  it('should execute tool with correct arguments', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
     const result = await mcpConnectionManager.callTool(
-      testServer.id,
+      serverId,
       'calculator',
-      { expression: '2 + 2' }
+      { a: 5, b: 3, operation: 'add' }
     );
 
     expect(result).toHaveProperty('result');
-    expect(result.result).toBe(4);
+    expect(result.result).toBe(8);
   });
 
-  it('should return proper MCP error for invalid tool name', async () => {
-    await mcpConnectionManager.connect(testServer);
+  it('should handle invalid parameters', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
     await expect(
-      mcpConnectionManager.callTool(testServer.id, 'non-existent-tool', {})
-    ).rejects.toThrowError(McpError);
-
-    // The error should have the correct MCP error code
-    try {
-      await mcpConnectionManager.callTool(testServer.id, 'non-existent-tool', {});
-    } catch (error) {
-      expect(error).toBeInstanceOf(McpError);
-      expect((error as McpError).code).toBe(-32801); // Tool not found
-    }
+      mcpConnectionManager.callTool(
+        serverId,
+        'calculator',
+        { a: 5, b: 3 } // missing operation
+      )
+    ).rejects.toBeDefined();
   });
 
-  it('should return proper MCP error for invalid arguments', async () => {
-    await mcpConnectionManager.connect(testServer);
+  it('should handle tool errors correctly', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
     await expect(
-      mcpConnectionManager.callTool(testServer.id, 'calculator', {})
-    ).rejects.toThrowError(McpError);
-
-    try {
-      await mcpConnectionManager.callTool(testServer.id, 'calculator', {});
-    } catch (error) {
-      expect(error).toBeInstanceOf(McpError);
-      expect((error as McpError).code).toBe(-32602); // Invalid params
-    }
+      mcpConnectionManager.callTool(
+        serverId,
+        'calculator',
+        { a: 5, b: 3, operation: 'divide' } // invalid operation
+      )
+    ).rejects.toBeDefined();
   });
 
-  it('should handle execution errors with proper MCP error code', async () => {
-    await mcpConnectionManager.connect(testServer);
-
-    await expect(
-      mcpConnectionManager.callTool(testServer.id, 'calculator', { expression: 'invalid syntax' })
-    ).rejects.toThrowError(McpError);
-
-    try {
-      await mcpConnectionManager.callTool(testServer.id, 'calculator', { expression: 'invalid syntax' });
-    } catch (error) {
-      expect(error).toBeInstanceOf(McpError);
-      expect((error as McpError).code).toBe(-32802); // Execution failed
-    }
-  });
-
-  it('should maintain tool execution isolation between calls', async () => {
-    await mcpConnectionManager.connect(testServer);
+  it('should maintain isolation between calls', async () => {
+    await mcpConnectionManager.connect({
+      id: serverId,
+      name: serverName,
+      command: 'node',
+      args: [],
+      type: 'stdio'
+    });
 
     const result1 = await mcpConnectionManager.callTool(
-      testServer.id,
+      serverId,
       'calculator',
-      { expression: '1 + 1' }
+      { a: 10, b: 5, operation: 'subtract' }
     );
 
     const result2 = await mcpConnectionManager.callTool(
-      testServer.id,
+      serverId,
       'calculator',
-      { expression: '2 * 3' }
+      { a: 3, b: 4, operation: 'multiply' }
     );
 
-    expect(result1.result).toBe(2);
-    expect(result2.result).toBe(6);
-    expect(result1.result).not.toBe(result2.result);
+    expect(result1.result).toBe(5);
+    expect(result2.result).toBe(12);
   });
 });

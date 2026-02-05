@@ -35,7 +35,6 @@ describe('McpConnectionManager', () => {
     args: ['test-script.js'],
     enabled: true,
     type: 'stdio' as const,
-    longRunning: true,
     timeout: 60,
     allowedTools: ['test-tool']
   };
@@ -132,7 +131,6 @@ describe('SimpleSearchService', () => {
             args: [],
             enabled: true,
             type: 'stdio' as const,
-            longRunning: true,
             timeout: 60,
             allowedTools: ['test-tool']
         };

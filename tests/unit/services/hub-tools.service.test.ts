@@ -27,8 +27,7 @@ describe('HubToolsService', () => {
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         },
         {
@@ -37,8 +36,7 @@ describe('HubToolsService', () => {
             type: 'sse',
             url: 'http://example.com',
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         }
       ];
@@ -65,8 +63,7 @@ describe('HubToolsService', () => {
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         },
         {
@@ -75,8 +72,7 @@ describe('HubToolsService', () => {
             type: 'sse',
             url: 'http://example.com',
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         },
         {
@@ -85,8 +81,7 @@ describe('HubToolsService', () => {
             type: 'http',
             url: 'http://dev.example.com',
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         }
       ];
@@ -111,8 +106,7 @@ describe('HubToolsService', () => {
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         },
         {
@@ -121,8 +115,7 @@ describe('HubToolsService', () => {
             type: 'sse',
             url: 'http://example.com',
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         }
       ];
@@ -164,8 +157,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
@@ -225,8 +217,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
@@ -280,8 +271,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
@@ -322,8 +312,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
@@ -354,8 +343,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
 
@@ -383,8 +371,7 @@ describe('HubToolsService', () => {
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: [],
-        longRunning: true
+        allowedTools: []
       });
       (mcpConnectionManager.callTool as any).mockResolvedValue(expectedResult);
 
@@ -420,8 +407,7 @@ describe('HubToolsService', () => {
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         },
         {
@@ -430,8 +416,7 @@ describe('HubToolsService', () => {
             type: 'sse',
             url: 'http://example.com',
             enabled: true,
-            allowedTools: [],
-            longRunning: true
+            allowedTools: []
           }
         }
       ];
