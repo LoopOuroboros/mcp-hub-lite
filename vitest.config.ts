@@ -19,7 +19,8 @@ export default defineConfig({
       '@pid': resolve(__dirname, './src/pid'),
       '@services': resolve(__dirname, './src/services'),
       '@utils': resolve(__dirname, './src/utils'),
-      '@server': resolve(__dirname, './src/server')
+      '@server': resolve(__dirname, './src/server'),
+      '@helpers': resolve(__dirname, './tests/helpers')
     }
   },
   test: {

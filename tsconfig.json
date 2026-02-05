@@ -23,7 +23,8 @@
       "@pid/*": ["./src/pid/*"],
       "@services/*": ["./src/services/*"],
       "@utils/*": ["./src/utils/*"],
-      "@server/*": ["./src/server/*"]
+      "@server/*": ["./src/server/*"],
+      "@helpers/*": ["./tests/helpers/*"]
     }
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"],
