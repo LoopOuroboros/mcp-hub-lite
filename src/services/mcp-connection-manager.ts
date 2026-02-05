@@ -79,8 +79,9 @@ class McpConnectionManager {
             throw new Error('STDIO server requires a valid command');
           }
 
-          if ((server.type === 'sse' || server.type === 'streamable-http') && (!server.url || server.url.trim() === '')) {
-            throw new Error(`${server.type.toUpperCase()} server requires a valid URL`);
+          if ((server.type === 'sse' || server.type === 'streamable-http' || server.type === 'http') && (!server.url || server.url.trim() === '')) {
+            const displayType = server.type === 'http' ? 'streamable-http' : server.type;
+            throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
           }
 
           // Create transport based on server type

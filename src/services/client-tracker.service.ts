@@ -17,11 +17,13 @@ class ClientTrackerService {
   }
 
   public updateClient(context: ClientContext) {
-    const existing = this.clients.get(context.clientId);
+    const existing = this.clients.get(context.sessionId);
     const clientInfo: ClientInfo = {
       ...context,
       // Preserve existing info if not provided in new request
       clientName: context.clientName || existing?.clientName,
+      clientVersion: context.clientVersion || existing?.clientVersion,
+      protocolVersion: context.protocolVersion || existing?.protocolVersion,
       project: context.project || existing?.project,
       cwd: context.cwd || existing?.cwd, // Preserve CWD if not provided in new request (e.g. inferred from roots)
       userAgent: context.userAgent || existing?.userAgent,
@@ -30,7 +32,7 @@ class ClientTrackerService {
       lastSeen: Date.now(),
       roots: existing?.roots // Preserve roots if already fetched
     };
-    this.clients.set(context.clientId, clientInfo);
+    this.clients.set(context.sessionId, clientInfo);
 
     // 如果是新客户端，发布连接事件
     if (!existing) {
@@ -41,12 +43,12 @@ class ClientTrackerService {
     }
   }
 
-  public updateClientRoots(clientId: string, roots: Array<{ uri: string; name?: string }>) {
-    const client = this.clients.get(clientId);
+  public updateClientRoots(sessionId: string, roots: Array<{ uri: string; name?: string }>) {
+    const client = this.clients.get(sessionId);
     if (client) {
       client.roots = roots;
       client.lastSeen = Date.now();
-      
+
       // If CWD is missing, try to infer from roots
       if (!client.cwd && roots.length > 0) {
         // Convert file:// uri to path if possible, or just use URI
@@ -63,7 +65,7 @@ class ClientTrackerService {
         } else {
             client.cwd = root.uri;
         }
-        logger.debug(`Inferred CWD for client ${clientId} from roots: ${client.cwd}`);
+        logger.debug(`Inferred CWD for session ${sessionId} from roots: ${client.cwd}`);
       }
     }
   }
@@ -72,8 +74,8 @@ class ClientTrackerService {
     return Array.from(this.clients.values());
   }
 
-  public getClient(clientId: string): ClientInfo | undefined {
-    return this.clients.get(clientId);
+  public getClient(sessionId: string): ClientInfo | undefined {
+    return this.clients.get(sessionId);
   }
 
   private cleanup() {

@@ -6,7 +6,7 @@ import { logger } from '@utils/logger.js';
 interface Session {
     server: McpServer;
     transport: StreamableHTTPServerTransport;
-    clientId: string;
+    sessionId: string;
     lastAccessed: number;
 }
 
@@ -18,53 +18,62 @@ export class McpSessionManager {
         setInterval(() => this.cleanup(), 60000);
     }
 
-    public async getSession(clientId: string): Promise<Session> {
-        let session = this.sessions.get(clientId);
-        
+    public async getSession(sessionId: string): Promise<Session> {
+        let session = this.sessions.get(sessionId);
+
         if (!session) {
-            session = await this.createSession(clientId);
-            this.sessions.set(clientId, session);
+            session = await this.createSession(sessionId);
+            this.sessions.set(sessionId, session);
         }
 
         session.lastAccessed = Date.now();
         return session;
     }
 
-    private async createSession(clientId: string): Promise<Session> {
-        logger.info(`Creating new MCP session for client: ${clientId}`);
-        
-        // Use stateless mode for the transport to avoid strict session validation
-        // The Gateway handles session routing via clientId in the URL/headers
-        const transport = new StreamableHTTPServerTransport();
+    private async createSession(sessionId: string): Promise<Session> {
+        logger.info(`Creating new MCP session: ${sessionId}`);
+
+        const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => sessionId,
+            onsessioninitialized: (id) => {
+                logger.debug(`Session initialized: ${id}`);
+            },
+            onsessionclosed: (id) => {
+                logger.debug(`Session closed: ${id}`);
+                this.sessions.delete(id);
+            }
+        });
         const server = gateway.createConnectionServer();
-        
-        // Setup Active Fetching for Roots
-        // Handled by GatewayService's initialized notification handler
-        // server.server.oninitialized = async () => { ... }
 
         await server.connect(transport);
+
+        logger.info(`MCP session created successfully: ${sessionId}`);
 
         return {
             server,
             transport,
-            clientId,
+            sessionId,
             lastAccessed: Date.now()
         };
     }
 
     private cleanup() {
         const now = Date.now();
-        for (const [id, session] of this.sessions.entries()) {
+        let cleanedCount = 0;
+        for (const [sessionId, session] of this.sessions.entries()) {
             if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
-                logger.info(`Cleaning up stale session: ${id}`);
-                // Best effort cleanup
+                logger.info(`Cleaning up stale session: ${sessionId} (last accessed ${(now - session.lastAccessed) / 1000}s ago)`);
                 try {
                     session.server.close();
+                    cleanedCount++;
                 } catch (e) {
-                    logger.error(`Error closing session ${id}:`, e);
+                    logger.error(`Error closing session ${sessionId}:`, e);
                 }
-                this.sessions.delete(id);
+                this.sessions.delete(sessionId);
             }
+        }
+        if (cleanedCount > 0) {
+            logger.info(`Cleaned up ${cleanedCount} stale sessions. Active sessions: ${this.sessions.size}`);
         }
     }
 }

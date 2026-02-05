@@ -5,79 +5,107 @@ import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
 import { randomUUID } from 'crypto';
 
-function extractClientContext(request: any): ClientContext {
+function extractSessionContext(request: any): { sessionId: string; clientContext: ClientContext } {
   const headers = request.headers;
 
+  // 完全使用原 clientId 生成逻辑作为 sessionId
   // Priority 1: Session ID from Query (Standard MCP SSE)
-  // This is the most reliable identifier for an active session
-  let clientId = request.query && (request.query as any).sessionId;
+  let sessionId = request.query && (request.query as any).sessionId;
 
   if (request.url.includes('sessionId=')) {
       const match = request.url.match(/sessionId=([^&]+)/);
       if (match) {
-          clientId = match[1];
-          logger.debug(`Extracted sessionId from URL: ${clientId}`);
+          sessionId = match[1];
+          logger.debug(`Extracted sessionId from URL: ${sessionId}`);
       }
   }
 
-  const clientName = (headers['x-mcp-client-id'] as string) || (headers['x-client-id'] as string);
+  let clientName = (headers['x-mcp-client-id'] as string) || (headers['x-client-id'] as string);
   const clients = clientTrackerService.getClients();
+  let clientVersion: string | undefined;
+  let protocolVersion: string | undefined;
 
   // Priority 2: For JSON-RPC requests like initialize, maintain session consistency
-  if (!clientId && request.body) {
-      // For initialize request, generate a consistent session ID
+  if (!sessionId && request.body) {
       if (request.body.method === 'initialize' && request.body.params?.clientInfo) {
           const { name, version } = request.body.params.clientInfo;
-          // 从请求中获取 CWD（运行目录），用于区分相同版本但不同运行目录的客户端
+          protocolVersion = request.body.params.protocolVersion;
           const cwd = (headers['x-mcp-cwd'] as string) || (headers['x-cwd'] as string);
-          // 使用 client name + version + cwd（哈希化）作为稳定标识符，确保相同版本但不同目录的客户端有不同的 Client-Id
+
           let baseId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
           if (cwd) {
-              // 对 CWD 进行简单哈希处理，避免路径包含特殊字符
               const cwdHash = cwd.split('').reduce((acc, char) => {
                   acc = ((acc << 5) - acc) + char.charCodeAt(0);
-                  return acc & acc; // 转换为 32 位整数
-              }, 0).toString(16).replace('-', ''); // 确保是正数
+                  return acc & acc;
+              }, 0).toString(16).replace('-', '');
               baseId = `${baseId}-${cwdHash}`;
           } else {
-              // 当 cwd 为空时，添加随机哈希值，确保每个会话有唯一的 Client-Id
               const randomHash = randomUUID().substring(0, 8);
               baseId = `${baseId}-${randomHash}`;
           }
-          clientId = baseId;
-          logger.debug(`Extracted clientId from initialize params: ${clientId}`);
-      }
-  }
+          sessionId = baseId;
+          logger.debug(`Extracted sessionId from initialize params: ${sessionId}`);
 
-  // Priority 3: Simplified session matching - only match exact clientId or clientName
-  if (!clientId) {
-      // Check if there's already a session with matching client name (for consistency)
-      if (clientName) {
-          const existingClient = clients.find(c => c.clientName === clientName);
-          if (existingClient) {
-              clientId = existingClient.clientId;
-              logger.debug(`Found existing clientId for ${clientName}: ${clientId}`);
+          // 保存客户端版本和协议版本信息
+          clientVersion = version;
+          protocolVersion = request.body.params.protocolVersion;
+          // 直接设置 clientName，因为我们从 initialize 请求中获取了更准确的信息
+          clientName = name;
+      } else if (request.body.method === 'notifications/initialized' || request.body.method === 'tools/list') {
+          // 对于 notifications/initialized 和 tools/list 请求，我们需要找到已存在的会话
+          // 因为这些请求通常是在 initialize 之后立即发送的
+          if (clients.length > 0) {
+              // 尝试找到最近的客户端会话
+              const latestClient = clients.reduce((latest, current) => {
+                  return current.timestamp > latest.timestamp ? current : latest;
+              });
+              sessionId = latestClient.sessionId;
+              logger.debug(`Extracted sessionId from latest client for ${request.body.method}: ${sessionId}`);
           }
       }
   }
 
-  // Priority 4: Generate new unique session ID only if no other method works
-  if (!clientId) {
-      // Use client name as prefix if available, but ensure uniqueness with UUID
-      const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
-      clientId = `${prefix}${randomUUID().substring(0, 8)}`;
-      logger.debug(`Generated new clientId: ${clientId}`);
+  // Priority 3: For any request without sessionId, try to find latest session
+  // This handles cases like GET /mcp without query params and POST /mcp with tools/list
+  if (!sessionId && clients.length > 0) {
+      const latestClient = clients.reduce((latest, current) => {
+          return current.timestamp > latest.timestamp ? current : latest;
+      });
+      sessionId = latestClient.sessionId;
+      logger.debug(`Extracted sessionId from latest client: ${sessionId}`);
   }
 
-  return {
-    clientId,
+  // Priority 4: Simplified session matching - only match exact sessionId or clientName
+  if (!sessionId) {
+      if (clientName) {
+          const existingClient = clients.find(c => c.clientName === clientName);
+          if (existingClient) {
+              sessionId = existingClient.sessionId; // 使用现有的 sessionId
+              logger.debug(`Found existing sessionId for ${clientName}: ${sessionId}`);
+          }
+      }
+  }
+
+  // Priority 5: Generate new unique session ID only if no other method works
+  if (!sessionId) {
+      const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
+      sessionId = `${prefix}${randomUUID().substring(0, 8)}`;
+      logger.debug(`Generated new sessionId: ${sessionId}`);
+  }
+
+  const clientContext: ClientContext = {
+    sessionId,
     clientName,
+    clientVersion,
+    protocolVersion,
     cwd: (headers['x-mcp-cwd'] as string) || (headers['x-cwd'] as string),
     project: (headers['x-mcp-project'] as string) || (headers['x-project'] as string),
     ip: request.ip,
     userAgent: headers['user-agent'],
     timestamp: Date.now()
   };
+
+  return { sessionId, clientContext };
 }
 
 /**
@@ -85,25 +113,19 @@ function extractClientContext(request: any): ClientContext {
  * Handles all MCP protocol requests at /mcp endpoint
  */
 export async function mcpGatewayRoutes(fastify: FastifyInstance) {
-  
+
   const handleMcpRequest = async (request: any, reply: any) => {
-      // Extract and track client context
-      const rawContext = extractClientContext(request);
-      clientTrackerService.updateClient(rawContext);
-      
-      // Use the full context from tracker (which includes inferred CWD from roots)
-      const context = clientTrackerService.getClient(rawContext.clientId) || rawContext;
+      const { sessionId, clientContext } = extractSessionContext(request);
 
-      // Log request summary in one line
-      let logMsg = `MCP Gateway ${request.method} ${request.url} [Client: ${context.clientId}]`;
-      if (context.cwd) logMsg += ` [CWD: ${context.cwd}]`;
+      // 更新客户端追踪信息
+      clientTrackerService.updateClient(clientContext);
 
-      // logger.info(`Debug: Query: ${JSON.stringify(request.query)}, Headers: ${JSON.stringify(request.headers['x-mcp-client-id'])}`);
+      let logMsg = `MCP Gateway ${request.method} ${request.url} [Session: ${sessionId}]`;
+      if (clientContext.cwd) logMsg += ` [CWD: ${clientContext.cwd}]`;
 
       if (request.body) {
           try {
               const preview = JSON.stringify(request.body);
-              // For tools/list responses with many tools, use debug level to avoid verbose logs
               if (logMsg.includes('tools/list')) {
                   logger.debug(logMsg + ` Body: ${preview}`);
               } else {
@@ -115,7 +137,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       }
       logger.info(logMsg);
 
-      // Set default Content-Type and Accept headers for JSON-RPC
       reply.header('Content-Type', 'application/json');
       if (!request.headers['accept']) {
         request.headers['accept'] = 'application/json, text/event-stream';
@@ -123,20 +144,15 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
       reply.hijack();
 
-      // 创建响应跟踪
       const startTime = Date.now();
 
       try {
-          // Get or create session for this client
-          const session = await mcpSessionManager.getSession(context.clientId);
+          const session = await mcpSessionManager.getSession(sessionId);
 
-          // Pass parsed body to transport within request context
-          await requestContext.run(context, async () => {
-              // Fix: Ensure transport sees the sessionId in the URL so it sends correct endpoint URI to client
-              // This is crucial for clients (like browsers) that can't send headers with EventSource
+          await requestContext.run(clientContext, async () => {
               if (request.method === 'GET' && !request.raw.url.includes('sessionId=')) {
                   const separator = request.raw.url.includes('?') ? '&' : '?';
-                  request.raw.url = `${request.raw.url}${separator}sessionId=${context.clientId}`;
+                  request.raw.url = `${request.raw.url}${separator}sessionId=${sessionId}`;
                   logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`);
               }
 
@@ -144,12 +160,21 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           });
 
           const duration = Date.now() - startTime;
-          logger.info(`MCP Gateway response for ${context.clientId}: handled in ${duration}ms`);
+          logger.info(`MCP Gateway response for ${sessionId}: handled in ${duration}ms`);
       } catch (error) {
-          logger.error(`Error handling MCP request for client ${context.clientId}:`, error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`Error handling MCP request for session ${sessionId}: ${errorMessage}`, error);
           if (!reply.raw.headersSent) {
               reply.raw.writeHead(500, { 'Content-Type': 'application/json' });
-              reply.raw.end(JSON.stringify({ error: "Internal Server Error" }));
+              reply.raw.end(JSON.stringify({
+                  jsonrpc: "2.0",
+                  error: {
+                      code: -32000,
+                      message: "Internal Server Error",
+                      data: { sessionId }
+                  },
+                  id: null
+              }));
           }
       }
   };

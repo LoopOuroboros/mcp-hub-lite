@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ListRootsResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
 import { logger, withSpan, createMcpSpanOptions } from "@utils/index.js";
@@ -72,7 +72,7 @@ export class GatewayService {
       const context = getClientContext();
       if (context && request.params?.clientInfo) {
         const { name, version } = request.params.clientInfo;
-        logger.info(`Initialized client: ${name} v${version} (ID: ${context.clientId})`);
+        logger.info(`Initialized client: ${name} v${version} (ID: ${context.sessionId})`);
         
         // Update client info in tracker
         clientTrackerService.updateClient({
@@ -110,37 +110,37 @@ export class GatewayService {
       return { pong: true };  // 符合 MCP 规范的响应格式
     });
 
-    // Handle initialized notification to fetch roots
-    const InitializedNotificationSchema = z.object({
-      method: z.literal('notifications/initialized'),
-      params: z.any().optional(),
-      jsonrpc: z.literal('2.0')
-    });
-
-    server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
-      const context = getClientContext();
-      if (!context) {
-        logger.warn('Received notifications/initialized but client context is missing');
-        return;
-      }
-
-      logger.info(`Client ${context.clientId} initialized, fetching roots...`);
-      
-      try {
-        const result = await server.server.request(
-          { method: "roots/list" }, 
-          ListRootsResultSchema
-        );
-        
-        if (result.roots) {
-          logger.info(`Received ${result.roots.length} roots from client ${context.clientId}`);
-          clientTrackerService.updateClientRoots(context.clientId, result.roots);
-        }
-      } catch (error) {
-        // Many clients (e.g. web browsers) might not support roots, just log as debug
-        logger.debug(`Failed to fetch roots from client ${context.clientId}: ${error}`);
-      }
-    });
+    // // Handle initialized notification to fetch roots (DISABLED)
+    // const InitializedNotificationSchema = z.object({
+    //   method: z.literal('notifications/initialized'),
+    //   params: z.any().optional(),
+    //   jsonrpc: z.literal('2.0')
+    // });
+    //
+    // server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
+    //   const context = getClientContext();
+    //   if (!context) {
+    //     logger.warn('Received notifications/initialized but client context is missing');
+    //     return;
+    //   }
+    //
+    //   logger.info(`Client ${context.sessionId} initialized, fetching roots...`);
+    //
+    //   try {
+    //     const result = await server.server.request(
+    //       { method: "roots/list" },
+    //       ListRootsResultSchema
+    //     );
+    //
+    //     if (result.roots) {
+    //       logger.info(`Received ${result.roots.length} roots from client ${context.sessionId}`);
+    //       clientTrackerService.updateClientRoots(context.sessionId, result.roots);
+    //     }
+    //   } catch (error) {
+    //     // Many clients (e.g. web browsers) might not support roots, just log as debug
+    //     logger.debug(`Failed to fetch roots from client ${context.sessionId}: ${error}`);
+    //   }
+    // });
 
     // Define search tool schema
     const SearchToolsRequestSchema = z.object({
