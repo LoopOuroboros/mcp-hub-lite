@@ -18,19 +18,63 @@ export class ConfigManager {
     this.loadConfig();
   }
 
+  /**
+   * 统一的类型转换方法：将 type: 'http' 转换为 type: 'streamable-http'
+   * 确保所有场景（加载、添加、更新）的兼容性
+   */
+  private convertHttpToStreamableHttp(config: any): any {
+    if (!config) return config;
+
+    // 如果是数组，处理每个元素
+    if (Array.isArray(config)) {
+      return config.map(item => this.convertHttpToStreamableHttp(item));
+    }
+
+    // 如果是对象，创建副本以避免直接修改原始对象
+    if (typeof config === 'object') {
+      const result = { ...config };
+
+      // 处理单个服务器配置
+      if (result.type === 'http') {
+        result.type = 'streamable-http';
+      }
+
+      // 递归处理嵌套对象
+      for (const key in result) {
+        if (typeof result[key] === 'object') {
+          result[key] = this.convertHttpToStreamableHttp(result[key]);
+        }
+      }
+
+      return result;
+    }
+
+    // 基本类型直接返回
+    return config;
+  }
+
   private loadConfig(): void {
     try {
       if (fs.existsSync(this.configPath)) {
         logger.info(`Loading configuration from: ${this.configPath}`);
         const content = fs.readFileSync(this.configPath, 'utf-8');
         this.config = JSON.parse(content);
+        // 统一类型转换：将 http 转换为 streamable-http
+        this.config = this.convertHttpToStreamableHttp(this.config);
         // Ensure defaults without validation errors blocking
         try {
-           const parsed = SystemConfigSchema.safeParse(this.config);
-           if (parsed.success) {
-               this.config = parsed.data;
-           }
-        } catch (e) {}
+          // 使用 safeParse 而不是 parse，以便在验证失败时保留原始配置
+          const parsed = SystemConfigSchema.safeParse(this.config);
+          if (parsed.success) {
+            this.config = parsed.data;
+          } else {
+            // 验证失败时，记录错误但保留原始配置
+            logger.error(`Config validation failed: ${parsed.error}`);
+          }
+        } catch (e) {
+          logger.error(`Failed to parse config: ${e}`);
+          // 保留原始配置，不回退到默认值
+        }
       } else {
         this.config = SystemConfigSchema.parse({});
         this.saveConfig();
@@ -38,9 +82,9 @@ export class ConfigManager {
     } catch (error) {
       this.config = SystemConfigSchema.parse({});
     }
-    
+
     // Init server instances
-    if (this.config && this.config.servers) {
+    if (this.config && this.config.servers && typeof this.config.servers === 'object') {
         Object.keys(this.config.servers).forEach(name => {
             if (!this.serverInstances[name]) this.serverInstances[name] = [];
         });
@@ -94,14 +138,18 @@ export class ConfigManager {
 
   public async addServers(servers: Array<{name: string, config: Partial<McpServerConfig>}>): Promise<void> {
     for (const {name, config} of servers) {
-      this.config.servers[name] = McpServerConfigSchema.parse(config);
+      // 统一类型转换：将 http 转换为 streamable-http
+      const convertedConfig = this.convertHttpToStreamableHttp(config);
+      this.config.servers[name] = McpServerConfigSchema.parse(convertedConfig);
       if (!this.serverInstances[name]) this.serverInstances[name] = [];
     }
     this.saveConfig();
   }
 
   public async addServer(name: string, config: Partial<McpServerConfig>): Promise<McpServerConfig> {
-    const validated = McpServerConfigSchema.parse(config);
+    // 统一类型转换：将 http 转换为 streamable-http
+    const convertedConfig = this.convertHttpToStreamableHttp(config);
+    const validated = McpServerConfigSchema.parse(convertedConfig);
     this.config.servers[name] = validated;
     if (!this.serverInstances[name]) this.serverInstances[name] = [];
     this.saveConfig();
@@ -126,7 +174,9 @@ export class ConfigManager {
 
   public async updateServer(name: string, updates: Partial<McpServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
-      this.config.servers[name] = { ...this.config.servers[name], ...updates };
+      // 统一类型转换：将 http 转换为 streamable-http
+      const convertedUpdates = this.convertHttpToStreamableHttp(updates);
+      this.config.servers[name] = { ...this.config.servers[name], ...convertedUpdates };
       this.saveConfig();
     }
   }
@@ -154,7 +204,9 @@ export class ConfigManager {
 
   public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
-    this.config = SystemConfigSchema.parse({ ...this.config, ...newConfig });
+    // 统一类型转换：将 http 转换为 streamable-http
+    const convertedConfig = this.convertHttpToStreamableHttp(newConfig);
+    this.config = SystemConfigSchema.parse({ ...this.config, ...convertedConfig });
     this.logConfigChanges(oldConfig, this.config);
     this.saveConfig();
   }

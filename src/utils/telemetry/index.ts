@@ -14,17 +14,20 @@ import {
   OTLPTraceExporter
 } from '@opentelemetry/exporter-trace-otlp-http';
 import {
-  SemanticResourceAttributes
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_VERSION
 } from '@opentelemetry/semantic-conventions';
+import {
+  ATTR_HOST_NAME,
+  ATTR_PROCESS_PID
+} from '@opentelemetry/semantic-conventions/incubating';
 import {
   registerInstrumentations
 } from '@opentelemetry/instrumentation';
 import {
   HttpInstrumentation
 } from '@opentelemetry/instrumentation-http';
-import {
-  FastifyInstrumentation
-} from '@opentelemetry/instrumentation-fastify';
+import { FastifyOtelInstrumentation } from '@fastify/otel';
 import type { SystemConfig } from '@config/config.schema.js';
 import { logger } from '@utils/logger.js';
 
@@ -64,10 +67,10 @@ export class TelemetryManager {
     try {
       // Create resource with service information
       const resource = resourceFromAttributes({
-        [SemanticResourceAttributes.SERVICE_NAME]: 'mcp-hub-lite',
-        [SemanticResourceAttributes.SERVICE_VERSION]: config.version,
-        [SemanticResourceAttributes.HOST_NAME]: config.system.host,
-        [SemanticResourceAttributes.PROCESS_PID]: process.pid
+        [ATTR_SERVICE_NAME]: 'mcp-hub-lite',
+        [ATTR_SERVICE_VERSION]: config.version,
+        [ATTR_HOST_NAME]: config.system.host,
+        [ATTR_PROCESS_PID]: process.pid
       });
 
       const spanProcessor = this.createSpanProcessor(tracingConfig);
@@ -121,7 +124,9 @@ export class TelemetryManager {
       registerInstrumentations({
         instrumentations: [
           new HttpInstrumentation(),
-          new FastifyInstrumentation()
+          new FastifyOtelInstrumentation({
+            registerOnInitialization: true
+          })
         ]
       });
       logger.debug('OpenTelemetry automatic instrumentations registered');

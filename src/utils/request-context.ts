@@ -1,8 +1,10 @@
 import { AsyncLocalStorage } from 'async_hooks';
 
 export interface ClientContext {
-  clientId: string;
+  sessionId: string;
   clientName?: string;
+  clientVersion?: string;
+  protocolVersion?: string;
   cwd?: string;
   project?: string;
   ip?: string;

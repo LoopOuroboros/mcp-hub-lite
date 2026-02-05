@@ -44,6 +44,7 @@ export class TransportFactory {
         );
 
       case 'streamable-http':
+      case 'http':  // 兼容 http 类型，视为 streamable-http
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
@@ -93,9 +94,9 @@ export class TransportFactory {
         reconnectInterval: 3000,
         maxReconnectAttempts: 5
       };
-    } else if (type === 'streamable-http') {
+    } else if (type === 'streamable-http' || type === 'http') {
       return {
-        type: 'streamable-http',
+        type: 'streamable-http', // 统一转换为 streamable-http
         url: server.url || '',
         headers: server.env,
         timeout: server.timeout || 30000

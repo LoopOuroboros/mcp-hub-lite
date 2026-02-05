@@ -60,8 +60,13 @@ if (backendResults && backendResults.testResults) {
   let backendTotalTests = 0;
   let backendPassedTests = 0;
   let backendFailedTests = 0;
+  let backendMaxEndTime = 0;
 
   backendTestResults.forEach(file => {
+    if (file.endTime > backendMaxEndTime) {
+      backendMaxEndTime = file.endTime;
+    }
+
     if (file.assertionResults) {
       backendTotalTests += file.assertionResults.length;
       backendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
@@ -92,6 +97,8 @@ if (backendResults && backendResults.testResults) {
   }
   if (backendResults.endTime) {
     endTime = new Date(backendResults.endTime);
+  } else if (backendMaxEndTime > 0) {
+    endTime = new Date(backendMaxEndTime);
   }
 }
 
@@ -105,8 +112,13 @@ if (frontendResults && frontendResults.testResults) {
   let frontendTotalTests = 0;
   let frontendPassedTests = 0;
   let frontendFailedTests = 0;
+  let frontendMaxEndTime = 0;
 
   frontendTestResults.forEach(file => {
+    if (file.endTime > frontendMaxEndTime) {
+      frontendMaxEndTime = file.endTime;
+    }
+
     if (file.assertionResults) {
       frontendTotalTests += file.assertionResults.length;
       frontendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
@@ -135,8 +147,13 @@ if (frontendResults && frontendResults.testResults) {
   if (frontendResults.startTime && (!startTime || frontendResults.startTime < startTime.getTime())) {
     startTime = new Date(frontendResults.startTime);
   }
-  if (frontendResults.endTime && (!endTime || frontendResults.endTime > endTime.getTime())) {
-    endTime = new Date(frontendResults.endTime);
+  
+  const currentFrontendEndTime = frontendResults.endTime 
+    ? new Date(frontendResults.endTime) 
+    : (frontendMaxEndTime > 0 ? new Date(frontendMaxEndTime) : null);
+
+  if (currentFrontendEndTime && (!endTime || currentFrontendEndTime.getTime() > endTime.getTime())) {
+    endTime = currentFrontendEndTime;
   }
 }
 
