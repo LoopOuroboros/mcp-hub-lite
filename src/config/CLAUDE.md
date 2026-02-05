@@ -76,8 +76,7 @@ export const SystemConfigSchema = z.object({
       "name": "Example MCP Server",
       "type": "stdio",
       "command": "npx my-mcp-server",
-      "enabled": true,
-      "longRunning": true
+      "enabled": true
     }
   ],
   "logging": {
@@ -138,7 +137,6 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   timeout?: number;
   enabled?: boolean;
-  longRunning?: boolean;
 }
 ```
 

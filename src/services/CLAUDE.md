@@ -14,8 +14,11 @@ services/
 ├── gateway.service.ts         # MCP Gateway 网关服务
 ├── simple-search.service.ts   # 简化搜索服务
 ├── mcp-connection-manager.ts # MCP 连接管理器
+├── mcp-session-manager.ts   # MCP 会话管理器
+├── hub-tools.service.ts       # 系统工具服务
 ├── log-storage.service.ts      # 日志存储服务
-└── hub-tools.service.ts       # 系统工具服务
+├── event-bus.service.ts      # 事件总线服务
+└── client-tracker.service.ts  # 客户端追踪服务
 ```
 
 ## 核心服务
@@ -27,9 +30,16 @@ services/
 **主要方法**:
 - `getAllServers()` - 获取所有服务器
 - `getServerById(id)` - 根据 ID 获取服务器
-- `addServer(server)` - 添加新服务器
-- `updateServer(id, updates)` - 更新服务器配置
-- `removeServer(id)` - 删除服务器
+- `getServerByName(name)` - 根据名称获取服务器
+- `addServer(name, config)` - 添加新服务器
+- `addServerInstance(name, instance)` - 添加服务器实例
+- `updateServer(name, updates)` - 更新服务器配置
+- `updateServerInstance(name, index, updates)` - 更新服务器实例
+- `removeServer(name)` - 删除服务器
+- `removeServerInstance(name, index)` - 删除服务器实例
+- `addServersWithoutAutoStart(servers)` - 批量添加服务器（不自动启动）
+- `addServerInstancesWithoutConnect(serverNames)` - 批量创建服务器实例（不自动连接）
+- `connectServerInstances(serverNames)` - 并发连接多个服务器实例
 
 **依赖**:
 - `configManager` - 配置管理器
@@ -41,6 +51,7 @@ services/
 **主要方法**:
 - `start()` - 启动 stdio 模式的 Gateway
 - `createConnectionServer()` - 创建新的连接服务器实例
+- `generateGatewayToolsList(tool)` - 生成网关工具列表
 
 **功能**:
 - 工具名称前缀化（服务器名称_工具名称）
@@ -52,47 +63,49 @@ services/
 - `hubManager` - 服务器管理器
 - `@modelcontextprotocol/sdk` - MCP SDK
 
-### SimpleSearchService (`simple-search.service.ts`)
-
-**职责**: 简化搜索实现，基于字符串匹配
-
-**主要方法**:
-- `searchTools(query, filters)` - 搜索工具
-
-**搜索策略**:
-- 直接遍历工具列表
-- 字符串包含匹配（大小写不敏感）
-- 支持名称、描述、标签搜索
-
-**性能目标**:
-- 适用规模：50-200 个工具
-- 响应时间：<100ms
-
 ### McpConnectionManager (`mcp-connection-manager.ts`)
 
 **职责**: MCP 连接管理和工具调用
 
 **主要方法**:
-- `connectServer(serverId)` - 连接到服务器
-- `disconnectServer(serverId)` - 断开服务器连接
-- `getAllTools()` - 获取所有连接服务器的工具
+- `connect(server)` - 连接到服务器
+- `disconnect(serverId)` - 断开服务器连接
+- `disconnectAll()` - 断开所有连接
+- `refreshTools(serverId)` - 刷新服务器工具列表
+- `refreshResources(serverId)` - 刷新服务器资源列表
+- `getStatus(serverId)` - 获取服务器状态
+- `getTools(serverId)` - 获取服务器工具
+- `getAllTools()` - 获取所有服务器工具
+- `getToolCacheEntries()` - 获取工具缓存条目
+- `getServerIdByName(name)` - 根据服务器名称获取 ID
+- `getClientByName(name)` - 根据服务器名称获取客户端
+- `callToolByName(name, toolName, args)` - 通过服务器名称调用工具
+- `getStatusByName(name)` - 通过服务器名称获取状态
+- `getToolsByName(name)` - 通过服务器名称获取工具
+- `getResourcesByName(name)` - 通过服务器名称获取资源
 - `callTool(serverId, toolName, args)` - 调用工具
-- `listResources(serverId)` - 列出服务器资源
-- `readResource(serverId, uri)` - 读取资源
+- `getToolsByServerName(serverName)` - 获取服务器名称级别的工具
+- `getAllToolsByServerName()` - 获取所有服务器名称的工具
 
 **支持的传输协议**:
 - `stdio` - 标准输入输出
 - `sse` - Server-Sent Events
-- `streamable-http` - HTTP 流传输
+- `streamable-http` / `http` - HTTP 流传输
 
-### LogStorageService (`log-storage.service.ts`)
+### McpSessionManager (`mcp-session-manager.ts`)
 
-**职责**: 日志存储和管理
+**职责**: MCP 会话管理器，基于 sessionId 管理会话状态
 
 **主要方法**:
-- `addLog(serverId, logEntry)` - 添加日志
-- `getLogs(serverId, limit)` - 获取日志
-- `clearLogs(serverId)` - 清除日志
+- `getSession(sessionId)` - 获取或创建会话
+- `createSession(sessionId)` - 创建新会话
+- `cleanup()` - 清理过期会话
+
+**功能**:
+- 基于 sessionId 的会话隔离
+- 共享服务器实例以优化性能
+- 自动清理过期会话（30 分钟超时）
+- 会话超时管理
 
 ### HubToolsService (`hub-tools.service.ts`)
 
@@ -114,15 +127,85 @@ services/
 - `listAllToolsInServer(serverId)` - 列出服务器所有工具
 - `findToolsInServer(serverId, pattern, searchIn, caseSensitive)` - 查找服务器中的工具
 - `getTool(serverId, toolName)` - 获取工具 schema
+- `callSystemTool(toolName, toolArgs)` - 调用系统工具
 - `callTool(serverId, toolName, toolArgs)` - 调用工具
 - `listAllTools()` - 列出所有服务器的所有工具
 - `findTools(pattern, searchIn, caseSensitive)` - 查找所有工具
 
-**优化说明**: 已将所有方法中的 serverName 参数替换为 serverId，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销。
+**优化说明**: 使用 serverId 替代 serverName，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销。
 
 **依赖**:
 - `hubManager` - 服务器管理器
 - `mcpConnectionManager` - MCP 连接管理器
+
+### SimpleSearchService (`simple-search.service.ts`)
+
+**职责**: 简化搜索实现，基于字符串匹配
+
+**主要方法**:
+- `searchTools(query, filters)` - 搜索工具
+
+**搜索策略**:
+- 直接遍历工具列表
+- 字符串包含匹配（大小写不敏感）
+- 支持名称、描述、标签搜索
+
+**性能目标**:
+- 适用规模：50-200 个工具
+- 响应时间：<100ms
+
+### SearchCoreService (`search/search-core.service.ts`)
+
+**职责**: 核心搜索服务，支持模糊搜索和评分
+
+**主要方法**:
+- `search(query, options)` - 执行搜索
+
+**功能**:
+- 模糊搜索算法
+- 评分机制
+- 缓存支持
+- 事件驱动缓存失效
+
+### LogStorageService (`log-storage.service.ts`)
+
+**职责**: 日志存储和管理
+
+**主要方法**:
+- `append(serverId, level, message)` - 添加日志
+- `getLogs(serverId, limit)` - 获取日志
+- `clearLogs(serverId)` - 清除日志
+
+### EventBusService (`event-bus.service.ts`)
+
+**职责**: 事件总线，用于模块间通信
+
+**事件类型**:
+- `SERVER_ADDED` - 服务器添加
+- `SERVER_UPDATED` - 服务器更新
+- `SERVER_DELETED` - 服务器删除
+- `SERVER_INSTANCE_ADDED` - 服务器实例添加
+- `SERVER_INSTANCE_UPDATED` - 服务器实例更新
+- `SERVER_INSTANCE_DELETED` - 服务器实例删除
+- `SERVER_CONNECTED` - 服务器连接
+- `SERVER_DISCONNECTED` - 服务器断开
+- `SERVER_STATUS_CHANGE` - 服务器状态变化
+- `TOOLS_UPDATED` - 工具更新
+- `RESOURCES_UPDATED` - 资源更新
+- `TOOL_CALL_STARTED` - 工具调用开始
+- `TOOL_CALL_COMPLETED` - 工具调用完成
+- `TOOL_CALL_ERROR` - 工具调用错误
+
+### ClientTrackerService (`client-tracker.service.ts`)
+
+**职责**: 客户端追踪服务
+
+**主要方法**:
+- `updateClient(clientContext)` - 更新客户端信息
+- `getClients()` - 获取所有客户端
+- `getClient(sessionId)` - 获取特定客户端
+- `updateClientRoots(sessionId, roots)` - 更新客户端 roots
+- `removeClient(sessionId)` - 删除客户端
 
 ## 依赖关系
 
@@ -136,18 +219,23 @@ services/
 │   ├── depends on: hub-manager.service.ts
 │   └── depends on: @modelcontextprotocol/sdk
 │
-├── simple-search.service.ts
-│   └── depends on: mcp-connection-manager.ts
-│
 ├── mcp-connection-manager.ts
 │   ├── depends on: hub-manager.service.ts
 │   └── depends on: utils/transports/
 │
+├── mcp-session-manager.ts
+│   ├── depends on: gateway.service.ts
+│   └── depends on: utils/transports/
+│
+├── hub-tools.service.ts
+│   ├── depends on: hub-manager.service.ts
+│   └── depends on: mcp-connection-manager.ts
+│
 ├── log-storage.service.ts
 │
-└── hub-tools.service.ts
-    ├── depends on: hub-manager.service.ts
-    └── depends on: mcp-connection-manager.ts
+├── event-bus.service.ts
+│
+└── client-tracker.service.ts
 ```
 
 ## 数据模型
@@ -176,7 +264,7 @@ enum ConnectionStatus {
 
 ### 单元测试
 
-**文件**: `tests/unit/services/hub-manager.test.ts`
+**状态**: 部分实现
 
 **测试覆盖**:
 - 服务器 CRUD 操作
@@ -201,10 +289,19 @@ A: 在 `utils/transports/` 目录下实现新的 Transport 类，然后在 `mcp-
 | `services/gateway.service.ts` | Gateway 网关服务 |
 | `services/simple-search.service.ts` | 搜索服务 |
 | `services/mcp-connection-manager.ts` | 连接管理器 |
-| `services/log-storage.service.ts` | 日志存储服务 |
+| `services/mcp-session-manager.ts` | 会话管理器 |
 | `services/hub-tools.service.ts` | 系统工具服务 |
+| `services/log-storage.service.ts` | 日志存储服务 |
+| `services/event-bus.service.ts` | 事件总线服务 |
+| `services/client-tracker.service.ts` | 客户端追踪服务 |
 
 ## 变更记录 (Changelog)
+
+### 2026-02-05
+- 更新 Services 模块文档
+- 添加会话管理器文档
+- 添加事件总线文档
+- 添加客户端追踪服务文档
 
 ### 2026-01-20
 - 添加 HubToolsService 文档
