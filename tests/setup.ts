@@ -15,9 +15,9 @@ let tempTestConfigPath: string;
  * Set up test environment before all tests
  */
 beforeAll(() => {
-  // Create a unique temp directory for this test run
-  const testRunId = `test-${process.pid}-${Date.now()}`;
-  tempTestConfigDir = path.join(os.tmpdir(), `mcp-hub-test-${testRunId}`);
+  // Create a unique temp directory for this test run (符合用户要求的格式)
+  const timestamp = Date.now();
+  tempTestConfigDir = path.join(os.tmpdir(), `mcp-hub-lite-test-${timestamp}`);
 
   // Ensure temp directory exists
   fs.mkdirSync(tempTestConfigDir, { recursive: true });
