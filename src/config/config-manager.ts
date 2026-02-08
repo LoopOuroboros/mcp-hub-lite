@@ -76,10 +76,13 @@ export class ConfigManager {
           // 保留原始配置，不回退到默认值
         }
       } else {
+        // 配置文件不存在时，仅在内存中创建默认配置，不自动保存到文件
+        // 防止 npm build 或 npm test 等操作自动创建配置文件
         this.config = SystemConfigSchema.parse({});
-        this.saveConfig();
       }
     } catch (error) {
+      logger.error(`Failed to load config: ${error}`);
+      // 配置文件加载失败时，才使用默认配置
       this.config = SystemConfigSchema.parse({});
     }
 
