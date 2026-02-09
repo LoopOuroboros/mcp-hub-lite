@@ -167,7 +167,7 @@ export class ConfigManager {
     // Minimal identity generation logic inlined
     if (!instance.id) {
         const ts = Date.now();
-        instance.id = `server-${ts}-${Math.random().toString(36).substr(2, 5)}`;
+        instance.id = `${name}-${ts}-${Math.random().toString(36).substr(2, 5)}`;
         instance.timestamp = ts;
         instance.hash = Math.random().toString(36);
     }

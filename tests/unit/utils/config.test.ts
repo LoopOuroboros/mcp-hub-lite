@@ -55,7 +55,7 @@ describe('ConfigManager', () => {
         fs.unlinkSync(tempConfigPath);
       }
 
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
       // 验证默认配置
@@ -113,7 +113,7 @@ describe('ConfigManager', () => {
       // 写入测试配置文件
       fs.writeFileSync(tempConfigPath, JSON.stringify(testConfig, null, 2));
 
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
       // 验证加载的配置
@@ -127,7 +127,7 @@ describe('ConfigManager', () => {
       // 写入无效的JSON
       fs.writeFileSync(tempConfigPath, 'invalid json content');
 
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
       // 应该回退到默认配置
@@ -139,7 +139,7 @@ describe('ConfigManager', () => {
 
   describe('Configuration Saving', () => {
     it('should save config to file', () => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
 
       // 修改配置
       configManager.updateConfig({
@@ -209,7 +209,7 @@ describe('ConfigManager', () => {
     });
 
     it('should handle save errors gracefully', async () => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
 
       // Mock fs.writeFileSync to throw error
       vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {
@@ -245,7 +245,7 @@ describe('ConfigManager', () => {
 
   describe('Server Management', () => {
     beforeEach(() => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
     });
 
     it('should add a new server', async () => {
@@ -340,7 +340,7 @@ describe('ConfigManager', () => {
 
   describe('Server Instance Management', () => {
     beforeEach(() => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
     });
 
     it('should add server instance with auto-generated ID', async () => {
@@ -502,7 +502,7 @@ describe('ConfigManager', () => {
 
   describe('Configuration Updates and Change Logging', () => {
     beforeEach(() => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
     });
 
     it('should update system config', async () => {
@@ -595,7 +595,7 @@ describe('ConfigManager', () => {
 
   describe('Configuration Synchronization', () => {
     it('should reload config from file', async () => {
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
 
       // 修改内存中的配置
       await configManager.updateConfig({
@@ -663,20 +663,29 @@ describe('ConfigManager', () => {
   });
 
   describe('Edge Cases and Error Handling', () => {
-    it('should handle constructor without config path', () => {
-      // 清除环境变量
-      delete process.env.MCP_HUB_CONFIG_PATH;
+    it('should handle constructor with temp config path', () => {
+      // 使用临时目录创建配置文件路径
+      const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
+      fs.mkdirSync(tempDir, { recursive: true });
+      const testTempConfigPath = path.join(tempDir, '.mcp-hub.json');
 
-      configManager = new ConfigManager();
+      // 写入初始配置
+      fs.writeFileSync(testTempConfigPath, JSON.stringify({ version: '1.0.0' }));
+
+      configManager = new ConfigManager(testTempConfigPath);
       const config = configManager.getConfig();
 
       expect(config).toBeDefined();
+      expect(config.version).toBe('1.0.0');
+
+      // 清理
+      fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
     it('should handle empty config object', () => {
       fs.writeFileSync(tempConfigPath, '{}');
 
-      configManager = new ConfigManager();
+      configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
       // 应该填充默认值

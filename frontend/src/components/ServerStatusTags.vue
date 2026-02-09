@@ -30,15 +30,6 @@
       <span class="font-medium break-all max-w-full">{{ props.server.version }}</span>
     </div>
 
-    <!-- PID (Only for stdio) -->
-    <div
-      v-if="props.server.config.type === 'stdio'"
-      class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-    >
-      <span class="opacity-75">{{ $t('serverDetail.pid') }}:</span>
-      <span class="font-mono break-all max-w-full">{{ props.server.pid || 'N/A' }}</span>
-    </div>
-
     <!-- Uptime (only shown when includeUptime is true) -->
     <div
       v-if="includeUptime && props.formattedUptime"

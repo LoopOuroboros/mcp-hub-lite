@@ -126,7 +126,9 @@ export default {
       autoScroll: 'Auto-scroll',
       clear: 'Clear',
       copy: 'Copy',
-      copied: 'Logs copied to clipboard'
+      copied: 'Logs copied to clipboard',
+      instance: 'Instance',
+      selectInstance: 'Select an instance'
     },
     tools: {
       title: 'Tool Discovery',

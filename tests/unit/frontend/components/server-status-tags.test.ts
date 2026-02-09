@@ -39,9 +39,6 @@ describe('ServerStatusTags', () => {
     // Check version
     expect(wrapper.text()).toContain('1.0.0')
 
-    // Check PID
-    expect(wrapper.text()).toContain('12345')
-
     // Should not contain uptime when includeUptime is false
     expect(wrapper.text()).not.toContain('uptime')
   })

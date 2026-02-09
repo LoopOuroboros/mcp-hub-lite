@@ -104,10 +104,33 @@
             <span>{{ $t('serverDetail.tabs.logs') }}</span>
           </span>
         </template>
-        <div class="flex justify-end gap-2 mb-2">
-            <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
-            <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
-            <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{ $t('serverDetail.logs.copy') }}</el-button>
+        <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+               <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ $t('serverDetail.logs.instance') }}</span>
+               <el-select
+                   v-model="currentInstanceId"
+                   size="small"
+                   style="width: 450px"
+                   :placeholder="$t('serverDetail.logs.selectInstance')"
+               >
+                   <el-option
+                       v-for="inst in relatedInstances"
+                       :key="inst.id"
+                       :label="getInstanceLabel(inst)"
+                       :value="inst.id"
+                   >
+                       <div class="flex items-center justify-between w-full">
+                           <span>{{ getInstanceLabel(inst) }}</span>
+                           <span v-if="inst.id === server.id" class="text-blue-500 text-xs ml-2">Current</span>
+                       </div>
+                   </el-option>
+               </el-select>
+            </div>
+            <div class="flex items-center gap-2">
+                <el-checkbox v-model="autoScroll" :label="$t('serverDetail.logs.autoScroll')" class="text-gray-600 dark:text-gray-400" />
+                <el-button size="small" :icon="Delete" plain @click="clearLogs">{{ $t('serverDetail.logs.clear') }}</el-button>
+                <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{ $t('serverDetail.logs.copy') }}</el-button>
+            </div>
         </div>
         <div class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300" ref="logsContainer">
           <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
@@ -246,7 +269,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useServerStore } from '@stores/server'
+import { useServerStore, type Server } from '@stores/server'
 import { useWebSocketStore } from '@stores/websocket'
 import ToolCallDialog from '@components/ToolCallDialog.vue'
 import ServerStatusTags from '@components/ServerStatusTags.vue'
@@ -268,6 +291,38 @@ function navigateBack() {
 
 // Computed property for the selected server
 const server = computed(() => store.selectedServer)
+
+// Instance Selection Logic
+const relatedInstances = computed(() => {
+  if (!server.value) return []
+  return store.servers.filter(s => s.name === server.value!.name)
+})
+
+const currentInstanceId = computed({
+  get: () => server.value?.id || '',
+  set: (val: string) => {
+    store.selectServer(val)
+  }
+})
+
+function getInstanceLabel(inst: Server) {
+  let label = inst.id
+  if (inst.pid) {
+    label += ` (PID: ${inst.pid})`
+  }
+
+  // Check if it's a config-only placeholder
+  if (inst.instance?.hash === 'config-only') {
+    label = 'Config (No Instance)'
+  }
+  
+  if (inst.status === 'running') {
+    label += ` (${t('serverDetail.status.running')})`
+  } else if (inst.status === 'stopped' && inst.instance?.hash !== 'config-only') {
+    label += ` (${t('serverDetail.status.stopped')})`
+  }
+  return label
+}
 
 // State
 const activeTab = ref('config')

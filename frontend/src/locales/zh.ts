@@ -126,7 +126,9 @@ export default {
       autoScroll: '自动滚动',
       clear: '清空',
       copy: '复制',
-      copied: '日志已复制到剪贴板'
+      copied: '日志已复制到剪贴板',
+      instance: '实例',
+      selectInstance: '选择一个实例'
     },
     tools: {
       title: '工具发现',
