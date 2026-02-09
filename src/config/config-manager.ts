@@ -63,17 +63,19 @@ export class ConfigManager {
         this.config = this.convertHttpToStreamableHttp(this.config);
         // Ensure defaults without validation errors blocking
         try {
-          // 使用 safeParse 而不是 parse，以便在验证失败时保留原始配置
+          // 使用 safeParse 验证配置
           const parsed = SystemConfigSchema.safeParse(this.config);
           if (parsed.success) {
             this.config = parsed.data;
           } else {
-            // 验证失败时，记录错误但保留原始配置
+            // 验证失败时，记录错误并使用默认配置
             logger.error(`Config validation failed: ${parsed.error}`);
+            this.config = SystemConfigSchema.parse({});
           }
         } catch (e) {
           logger.error(`Failed to parse config: ${e}`);
-          // 保留原始配置，不回退到默认值
+          // 解析失败时，使用默认配置
+          this.config = SystemConfigSchema.parse({});
         }
       } else {
         // 配置文件不存在时，仅在内存中创建默认配置，不自动保存到文件
@@ -82,7 +84,7 @@ export class ConfigManager {
       }
     } catch (error) {
       logger.error(`Failed to load config: ${error}`);
-      // 配置文件加载失败时，才使用默认配置
+      // 配置文件加载失败时，使用默认配置
       this.config = SystemConfigSchema.parse({});
     }
 

@@ -135,29 +135,6 @@ describe('ConfigManager', () => {
       expect(config.system.host).toBe('localhost');
     });
 
-    it('should load raw config when schema validation fails', () => {
-      const invalidConfig = {
-        version: '1.0.0',
-        system: {
-          host: 'test-host',
-          port: 'invalid-port', // 应该是数字
-          language: 'invalid-lang'
-        },
-        servers: 'invalid-servers' // 应该是对象
-      };
-
-      fs.writeFileSync(tempConfigPath, JSON.stringify(invalidConfig, null, 2));
-
-      configManager = new ConfigManager();
-      const config = configManager.getConfig();
-
-      // 当前实现会加载原始JSON，但不会应用schema验证
-      // 所以无效的值会保持原样
-      expect(config.version).toBe('1.0.0');
-      expect(config.system.host).toBe('test-host');
-      expect(config.system.port).toBe('invalid-port');
-      expect(config.servers).toBe('invalid-servers');
-    });
   });
 
   describe('Configuration Saving', () => {
@@ -707,24 +684,5 @@ describe('ConfigManager', () => {
       expect(config.system.host).toBe('localhost');
     });
 
-    it('should handle null/undefined config values gracefully', () => {
-      const partialConfig = {
-        version: '1.0.0',
-        system: {
-          host: null,
-          port: undefined
-        }
-      };
-
-      fs.writeFileSync(tempConfigPath, JSON.stringify(partialConfig, null, 2));
-
-      configManager = new ConfigManager();
-      const config = configManager.getConfig();
-
-      // Zod不会将null/undefined替换为默认值，所以这些值会保持为null/undefined
-      // 但在实际使用中，应用层应该处理这些情况
-      expect(config.system.host).toBeNull();
-      expect(config.system.port).toBeUndefined();
-    });
   });
 });
