@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["node", "vitest/globals"],
-    "target": "ES2020",
+    "target": "ES2022",
     "downlevelIteration": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -31,10 +31,5 @@
     }
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts", "shared/**/*"],
-  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"],
-  "references": [
-    {
-      "path": "./tsconfig.frontend.json"
-    }
-  ]
+  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"]
 }

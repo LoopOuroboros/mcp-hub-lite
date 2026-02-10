@@ -4,6 +4,7 @@
   "exclude": ["src/**", "tests/**", "node_modules"],
   "compilerOptions": {
     "composite": true,
+    "rootDir": ".",
     "noEmit": false,
     "emitDeclarationOnly": true,
     "declaration": true,

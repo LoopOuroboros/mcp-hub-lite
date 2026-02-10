@@ -19,7 +19,7 @@
     "dev:server": "tsx src/server/dev-server.ts",
     "build": "run-p type-check build:client build:server",
     "build:client": "vite build",
-    "build:server": "tsc -p tsconfig.json",
+    "build:server": "tsc -p tsconfig.server.json",
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "vitest run",
     "test:frontend": "vitest run --config vitest.frontend.config.ts",
