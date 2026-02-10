@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { mcpConnectionManager } from "./mcp-connection-manager.js";
 import { hubManager } from "./hub-manager.service.js";
 import { logger, withSpan, createMcpSpanOptions } from "@utils/index.js";
@@ -11,14 +11,6 @@ import { hubToolsService } from "./hub-tools.service.js";
 import { getClientCwd, getClientContext } from "@utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
 import { McpToolSchema } from "@models/tool.model.js";
-import type {
-  FindServersParams,
-  ListAllToolsInServerParams,
-  FindToolsInServerParams,
-  GetToolParams,
-  CallToolParams,
-  FindToolsParams
-} from "@models/system-tools.constants.js";
 import {
   SYSTEM_TOOL_NAMES,
   SystemToolName,
@@ -29,9 +21,13 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
-  LIST_RESOURCES_TOOL,
-  READ_RESOURCE_TOOL,
-  MCP_HUB_LITE_SERVER
+  MCP_HUB_LITE_SERVER,
+  type FindServersParams,
+  type ListAllToolsInServerParams,
+  type FindToolsInServerParams,
+  type GetToolParams,
+  type CallToolParams,
+  type FindToolsParams
 } from "@models/system-tools.constants.js";
 
 export class GatewayService {
@@ -54,7 +50,8 @@ export class GatewayService {
       }
     );
 
-    this.setupHandlers();
+    // 直接在构造函数中调用 registerHandlers
+    this.registerHandlers(this.server, this.toolMap);
   }
 
 
@@ -374,14 +371,6 @@ export class GatewayService {
       return tools;
     });
 
-    // List resources tool
-    const ListResourcesRequestSchema = z.object({
-      method: z.literal(LIST_RESOURCES_TOOL),
-      params: z.object({}).optional(),
-      id: z.union([z.string(), z.number()]),
-      jsonrpc: z.literal('2.0')
-    });
-
     server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       try {
         const resources = await hubToolsService.listResources();
@@ -392,38 +381,7 @@ export class GatewayService {
       }
     });
 
-    // Read resource tool (system tool interface)
-    const ReadResourceRequestSchema = z.object({
-      method: z.literal(READ_RESOURCE_TOOL),
-      params: z.object({
-        uri: z.string()
-      }),
-      id: z.union([z.string(), z.number()]),
-      jsonrpc: z.literal('2.0')
-    });
-
     server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      try {
-        const { uri } = request.params;
-        const content = await hubToolsService.readResource(uri);
-        return { content };
-      } catch (error: any) {
-        logger.error(`Read resource error:`, error);
-        throw new McpError(-32802, error.message);
-      }
-    });
-
-    // Official MCP resources/read interface
-    const OfficialReadResourceRequestSchema = z.object({
-      method: z.literal('resources/read'),
-      params: z.object({
-        uri: z.string()
-      }),
-      id: z.union([z.string(), z.number()]),
-      jsonrpc: z.literal('2.0')
-    });
-
-    server.server.setRequestHandler(OfficialReadResourceRequestSchema, async (request) => {
       try {
         const { uri } = request.params;
         const content = await hubToolsService.readResource(uri);
@@ -437,30 +395,7 @@ export class GatewayService {
           ]
         };
       } catch (error: any) {
-        logger.error(`Resources read error:`, error);
-        throw new McpError(-32802, error.message);
-      }
-    });
-
-    // Official MCP resources/list interface
-    const OfficialListResourcesRequestSchema = z.object({
-      method: z.literal('resources/list'),
-      params: z.object({
-        cursor: z.string().optional()
-      }).optional(),
-      id: z.union([z.string(), z.number()]),
-      jsonrpc: z.literal('2.0')
-    });
-
-    server.server.setRequestHandler(OfficialListResourcesRequestSchema, async () => {
-      try {
-        const resources = await hubToolsService.listResources();
-        return {
-          resources: resources,
-          nextCursor: undefined
-        };
-      } catch (error: any) {
-        logger.error(`Resources list error:`, error);
+        logger.error(`Read resource error:`, error);
         throw new McpError(-32802, error.message);
       }
     });
@@ -553,12 +488,6 @@ export class GatewayService {
                 findToolsArgs.searchIn,
                 findToolsArgs.caseSensitive
               );
-              break;
-            case LIST_RESOURCES_TOOL:
-              result = await hubToolsService.listResources();
-              break;
-            case READ_RESOURCE_TOOL:
-              result = await hubToolsService.readResource(toolArgs.uri as string);
               break;
           }
 
@@ -680,16 +609,20 @@ export class GatewayService {
 
     // Second pass: Generate gateway tools with proper naming
     for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
-      for (const tool of tools) {
-        const serverConfig = hubManager.getServerById(serverId);
+      const serverConfig = hubManager.getServerById(serverId);
 
-        if (serverConfig) {
-          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
-            continue;
-          }
+      // Skip if server configuration not found
+      if (!serverConfig) {
+        logger.warn(`Server configuration not found for serverId: ${serverId}, skipping tools`);
+        continue;
+      }
+
+      for (const tool of tools) {
+        if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+          continue;
         }
 
-        const serverName = serverConfig ? serverConfig.name : serverId;
+        const serverName = serverConfig.name;
 
         let gatewayToolName = tool.name;
         const isUnique = toolNameCounts.get(tool.name) === 1;
@@ -697,15 +630,15 @@ export class GatewayService {
 
         // If tool name is not unique or conflicts with system tool, append server hash
         if (!isUnique || isSystemConflict) {
-            // 从 serverConfig 中获取实例的 hash
-            const hash = serverConfig?.instance?.hash || 'xxxx';
+            // 从 serverConfig 中获取实例的 hash，使用 serverId 的前4位作为默认值
+            const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
             gatewayToolName = `${tool.name}_${hash}`;
         }
 
         // Ensure name doesn't exceed 60 chars
         if (gatewayToolName.length > 60) {
-            // 直接从 serverConfig 中获取实例的 hash
-            const hash = serverConfig?.instance?.hash || 'xxxx';
+            // 使用 serverId 的前4位作为默认 hash
+            const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
             // Reserve space for hash and separator
             const maxToolNameLen = 60 - hash.length - 1;
             const truncatedToolName = tool.name.substring(0, maxToolNameLen);
@@ -793,9 +726,6 @@ export class GatewayService {
     }
   }
 
-  private setupHandlers() {
-    this.registerHandlers(this.server, this.toolMap);
-  }
 
   public createConnectionServer(): McpServer {
     const server = new McpServer(

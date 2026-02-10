@@ -56,12 +56,6 @@ export interface FindToolsParams {
   caseSensitive?: boolean;
 }
 
-export interface ListResourcesParams {}
-
-export interface ReadResourceParams {
-  uri: string;
-}
-
 // Individual system tool name constants
 export const LIST_SERVERS_TOOL = 'list_servers';
 export const FIND_SERVERS_TOOL = 'find_servers';
@@ -70,8 +64,6 @@ export const FIND_TOOLS_IN_SERVER_TOOL = 'find_tools_in_server';
 export const GET_TOOL_TOOL = 'get_tool';
 export const CALL_TOOL_TOOL = 'call_tool';
 export const FIND_TOOLS_TOOL = 'find_tools';
-export const LIST_RESOURCES_TOOL = 'list_resources';
-export const READ_RESOURCE_TOOL = 'read_resource';
 
 /**
  * List of all system tool names
@@ -84,9 +76,7 @@ export const SYSTEM_TOOL_NAMES = [
   FIND_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL,
-  LIST_RESOURCES_TOOL,
-  READ_RESOURCE_TOOL
+  FIND_TOOLS_TOOL
 ] as const;
 
 /**

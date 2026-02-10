@@ -16,8 +16,6 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
-  LIST_RESOURCES_TOOL,
-  READ_RESOURCE_TOOL,
   MCP_HUB_LITE_SERVER,
   type ListServersParams,
   type FindServersParams,
@@ -25,9 +23,7 @@ import {
   type FindToolsInServerParams,
   type GetToolParams,
   type CallToolParams,
-  type FindToolsParams,
-  type ListResourcesParams,
-  type ReadResourceParams
+  type FindToolsParams
 } from '@models/system-tools.constants.js';
 
 // 请求选项接口
@@ -297,43 +293,6 @@ export class HubToolsService {
             }
           });
           break;
-        case LIST_RESOURCES_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'List all Hub resources (servers, tools, and resources metadata)',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            },
-            annotations: {
-              title: 'List Resources',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case READ_RESOURCE_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Read content from a specific Hub resource URI',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                uri: { type: 'string', description: 'Resource URI to read (e.g., hub://servers/server-name)' }
-              },
-              required: ['uri']
-            },
-            annotations: {
-              title: 'Read Resource',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
         default:
           // This should never happen due to TypeScript type checking
           throw new Error(`Unknown system tool: ${toolName}`);
@@ -496,8 +455,6 @@ export class HubToolsService {
               T extends typeof GET_TOOL_TOOL ? GetToolParams :
               T extends typeof CALL_TOOL_TOOL ? CallToolParams :
               T extends typeof FIND_TOOLS_TOOL ? FindToolsParams :
-              T extends typeof LIST_RESOURCES_TOOL ? ListResourcesParams :
-              T extends typeof READ_RESOURCE_TOOL ? ReadResourceParams :
               never
   ): Promise<any> {
     logger.info(`[HUB-TOOLS] System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`);
@@ -554,13 +511,6 @@ export class HubToolsService {
             findToolsArgs.searchIn,
             findToolsArgs.caseSensitive
           );
-          break;
-        case LIST_RESOURCES_TOOL:
-          result = await this.listResources();
-          break;
-        case READ_RESOURCE_TOOL:
-          const readResourceArgs = toolArgs as ReadResourceParams;
-          result = await this.readResource(readResourceArgs.uri);
           break;
         default:
           throw new Error(`System tool "${toolName}" not found`);
