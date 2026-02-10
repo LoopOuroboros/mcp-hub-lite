@@ -7,24 +7,25 @@ import { WebSocket } from 'ws';
 import { EventTypes } from '@services/event-bus.service.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { logger } from '@utils/logger.js';
+import { WEB_SOCKET_EVENT_TYPES } from '@shared/types/websocket.types';
 
 // 事件类型映射
 const eventTypeMap: Record<string, string> = {
-  [EventTypes.SERVER_STATUS_CHANGE]: 'server-status',
-  [EventTypes.SERVER_CONNECTED]: 'server-connected',
-  [EventTypes.SERVER_DISCONNECTED]: 'server-disconnected',
-  [EventTypes.SERVER_ADDED]: 'server-added',
-  [EventTypes.SERVER_UPDATED]: 'server-updated',
-  [EventTypes.SERVER_DELETED]: 'server-deleted',
-  [EventTypes.TOOLS_UPDATED]: 'tools',
-  [EventTypes.RESOURCES_UPDATED]: 'resources',
-  [EventTypes.LOG_ENTRY]: 'log',
-  [EventTypes.TOOL_CALL_STARTED]: 'tool-call-started',
-  [EventTypes.TOOL_CALL_COMPLETED]: 'tool-call-completed',
-  [EventTypes.TOOL_CALL_ERROR]: 'tool-call-error',
-  [EventTypes.CONFIGURATION_UPDATED]: 'configuration-updated',
-  [EventTypes.CLIENT_CONNECTED]: 'client-connected',
-  [EventTypes.CLIENT_DISCONNECTED]: 'client-disconnected'
+  [EventTypes.SERVER_STATUS_CHANGE]: WEB_SOCKET_EVENT_TYPES.SERVER_STATUS,
+  [EventTypes.SERVER_CONNECTED]: WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED,
+  [EventTypes.SERVER_DISCONNECTED]: WEB_SOCKET_EVENT_TYPES.SERVER_DISCONNECTED,
+  [EventTypes.SERVER_ADDED]: WEB_SOCKET_EVENT_TYPES.SERVER_ADDED,
+  [EventTypes.SERVER_UPDATED]: WEB_SOCKET_EVENT_TYPES.SERVER_UPDATED,
+  [EventTypes.SERVER_DELETED]: WEB_SOCKET_EVENT_TYPES.SERVER_DELETED,
+  [EventTypes.TOOLS_UPDATED]: WEB_SOCKET_EVENT_TYPES.TOOLS,
+  [EventTypes.RESOURCES_UPDATED]: WEB_SOCKET_EVENT_TYPES.RESOURCES,
+  [EventTypes.LOG_ENTRY]: WEB_SOCKET_EVENT_TYPES.LOG,
+  [EventTypes.TOOL_CALL_STARTED]: WEB_SOCKET_EVENT_TYPES.TOOL_CALL_STARTED,
+  [EventTypes.TOOL_CALL_COMPLETED]: WEB_SOCKET_EVENT_TYPES.TOOL_CALL_COMPLETED,
+  [EventTypes.TOOL_CALL_ERROR]: WEB_SOCKET_EVENT_TYPES.TOOL_CALL_ERROR,
+  [EventTypes.CONFIGURATION_UPDATED]: WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED,
+  [EventTypes.CLIENT_CONNECTED]: WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED,
+  [EventTypes.CLIENT_DISCONNECTED]: WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED
 };
 
 // 客户端到服务器的消息类型

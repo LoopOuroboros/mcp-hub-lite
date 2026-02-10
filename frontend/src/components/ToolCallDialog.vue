@@ -98,20 +98,11 @@ import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
-// JSON Schema type definition
-interface JsonSchema {
-  type?: string;
-  properties?: Record<string, JsonSchema>;
-  items?: JsonSchema;
-  default?: unknown;
-  [key: string]: unknown;
-}
+import type { JsonSchema } from '@shared-models/tool.model'
+import type { ServerInstanceConfig } from '@shared-models/server.model'
 
-// Server instance type
-interface ServerInstance {
-  id: string;
-  timestamp: number;
-  hash: string;
+// Server instance type (extends shared ServerInstanceConfig)
+type ServerInstance = ServerInstanceConfig & {
   pid?: number;
   startTime?: number;
 }

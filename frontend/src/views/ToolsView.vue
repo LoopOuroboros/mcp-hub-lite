@@ -205,7 +205,7 @@ const groupedTools = computed(() => {
     // 直接使用 tool.serverName 进行分组（后端已处理 allowedTools 过滤）
     const server = store.servers.find(s => s.name === result.tool.serverName);
 
-    const statusText = server?.status === 'running' ? t('tools.online') : t('tools.offline');
+    const statusText = server?.status === 'online' ? t('tools.online') : t('tools.offline');
     const serverName = result.tool.serverName ? `${result.tool.serverName} (${statusText})` : 'Unknown';
 
     if (!groups[serverName]) {

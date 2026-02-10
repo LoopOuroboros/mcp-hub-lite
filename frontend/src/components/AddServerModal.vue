@@ -391,7 +391,7 @@ async function createServer() {
   try {
     await store.addServer({
       name: form.value.name || 'Unnamed Server',
-      status: 'stopped',
+      status: 'offline',
       type: form.value.transport === 'stdio' ? 'local' : 'remote',
       config: {
         type: form.value.transport,

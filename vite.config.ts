@@ -100,6 +100,10 @@ export default defineConfig({
       '@locales': fileURLToPath(new URL('./frontend/src/locales', import.meta.url)),
       '@composables': fileURLToPath(new URL('./frontend/src/composables', import.meta.url)),
       '@utils': fileURLToPath(new URL('./frontend/src/utils', import.meta.url)),
+
+      // 共享类型别名
+      '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
+      '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url))
     }
   },
   server: {

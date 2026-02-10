@@ -8,9 +8,13 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { WebSocketClient, createWebSocketClient } from '@utils/websocket'
 import type { ServerMessage } from '@utils/websocket'
 import { useServerStore } from '@stores/server'
+import type { ServerStatus } from '@stores/server'
 import { useToolCallsStore } from '@stores/tool-calls'
 import { useSystemStore } from '@stores/system'
 import { useClientStore } from '@stores/client'
+
+// 从共享类型导入 WebSocket 事件类型常量
+import { WEB_SOCKET_EVENT_TYPES } from '@shared/types/websocket.types'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const connected = ref(false)
@@ -52,21 +56,21 @@ export const useWebSocketStore = defineStore('websocket', () => {
         ws.send({
           type: 'subscribe',
           eventTypes: [
-            'server-status',
-            'logs',
-            'tools',
-            'resources',
-            'server-added',
-            'server-updated',
-            'server-deleted',
-            'server-connected',
-            'server-disconnected',
-            'tool-call-started',
-            'tool-call-completed',
-            'tool-call-error',
-            'configuration-updated',
-            'client-connected',
-            'client-disconnected'
+            WEB_SOCKET_EVENT_TYPES.SERVER_STATUS,
+            WEB_SOCKET_EVENT_TYPES.LOG,
+            WEB_SOCKET_EVENT_TYPES.TOOLS,
+            WEB_SOCKET_EVENT_TYPES.RESOURCES,
+            WEB_SOCKET_EVENT_TYPES.SERVER_ADDED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_UPDATED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_DELETED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_DISCONNECTED,
+            WEB_SOCKET_EVENT_TYPES.TOOL_CALL_STARTED,
+            WEB_SOCKET_EVENT_TYPES.TOOL_CALL_COMPLETED,
+            WEB_SOCKET_EVENT_TYPES.TOOL_CALL_ERROR,
+            WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED,
+            WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED,
+            WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED
           ]
         })
       },
@@ -98,52 +102,52 @@ export const useWebSocketStore = defineStore('websocket', () => {
     console.log('Received WebSocket message:', message)
 
     switch (message.type) {
-      case 'server-status':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_STATUS:
         handleServerStatusChange(message)
         break
-      case 'log':
+      case WEB_SOCKET_EVENT_TYPES.LOG:
         handleLogEntry(message)
         break
-      case 'tools':
+      case WEB_SOCKET_EVENT_TYPES.TOOLS:
         handleToolsUpdated(message)
         break
-      case 'resources':
+      case WEB_SOCKET_EVENT_TYPES.RESOURCES:
         handleResourcesUpdated(message)
         break
-      case 'server-added':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_ADDED:
         handleServerAdded(message)
         break
-      case 'server-updated':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_UPDATED:
         handleServerUpdated(message)
         break
-      case 'server-deleted':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_DELETED:
         handleServerDeleted(message)
         break
-      case 'server-connected':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED:
         handleServerConnected(message)
         break
-      case 'server-disconnected':
+      case WEB_SOCKET_EVENT_TYPES.SERVER_DISCONNECTED:
         handleServerDisconnected(message)
         break
-      case 'tool-call-started':
+      case WEB_SOCKET_EVENT_TYPES.TOOL_CALL_STARTED:
         toolCallsStore.handleToolCallStarted(message.data)
         break
-      case 'tool-call-completed':
+      case WEB_SOCKET_EVENT_TYPES.TOOL_CALL_COMPLETED:
         toolCallsStore.handleToolCallCompleted(message.data)
         break
-      case 'tool-call-error':
+      case WEB_SOCKET_EVENT_TYPES.TOOL_CALL_ERROR:
         toolCallsStore.handleToolCallError(message.data)
         break
-      case 'configuration-updated':
+      case WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED:
         handleConfigurationUpdated(message)
         break
-      case 'client-connected':
+      case WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED:
         handleClientConnected(message)
         break
-      case 'client-disconnected':
+      case WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED:
         handleClientDisconnected(message)
         break
-      case 'pong':
+      case WEB_SOCKET_EVENT_TYPES.PONG:
         // 心跳响应，忽略
         break
       default:
@@ -239,25 +243,17 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
   function handleServerConnected(message: any): void {
     const { serverId } = message.data
-    serverStore.updateServerStatus(serverId, 'running')
+    serverStore.updateServerStatus(serverId, 'online')
   }
 
   function handleServerDisconnected(message: any): void {
     const { serverId } = message.data
-    serverStore.updateServerStatus(serverId, 'stopped')
+    serverStore.updateServerStatus(serverId, 'offline')
   }
 
-  function mapStatus(status: string): 'running' | 'stopped' | 'error' | 'starting' {
-    switch (status) {
-      case 'online':
-        return 'running'
-      case 'offline':
-        return 'stopped'
-      case 'error':
-        return 'error'
-      default:
-        return 'starting'
-    }
+  function mapStatus(status: string): ServerStatus {
+    const validStatuses: ServerStatus[] = ['online', 'offline', 'error', 'starting', 'stopping']
+    return validStatuses.includes(status as ServerStatus) ? (status as ServerStatus) : 'starting'
   }
 
   // 组件挂载时连接

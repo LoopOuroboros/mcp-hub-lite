@@ -2,83 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { http } from '@utils/http'
 import { useWebSocketStore } from '@stores/websocket'
-
-// 服务器配置接口（以服务器名称为 key）
-export interface McpServerConfig {
-  command?: string
-  args?: string[]
-  url?: string
-  env?: Record<string, string>
-  timeout?: number
-  enabled?: boolean
-  allowedTools?: string[]
-  type: 'stdio' | 'sse' | 'streamable-http' | 'http'
-  tags?: Record<string, string>
-  description?: string
-}
-
-// 服务器实例配置接口（包含 id、timestamp、hash）
-export interface ServerInstanceConfig {
-  id: string
-  timestamp: number
-  hash: string
-}
-
-export interface LogEntry {
-  timestamp: number
-  level: 'debug' | 'info' | 'warn' | 'error'
-  message: string
-}
-
-// JSON Schema type definition (matches ServerDetail.vue)
-interface JsonSchema {
-  type?: string;
-  properties?: Record<string, JsonSchema>;
-  items?: JsonSchema;
-  default?: unknown;
-  [key: string]: unknown;
-}
-
-// Import tool and resource types from backend models
-interface Tool {
-  name: string
-  description?: string
-  inputSchema?: JsonSchema
-  serverName: string
-  annotations?: {
-    title?: string
-    readOnlyHint?: boolean
-    destructiveHint?: boolean
-    idempotentHint?: boolean
-    openWorldHint?: boolean
-  }
-}
-
-interface Resource {
-  uri: string
-  name: string
-  mimeType?: string
-  description?: string
-  serverId?: string
-}
-
-export interface Server {
-  id: string
-  name: string
-  status: 'running' | 'stopped' | 'error' | 'starting'
-  type: 'local' | 'remote'
-  config: McpServerConfig
-  instance: ServerInstanceConfig
-  logs: LogEntry[]
-  uptime?: string
-  startTime?: number
-  pid?: number
-  tools?: Tool[]
-  resources?: Resource[]
-  toolsCount?: number
-  resourcesCount?: number
-  version?: string
-}
+import type { McpServerConfig, ServerInstanceConfig, LogEntry, Server, ServerStatus } from '@shared-models/server.model'
+import type { Tool } from '@shared-models/tool.model'
+import type { Resource } from '@shared-models/resource.model'
 
 interface McpStatus {
   id: string
@@ -94,6 +20,8 @@ interface McpStatus {
   }
 }
 
+export type { Server, ServerStatus, McpServerConfig, ServerInstanceConfig, LogEntry, Tool, Resource }
+
 export const useServerStore = defineStore('server', () => {
   const servers = ref<Server[]>([])
   const loading = ref(false)
@@ -106,7 +34,7 @@ export const useServerStore = defineStore('server', () => {
 
   const stats = computed(() => ({
     total: servers.value.length,
-    running: servers.value.filter(s => s.status === 'running').length,
+    running: servers.value.filter(s => s.status === 'online').length,
     errors: servers.value.filter(s => s.status === 'error').length
   }))
 
@@ -142,16 +70,16 @@ export const useServerStore = defineStore('server', () => {
             const statusInfo = statuses.find(s => s.id === serverId)?.status
 
             // 根据 config.enabled 和 statusInfo 来判断状态
-            let status: 'running' | 'stopped' | 'error' | 'starting'
+            let status: ServerStatus
             if (statusInfo?.connected) {
-              status = 'running'
+              status = 'online'
             } else if (statusInfo?.error) {
               status = 'error'
             } else if (serverConfig.enabled) {
               // 如果配置为 enabled 但尚未连接，显示为 starting
               status = 'starting'
             } else {
-              status = 'stopped'
+              status = 'offline'
             }
 
             combinedServers.push({
@@ -177,11 +105,11 @@ export const useServerStore = defineStore('server', () => {
           const serverId = `config-${serverName}-${Date.now()}`
 
           // 根据配置的 enabled 状态确定显示状态
-          let status: 'running' | 'stopped' | 'error' | 'starting'
+          let status: ServerStatus
           if (serverConfig.enabled) {
             status = 'starting' // 配置为启用但未启动
           } else {
-            status = 'stopped' // 配置为禁用
+            status = 'offline' // 配置为禁用
           }
 
           combinedServers.push({
@@ -436,7 +364,7 @@ export const useServerStore = defineStore('server', () => {
     }
   }
 
-  function updateServerStatus(id: string, status: 'running' | 'stopped' | 'error' | 'starting') {
+  function updateServerStatus(id: string, status: ServerStatus) {
     const server = servers.value.find(s => s.id === id)
     if (server) {
       server.status = status

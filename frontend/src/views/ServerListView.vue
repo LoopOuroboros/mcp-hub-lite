@@ -61,7 +61,7 @@
               <!-- Top-right action buttons -->
               <div class="flex gap-1 shrink-0">
                 <el-button
-                  v-if="server.status === 'running'"
+                  v-if="server.status === 'online'"
                   type="danger"
                   plain
                   size="small"
@@ -73,7 +73,7 @@
                   <span class="text-xs">{{ $t('action.stop') }}</span>
                 </el-button>
                 <el-button
-                  v-else-if="server.status === 'stopped'"
+                  v-else-if="server.status === 'offline'"
                   type="success"
                   plain
                   size="small"
@@ -85,7 +85,7 @@
                   <span class="text-xs">{{ $t('action.start') }}</span>
                 </el-button>
                 <el-button
-                  v-if="server.status === 'running'"
+                  v-if="server.status === 'online'"
                   plain
                   size="small"
                   :icon="Refresh"
@@ -212,7 +212,7 @@ function navigateToTab(serverId: string, tabName: string) {
 }
 
 function handleCardClick(server: any) {
-  if (server.status === 'running') {
+  if (server.status === 'online') {
     navigateToTab(server.id, 'logs')
   } else {
     navigateToTab(server.id, 'config')

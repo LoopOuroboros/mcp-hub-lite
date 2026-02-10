@@ -4,9 +4,11 @@
  */
 
 // 客户端到服务器的消息类型
+import type { WebSocketEventType } from '@shared/types/websocket.types'
+
 export interface SubscribeMessage {
   type: 'subscribe';
-  eventTypes: Array<'server-status' | 'logs' | 'tools' | 'resources' | 'server-added' | 'server-updated' | 'server-deleted' | 'server-connected' | 'server-disconnected' | 'tool-call-started' | 'tool-call-completed' | 'tool-call-error' | 'configuration-updated' | 'client-connected' | 'client-disconnected'>;
+  eventTypes: WebSocketEventType[];
 }
 
 export interface UnsubscribeMessage {

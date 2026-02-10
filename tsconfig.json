@@ -2,8 +2,8 @@
   "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
     "outDir": "dist/server",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -20,6 +20,8 @@
       "@cli/*": ["./src/cli/*"],
       "@config/*": ["./src/config/*"],
       "@models/*": ["./src/models/*"],
+      "@shared-models/*": ["./shared/models/*"],
+      "@shared/*": ["./shared/*"],
       "@pid/*": ["./src/pid/*"],
       "@services/*": ["./src/services/*"],
       "@utils/*": ["./src/utils/*"],
@@ -27,7 +29,7 @@
       "@helpers/*": ["./tests/helpers/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"],
+  "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts", "shared/**/*"],
   "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"],
   "references": [
     {

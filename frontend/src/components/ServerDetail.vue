@@ -18,7 +18,7 @@
       </div>
       <div class="flex gap-2">
         <el-button :icon="Refresh" plain @click="restartServer">{{ $t('action.restart') }}</el-button>
-        <el-button v-if="server.status === 'running'" type="warning" plain :icon="SwitchButton" @click="stopServer">{{ $t('action.stop') }}</el-button>
+        <el-button v-if="server.status === 'online'" type="warning" plain :icon="SwitchButton" @click="stopServer">{{ $t('action.stop') }}</el-button>
         <el-button v-else type="success" :icon="VideoPlay" @click="startServer">{{ $t('action.start') }}</el-button>
         <el-button type="danger" :icon="Delete" @click="deleteServer">{{ $t('action.delete') }}</el-button>
       </div>
@@ -277,31 +277,8 @@ import { VideoPlay, SwitchButton, Refresh, Delete, Plus, Edit, CopyDocument, Doc
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatUptime } from '@utils/format-utils'
-
-// Resource type for server resources
-interface Resource {
-  name: string
-  uri: string
-  mimeType?: string
-  [key: string]: unknown
-}
-
-// JSON Schema type definition (copied from ToolCallDialog.vue)
-interface JsonSchema {
-  type?: string;
-  properties?: Record<string, JsonSchema>;
-  items?: JsonSchema;
-  default?: unknown;
-  [key: string]: unknown;
-}
-
-// Tool type for server tools
-interface Tool {
-  name: string
-  description?: string
-  inputSchema?: JsonSchema
-  [key: string]: unknown
-}
+import type { Resource } from '@shared-models/resource.model'
+import type { Tool } from '@shared-models/tool.model'
 
 const store = useServerStore()
 useWebSocketStore()
@@ -355,9 +332,9 @@ function getInstanceLabel(inst: Server) {
     label = 'Config (No Instance)'
   }
   
-  if (inst.status === 'running') {
+  if (inst.status === 'online') {
     label += ` (${t('serverDetail.status.running')})`
-  } else if (inst.status === 'stopped' && inst.instance?.hash !== 'config-only') {
+  } else if (inst.status === 'offline' && inst.instance?.hash !== 'config-only') {
     label += ` (${t('serverDetail.status.stopped')})`
   }
   return label
@@ -411,7 +388,7 @@ watch(() => server.value?.id, (newId, oldId) => {
   if (newId && newId !== oldId) {
     // Only set default tab if not already set by route query
     if (!route.query.tab) {
-      activeTab.value = server.value?.status === 'running' ? 'logs' : 'config'
+      activeTab.value = server.value?.status === 'online' ? 'logs' : 'config'
     }
     selectedTool.value = null
   }
@@ -503,7 +480,7 @@ watch(() => server.value?.startTime, () => {
 const restartServer = async () => {
   if (server.value) {
     try {
-      if (server.value.status === 'running') {
+      if (server.value.status === 'online') {
         await store.stopServer(server.value.id)
       }
       await store.startServer(server.value.id)

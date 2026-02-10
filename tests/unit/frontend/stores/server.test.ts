@@ -71,7 +71,7 @@ describe('Server Store', () => {
     expect(store.error).toBeNull()
     expect(store.servers.length).toBe(1)
     expect(store.servers[0].name).toBe('test-server')
-    expect(store.servers[0].status).toBe('running')
+    expect(store.servers[0].status).toBe('online')
   })
 
   it('should handle fetch servers error', async () => {
@@ -137,16 +137,16 @@ describe('Server Store', () => {
     store.servers = [{
       id: 'test-id',
       name: 'test-server',
-      status: 'stopped',
+      status: 'offline',
       type: 'local',
       config: { type: 'stdio' },
       instance: { id: 'test-id', timestamp: 1234567890, hash: 'abc123' },
       logs: []
     }]
 
-    store.updateServerStatus('test-id', 'running')
+    store.updateServerStatus('test-id', 'online')
 
-    expect(store.servers[0].status).toBe('running')
+    expect(store.servers[0].status).toBe('online')
   })
 
   it('should compute stats correctly with mixed server statuses', () => {
@@ -156,7 +156,7 @@ describe('Server Store', () => {
       {
         id: 'server-1',
         name: 'Running Server',
-        status: 'running',
+        status: 'online',
         type: 'local',
         config: { type: 'stdio' },
         instance: { id: 'server-1', timestamp: 1234567890, hash: 'abc123' },
@@ -165,7 +165,7 @@ describe('Server Store', () => {
       {
         id: 'server-2',
         name: 'Stopped Server',
-        status: 'stopped',
+        status: 'offline',
         type: 'local',
         config: { type: 'stdio' },
         instance: { id: 'server-2', timestamp: 1234567890, hash: 'def456' },

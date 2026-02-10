@@ -30,6 +30,10 @@ export default defineConfig({
 
       // @frontend/* 别名（用于测试文件）
       '@frontend': fileURLToPath(new URL('./frontend/src', import.meta.url)),
+
+      // 共享类型别名
+      '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
+      '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url))
     }
   },
   test: {

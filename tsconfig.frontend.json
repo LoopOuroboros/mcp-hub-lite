@@ -1,6 +1,6 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["frontend/src/**/*", "frontend/src/**/*.vue"],
+  "include": ["frontend/src/**/*", "frontend/src/**/*.vue", "shared/**/*"],
   "exclude": ["src/**", "tests/**", "node_modules"],
   "compilerOptions": {
     "composite": true,
@@ -22,7 +22,9 @@
       "@i18n/*": ["./frontend/src/i18n/*"],
       "@locales/*": ["./frontend/src/locales/*"],
       "@composables/*": ["./frontend/src/composables/*"],
-      "@utils/*": ["./frontend/src/utils/*"]
+      "@utils/*": ["./frontend/src/utils/*"],
+      "@shared/*": ["./shared/*"],
+      "@shared-models/*": ["./shared/models/*"]
     }
   }
 }
