@@ -81,6 +81,9 @@ process-logs/
 # GitHub Spec Kit
 .specify/
 
+# Evaluation tests (excluded from git)
+tests/evaluation/
+
 # Analysis Docs
 docs/kaizen/
 docs/img/
