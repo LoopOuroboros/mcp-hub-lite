@@ -28,5 +28,10 @@
     }
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"]
+  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"],
+  "references": [
+    {
+      "path": "./tsconfig.frontend.json"
+    }
+  ]
 }

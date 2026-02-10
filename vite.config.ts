@@ -33,7 +33,7 @@ function getBackendPort(): string {
         if (config.port && typeof config.port === 'number') {
           return String(config.port);
         }
-      } catch (e) {
+      } catch {
         // 忽略读取错误
       }
     }
@@ -69,7 +69,7 @@ function getBackendHost(): string {
         if (config.host && typeof config.host === 'string') {
           return config.host;
         }
-      } catch (e) {
+      } catch {
         // 忽略读取错误
       }
     }

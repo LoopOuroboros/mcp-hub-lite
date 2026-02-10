@@ -120,11 +120,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus/icons-vue'
 import { http } from '@utils/http'
 import { useServerStore } from '@stores/server'
-import { useWebSocketStore } from '@stores/websocket'
 import { useI18n } from 'vue-i18n'
 import ToolCallDialog from '@components/ToolCallDialog.vue'
 import ToolCard from '@components/ToolCard.vue'

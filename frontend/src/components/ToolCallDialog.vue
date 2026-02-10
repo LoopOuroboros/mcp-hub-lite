@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { http, HttpError } from '@utils/http';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
@@ -192,12 +192,6 @@ function formatJson() {
   } catch (e) {
     ElMessage.warning(t('toolCallDialog.invalidJson'));
   }
-}
-
-function clearResult() {
-  result.value = null;
-  error.value = null;
-  showInputSchema.value = false;
 }
 
 function toggleSchemaView() {

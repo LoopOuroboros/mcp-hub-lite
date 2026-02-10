@@ -48,7 +48,7 @@
         </el-form-item>
         <el-form-item :label="$t('serverDetail.config.args')">
           <div class="w-full flex flex-col gap-2" style="display: flex; flex-direction: column; width: 100%;">
-            <div v-for="(arg, index) in form.args" :key="index" class="flex gap-2 w-full">
+            <div v-for="(_, index) in form.args" :key="index" class="flex gap-2 w-full">
               <el-input v-model="form.args[index]" :placeholder="$t('addServer.argPlaceholder')" />
               <el-button :icon="Delete" circle plain @click="removeArg(index)" />
             </div>

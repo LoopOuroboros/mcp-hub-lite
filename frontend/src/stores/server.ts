@@ -105,7 +105,7 @@ export const useServerStore = defineStore('server', () => {
 
         if (instances.length > 0) {
           // 有实例的情况 - 保持原有逻辑
-          instances.forEach((instanceConfig, index) => {
+          instances.forEach((instanceConfig) => {
             const serverId = instanceConfig.id // 使用实例ID作为服务器唯一ID
             const statusInfo = statuses.find(s => s.id === serverId)?.status
 
@@ -194,7 +194,7 @@ export const useServerStore = defineStore('server', () => {
         config: serverData.config || {}
       }
 
-      const serverResponse = await http.post<{ name: string; config: McpServerConfig }>('/web/servers', serverBasePayload)
+      await http.post<{ name: string; config: McpServerConfig }>('/web/servers', serverBasePayload)
 
       // 第二步：添加服务器实例配置（现在自动在后端完成）
 

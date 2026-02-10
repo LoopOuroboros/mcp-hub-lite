@@ -26,7 +26,7 @@ import { useWebSocketStore } from './stores/websocket'
 const { locale } = useI18n()
 const { theme, setTheme } = useTheme()
 const systemStore = useSystemStore()
-const wsStore = useWebSocketStore()
+useWebSocketStore()
 
 const elLocale = computed(() => {
   return locale.value === 'zh' ? zhCn : en

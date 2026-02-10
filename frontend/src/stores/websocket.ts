@@ -167,7 +167,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleServerStatusChange(message: any): void {
-    const { serverId, status, error, timestamp } = message.data
+    const { serverId, status, error } = message.data
     serverStore.updateServerStatus(serverId, mapStatus(status))
 
     if (error) {
@@ -226,31 +226,10 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   // 服务器更新事件发射器
-  const serverUpdatedListeners = ref<Array<() => void>>([])
-
-  function onServerUpdated(callback: () => void): void {
-    serverUpdatedListeners.value.push(callback)
-  }
-
-  function offServerUpdated(callback: () => void): void {
-    const index = serverUpdatedListeners.value.indexOf(callback)
-    if (index > -1) {
-      serverUpdatedListeners.value.splice(index, 1)
-    }
-  }
 
   function handleServerUpdated(message: any): void {
     console.log('Server updated:', message.data)
     serverStore.fetchServers()
-
-    // 触发服务器更新事件
-    serverUpdatedListeners.value.forEach(callback => {
-      try {
-        callback()
-      } catch (error) {
-        console.error('Error in server updated listener:', error)
-      }
-    })
   }
 
   function handleServerDeleted(message: any): void {

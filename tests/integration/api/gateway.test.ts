@@ -232,13 +232,15 @@ describe('GatewayService', () => {
     const mockTools: any[] = [];
     vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
     vi.mocked(mocks.getSystemTools).mockReturnValue([
-        { name: 'list-servers', description: 'List all servers', inputSchema: {} },
-        { name: 'find-servers', description: 'Find servers matching a pattern', inputSchema: {} },
-        { name: 'list-all-tools-in-server', description: 'List all tools from a specific server', inputSchema: {} },
-        { name: 'find-tools-in-server', description: 'Find tools matching a pattern in a specific server', inputSchema: {} },
-        { name: 'get-tool', description: 'Get complete schema for a specific tool from a specific server', inputSchema: {} },
-        { name: 'call-tool', description: 'Call a specific tool from a specific server', inputSchema: {} },
-        { name: 'find-tools', description: 'Find tools matching a pattern across all connected servers', inputSchema: {} }
+        { name: 'list_servers', description: 'List all servers', inputSchema: {} },
+        { name: 'find_servers', description: 'Find servers matching a pattern', inputSchema: {} },
+        { name: 'list_all_tools_in_server', description: 'List all tools from a specific server', inputSchema: {} },
+        { name: 'find_tools_in_server', description: 'Find tools matching a pattern in a specific server', inputSchema: {} },
+        { name: 'get_tool', description: 'Get complete schema for a specific tool from a specific server', inputSchema: {} },
+        { name: 'call_tool', description: 'Call a specific tool from a specific server', inputSchema: {} },
+        { name: 'find_tools', description: 'Find tools matching a pattern across all connected servers', inputSchema: {} },
+        { name: 'list_resources', description: 'List all Hub resources (servers, tools, and resources metadata)', inputSchema: {} },
+        { name: 'read_resource', description: 'Read content from a specific Hub resource URI', inputSchema: {} }
     ]);
 
     // Clear toolCache to ensure only system tools are returned
@@ -263,9 +265,9 @@ describe('GatewayService', () => {
       method: 'tools/list'
     });
 
-    // Expect 7 system tools
-    expect(result.tools).toHaveLength(7);
-    expect(result.tools.some((t: any) => t.name === 'list-servers')).toBe(true);
+    // Expect 9 system tools
+    expect(result.tools).toHaveLength(9);
+    expect(result.tools.some((t: any) => t.name === 'list_servers')).toBe(true);
   });
 
   // it('should fetch roots on initialized notification', async () => {
@@ -313,7 +315,7 @@ describe('GatewayService', () => {
 
     const result = await callToolHandler!({
       params: {
-        name: 'list-servers',
+        name: 'list_servers',
         arguments: {}
       },
       id: 'test-id',
@@ -325,7 +327,7 @@ describe('GatewayService', () => {
     expect(result.content[0].text).toContain('server1');
   });
 
-  it('should call call-tool system tool with undefined serverName', async () => {
+  it('should call call_tool system tool with undefined serverName', async () => {
     // Find call tool handler
     let callToolHandler: Function | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
@@ -342,7 +344,7 @@ describe('GatewayService', () => {
     vi.mocked(mocks.listServers).mockImplementation(async () => ['Test Server']);
     // Mock callToolDirect to return the expected result format
     vi.mocked(mocks.callToolDirect).mockImplementation(async (_serverName, toolName, _toolArgs) => {
-      if (toolName === 'list-servers') {
+      if (toolName === 'list_servers') {
         return {
           content: [
             {
@@ -357,10 +359,10 @@ describe('GatewayService', () => {
 
     const result = await callToolHandler!({
       params: {
-        name: 'call-tool',
+        name: 'call_tool',
         arguments: {
           serverName: undefined,
-          toolName: 'list-servers',
+          toolName: 'list_servers',
           toolArgs: {}
         }
       },

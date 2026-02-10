@@ -160,12 +160,12 @@ import { useSystemStore } from '@stores/system'
 import { useI18n } from 'vue-i18n'
 import {
   Plus, Platform, VideoPlay, SwitchButton, Refresh, Setting,
-  CircleCheckFilled, WarningFilled, CircleCloseFilled, InfoFilled,
+  CircleCheckFilled,
   Memo, Tools, Files
 } from '@element-plus/icons-vue'
 import AddServerModal from '@components/AddServerModal.vue'
 import ServerStatusTags from '@components/ServerStatusTags.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 const store = useServerStore()
 const systemStore = useSystemStore()
@@ -209,12 +209,6 @@ function navigateToTab(serverId: string, tabName: string) {
   store.selectServer(serverId)
   // Navigate to dashboard where ServerDetail is shown with the specified tab
   router.push({ name: 'dashboard', query: { tab: tabName } })
-}
-
-function configureServer(id: string) {
-  store.selectServer(id)
-  // Navigate to dashboard where ServerDetail is shown
-  router.push({ name: 'dashboard' })
 }
 
 function handleCardClick(server: any) {

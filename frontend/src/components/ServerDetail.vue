@@ -50,7 +50,7 @@
               </el-form-item>
               <el-form-item :label="$t('serverDetail.config.args')">
                 <div class="w-full flex flex-col gap-2">
-                  <div v-for="(arg, index) in server.config.args" :key="index" class="flex gap-2 w-full">
+                  <div v-for="(_, index) in server.config.args" :key="index" class="flex gap-2 w-full">
                     <el-input v-model="server.config.args![index]" />
                     <el-button :icon="Delete" circle plain @click="removeArg(index)" />
                   </div>
@@ -77,7 +77,7 @@
 
             <el-form-item :label="$t('serverDetail.config.env')">
                <div class="w-full flex flex-col gap-2">
-                 <div v-for="(value, key) in server.config.env" :key="key" class="flex gap-2 w-full">
+                 <div v-for="(_, key) in server.config.env" :key="key" class="flex gap-2 w-full">
                     <el-input v-model="envKeys[key as string]" :placeholder="$t('addServer.keyPlaceholder')" class="w-1/3" @change="(val: string) => updateEnvKey(key as string, val)" />
                     <el-input v-model="server.config.env![key]" :placeholder="$t('addServer.valuePlaceholder')" class="flex-1" />
                     <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
@@ -279,7 +279,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatUptime } from '@utils/format-utils'
 
 const store = useServerStore()
-const wsStore = useWebSocketStore()
+useWebSocketStore()
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
@@ -418,11 +418,6 @@ watch(activeTab, async (tab) => {
 
 function selectTool(tool: any) {
   selectedTool.value = tool
-}
-
-function openCallDialog(tool: any) {
-  selectedTool.value = tool
-  showCallDialog.value = true
 }
 
 function isToolAllowed(toolName: string) {

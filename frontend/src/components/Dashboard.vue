@@ -63,7 +63,7 @@ import { useWebSocketStore } from '@stores/websocket'
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue'
 
 const store = useServerStore()
-const wsStore = useWebSocketStore()
+useWebSocketStore()
 const activityContainer = ref<HTMLElement | null>(null)
 
 onMounted(() => {

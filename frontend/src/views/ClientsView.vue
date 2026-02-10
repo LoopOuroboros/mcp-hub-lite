@@ -13,7 +13,7 @@
         v-loading="store.loading"
         class="flex-1"
       >
-        <el-table-column prop="sessionId" :label="$t('clients.sessionId')" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="sessionId" :label="$t('clients.sessionId')" min-width="300" show-overflow-tooltip />
         <el-table-column prop="clientName" :label="$t('clients.name')" min-width="120" />
         <el-table-column prop="clientVersion" :label="$t('clients.clientVersion')" min-width="100" />
         <el-table-column prop="protocolVersion" :label="$t('clients.protocolVersion')" min-width="120" />

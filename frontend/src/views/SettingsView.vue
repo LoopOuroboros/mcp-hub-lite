@@ -226,16 +226,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Check, Document, Lock, Setting, Sunny, Moon, Monitor, DataAnalysis } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { useTheme } from '@composables/useTheme';
 import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
 
-const { t, locale } = useI18n();
-const { theme, setTheme } = useTheme();
+const { t } = useI18n();
 const systemStore = useSystemStore();
 const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
