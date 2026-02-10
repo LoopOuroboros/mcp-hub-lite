@@ -3,16 +3,75 @@
  * Centralized definition of system tool names and gateway server names
  */
 
+// 系统工具参数类型定义
+export interface ListServersParams {}
+
+export interface FindServersParams {
+  pattern: string;
+  searchIn?: 'name' | 'description' | 'both';
+  caseSensitive?: boolean;
+}
+
+export interface ListAllToolsInServerParams {
+  serverName: string;
+  requestOptions?: {
+    sessionId?: string;
+    tags?: Record<string, string>;
+  };
+}
+
+export interface FindToolsInServerParams {
+  serverName: string;
+  pattern: string;
+  searchIn?: 'name' | 'description' | 'both';
+  caseSensitive?: boolean;
+  requestOptions?: {
+    sessionId?: string;
+    tags?: Record<string, string>;
+  };
+}
+
+export interface GetToolParams {
+  serverName: string;
+  toolName: string;
+  requestOptions?: {
+    sessionId?: string;
+    tags?: Record<string, string>;
+  };
+}
+
+export interface CallToolParams {
+  serverName: string;
+  toolName: string;
+  toolArgs: Record<string, unknown>;
+  requestOptions?: {
+    sessionId?: string;
+    tags?: Record<string, string>;
+  };
+}
+
+export interface FindToolsParams {
+  pattern: string;
+  searchIn?: 'name' | 'description' | 'both';
+  caseSensitive?: boolean;
+}
+
+export interface ListResourcesParams {}
+
+export interface ReadResourceParams {
+  uri: string;
+}
+
 // Individual system tool name constants
-export const LIST_SERVERS_TOOL = 'list-servers';
-export const FIND_SERVERS_TOOL = 'find-servers';
-export const LIST_ALL_TOOLS_IN_SERVER_TOOL = 'list-all-tools-in-server';
-export const FIND_TOOLS_IN_SERVER_TOOL = 'find-tools-in-server';
-export const GET_TOOL_TOOL = 'get-tool';
-export const CALL_TOOL_TOOL = 'call-tool';
-export const FIND_TOOLS_TOOL = 'find-tools';
-export const LIST_RESOURCES_TOOL = 'list-resources';
-export const READ_RESOURCE_TOOL = 'read-resource';
+export const LIST_SERVERS_TOOL = 'list_servers';
+export const FIND_SERVERS_TOOL = 'find_servers';
+export const LIST_ALL_TOOLS_IN_SERVER_TOOL = 'list_all_tools_in_server';
+export const FIND_TOOLS_IN_SERVER_TOOL = 'find_tools_in_server';
+export const GET_TOOL_TOOL = 'get_tool';
+export const CALL_TOOL_TOOL = 'call_tool';
+export const FIND_TOOLS_TOOL = 'find_tools';
+export const LIST_RESOURCES_TOOL = 'list_resources';
+export const READ_RESOURCE_TOOL = 'read_resource';
 
 /**
  * List of all system tool names
