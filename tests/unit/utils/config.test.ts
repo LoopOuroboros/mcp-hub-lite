@@ -4,6 +4,9 @@ import path from 'node:path';
 import os from 'node:os';
 import { ConfigManager, McpServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
 
+// 重置模块缓存，确保每次导入都是新的
+vi.resetModules();
+
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
   let tempConfigDir: string;
@@ -15,7 +18,7 @@ describe('ConfigManager', () => {
     originalEnv = { ...process.env };
 
     // 创建临时配置目录
-    const testRunId = `config-test-${Date.now()}`;
+    const testRunId = `config-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     tempConfigDir = path.join(os.tmpdir(), `mcp-hub-config-test-${testRunId}`);
     tempConfigPath = path.join(tempConfigDir, '.mcp-hub.json');
 
@@ -29,18 +32,33 @@ describe('ConfigManager', () => {
     delete process.env.PORT;
     delete process.env.HOST;
     delete process.env.LOG_LEVEL;
+
+    // 直接创建新实例，不使用单例模式
+    configManager = new ConfigManager(tempConfigPath);
   });
 
   afterEach(() => {
+    // 强制垃圾回收，确保配置管理器实例被销毁
+    configManager = null as any;
+
     // 恢复原始环境变量
     process.env = { ...originalEnv };
 
-    // 清理临时目录
+    // 清理临时目录，增加重试机制以防止权限问题
     if (fs.existsSync(tempConfigDir)) {
-      try {
-        fs.rmSync(tempConfigDir, { recursive: true, force: true });
-      } catch (error) {
-        console.warn(`Failed to clean up test temp directory: ${error}`);
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          fs.rmSync(tempConfigDir, { recursive: true, force: true });
+          break;
+        } catch (error) {
+          console.warn(`Failed to clean up test temp directory (retries left: ${retries - 1}): ${error}`);
+          retries--;
+          if (retries > 0) {
+            // 等待一段时间后重试
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+          }
+        }
       }
     }
 
@@ -139,7 +157,14 @@ describe('ConfigManager', () => {
 
   describe('Configuration Saving', () => {
     it('should save config to file', () => {
+      console.log('[TEST] Starting "should save config to file" test');
+      console.log('[TEST] tempConfigPath:', tempConfigPath);
+
       configManager = new ConfigManager(tempConfigPath);
+
+      // 记录初始配置
+      const initialConfig = configManager.getConfig();
+      console.log('[TEST] Initial config:', JSON.stringify(initialConfig));
 
       // 修改配置
       configManager.updateConfig({
@@ -160,22 +185,44 @@ describe('ConfigManager', () => {
         }
       });
 
+      // 记录内存中的配置
+      const memoryConfig = configManager.getConfig();
+      console.log('[TEST] Memory config after update:', JSON.stringify(memoryConfig));
+
       // 验证文件已创建并包含正确内容
       expect(fs.existsSync(tempConfigPath)).toBe(true);
 
       const savedContent = fs.readFileSync(tempConfigPath, 'utf-8');
+      console.log('[TEST] File content:', savedContent);
+
       const savedConfig = JSON.parse(savedContent);
+      console.log('[TEST] Parsed config from file:', JSON.stringify(savedConfig));
 
       expect(savedConfig.system.host).toBe('new-host');
       expect(savedConfig.system.port).toBe(9090);
+
+      console.log('[TEST] Test passed');
     });
 
     it('should create config directory if it does not exist', () => {
-      const nonExistentPath = path.join(os.tmpdir(), 'non-existent-dir', '.mcp-hub.json');
+      const testRunId = `non-existent-dir-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const nonExistentPath = path.join(os.tmpdir(), testRunId, '.mcp-hub.json');
 
       // 确保目录不存在
       if (fs.existsSync(path.dirname(nonExistentPath))) {
-        fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
+            break;
+          } catch (error) {
+            console.warn(`Failed to remove existing directory (retries left: ${retries - 1}): ${error}`);
+            retries--;
+            if (retries > 0) {
+              Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+            }
+          }
+        }
       }
 
       configManager = new ConfigManager(nonExistentPath);
@@ -204,7 +251,19 @@ describe('ConfigManager', () => {
 
       // 清理
       if (fs.existsSync(path.dirname(nonExistentPath))) {
-        fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
+            break;
+          } catch (error) {
+            console.warn(`Failed to clean up test directory (retries left: ${retries - 1}): ${error}`);
+            retries--;
+            if (retries > 0) {
+              Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+            }
+          }
+        }
       }
     });
 
@@ -665,7 +724,7 @@ describe('ConfigManager', () => {
   describe('Edge Cases and Error Handling', () => {
     it('should handle constructor with temp config path', () => {
       // 使用临时目录创建配置文件路径
-      const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}`);
+      const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
       fs.mkdirSync(tempDir, { recursive: true });
       const testTempConfigPath = path.join(tempDir, '.mcp-hub.json');
 
@@ -678,8 +737,20 @@ describe('ConfigManager', () => {
       expect(config).toBeDefined();
       expect(config.version).toBe('1.0.0');
 
-      // 清理
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      // 清理，添加重试机制
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+          break;
+        } catch (error) {
+          console.warn(`Failed to clean up temp directory (retries left: ${retries - 1}): ${error}`);
+          retries--;
+          if (retries > 0) {
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+          }
+        }
+      }
     });
 
     it('should handle empty config object', () => {

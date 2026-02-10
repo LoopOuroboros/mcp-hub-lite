@@ -277,24 +277,24 @@ export class ConfigManager {
 }
 
 // Lazy initialization of configManager to avoid creating instance during module import
-// This prevents test pollution and allows proper configuration path handling
+// In test environment, always create a new instance to prevent test pollution
 let _configManager: ConfigManager | null = null;
 
 /**
- * Get the singleton config manager instance
- * Creates the instance on first call with proper configuration path
+ * Get the config manager instance
+ * In test environment, always creates a new instance to prevent test pollution
  */
 export function getConfigManager(): ConfigManager {
+  // In test environment, always create a new instance to ensure test isolation
+  if (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test') {
+    const testConfigPath = process.env.MCP_HUB_CONFIG_PATH ||
+      path.join(os.tmpdir(), `mcp-hub-test-fallback-${Date.now()}`, '.mcp-hub.json');
+    return new ConfigManager(testConfigPath);
+  }
+
+  // In production, use singleton pattern
   if (!_configManager) {
-    // In test environment, use the temp config path from environment variable
-    if (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test') {
-      // Use the temp config path from environment variable, or fallback to a safe default
-      const testConfigPath = process.env.MCP_HUB_CONFIG_PATH ||
-        path.join(os.tmpdir(), `mcp-hub-test-fallback-${Date.now()}`, '.mcp-hub.json');
-      _configManager = new ConfigManager(testConfigPath);
-    } else {
-      _configManager = new ConfigManager();
-    }
+    _configManager = new ConfigManager();
   }
   return _configManager;
 }
