@@ -6,9 +6,19 @@ import { hubManager } from "./hub-manager.service.js";
 import { logger, withSpan, createMcpSpanOptions } from "@utils/index.js";
 import { z } from "zod";
 import { searchCoreService } from "./search/search-core.service.js";
+import { SearchOptions } from "./search/types.js";
 import { hubToolsService } from "./hub-tools.service.js";
 import { getClientCwd, getClientContext } from "@utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
+import { McpToolSchema } from "@models/tool.model.js";
+import type {
+  FindServersParams,
+  ListAllToolsInServerParams,
+  FindToolsInServerParams,
+  GetToolParams,
+  CallToolParams,
+  FindToolsParams
+} from "@models/system-tools.constants.js";
 import {
   SYSTEM_TOOL_NAMES,
   SystemToolName,
@@ -142,7 +152,7 @@ export class GatewayService {
           mode: 'fuzzy' as const,
           limit,
           offset,
-          filters: {} as any
+          filters: {} as SearchOptions['filters']
         };
 
         if (filters.serverName) {
@@ -177,9 +187,9 @@ export class GatewayService {
       }
     });
 
-    // List servers tool
+    // List servers
     const ListServersRequestSchema = z.object({
-      method: z.literal('list-servers'),
+      method: z.literal(LIST_SERVERS_TOOL),
       params: z.object({}).optional(),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -190,9 +200,9 @@ export class GatewayService {
       return { servers };
     });
 
-    // Find servers tool
+    // Find servers
     const FindServersRequestSchema = z.object({
-      method: z.literal('find-servers'),
+      method: z.literal(FIND_SERVERS_TOOL),
       params: z.object({
         pattern: z.string(),
         searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
@@ -208,9 +218,9 @@ export class GatewayService {
       return { servers };
     });
 
-    // List all tools in server tool
+    // List all tools in a specific server
     const ListAllToolsInServerRequestSchema = z.object({
-      method: z.literal('list-all-tools-in-server'),
+      method: z.literal(LIST_ALL_TOOLS_IN_SERVER_TOOL),
       params: z.object({
         serverName: z.string(),
         requestOptions: z.object({
@@ -233,9 +243,9 @@ export class GatewayService {
       }
     });
 
-    // Find tools in server tool
+    // Find tools in a specific server
     const FindToolsInServerRequestSchema = z.object({
-      method: z.literal('find-tools-in-server'),
+      method: z.literal(FIND_TOOLS_IN_SERVER_TOOL),
       params: z.object({
         serverName: z.string(),
         pattern: z.string(),
@@ -261,9 +271,9 @@ export class GatewayService {
       }
     });
 
-    // Get tool schema
+    // Get tool
     const GetToolRequestSchema = z.object({
-      method: z.literal('get-tool'),
+      method: z.literal(GET_TOOL_TOOL),
       params: z.object({
         serverName: z.string(),
         toolName: z.string(),
@@ -297,11 +307,11 @@ export class GatewayService {
 
     // Call tool directly
     const CallToolDirectRequestSchema = z.object({
-      method: z.literal('call-tool'),
+      method: z.literal(CALL_TOOL_TOOL),
       params: z.object({
         serverName: z.string(),
         toolName: z.string(),
-        toolArgs: z.record(z.string(), z.any()),
+        toolArgs: z.record(z.string(), z.unknown()),
         requestOptions: z.object({
           sessionId: z.string().optional(),
           tags: z.record(z.string(), z.string()).optional()
@@ -335,7 +345,7 @@ export class GatewayService {
 
     // List all tools from all servers
     const ListAllToolsRequestSchema = z.object({
-      method: z.literal('list-all-tools'),
+      method: z.literal('list_all_tools'),
       params: z.object({}).optional(),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -348,7 +358,7 @@ export class GatewayService {
 
     // Find tools across all servers
     const FindToolsRequestSchema = z.object({
-      method: z.literal('find-tools'),
+      method: z.literal(FIND_TOOLS_TOOL),
       params: z.object({
         pattern: z.string(),
         searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
@@ -366,7 +376,7 @@ export class GatewayService {
 
     // List resources tool
     const ListResourcesRequestSchema = z.object({
-      method: z.literal('list-resources'),
+      method: z.literal(LIST_RESOURCES_TOOL),
       params: z.object({}).optional(),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -384,7 +394,7 @@ export class GatewayService {
 
     // Read resource tool (system tool interface)
     const ReadResourceRequestSchema = z.object({
-      method: z.literal('read-resource'),
+      method: z.literal(READ_RESOURCE_TOOL),
       params: z.object({
         uri: z.string()
       }),
@@ -466,7 +476,7 @@ export class GatewayService {
     // Original call tool handler (for compatibility)
     server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
-      const toolArgs: any = request.params.arguments || {};
+      const toolArgs: Record<string, unknown> = request.params.arguments || {};
 
       // Log incoming tool request with full context
       logger.info(`[GATEWAY] Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`);
@@ -482,54 +492,73 @@ export class GatewayService {
               result = await hubToolsService.listServers();
               break;
             case FIND_SERVERS_TOOL:
+              const findServersArgs = toolArgs as unknown as FindServersParams;
               result = await hubToolsService.findServers(
-                toolArgs.pattern,
-                toolArgs.searchIn,
-                toolArgs.caseSensitive
+                findServersArgs.pattern,
+                findServersArgs.searchIn,
+                findServersArgs.caseSensitive
               );
               break;
             case LIST_ALL_TOOLS_IN_SERVER_TOOL:
-              result = await hubToolsService.listAllToolsInServer(toolArgs.serverName, toolArgs.requestOptions);
+              const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
+              result = await hubToolsService.listAllToolsInServer(
+                listAllToolsArgs.serverName,
+                listAllToolsArgs.requestOptions
+              );
               break;
             case FIND_TOOLS_IN_SERVER_TOOL:
+              const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
               result = await hubToolsService.findToolsInServer(
-                toolArgs.serverName,
-                toolArgs.pattern,
-                toolArgs.searchIn,
-                toolArgs.caseSensitive,
-                toolArgs.requestOptions
+                findToolsInServerArgs.serverName,
+                findToolsInServerArgs.pattern,
+                findToolsInServerArgs.searchIn,
+                findToolsInServerArgs.caseSensitive,
+                findToolsInServerArgs.requestOptions
               );
               break;
             case GET_TOOL_TOOL:
-              result = await hubToolsService.getTool(toolArgs.serverName, toolArgs.toolName, toolArgs.requestOptions);
+              const getToolArgs = toolArgs as unknown as GetToolParams;
+              result = await hubToolsService.getTool(
+                getToolArgs.serverName,
+                getToolArgs.toolName,
+                getToolArgs.requestOptions
+              );
               break;
             case CALL_TOOL_TOOL:
-              // Handle undefined or "undefined" serverName for system tools
-              let serverName = toolArgs.serverName;
+              const callToolArgs = toolArgs as unknown as CallToolParams;
+              let serverName = callToolArgs.serverName;
               if (!serverName || serverName === 'undefined') {
                 serverName = MCP_HUB_LITE_SERVER;
               }
 
               // Inject CWD for nested call-tool
               const cwd = getClientCwd();
-              if (cwd && toolArgs.toolArgs && !toolArgs.toolArgs.cwd) {
-                  toolArgs.toolArgs.cwd = cwd;
+              if (cwd && callToolArgs.toolArgs && !callToolArgs.toolArgs.cwd) {
+                  // 使用类型断言确保我们可以安全地添加 cwd 属性
+                  const toolArgsWithCwd = callToolArgs.toolArgs as Record<string, unknown> & { cwd?: string };
+                  toolArgsWithCwd.cwd = cwd;
                   logger.debug(`Injected CWD into nested tool call: ${cwd}`);
               }
-              result = await hubToolsService.callTool(serverName, toolArgs.toolName, toolArgs.toolArgs, toolArgs.requestOptions);
+              result = await hubToolsService.callTool(
+                serverName,
+                callToolArgs.toolName,
+                callToolArgs.toolArgs,
+                callToolArgs.requestOptions
+              );
               break;
             case FIND_TOOLS_TOOL:
+              const findToolsArgs = toolArgs as unknown as FindToolsParams;
               result = await hubToolsService.findTools(
-                toolArgs.pattern,
-                toolArgs.searchIn,
-                toolArgs.caseSensitive
+                findToolsArgs.pattern,
+                findToolsArgs.searchIn,
+                findToolsArgs.caseSensitive
               );
               break;
             case LIST_RESOURCES_TOOL:
               result = await hubToolsService.listResources();
               break;
             case READ_RESOURCE_TOOL:
-              result = await hubToolsService.readResource(toolArgs.uri);
+              result = await hubToolsService.readResource(toolArgs.uri as string);
               break;
           }
 
@@ -608,7 +637,14 @@ export class GatewayService {
   public generateGatewayToolsList(toolMap: Map<string, { serverId: string; realToolName: string }>): Array<{
     name: string;
     description: string;
-    inputSchema?: any;
+    inputSchema?: McpToolSchema;
+    annotations?: {
+      title?: string;
+      readOnlyHint?: boolean;
+      destructiveHint?: boolean;
+      idempotentHint?: boolean;
+      openWorldHint?: boolean;
+    };
   }> {
     const gatewayTools = [];
     toolMap.clear();
@@ -621,7 +657,8 @@ export class GatewayService {
       gatewayTools.push({
         name: tool.name,
         description: `[System] ${tool.description}`,
-        inputSchema: tool.inputSchema
+        inputSchema: tool.inputSchema,
+        annotations: tool.annotations
       });
       usedNames.add(tool.name);
     }
@@ -712,10 +749,10 @@ export class GatewayService {
    * Safely format tool arguments for logging
    * Handles circular references and limits output size
    */
-  private formatToolArgs(args: any): string {
+  private formatToolArgs(args: unknown): string {
     try {
       const seen = new WeakSet();
-      const replacer = (_key: string, value: any) => {
+      const replacer = (_key: string, value: unknown): unknown => {
         if (typeof value === 'object' && value !== null) {
           if (seen.has(value)) {
             return '[Circular Reference]';
@@ -743,7 +780,7 @@ export class GatewayService {
   /**
    * Safely format tool response for logging
    */
-  private formatToolResponse(response: any): string {
+  private formatToolResponse(response: unknown): string {
     try {
       const formatted = JSON.stringify(response, null, 2);
       // Limit total output length

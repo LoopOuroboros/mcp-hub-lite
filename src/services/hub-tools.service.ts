@@ -18,11 +18,20 @@ import {
   FIND_TOOLS_TOOL,
   LIST_RESOURCES_TOOL,
   READ_RESOURCE_TOOL,
-  MCP_HUB_LITE_SERVER
+  MCP_HUB_LITE_SERVER,
+  type ListServersParams,
+  type FindServersParams,
+  type ListAllToolsInServerParams,
+  type FindToolsInServerParams,
+  type GetToolParams,
+  type CallToolParams,
+  type FindToolsParams,
+  type ListResourcesParams,
+  type ReadResourceParams
 } from '@models/system-tools.constants.js';
 
 // 请求选项接口
-interface RequestOptions {
+export interface RequestOptions {
   sessionId?: string;  // 会话 ID（用于选择特定实例）
   tags?: Record<string, string>;  // 标签（后续支持）
   // 未来可能添加的选项
@@ -101,6 +110,13 @@ export class HubToolsService {
       name: string;
       description: string;
       inputSchema: any;
+      annotations?: {
+        title?: string;
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+      };
     }> = [];
 
     // Build system tools based on the constant array to ensure consistency
@@ -113,6 +129,13 @@ export class HubToolsService {
             inputSchema: {
               type: 'object',
               properties: {}
+            },
+            annotations: {
+              title: 'List Servers',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -128,6 +151,13 @@ export class HubToolsService {
                 caseSensitive: { type: 'boolean', default: false }
               },
               required: ['pattern']
+            },
+            annotations: {
+              title: 'Find Servers',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -148,6 +178,13 @@ export class HubToolsService {
                 }
               },
               required: ['serverName']
+            },
+            annotations: {
+              title: 'List Tools in Server',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -171,6 +208,13 @@ export class HubToolsService {
                 }
               },
               required: ['serverName', 'pattern']
+            },
+            annotations: {
+              title: 'Find Tools in Server',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -192,6 +236,13 @@ export class HubToolsService {
                 }
               },
               required: ['serverName', 'toolName']
+            },
+            annotations: {
+              title: 'Get Tool Details',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -214,6 +265,13 @@ export class HubToolsService {
                 }
               },
               required: ['serverName', 'toolName', 'toolArgs']
+            },
+            annotations: {
+              title: 'Call Tool',
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: false,
+              openWorldHint: true
             }
           });
           break;
@@ -229,6 +287,13 @@ export class HubToolsService {
                 caseSensitive: { type: 'boolean', default: false }
               },
               required: ['pattern']
+            },
+            annotations: {
+              title: 'Find Tools',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -239,6 +304,13 @@ export class HubToolsService {
             inputSchema: {
               type: 'object',
               properties: {}
+            },
+            annotations: {
+              title: 'List Resources',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -252,6 +324,13 @@ export class HubToolsService {
                 uri: { type: 'string', description: 'Resource URI to read (e.g., hub://servers/server-name)' }
               },
               required: ['uri']
+            },
+            annotations: {
+              title: 'Read Resource',
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false
             }
           });
           break;
@@ -316,7 +395,8 @@ export class HubToolsService {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        serverName: MCP_HUB_LITE_SERVER
+        serverName: MCP_HUB_LITE_SERVER,
+        annotations: tool.annotations
       }));
 
       return {
@@ -407,7 +487,19 @@ export class HubToolsService {
    * @param toolArgs Arguments to pass to the tool
    * @returns Result of the system tool call
    */
-  async callSystemTool(toolName: SystemToolName, toolArgs: Record<string, unknown>): Promise<any> {
+  async callSystemTool<T extends SystemToolName>(
+    toolName: T,
+    toolArgs: T extends typeof LIST_SERVERS_TOOL ? ListServersParams :
+              T extends typeof FIND_SERVERS_TOOL ? FindServersParams :
+              T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? ListAllToolsInServerParams :
+              T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? FindToolsInServerParams :
+              T extends typeof GET_TOOL_TOOL ? GetToolParams :
+              T extends typeof CALL_TOOL_TOOL ? CallToolParams :
+              T extends typeof FIND_TOOLS_TOOL ? FindToolsParams :
+              T extends typeof LIST_RESOURCES_TOOL ? ListResourcesParams :
+              T extends typeof READ_RESOURCE_TOOL ? ReadResourceParams :
+              never
+  ): Promise<any> {
     logger.info(`[HUB-TOOLS] System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`);
 
     try {
@@ -417,53 +509,58 @@ export class HubToolsService {
           result = await this.listServers();
           break;
         case FIND_SERVERS_TOOL:
+          const findServersArgs = toolArgs as FindServersParams;
           result = await this.findServers(
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean
+            findServersArgs.pattern,
+            findServersArgs.searchIn,
+            findServersArgs.caseSensitive
           );
           break;
         case LIST_ALL_TOOLS_IN_SERVER_TOOL:
-          result = await this.listAllToolsInServer(toolArgs.serverName as string, toolArgs.requestOptions as RequestOptions);
+          const listAllToolsArgs = toolArgs as ListAllToolsInServerParams;
+          result = await this.listAllToolsInServer(listAllToolsArgs.serverName, listAllToolsArgs.requestOptions);
           break;
         case FIND_TOOLS_IN_SERVER_TOOL:
+          const findToolsInServerArgs = toolArgs as FindToolsInServerParams;
           result = await this.findToolsInServer(
-            toolArgs.serverName as string,
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean,
-            toolArgs.requestOptions as RequestOptions
+            findToolsInServerArgs.serverName,
+            findToolsInServerArgs.pattern,
+            findToolsInServerArgs.searchIn,
+            findToolsInServerArgs.caseSensitive,
+            findToolsInServerArgs.requestOptions
           );
           break;
         case GET_TOOL_TOOL:
-          result = await this.getTool(toolArgs.serverName as string, toolArgs.toolName as string, toolArgs.requestOptions as RequestOptions);
+          const getToolArgs = toolArgs as GetToolParams;
+          result = await this.getTool(getToolArgs.serverName, getToolArgs.toolName, getToolArgs.requestOptions);
           break;
         case CALL_TOOL_TOOL:
-          // Handle nested call-tool calls
-          // If serverName is undefined or "undefined", default to mcp-hub-lite for system tools
-          let serverName = toolArgs.serverName as string;
+          const callToolArgs = toolArgs as CallToolParams;
+          let serverName = callToolArgs.serverName;
           if (!serverName || serverName === 'undefined') {
             serverName = MCP_HUB_LITE_SERVER;
           }
           result = await this.callTool(
             serverName,
-            toolArgs.toolName as string,
-            toolArgs.toolArgs as Record<string, unknown>,
-            toolArgs.requestOptions as RequestOptions
+            callToolArgs.toolName,
+            callToolArgs.toolArgs,
+            callToolArgs.requestOptions
           );
           break;
         case FIND_TOOLS_TOOL:
+          const findToolsArgs = toolArgs as FindToolsParams;
           result = await this.findTools(
-            toolArgs.pattern as string,
-            toolArgs.searchIn as 'name' | 'description' | 'both',
-            toolArgs.caseSensitive as boolean
+            findToolsArgs.pattern,
+            findToolsArgs.searchIn,
+            findToolsArgs.caseSensitive
           );
           break;
         case LIST_RESOURCES_TOOL:
           result = await this.listResources();
           break;
         case READ_RESOURCE_TOOL:
-          result = await this.readResource(toolArgs.uri as string);
+          const readResourceArgs = toolArgs as ReadResourceParams;
+          result = await this.readResource(readResourceArgs.uri);
           break;
         default:
           throw new Error(`System tool "${toolName}" not found`);
