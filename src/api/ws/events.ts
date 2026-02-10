@@ -27,5 +27,5 @@ export async function webSocketRoutes(fastify: FastifyInstance): Promise<void> {
     });
   });
 
-  console.log('WebSocket routes registered');
+  logger.info('WebSocket routes registered', { subModule: 'WebSocket' });
 }

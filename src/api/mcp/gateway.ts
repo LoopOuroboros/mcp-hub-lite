@@ -125,12 +125,8 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
       if (request.body) {
           try {
-              const preview = JSON.stringify(request.body);
-              if (logMsg.includes('tools/list')) {
-                  logger.debug(logMsg + ` Body: ${preview}`);
-              } else {
-                  logMsg += ` Body: ${preview}`;
-              }
+                const preview = JSON.stringify(request.body);
+                logMsg += ` Body: ${preview}`;
           } catch (e) {
               logMsg += ` Body: [Unserializable]`;
           }

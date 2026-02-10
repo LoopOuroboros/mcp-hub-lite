@@ -67,7 +67,14 @@ export class ConfigManager {
           // 使用 safeParse 验证配置
           const parsed = SystemConfigSchema.safeParse(this.config);
           if (parsed.success) {
-            this.config = parsed.data;
+            // 确保服务器配置按名称排序
+            const configWithSortedServers = {
+              ...parsed.data,
+              servers: Object.fromEntries(
+                Object.entries(parsed.data.servers).sort(([a], [b]) => a.localeCompare(b))
+              )
+            };
+            this.config = configWithSortedServers;
           } else {
             // 验证失败时，记录错误并使用默认配置
             logger.error(`Config validation failed: ${parsed.error}`);
@@ -116,8 +123,12 @@ export class ConfigManager {
     return { ...this.config };
   }
 
-  public getServers(): Array<{ name: string; config: McpServerConfig }> {
-    return Object.entries(this.config.servers || {}).map(([name, config]) => ({ name, config }));
+  public getServers(sortByName: boolean = false): Array<{ name: string; config: McpServerConfig }> {
+    let servers = Object.entries(this.config.servers || {}).map(([name, config]) => ({ name, config }));
+    if (sortByName) {
+      servers = [...servers].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return servers;
   }
 
   public getServerByName(name: string): McpServerConfig | undefined {
@@ -149,6 +160,10 @@ export class ConfigManager {
       this.config.servers[name] = McpServerConfigSchema.parse(convertedConfig);
       if (!this.serverInstances[name]) this.serverInstances[name] = [];
     }
+    // 确保服务器配置按名称排序
+    this.config.servers = Object.fromEntries(
+      Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
+    );
     this.saveConfig();
   }
 
@@ -158,13 +173,17 @@ export class ConfigManager {
     const validated = McpServerConfigSchema.parse(convertedConfig);
     this.config.servers[name] = validated;
     if (!this.serverInstances[name]) this.serverInstances[name] = [];
+    // 确保服务器配置按名称排序
+    this.config.servers = Object.fromEntries(
+      Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
+    );
     this.saveConfig();
     return validated;
   }
 
   public async addServerInstance(name: string, instance: Partial<ServerInstanceConfig>): Promise<ServerInstanceConfig> {
     if (!this.serverInstances[name]) this.serverInstances[name] = [];
-    
+
     // Minimal identity generation logic inlined
     if (!instance.id) {
         const ts = Date.now();
@@ -172,7 +191,7 @@ export class ConfigManager {
         instance.timestamp = ts;
         instance.hash = Math.random().toString(36);
     }
-    
+
     const validated = ServerInstanceConfigSchema.parse(instance);
     this.serverInstances[name].push(validated);
     return validated;
@@ -183,6 +202,10 @@ export class ConfigManager {
       // 统一类型转换：将 http 转换为 streamable-http
       const convertedUpdates = this.convertHttpToStreamableHttp(updates);
       this.config.servers[name] = { ...this.config.servers[name], ...convertedUpdates };
+      // 确保服务器配置按名称排序
+      this.config.servers = Object.fromEntries(
+        Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
+      );
       this.saveConfig();
     }
   }
@@ -197,6 +220,10 @@ export class ConfigManager {
     if (this.config.servers[name]) {
       delete this.config.servers[name];
       delete this.serverInstances[name];
+      // 确保服务器配置按名称排序
+      this.config.servers = Object.fromEntries(
+        Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
+      );
       this.saveConfig();
     }
   }

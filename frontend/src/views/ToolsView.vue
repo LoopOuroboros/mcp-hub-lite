@@ -42,7 +42,7 @@
         
         <!-- System Tools Grid -->
         <div 
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8 transition-all duration-300"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 transition-all duration-300"
           v-show="!collapsedSystemTools"
         >
           <ToolCard
@@ -63,7 +63,7 @@
           <el-icon class="text-gray-900 dark:text-white" :size="20"><Connection /></el-icon>
           <h3 class="text-lg font-bold text-gray-900 dark:text-white">
             {{ $t('tools.aggregatedTools') }}
-            <span class="text-sm font-normal text-gray-500 ml-2">({{ Object.values(groupedTools).flat().length }})</span>
+            <span class="text-sm font-normal text-gray-500 ml-2">({{ groupedTools.reduce((acc, group) => acc + group.tools.length, 0) }})</span>
           </h3>
         </div>
 
@@ -71,36 +71,34 @@
           <el-skeleton animated :count="3" />
         </div>
 
-        <div v-else-if="Object.keys(groupedTools).length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="groupedTools.length === 0" class="text-center py-8 text-gray-500">
           {{ $t('tools.noToolsFound') }}
         </div>
 
         <div v-else class="space-y-6">
-          <div v-for="(tools, serverName) in groupedTools" :key="serverName" class="space-y-3">
+          <div v-for="group in groupedTools" :key="group.serverName" class="space-y-3">
             <!-- Server Header -->
             <div 
               class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 px-1 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              @click="toggleServer(serverName)"
+              @click="toggleServer(group.serverName)"
             >
-              <el-icon class="transition-transform duration-200" :class="{ '-rotate-90': collapsedServers.has(serverName) }">
+              <el-icon class="transition-transform duration-200" :class="{ '-rotate-90': collapsedServers.has(group.serverName) }">
                 <ArrowDown />
               </el-icon>
-              <span>{{ serverName }}</span>
-              <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{{ tools.length }}</span>
+              <span>{{ group.serverName }}</span>
+              <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{{ group.tools.length }}</span>
             </div>
 
             <!-- Collapsible Tools Grid -->
         <div 
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 transition-all duration-300"
-          v-show="!collapsedServers.has(serverName)"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300"
+          v-show="!collapsedServers.has(group.serverName)"
         >
           <ToolCard
-                v-for="tool in tools"
+                v-for="tool in group.tools"
                 :key="tool.tool.name"
                 :title="tool.tool.name"
                 :description="tool.tool.description"
-                :tag-name="serverName.split(' (')[0]"
-                :tag-class="getServerBadgeClass(serverName)"
                 @call="openCallDialog(tool.tool)"
               />
             </div>
@@ -168,7 +166,7 @@ function toggleServer(serverName: string) {
 async function fetchSystemTools() {
   try {
     const tools = await http.get<{ name: string; description: string }[]>('/web/hub-tools/system')
-    systemTools.value = tools
+    systemTools.value = tools.sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error('Failed to fetch system tools:', error)
   }
@@ -217,16 +215,13 @@ const groupedTools = computed(() => {
     groups[serverName].push(result);
   });
 
-  return groups;
+  return Object.entries(groups)
+    .map(([serverName, tools]) => ({
+      serverName,
+      tools: tools.sort((a, b) => a.tool.name.localeCompare(b.tool.name))
+    }))
+    .sort((a, b) => a.serverName.localeCompare(b.serverName));
 })
-
-function getServerBadgeClass(serverName: string) {
-  // Simple hashing for consistent colors, or just random logic
-  if (serverName.includes('Filesystem')) return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-  if (serverName.includes('PostgreSQL')) return 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-  if (serverName.includes('Brave')) return 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
-  return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-}
 
 onMounted(() => {
   fetchSystemTools()

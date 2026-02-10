@@ -33,6 +33,9 @@ export class Logger {
   public enableDevLog() {
     if (this.logFileStream) return;
 
+    // Enable dev logging to file via environment variable
+    process.env.DEV_LOG_FILE = '1';
+
     const logDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
@@ -45,7 +48,7 @@ export class Logger {
     }
 
     this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
-    console.log(`[DEV LOG] Writing logs to: ${logFile} (cleared on startup)`);
+    this.debug(`[DEV LOG] Writing logs to: ${logFile} (cleared on startup)`);
   }
 
   public setUseStderr(use: boolean) {
@@ -350,38 +353,4 @@ export function logWithColor(coloredMessage: string, plainMessage: string, conte
     const plainLogMsg = logger['createLogMessage']('info', plainMessage, context);
     logger['logFileStream'].write(plainLogMsg + '\n');
   }
-}
-
-/**
- * 检查数据是否为 tools/list 响应
- * @param data stdout 或响应数据
- * @returns 如果是 tools/list 响应返回 true
- */
-export function isToolsListResponse(data: string): boolean {
-  try {
-    const trimmed = data.trim();
-    if (trimmed.startsWith('{')) {
-      const message = JSON.parse(trimmed) as any;
-      // 检查是否为响应且包含 tools 或 resources 字段
-      if (message.result && typeof message.result === 'object') {
-        // 匹配 tools/list 响应格式: {"result":{"tools": [...]} }
-        if ('tools' in message.result) {
-          return true;
-        }
-        // 匹配 resources/list 响应格式: {"result":{"resources": [...]} }
-        if ('resources' in message.result) {
-          return true;
-        }
-        // 匹配 initialize 响应格式: {"result":{"capabilities":{"tools": {...}} } }
-        if (message.result.capabilities &&
-            typeof message.result.capabilities === 'object' &&
-            ('tools' in message.result.capabilities || 'resources' in message.result.capabilities)) {
-          return true;
-        }
-      }
-    }
-  } catch {
-    // 非JSON数据，忽略
-  }
-  return false;
 }

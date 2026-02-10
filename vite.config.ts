@@ -103,6 +103,9 @@ export default defineConfig({
     }
   },
   server: {
+    host: '127.0.0.1', // 明确使用 IPv4 地址
+    port: 5173, // 使用常用的端口号避免权限问题
+    strictPort: true, // 允许自动选择可用端口
     proxy: {
       '/api': {
         target: `http://${backendHost}:${backendPort}`,

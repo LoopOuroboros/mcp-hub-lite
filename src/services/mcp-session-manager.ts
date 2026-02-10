@@ -43,6 +43,19 @@ export class McpSessionManager {
                 this.sessions.delete(id);
             }
         });
+        
+        // 条件性调试日志：仅当 DEV_LOG_FILE 环境变量设置时才记录详细消息
+        if (process.env.DEV_LOG_FILE) {
+            transport.onmessage = (message) => {
+                try {
+                    const messageStr = JSON.stringify(message);
+                    logger.debug(`MCP message received: ${messageStr}`);
+                } catch (e) {
+                    logger.debug(`MCP message received: [Unserializable]`);
+                }
+            };
+        }
+
         const server = gateway.createConnectionServer();
 
         await server.connect(transport);
