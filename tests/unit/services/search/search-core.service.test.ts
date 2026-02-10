@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SearchCoreService } from '@services/search/search-core.service.js';
 import { McpTool } from '@models/tool.model.js';
+import type { MockInstance } from 'vitest';
 
 // 创建模拟工具数据
 const mockTools: McpTool[] = [
@@ -23,14 +24,14 @@ const mockTools: McpTool[] = [
 
 describe('SearchCoreService', () => {
   let searchService: SearchCoreService;
-  let mockGetAllTools: any;
+  let mockGetAllTools: MockInstance;
 
   beforeEach(() => {
     searchService = new SearchCoreService();
 
     // 模拟 mcpConnectionManager.getAllTools()
     mockGetAllTools = vi.spyOn(
-      searchService as any, 'getToolsWithCache'
+      searchService as unknown as { getToolsWithCache: () => Promise<McpTool[]> }, 'getToolsWithCache'
     ).mockImplementation(async () => mockTools);
   });
 

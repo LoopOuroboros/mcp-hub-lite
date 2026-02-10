@@ -2,6 +2,7 @@ import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { Transport, ServerTransportConfig } from './transport.interface.js';
+import type { McpServerConfig } from '@config/config.schema.js';
 
 /**
  * 传输工厂 - 根据服务器配置创建相应的传输客户端
@@ -13,11 +14,11 @@ export class TransportFactory {
    * @returns 传输客户端实例
    * @throws Error 如果服务器类型不支持或配置无效
    */
-  static createTransport(server: any): Transport {
+  static createTransport(server: McpServerConfig & { name: string }): Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
     // 使用类型断言确保 TypeScript 能够正确推断类型
-    const config = transportConfig as any;
+    const config = transportConfig as ServerTransportConfig;
 
     switch (config.type) {
       case 'stdio':
@@ -55,7 +56,7 @@ export class TransportFactory {
         );
 
       default:
-        throw new Error(`Unsupported transport type: ${config.type || 'undefined'}`);
+        throw new Error(`Unsupported transport type: ${(config as any).type || 'undefined'}`);
     }
   }
 
@@ -71,7 +72,7 @@ export class TransportFactory {
   /**
    * 验证并转换服务器配置为传输配置
    */
-  private static validateAndConvertConfig(server: any): ServerTransportConfig {
+  private static validateAndConvertConfig(server: McpServerConfig & { name: string }): ServerTransportConfig {
     const type = server.type || 'stdio';
 
     if (type === 'stdio') {

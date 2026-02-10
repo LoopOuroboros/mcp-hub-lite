@@ -26,8 +26,12 @@ export const useClientStore = defineStore('client', () => {
     error.value = null
     try {
       clients.value = await http.get<ClientContext[]>('/api/clients')
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch clients'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to fetch clients'
+      } else {
+        error.value = 'Failed to fetch clients'
+      }
       console.error('Failed to fetch clients:', e)
     } finally {
       loading.value = false

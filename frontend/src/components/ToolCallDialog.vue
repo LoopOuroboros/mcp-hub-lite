@@ -98,12 +98,30 @@ import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
+// JSON Schema type definition
+interface JsonSchema {
+  type?: string;
+  properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
+  default?: unknown;
+  [key: string]: unknown;
+}
+
+// Server instance type
+interface ServerInstance {
+  id: string;
+  timestamp: number;
+  hash: string;
+  pid?: number;
+  startTime?: number;
+}
+
 const props = defineProps<{
   modelValue: boolean;
   serverName?: string;
   toolName: string;
   description?: string;
-  inputSchema?: any;
+  inputSchema?: JsonSchema;
 }>();
 
 const emit = defineEmits(['update:modelValue']);
@@ -118,7 +136,7 @@ const result = ref<string | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const showInputSchema = ref(false);
-const serverInstances = ref<any[]>([]);
+const serverInstances = ref<ServerInstance[]>([]);
 const selectedInstanceId = ref<string | null>(null);
 
 const formattedSchema = computed(() => {
@@ -130,8 +148,9 @@ const formattedSchema = computed(() => {
 const fetchServerInstances = async () => {
   if (props.serverName) {
     try {
-      const instances = await http.get(`/web/server-instances/${props.serverName}`) as any[];
-      serverInstances.value = instances;
+      const response = await http.get(`/web/server-instances/${props.serverName}`);
+      const instances = Array.isArray(response) ? response : [];
+      serverInstances.value = instances as ServerInstance[];
       if (instances.length > 0) {
         selectedInstanceId.value = instances[0].id;
       }
@@ -160,12 +179,12 @@ watch(() => props.modelValue, (val) => {
   }
 }, { immediate: true });
 
-function generateTemplate(schema: any) {
+function generateTemplate(schema: JsonSchema | undefined) {
   if (!schema || !schema.properties) return {};
-  const template: Record<string, any> = {};
+  const template: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(schema.properties)) {
-    const prop = value as any;
+    const prop = value as JsonSchema;
     if (prop.default !== undefined) {
       template[key] = prop.default;
     } else if (prop.type === 'string') {
@@ -198,7 +217,7 @@ function toggleSchemaView() {
   showInputSchema.value = !showInputSchema.value;
 }
 
-function formatInstanceLabel(instance: any) {
+function formatInstanceLabel(instance: ServerInstance) {
   return `${instance.id}`;
 }
 
@@ -208,7 +227,7 @@ function handleInstanceChange() {
 
 async function handleCall() {
   try {
-    let args: any;
+    let args: unknown;
     try {
       args = JSON.parse(argsJson.value);
     } catch (e) {
@@ -235,11 +254,15 @@ async function handleCall() {
 
     result.value = JSON.stringify(response, null, 2);
     ElMessage.success(t('toolCallDialog.executionSuccessful'));
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Tool execution failed:', e);
 
     // Default error message
-    error.value = e.message || String(e);
+    if (e instanceof Error) {
+      error.value = e.message || String(e);
+    } else {
+      error.value = String(e);
+    }
 
     // Handle HttpError with detailed data
     if (e instanceof HttpError && e.data) {
@@ -248,8 +271,8 @@ async function handleCall() {
             : JSON.stringify(e.data, null, 2);
     }
     // Legacy/Axios fallback (just in case)
-    else if (e.response && e.response.data) {
-        error.value = JSON.stringify(e.response.data, null, 2);
+    else if (typeof e === 'object' && e !== null && 'response' in e && (e as any).response?.data) {
+        error.value = JSON.stringify((e as any).response.data, null, 2);
     }
 
     ElMessage.error(t('toolCallDialog.executionFailed'));

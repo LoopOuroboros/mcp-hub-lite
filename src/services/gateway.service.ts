@@ -178,9 +178,14 @@ export class GatewayService {
             hasMore: results.length >= limit
           }
         };
-      } catch (error: any) {
-        logger.error(`Search tools error:`, error);
-        throw new McpError(-32802, `Search failed: ${error.message}`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          logger.error(`Search tools error:`, error);
+          throw new McpError(-32802, `Search failed: ${error.message}`);
+        } else {
+          logger.error(`Search tools error:`, error);
+          throw new McpError(-32802, `Search failed: ${String(error)}`);
+        }
       }
     });
 
@@ -234,9 +239,14 @@ export class GatewayService {
         const { serverName, requestOptions } = request.params;
         const result = await hubToolsService.listAllToolsInServer(serverName, requestOptions);
         return result;
-      } catch (error: any) {
-        logger.error(`List tools in server error:`, error);
-        throw new McpError(-32802, error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          logger.error(`List tools in server error:`, error);
+          throw new McpError(-32802, error.message);
+        } else {
+          logger.error(`List tools in server error:`, error);
+          throw new McpError(-32802, String(error));
+        }
       }
     });
 
@@ -262,9 +272,14 @@ export class GatewayService {
         const { serverName, pattern, searchIn, caseSensitive, requestOptions } = request.params;
         const result = await hubToolsService.findToolsInServer(serverName, pattern, searchIn, caseSensitive, requestOptions);
         return result;
-      } catch (error: any) {
-        logger.error(`Find tools in server error:`, error);
-        throw new McpError(-32802, error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          logger.error(`Find tools in server error:`, error);
+          throw new McpError(-32802, error.message);
+        } else {
+          logger.error(`Find tools in server error:`, error);
+          throw new McpError(-32802, String(error));
+        }
       }
     });
 
@@ -293,12 +308,15 @@ export class GatewayService {
         }
 
         return { tool };
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Get tool error:`, error);
         if (error instanceof McpError) {
           throw error;
+        } else if (error instanceof Error) {
+          throw new McpError(-32802, error.message);
+        } else {
+          throw new McpError(-32802, String(error));
         }
-        throw new McpError(-32802, error.message);
       }
     });
 
@@ -331,12 +349,15 @@ export class GatewayService {
 
         const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Call tool error:`, error);
         if (error instanceof McpError) {
           throw error;
+        } else if (error instanceof Error) {
+          throw new McpError(-32802, error.message);
+        } else {
+          throw new McpError(-32802, String(error));
         }
-        throw new McpError(-32802, error.message);
       }
     });
 
@@ -375,9 +396,14 @@ export class GatewayService {
       try {
         const resources = await hubToolsService.listResources();
         return { resources };
-      } catch (error: any) {
-        logger.error(`List resources error:`, error);
-        throw new McpError(-32802, error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          logger.error(`List resources error:`, error);
+          throw new McpError(-32802, error.message);
+        } else {
+          logger.error(`List resources error:`, error);
+          throw new McpError(-32802, String(error));
+        }
       }
     });
 
@@ -394,9 +420,14 @@ export class GatewayService {
             }
           ]
         };
-      } catch (error: any) {
-        logger.error(`Read resource error:`, error);
-        throw new McpError(-32802, error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          logger.error(`Read resource error:`, error);
+          throw new McpError(-32802, error.message);
+        } else {
+          logger.error(`Read resource error:`, error);
+          throw new McpError(-32802, String(error));
+        }
       }
     });
 
@@ -506,9 +537,14 @@ export class GatewayService {
               }
             ]
           };
-        } catch (error: any) {
-          logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error);
-          throw new McpError(-32802, error.message || "System Tool Error");
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${error.message}`, error);
+            throw new McpError(-32802, error.message || "System Tool Error");
+          } else {
+            logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${String(error)}`, error);
+            throw new McpError(-32802, String(error) || "System Tool Error");
+          }
         }
       }
 
@@ -536,24 +572,29 @@ export class GatewayService {
         const duration = Date.now() - startTime;
         logger.info(`[GATEWAY] Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`);
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
          const duration = Date.now() - startTime;
-         logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error instanceof Error ? error.message : String(error)}`);
+         if (error instanceof Error) {
+           logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`);
 
-         if (error instanceof Error && error.stack) {
-           logger.debug(`[GATEWAY] Error stack for ${target.realToolName}:`, error.stack);
+           if (error.stack) {
+             logger.debug(`[GATEWAY] Error stack for ${target.realToolName}:`, error.stack);
+           }
+
+           if (error instanceof McpError) {
+               throw error;
+           }
+
+           // Map internal errors to standard MCP error codes
+           if (error.message?.includes('not connected')) {
+               throw new McpError(-32001, `Server not reachable: ${error.message}`);
+           }
+
+           throw new McpError(-32802, error.message || "Internal Gateway Error");
+         } else {
+           logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`);
+           throw new McpError(-32802, String(error) || "Internal Gateway Error");
          }
-
-         if (error instanceof McpError) {
-             throw error;
-         }
-
-         // Map internal errors to standard MCP error codes
-         if (error.message?.includes('not connected')) {
-             throw new McpError(-32001, `Server not reachable: ${error.message}`);
-         }
-
-         throw new McpError(-32802, error.message || "Internal Gateway Error");
       }
     });
   }

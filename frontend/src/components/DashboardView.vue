@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden transition-colors duration-300">
     <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 shrink-0">{{ $t('dashboard.title') }}</h2>
-    
+
     <!-- Stats Cards -->
     <div v-if="store.loading && store.servers.length === 0" class="grid grid-cols-3 gap-6 mb-8 shrink-0">
       <el-skeleton animated :count="3" class="w-full h-full">
@@ -78,9 +78,18 @@ watch(() => store.loading, (loading) => {
   }
 })
 
+interface ActivityItem {
+  serverName: string
+  serverStatus: string
+  message: string
+  time: string
+  timestamp: number
+  originalIndex: number
+}
+
 const activities = computed(() => {
-  const allActivities: any[] = []
-  
+  const allActivities: ActivityItem[] = []
+
   store.servers.forEach(server => {
     server.logs.forEach((log, idx) => {
       allActivities.push({
@@ -88,7 +97,7 @@ const activities = computed(() => {
         serverStatus: server.status,
         message: log.message,
         time: formatTimestamp(log.timestamp),
-        timestamp: log.timestamp, 
+        timestamp: log.timestamp,
         originalIndex: idx
       })
     })

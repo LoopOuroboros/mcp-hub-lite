@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Dashboard from '@frontend/components/Dashboard.vue'
+import Dashboard from '@frontend/components/DashboardView.vue'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Mock the stores

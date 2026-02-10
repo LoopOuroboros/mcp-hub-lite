@@ -33,7 +33,7 @@ defineProps<{
     name: string
     mimeType?: string
     uri: string
-    [key: string]: any
+    [key: string]: unknown
   }
   serverName: string
 }>()

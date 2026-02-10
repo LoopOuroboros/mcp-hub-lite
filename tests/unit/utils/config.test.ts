@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { ConfigManager } from '@config/config-manager.js';
+import { ConfigManager, McpServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
@@ -267,7 +267,7 @@ describe('ConfigManager', () => {
     it('should validate server config when adding', async () => {
       const invalidServerConfig = {
         command: 'test-command',
-        type: 'invalid-type' as any // 无效的类型
+        type: 'invalid-type' as unknown as McpServerConfig['type'] // 无效的类型
       };
 
       await expect(configManager.addServer('test-server', invalidServerConfig))
@@ -394,8 +394,8 @@ describe('ConfigManager', () => {
 
       const invalidInstance = {
         id: 'test-id',
-        timestamp: 'invalid-timestamp' // 应该是数字
-      } as any;
+        timestamp: 'invalid-timestamp' as unknown as number // 应该是数字
+      } as ServerInstanceConfig;
 
       await expect(configManager.addServerInstance('test-server', invalidInstance))
         .rejects.toThrow();

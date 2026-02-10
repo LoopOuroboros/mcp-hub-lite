@@ -190,6 +190,13 @@ import { Plus, Delete } from '@element-plus/icons-vue'
 import { useServerStore } from '@stores/server'
 import { ElMessage } from 'element-plus'
 
+// Server type for import result
+interface ImportedServer {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
 const props = defineProps<{
   modelValue: boolean
   initialMode?: 'form' | 'json'
@@ -219,7 +226,7 @@ const jsonConfig = ref(defaultJsonConfig)
 const batchJsonConfig = ref(`{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "enabled": true\n    }\n  }\n}`)
 
 const importResult = ref({
-  success: [] as any[],
+  success: [] as ImportedServer[],
   errors: [] as { name: string; error: string }[]
 })
 
@@ -285,8 +292,12 @@ function importJson() {
 
     showImportJson.value = false
     ElMessage.success(t('action.configImported'))
-  } catch (e: any) {
-    ElMessage.error(t('error.invalidJsonConfig') + ': ' + e.message)
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(t('error.invalidJsonConfig') + ': ' + e.message)
+    } else {
+      ElMessage.error(t('error.invalidJsonConfig') + ': ' + String(e))
+    }
   }
 }
 
@@ -305,13 +316,21 @@ async function importBatchJson() {
     ElMessage.success(t('action.serverAdded'))
 
     // Run import asynchronously
-    store.importServersFromJson(parsed).catch((e: any) => {
+    store.importServersFromJson(parsed).catch((e: unknown) => {
       console.error('Import error:', e)
-      ElMessage.error('Import failed: ' + e.message)
+      if (e instanceof Error) {
+        ElMessage.error('Import failed: ' + e.message)
+      } else {
+        ElMessage.error('Import failed: ' + String(e))
+      }
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Import error:', e) // 添加错误调试信息
-    ElMessage.error('Import failed: ' + e.message)
+    if (e instanceof Error) {
+      ElMessage.error('Import failed: ' + e.message)
+    } else {
+      ElMessage.error('Import failed: ' + String(e))
+    }
   }
 }
 
@@ -389,8 +408,12 @@ async function createServer() {
 
     ElMessage.success(t('action.serverAdded'))
     handleClose()
-  } catch (error: any) {
-    ElMessage.error(error.message || t('error.addServerFailed'))
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      ElMessage.error(error.message || t('error.addServerFailed'))
+    } else {
+      ElMessage.error(t('error.addServerFailed'))
+    }
   } finally {
     isSubmitting.value = false
   }

@@ -218,7 +218,7 @@ npx vitest tests/unit/utils/request-context.test.ts
 
 ### Dashboard Component Test (`frontend/components/dashboard.test.ts`)
 
-**被测模块**: `frontend/src/components/Dashboard.vue`
+**被测模块**: `frontend/src/components/DashboardView.vue`
 
 **测试覆盖**:
 - 组件渲染
@@ -359,7 +359,7 @@ unit/
 └── frontend/
     ├── components/
     │   ├── dashboard.test.ts
-    │   │   └── tests: frontend/src/components/Dashboard.vue
+    │   │   └── tests: frontend/src/components/DashboardView.vue
     │   └── tool-card.test.ts
     │       └── tests: frontend/src/components/ToolCard.vue
     └── stores/

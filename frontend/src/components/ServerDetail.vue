@@ -278,6 +278,31 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatUptime } from '@utils/format-utils'
 
+// Resource type for server resources
+interface Resource {
+  name: string
+  uri: string
+  mimeType?: string
+  [key: string]: unknown
+}
+
+// JSON Schema type definition (copied from ToolCallDialog.vue)
+interface JsonSchema {
+  type?: string;
+  properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
+  default?: unknown;
+  [key: string]: unknown;
+}
+
+// Tool type for server tools
+interface Tool {
+  name: string
+  description?: string
+  inputSchema?: JsonSchema
+  [key: string]: unknown
+}
+
 const store = useServerStore()
 useWebSocketStore()
 const { t } = useI18n()
@@ -289,7 +314,7 @@ function navigateBack() {
   router.push({ name: 'servers' })
 }
 
-function viewResource(resource: any) {
+function viewResource(resource: Resource) {
   if (!server.value) return
   
   router.push({
@@ -345,7 +370,7 @@ const logsContainer = ref<HTMLElement | null>(null)
 const envKeys = ref<Record<string, string>>({})
 const showEditJson = ref(false)
 const jsonConfig = ref('')
-const selectedTool = ref<any>(null)
+const selectedTool = ref<Tool | null>(null)
 const showCallDialog = ref(false)
 
 // Initialize active tab from route query parameter
@@ -416,7 +441,7 @@ watch(activeTab, async (tab) => {
   }
 }, { immediate: true })
 
-function selectTool(tool: any) {
+function selectTool(tool: Tool) {
   selectedTool.value = tool
 }
 
@@ -483,8 +508,12 @@ const restartServer = async () => {
       }
       await store.startServer(server.value.id)
       ElMessage.success(t('action.restarted'))
-    } catch (e: any) {
-      ElMessage.error(e.message)
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        ElMessage.error(e.message)
+      } else {
+        ElMessage.error(String(e))
+      }
     }
   }
 }
@@ -494,8 +523,12 @@ const stopServer = async () => {
     try {
       await store.stopServer(server.value.id)
       ElMessage.success(t('action.stopped'))
-    } catch (e: any) {
-      ElMessage.error(e.message)
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        ElMessage.error(e.message)
+      } else {
+        ElMessage.error(String(e))
+      }
     }
   }
 }
@@ -505,8 +538,12 @@ const startServer = async () => {
     try {
       await store.startServer(server.value.id)
       ElMessage.success(t('action.started'))
-    } catch (e: any) {
-      ElMessage.error(e.message)
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        ElMessage.error(e.message)
+      } else {
+        ElMessage.error(String(e))
+      }
     }
   }
 }
@@ -527,9 +564,13 @@ const deleteServer = async () => {
       await store.deleteServer(server.value.id)
       ElMessage.success(t('action.serverDeleted'))
       store.selectedServerId = null
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e !== 'cancel') {
-        ElMessage.error(e.message || 'Failed to delete server')
+        if (e instanceof Error) {
+          ElMessage.error(e.message || 'Failed to delete server')
+        } else {
+          ElMessage.error(String(e) || 'Failed to delete server')
+        }
       }
     }
   }
@@ -545,7 +586,7 @@ const updateToolVisibility = async (toolName: string, enabled: boolean) => {
   // so that removing one tool works as expected (all others remain allowed).
   if (currentAllowed === undefined || currentAllowed === null) {
     if (server.value.tools) {
-      currentAllowed = server.value.tools.map((t: any) => t.name)
+      currentAllowed = server.value.tools.map((t: Tool) => t.name)
     } else {
       currentAllowed = []
     }
@@ -567,8 +608,12 @@ const updateToolVisibility = async (toolName: string, enabled: boolean) => {
       config: server.value.config
     })
     ElMessage.success(t('action.configSaved'))
-  } catch (e: any) {
-    ElMessage.error(e.message)
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(e.message)
+    } else {
+      ElMessage.error(String(e))
+    }
   }
 }
 
@@ -579,8 +624,12 @@ const saveConfig = async () => {
         config: server.value.config
       })
       ElMessage.success(t('action.configSaved'))
-    } catch (e: any) {
-      ElMessage.error(e.message)
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        ElMessage.error(e.message)
+      } else {
+        ElMessage.error(String(e))
+      }
     }
   }
 }
@@ -632,7 +681,7 @@ const saveJsonConfig = async () => {
         updatedConfig.type = 'stdio'
         updatedConfig.command = newConfig.command
         updatedConfig.args = newConfig.args || []
-        delete (updatedConfig as any).url
+        delete (updatedConfig as Record<string, unknown>).url
       } else if (newConfig.url) {
         if (newConfig.type === 'streamable-http' || newConfig.type === 'http') {
           updatedConfig.type = 'streamable-http'
@@ -640,8 +689,8 @@ const saveJsonConfig = async () => {
           updatedConfig.type = 'sse'
         }
         updatedConfig.url = newConfig.url
-        delete (updatedConfig as any).command
-        delete (updatedConfig as any).args
+        delete (updatedConfig as Record<string, unknown>).command
+        delete (updatedConfig as Record<string, unknown>).args
       }
 
       if (newConfig.env) {
@@ -671,8 +720,12 @@ const saveJsonConfig = async () => {
       showEditJson.value = false
       ElMessage.success(t('action.configSaved'))
     }
-  } catch (e: any) {
-    ElMessage.error('Invalid JSON: ' + e.message)
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error('Invalid JSON: ' + e.message)
+    } else {
+      ElMessage.error('Invalid JSON: ' + String(e))
+    }
   }
 }
 

@@ -18,8 +18,8 @@ import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
-import Header from './components/Header.vue'
-import { useTheme } from './composables/useTheme'
+import Header from './components/HeaderView.vue'
+import { useTheme, type Theme } from './composables/useTheme'
 import { useSystemStore } from './stores/system'
 import { useWebSocketStore } from './stores/websocket'
 
@@ -40,14 +40,16 @@ onMounted(async () => {
     locale.value = systemStore.config.system.language
   }
   if (systemStore.config.system.theme) {
-    setTheme(systemStore.config.system.theme as any)
+    const themeValue = systemStore.config.system.theme as Theme;
+    setTheme(themeValue)
   }
 })
 
 // Watch for store changes to sync global state
 watch(() => systemStore.config.system.theme, (newTheme) => {
   if (newTheme && newTheme !== theme.value) {
-    setTheme(newTheme as any)
+    const themeValue = newTheme as Theme;
+    setTheme(themeValue)
   }
 })
 

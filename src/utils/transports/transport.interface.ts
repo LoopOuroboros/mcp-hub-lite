@@ -41,7 +41,7 @@ export interface SseTransportConfig {
  * Streamable HTTP 传输配置
  */
 export interface StreamableHttpTransportConfig {
-  type: 'streamable-http';
+  type: 'streamable-http' | 'http';
   url: string;
   headers?: Record<string, string>;
   timeout?: number;

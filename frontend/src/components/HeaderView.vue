@@ -10,42 +10,42 @@
 
       <!-- Main Navigation -->
       <nav class="hidden md:flex items-center gap-1">
-        <button 
+        <button
           @click="navigateTo('dashboard')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isDashboardActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('sidebar.dashboard') }}
         </button>
-        <button 
+        <button
           @click="navigateTo('servers')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isServersActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('sidebar.servers') }}
         </button>
-        <button 
+        <button
           @click="navigateTo('tools')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isToolsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('tools.title') }}
         </button>
-        <button 
+        <button
           @click="navigateTo('resources')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isResourcesActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('sidebar.resources') }}
         </button>
-        <button 
+        <button
           @click="navigateTo('clients')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isClientsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
         >
           {{ $t('sidebar.clients') }}
         </button>
-        <button 
+        <button
           @click="navigateTo('settings')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isSettingsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"

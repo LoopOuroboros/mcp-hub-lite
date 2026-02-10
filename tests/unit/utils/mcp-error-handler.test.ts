@@ -55,7 +55,8 @@ describe('MCPErrorHandler', () => {
     });
 
     it('should handle unknown error type', () => {
-      const unknownError = 'unknown error' as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const unknownError = 'unknown error string' as any;
 
       const mcpError = MCPErrorHandler.toMCPError(unknownError);
 
@@ -169,7 +170,7 @@ describe('MCPErrorHandler', () => {
         message: 'Tool not found'
       };
 
-      const isStandard = (MCPErrorsMiddleware as any)['isStandardMCPError'](standardError);
+      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](standardError);
       expect(isStandard).toBe(true);
     });
 
@@ -179,7 +180,7 @@ describe('MCPErrorHandler', () => {
         message: 'Invalid error'
       };
 
-      const isStandard = (MCPErrorsMiddleware as any)['isStandardMCPError'](nonStandardError);
+      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](nonStandardError);
       expect(isStandard).toBe(false);
     });
 
@@ -189,7 +190,7 @@ describe('MCPErrorHandler', () => {
         // missing message
       };
 
-      const isStandard = (MCPErrorsMiddleware as any)['isStandardMCPError'](invalidError);
+      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](invalidError);
       expect(isStandard).toBe(false);
     });
   });

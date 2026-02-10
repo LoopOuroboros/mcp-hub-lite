@@ -30,6 +30,38 @@ export interface LogEntry {
   message: string
 }
 
+// JSON Schema type definition (matches ServerDetail.vue)
+interface JsonSchema {
+  type?: string;
+  properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
+  default?: unknown;
+  [key: string]: unknown;
+}
+
+// Import tool and resource types from backend models
+interface Tool {
+  name: string
+  description?: string
+  inputSchema?: JsonSchema
+  serverName: string
+  annotations?: {
+    title?: string
+    readOnlyHint?: boolean
+    destructiveHint?: boolean
+    idempotentHint?: boolean
+    openWorldHint?: boolean
+  }
+}
+
+interface Resource {
+  uri: string
+  name: string
+  mimeType?: string
+  description?: string
+  serverId?: string
+}
+
 export interface Server {
   id: string
   name: string
@@ -41,8 +73,8 @@ export interface Server {
   uptime?: string
   startTime?: number
   pid?: number
-  tools?: any[]
-  resources?: any[]
+  tools?: Tool[]
+  resources?: Resource[]
   toolsCount?: number
   resourcesCount?: number
   version?: string
@@ -177,8 +209,12 @@ export const useServerStore = defineStore('server', () => {
       })
 
       servers.value = combinedServers
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch servers'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to fetch servers'
+      } else {
+        error.value = String(e) || 'Failed to fetch servers'
+      }
       console.error('Fetch servers error:', e)
     } finally {
       loading.value = false
@@ -213,8 +249,12 @@ export const useServerStore = defineStore('server', () => {
       } else {
         await fetchServers()
       }
-    } catch (e: any) {
-      error.value = e.message || 'Failed to add server'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to add server'
+      } else {
+        error.value = String(e) || 'Failed to add server'
+      }
       throw e
     } finally {
       loading.value = false
@@ -236,7 +276,7 @@ export const useServerStore = defineStore('server', () => {
 
       if (serverData.config) {
         // 更新服务器配置
-        const payload: any = {}
+        const payload: Partial<McpServerConfig> = {}
         if (serverData.config.command) payload.command = serverData.config.command
         if (serverData.config.args) payload.args = serverData.config.args
         if (serverData.config.env) payload.env = serverData.config.env
@@ -251,8 +291,12 @@ export const useServerStore = defineStore('server', () => {
       }
 
       await fetchServers()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to update server'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to update server'
+      } else {
+        error.value = String(e) || 'Failed to update server'
+      }
       throw e
     } finally {
       loading.value = false
@@ -281,8 +325,12 @@ export const useServerStore = defineStore('server', () => {
       // 连接服务器（使用实际的实例ID）
       await http.post(`/web/mcp/servers/${actualServerId}/connect`, {})
       await fetchServers()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to start server'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to start server'
+      } else {
+        error.value = String(e) || 'Failed to start server'
+      }
       // 失败时更新为 error 状态
       updateServerStatus(id, 'error')
       throw e
@@ -305,8 +353,12 @@ export const useServerStore = defineStore('server', () => {
       // 断开服务器连接（使用实例ID）
       await http.post(`/web/mcp/servers/${id}/disconnect`, {})
       await fetchServers()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to stop server'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to stop server'
+      } else {
+        error.value = String(e) || 'Failed to stop server'
+      }
       throw e
     }
   }
@@ -340,13 +392,17 @@ export const useServerStore = defineStore('server', () => {
       if (selectedServerId.value === id) {
         selectedServerId.value = null
       }
-    } catch (e: any) {
-      error.value = e.message || 'Failed to delete server'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to delete server'
+      } else {
+        error.value = String(e) || 'Failed to delete server'
+      }
       throw e
     }
   }
 
-  async function importServersFromJson(jsonData: { mcpServers: Record<string, any> }) {
+  async function importServersFromJson(jsonData: { mcpServers: Record<string, unknown> }) {
     loading.value = true
     try {
       // 转换为新的配置结构
@@ -361,15 +417,19 @@ export const useServerStore = defineStore('server', () => {
         code: number
         message: string
         data: {
-          success: any[]
+          success: Server[]
           errors: { name: string; error: string }[]
         }
       }>('/web/servers/batch', formattedData)
 
       await fetchServers()
       return response.data
-    } catch (e: any) {
-      error.value = e.message || 'Failed to import servers'
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to import servers'
+      } else {
+        error.value = String(e) || 'Failed to import servers'
+      }
       throw e
     } finally {
       loading.value = false
@@ -385,7 +445,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function fetchTools(serverId: string) {
     try {
-      const tools = await http.get<any[]>(`/web/mcp/servers/${serverId}/tools`)
+      const tools = await http.get<Tool[]>(`/web/mcp/servers/${serverId}/tools`)
       const server = servers.value.find(s => s.id === serverId)
       if (server) {
         server.tools = tools
@@ -399,7 +459,7 @@ export const useServerStore = defineStore('server', () => {
 
   async function fetchResources(serverId: string) {
     try {
-      const resources = await http.get<any[]>(`/web/mcp/servers/${serverId}/resources`)
+      const resources = await http.get<Resource[]>(`/web/mcp/servers/${serverId}/resources`)
       const server = servers.value.find(s => s.id === serverId)
       if (server) {
         server.resources = resources
@@ -442,7 +502,7 @@ export const useServerStore = defineStore('server', () => {
       const url = `/web/servers/${encodeURIComponent(serverName)}/resources/read?uri=${encodeURIComponent(uri)}`
       const response = await http.get<{ contents: { uri: string; mimeType: string; text?: string; blob?: string }[] }>(url)
       return response.contents[0]
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to read resource:', e)
       throw e
     }
@@ -450,9 +510,9 @@ export const useServerStore = defineStore('server', () => {
 
   async function fetchAllResources() {
     try {
-      const response = await http.get<{ resources: Record<string, any[]> }>('/web/resources')
+      const response = await http.get<{ resources: Record<string, Resource[]> }>('/web/resources')
       return response.resources
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to fetch all resources:', e)
       throw e
     }
