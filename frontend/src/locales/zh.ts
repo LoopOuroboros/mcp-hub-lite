@@ -28,8 +28,19 @@ export default {
     dashboard: '仪表板',
     clients: '客户端',
     servers: 'MCP 服务器',
+    resources: 'MCP 资源网关',
     addServer: '添加新服务器',
     settings: '设置'
+  },
+  resources: {
+    title: 'MCP 资源网关',
+    searchPlaceholder: "搜索所有资源...",
+    noResources: '未找到资源。请连接一些服务器以开始使用。',
+    read: '读取',
+    serverTag: '服务器',
+    systemResources: '网关系统资源',
+    serverResources: '服务器资源',
+    toolResources: '工具资源'
   },
   clients: {
     title: '已连接的客户端',

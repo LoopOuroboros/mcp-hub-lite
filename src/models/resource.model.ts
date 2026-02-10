@@ -3,4 +3,5 @@ export interface McpResource {
   name: string;
   mimeType?: string;
   description?: string;
+  serverId?: string;
 }

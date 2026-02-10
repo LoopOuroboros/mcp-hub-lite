@@ -219,8 +219,8 @@
                 <el-table-column prop="uri" :label="$t('serverDetail.resources.uri')" min-width="300" />
                 <el-table-column prop="mimeType" :label="$t('serverDetail.resources.mimeType')" width="150" />
                 <el-table-column label="" width="100" align="right">
-                   <template #default>
-                      <el-button size="small" plain>{{ $t('action.view') }}</el-button>
+                   <template #default="{ row }">
+                      <el-button size="small" plain @click="viewResource(row)">{{ $t('action.view') }}</el-button>
                    </template>
                 </el-table-column>
              </el-table>
@@ -287,6 +287,20 @@ const route = useRoute()
 function navigateBack() {
   store.selectedServerId = null
   router.push({ name: 'servers' })
+}
+
+function viewResource(resource: any) {
+  if (!server.value) return
+  
+  router.push({
+    name: 'resource-detail',
+    params: { name: server.value.name },
+    query: {
+      uri: resource.uri,
+      name: resource.name,
+      mimeType: resource.mimeType
+    }
+  })
 }
 
 // Computed property for the selected server

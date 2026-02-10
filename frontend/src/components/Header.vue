@@ -32,6 +32,13 @@
           {{ $t('tools.title') }}
         </button>
         <button 
+          @click="navigateTo('resources')"
+          class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+          :class="[isResourcesActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
+        >
+          {{ $t('sidebar.resources') }}
+        </button>
+        <button 
           @click="navigateTo('clients')"
           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
           :class="[isClientsActive ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
@@ -108,6 +115,7 @@ const route = useRoute()
 const isDashboardActive = computed(() => route.name === 'dashboard' && !store.selectedServerId)
 const isServersActive = computed(() => route.name === 'servers')
 const isToolsActive = computed(() => route.name === 'tools')
+const isResourcesActive = computed(() => route.name === 'resources' || route.name === 'resource-detail')
 const isClientsActive = computed(() => route.name === 'clients')
 const isSettingsActive = computed(() => route.name === 'settings')
 

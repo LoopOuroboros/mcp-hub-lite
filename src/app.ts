@@ -15,6 +15,7 @@ import { configRoutes } from '@api/web/config.js';
 import { webLogRoutes } from '@api/web/logs.js';
 import { webHubToolsRoutes } from '@api/web/hub-tools.js';
 import { webClientRoutes } from '@api/web/clients.js';
+import { webResourceRoutes } from '@api/web/resources.js';
 
 // WebSocket Routes
 import { webSocketRoutes } from '@api/ws/events.js';
@@ -50,6 +51,7 @@ export async function buildApp() {
   fastify.register(webLogRoutes);
   fastify.register(webHubToolsRoutes);
   fastify.register(webClientRoutes);
+  fastify.register(webResourceRoutes);
   fastify.register(webSocketRoutes);
 
   // Serve static files from dist/client (frontend build output)

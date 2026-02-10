@@ -19,6 +19,8 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
+  LIST_RESOURCES_TOOL,
+  READ_RESOURCE_TOOL,
   MCP_HUB_LITE_SERVER
 } from "@models/system-tools.constants.js";
 
@@ -37,6 +39,7 @@ export class GatewayService {
       {
         capabilities: {
           tools: {},
+          resources: {},  // 添加资源能力支持
         },
       }
     );
@@ -93,6 +96,10 @@ export class GatewayService {
             list: true,
             execute: true
           },
+          resources: {
+            list: true,
+            read: true
+          },
           experimental: {}
         }
       };
@@ -109,38 +116,6 @@ export class GatewayService {
     server.server.setRequestHandler(PingRequestSchema, async () => {
       return { pong: true };  // 符合 MCP 规范的响应格式
     });
-
-    // // Handle initialized notification to fetch roots (DISABLED)
-    // const InitializedNotificationSchema = z.object({
-    //   method: z.literal('notifications/initialized'),
-    //   params: z.any().optional(),
-    //   jsonrpc: z.literal('2.0')
-    // });
-    //
-    // server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
-    //   const context = getClientContext();
-    //   if (!context) {
-    //     logger.warn('Received notifications/initialized but client context is missing');
-    //     return;
-    //   }
-    //
-    //   logger.info(`Client ${context.sessionId} initialized, fetching roots...`);
-    //
-    //   try {
-    //     const result = await server.server.request(
-    //       { method: "roots/list" },
-    //       ListRootsResultSchema
-    //     );
-    //
-    //     if (result.roots) {
-    //       logger.info(`Received ${result.roots.length} roots from client ${context.sessionId}`);
-    //       clientTrackerService.updateClientRoots(context.sessionId, result.roots);
-    //     }
-    //   } catch (error) {
-    //     // Many clients (e.g. web browsers) might not support roots, just log as debug
-    //     logger.debug(`Failed to fetch roots from client ${context.sessionId}: ${error}`);
-    //   }
-    // });
 
     // Define search tool schema
     const SearchToolsRequestSchema = z.object({
@@ -389,6 +364,97 @@ export class GatewayService {
       return tools;
     });
 
+    // List resources tool
+    const ListResourcesRequestSchema = z.object({
+      method: z.literal('list-resources'),
+      params: z.object({}).optional(),
+      id: z.union([z.string(), z.number()]),
+      jsonrpc: z.literal('2.0')
+    });
+
+    server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      try {
+        const resources = await hubToolsService.listResources();
+        return { resources };
+      } catch (error: any) {
+        logger.error(`List resources error:`, error);
+        throw new McpError(-32802, error.message);
+      }
+    });
+
+    // Read resource tool (system tool interface)
+    const ReadResourceRequestSchema = z.object({
+      method: z.literal('read-resource'),
+      params: z.object({
+        uri: z.string()
+      }),
+      id: z.union([z.string(), z.number()]),
+      jsonrpc: z.literal('2.0')
+    });
+
+    server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      try {
+        const { uri } = request.params;
+        const content = await hubToolsService.readResource(uri);
+        return { content };
+      } catch (error: any) {
+        logger.error(`Read resource error:`, error);
+        throw new McpError(-32802, error.message);
+      }
+    });
+
+    // Official MCP resources/read interface
+    const OfficialReadResourceRequestSchema = z.object({
+      method: z.literal('resources/read'),
+      params: z.object({
+        uri: z.string()
+      }),
+      id: z.union([z.string(), z.number()]),
+      jsonrpc: z.literal('2.0')
+    });
+
+    server.server.setRequestHandler(OfficialReadResourceRequestSchema, async (request) => {
+      try {
+        const { uri } = request.params;
+        const content = await hubToolsService.readResource(uri);
+        // 转换为官方 MCP 格式：contents 数组
+        return {
+          contents: [
+            {
+              type: "text",
+              text: typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+            }
+          ]
+        };
+      } catch (error: any) {
+        logger.error(`Resources read error:`, error);
+        throw new McpError(-32802, error.message);
+      }
+    });
+
+    // Official MCP resources/list interface
+    const OfficialListResourcesRequestSchema = z.object({
+      method: z.literal('resources/list'),
+      params: z.object({
+        cursor: z.string().optional()
+      }).optional(),
+      id: z.union([z.string(), z.number()]),
+      jsonrpc: z.literal('2.0')
+    });
+
+    server.server.setRequestHandler(OfficialListResourcesRequestSchema, async () => {
+      try {
+        const resources = await hubToolsService.listResources();
+        return {
+          resources: resources,
+          nextCursor: undefined
+        };
+      } catch (error: any) {
+        logger.error(`Resources list error:`, error);
+        throw new McpError(-32802, error.message);
+      }
+    });
+
     // Original list tools handler (for compatibility)
     server.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const gatewayTools = this.generateGatewayToolsList(toolMap);
@@ -458,6 +524,12 @@ export class GatewayService {
                 toolArgs.searchIn,
                 toolArgs.caseSensitive
               );
+              break;
+            case LIST_RESOURCES_TOOL:
+              result = await hubToolsService.listResources();
+              break;
+            case READ_RESOURCE_TOOL:
+              result = await hubToolsService.readResource(toolArgs.uri);
               break;
           }
 
@@ -697,6 +769,7 @@ export class GatewayService {
       {
         capabilities: {
           tools: {},
+          resources: {},  // 添加资源能力支持
         },
       }
     );

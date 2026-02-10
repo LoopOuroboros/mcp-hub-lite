@@ -1,6 +1,7 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { McpTool } from '@models/tool.model.js';
+import { McpResource } from '@models/resource.model.js';
 import type { McpServerConfig } from '@config/config.schema.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
@@ -15,6 +16,8 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
+  LIST_RESOURCES_TOOL,
+  READ_RESOURCE_TOOL,
   MCP_HUB_LITE_SERVER
 } from '@models/system-tools.constants.js';
 
@@ -229,6 +232,29 @@ export class HubToolsService {
             }
           });
           break;
+        case LIST_RESOURCES_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'List all Hub resources (servers, tools, and resources metadata)',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          });
+          break;
+        case READ_RESOURCE_TOOL:
+          systemTools.push({
+            name: toolName,
+            description: 'Read content from a specific Hub resource URI',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', description: 'Resource URI to read (e.g., hub://servers/server-name)' }
+              },
+              required: ['uri']
+            }
+          });
+          break;
         default:
           // This should never happen due to TypeScript type checking
           throw new Error(`Unknown system tool: ${toolName}`);
@@ -433,6 +459,12 @@ export class HubToolsService {
             toolArgs.caseSensitive as boolean
           );
           break;
+        case LIST_RESOURCES_TOOL:
+          result = await this.listResources();
+          break;
+        case READ_RESOURCE_TOOL:
+          result = await this.readResource(toolArgs.uri as string);
+          break;
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
@@ -585,6 +617,131 @@ export class HubToolsService {
     }
 
     return matchingTools;
+  }
+
+  /**
+   * Generate dynamic Hub resources based on connected servers
+   * @returns Array of dynamically generated McpResource objects
+   */
+  private generateDynamicResources(): McpResource[] {
+    const resources: McpResource[] = [];
+
+    // Get all connected servers
+    const servers = hubManager.getAllServers();
+
+    for (const server of servers) {
+      if (!hasValidId(server)) {
+        continue;
+      }
+
+      // Use selectBestInstance to choose the best instance (currently returns first instance)
+      const bestInstance = selectBestInstance(server.name);
+      if (!bestInstance || !bestInstance.instance.id) {
+        continue;
+      }
+
+      const instanceId = bestInstance.instance.id;
+
+      // Server metadata resource
+      resources.push({
+        uri: `hub://servers/${server.name}`,
+        name: `Server: ${server.name}`,
+        description: `Connected MCP server: ${server.name}`,
+        mimeType: 'application/json',
+        serverId: instanceId
+      });
+
+      // Tools resource
+      const tools = mcpConnectionManager.getTools(instanceId);
+      if (tools.length > 0) {
+        resources.push({
+          uri: `hub://servers/${server.name}/tools`,
+          name: `Tools: ${server.name}`,
+          description: `${tools.length} tools available from ${server.name}`,
+          mimeType: 'application/json',
+          serverId: instanceId
+        });
+      }
+
+      // Resources resource - only add if server has resources
+      const serverResources = mcpConnectionManager.getResources(instanceId);
+      if (serverResources.length > 0) {
+        resources.push({
+          uri: `hub://servers/${server.name}/resources`,
+          name: `Resources: ${server.name}`,
+          description: `${serverResources.length} resources available from ${server.name}`,
+          mimeType: 'application/json',
+          serverId: instanceId
+        });
+      }
+    }
+
+    return resources;
+  }
+
+  /**
+   * List all Hub resources (dynamically generated based on connected servers)
+   * @returns Array of McpResource objects representing Hub resources
+   */
+  async listResources(): Promise<McpResource[]> {
+    return this.generateDynamicResources();
+  }
+
+  /**
+   * Read content from a specific Hub resource URI
+   * @param uri Resource URI to read (e.g., hub://servers/server-name)
+   * @returns Resource content as JSON string or object
+   */
+  async readResource(uri: string): Promise<any> {
+    // Validate URI format
+    if (!uri.startsWith('hub://')) {
+      throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
+    }
+
+    // Parse URI
+    const uriParts = uri.replace('hub://', '').split('/');
+    if (uriParts.length < 2 || uriParts[0] !== 'servers') {
+      throw new Error(`Invalid Hub resource URI format: ${uri}`);
+    }
+
+    const serverName = uriParts[1];
+    const resourceType = uriParts[2]; // 'tools', 'resources', or undefined for server metadata
+
+    // Check if server exists and is connected
+    const serverInfo = selectBestInstance(serverName);
+    if (!serverInfo) {
+      throw new Error(`Server not found or not connected: ${serverName}`);
+    }
+
+    const instanceId = serverInfo.instance.id;
+
+    // Return appropriate content based on resource type
+    if (!resourceType) {
+      // Server metadata
+      const serverConfig = hubManager.getServerByName(serverName);
+      const tools = mcpConnectionManager.getTools(instanceId);
+      const resources = mcpConnectionManager.getResources(instanceId);
+
+      return {
+        name: serverName,
+        status: serverInfo.instance.status,
+        toolsCount: tools.length,
+        resourcesCount: resources.length,
+        tags: serverConfig?.tags || {},
+        lastHeartbeat: serverInfo.instance.lastHeartbeat,
+        uptime: serverInfo.instance.uptime,
+        type: serverConfig?.type || 'unknown',
+        enabled: serverConfig?.enabled || false
+      };
+    } else if (resourceType === 'tools') {
+      // Tools list
+      return mcpConnectionManager.getTools(instanceId);
+    } else if (resourceType === 'resources') {
+      // Resources list
+      return mcpConnectionManager.getResources(instanceId);
+    } else {
+      throw new Error(`Unknown resource type: ${resourceType}`);
+    }
   }
 
 }

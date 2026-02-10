@@ -24,9 +24,19 @@ const router = createRouter({
           component: () => import('@views/ToolsView.vue')
         },
         {
+          path: 'resources',
+          name: 'resources',
+          component: () => import('@views/ResourcesView.vue')
+        },
+        {
           path: 'clients',
           name: 'clients',
           component: () => import('@views/ClientsView.vue')
+        },
+        {
+          path: 'servers/:name/resources/detail',
+          name: 'resource-detail',
+          component: () => import('@views/ResourceDetailView.vue')
         },
         {
           path: 'settings',

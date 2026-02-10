@@ -493,4 +493,162 @@ describe('HubToolsService', () => {
       expect(results).toEqual(mockTools);
     });
   });
+
+  describe('listResources', () => {
+    it('should return empty array when no servers are connected', async () => {
+      // Arrange
+      (hubManager.getAllServers as any).mockReturnValue([]);
+
+      // Act
+      const resources = await hubToolsService.listResources();
+
+      // Assert
+      expect(resources).toEqual([]);
+      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return dynamic resources for connected servers', async () => {
+      // Arrange
+      const mockServers = [
+        {
+          name: 'Test Server',
+          config: {
+            type: 'stdio',
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: []
+          }
+        }
+      ];
+
+      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue(mockServers[0].config);
+      (mcpConnectionManager.getTools as any).mockReturnValue([{ name: 'testTool', description: 'Test tool' }]);
+      (mcpConnectionManager.getResources as any).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
+
+      // Act
+      const resources = await hubToolsService.listResources();
+
+      // Assert
+      expect(resources).toHaveLength(3);
+      expect(resources[0]).toEqual({
+        uri: 'hub://servers/Test Server',
+        name: 'Server: Test Server',
+        description: 'Connected MCP server: Test Server',
+        mimeType: 'application/json',
+        serverId: '1'
+      });
+      expect(resources[1]).toEqual({
+        uri: 'hub://servers/Test Server/tools',
+        name: 'Tools: Test Server',
+        description: '1 tools available from Test Server',
+        mimeType: 'application/json',
+        serverId: '1'
+      });
+      expect(resources[2]).toEqual({
+        uri: 'hub://servers/Test Server/resources',
+        name: 'Resources: Test Server',
+        description: '1 resources available from Test Server',
+        mimeType: 'application/json',
+        serverId: '1'
+      });
+    });
+  });
+
+  describe('readResource', () => {
+    it('should throw error for invalid URI format', async () => {
+      // Act & Assert
+      await expect(hubToolsService.readResource('invalid-uri')).rejects.toThrow('Invalid Hub resource URI');
+      await expect(hubToolsService.readResource('hub://invalid')).rejects.toThrow('Invalid Hub resource URI format');
+    });
+
+    it('should throw error for non-existent server', async () => {
+      // Arrange
+      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
+
+      // Act & Assert
+      await expect(hubToolsService.readResource('hub://servers/NonExistent')).rejects.toThrow('Server not found or not connected');
+    });
+
+    it('should return server metadata for server URI', async () => {
+      // Arrange
+      const serverName = 'Test Server';
+      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockConfig = {
+        type: 'stdio',
+        command: 'test-command',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        tags: { env: 'test' }
+      };
+
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (hubManager.getServerByName as any).mockReturnValue(mockConfig);
+      (mcpConnectionManager.getTools as any).mockReturnValue([{ name: 'testTool' }]);
+      (mcpConnectionManager.getResources as any).mockReturnValue([{ uri: 'test://resource' }]);
+
+      // Act
+      const result = await hubToolsService.readResource(`hub://servers/${serverName}`);
+
+      // Assert
+      expect(result).toEqual({
+        name: serverName,
+        status: 'online',
+        toolsCount: 1,
+        resourcesCount: 1,
+        tags: { env: 'test' },
+        lastHeartbeat: mockInstance.lastHeartbeat,
+        uptime: mockInstance.uptime,
+        type: 'stdio',
+        enabled: true
+      });
+    });
+
+    it('should return tools list for tools URI', async () => {
+      // Arrange
+      const serverName = 'Test Server';
+      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockTools = [{ name: 'testTool', description: 'Test tool' }];
+
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+
+      // Act
+      const result = await hubToolsService.readResource(`hub://servers/${serverName}/tools`);
+
+      // Assert
+      expect(result).toEqual(mockTools);
+    });
+
+    it('should return resources list for resources URI', async () => {
+      // Arrange
+      const serverName = 'Test Server';
+      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockResources = [{ uri: 'test://resource', name: 'Test Resource' }];
+
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      (mcpConnectionManager.getResources as any).mockReturnValue(mockResources);
+
+      // Act
+      const result = await hubToolsService.readResource(`hub://servers/${serverName}/resources`);
+
+      // Assert
+      expect(result).toEqual(mockResources);
+    });
+
+    it('should throw error for unknown resource type', async () => {
+      // Arrange
+      const serverName = 'Test Server';
+      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+
+      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+
+      // Act & Assert
+      await expect(hubToolsService.readResource(`hub://servers/${serverName}/unknown`)).rejects.toThrow('Unknown resource type');
+    });
+  });
 });

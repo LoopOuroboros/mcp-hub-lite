@@ -437,6 +437,27 @@ export const useServerStore = defineStore('server', () => {
     servers.value.forEach(s => fetchLogs(s.id))
   }
 
+  async function readResource(serverName: string, uri: string) {
+    try {
+      const url = `/web/servers/${encodeURIComponent(serverName)}/resources/read?uri=${encodeURIComponent(uri)}`
+      const response = await http.get<{ contents: { uri: string; mimeType: string; text?: string; blob?: string }[] }>(url)
+      return response.contents[0]
+    } catch (e: any) {
+      console.error('Failed to read resource:', e)
+      throw e
+    }
+  }
+
+  async function fetchAllResources() {
+    try {
+      const response = await http.get<{ resources: Record<string, any[]> }>('/web/resources')
+      return response.resources
+    } catch (e: any) {
+      console.error('Failed to fetch all resources:', e)
+      throw e
+    }
+  }
+
   return {
     servers,
     loading,
@@ -457,6 +478,8 @@ export const useServerStore = defineStore('server', () => {
     fetchResources,
     fetchLogs,
     fetchAllLogs,
-    clearLogs
+    clearLogs,
+    readResource,
+    fetchAllResources
   }
 })

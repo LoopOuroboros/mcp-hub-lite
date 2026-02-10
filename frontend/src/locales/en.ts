@@ -28,8 +28,19 @@ export default {
     dashboard: 'Dashboard',
     clients: 'Clients',
     servers: 'MCP Servers',
+    resources: 'MCP Resources',
     addServer: 'Add New Server',
     settings: 'Settings'
+  },
+  resources: {
+    title: 'MCP Resource Gateway',
+    searchPlaceholder: "Search all resources...",
+    noResources: 'No resources found. Connect some servers to get started.',
+    read: 'Read',
+    serverTag: 'Server',
+    systemResources: 'Gateway System Resources',
+    serverResources: 'Server Resources',
+    toolResources: 'Tool Resources'
   },
   clients: {
     title: 'Connected Clients',

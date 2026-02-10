@@ -11,6 +11,8 @@ export const FIND_TOOLS_IN_SERVER_TOOL = 'find-tools-in-server';
 export const GET_TOOL_TOOL = 'get-tool';
 export const CALL_TOOL_TOOL = 'call-tool';
 export const FIND_TOOLS_TOOL = 'find-tools';
+export const LIST_RESOURCES_TOOL = 'list-resources';
+export const READ_RESOURCE_TOOL = 'read-resource';
 
 /**
  * List of all system tool names
@@ -23,7 +25,9 @@ export const SYSTEM_TOOL_NAMES = [
   FIND_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  FIND_TOOLS_TOOL,
+  LIST_RESOURCES_TOOL,
+  READ_RESOURCE_TOOL
 ] as const;
 
 /**

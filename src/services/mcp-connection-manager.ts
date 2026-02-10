@@ -433,7 +433,7 @@ class McpConnectionManager {
     } catch (error: any) {
       // Check if error is "Method not found" (MCP error -32601), which means server doesn't implement resources
       if (error.code === -32601 || error.message?.includes('Method not found')) {
-        logger.debug(`Server [${serverId}] does not support resources functionality`);
+        logger.info(`Server [${serverId}] does not support resources functionality`);
       } else {
         logger.warn(`Failed to list resources for server [${serverId}]:`, error);
       }
@@ -455,6 +455,14 @@ class McpConnectionManager {
     const resources = this.resourceCache.get(serverId) || [];
     logger.info(`getResources for [${serverId}]: returned ${resources.length} resources`);
     return resources;
+  }
+
+  public async readResource(serverId: string, uri: string): Promise<any> {
+    const client = this.clients.get(serverId);
+    if (!client) {
+      throw new Error(`Server ${serverId} not connected`);
+    }
+    return client.readResource({ uri });
   }
 
   public getAllTools(): McpTool[] {
@@ -512,6 +520,34 @@ class McpConnectionManager {
       return [];
     }
     return this.resourceCache.get(serverId) || [];
+  }
+
+  public getTool(serverName: string, toolName: string): McpTool | undefined {
+    const tools = this.serverNameToolCache.get(serverName);
+    return tools?.find(t => t.name === toolName);
+  }
+
+  public getAllResources(): Record<string, McpResource[]> {
+    const result: Record<string, McpResource[]> = {};
+    
+    // Group resources by server name
+    for (const [serverId, resources] of this.resourceCache.entries()) {
+      // Find server name for this ID
+      let serverName = 'unknown';
+      for (const [name, id] of this.nameToIdMap.entries()) {
+        if (id === serverId) {
+          serverName = name;
+          break;
+        }
+      }
+      
+      if (!result[serverName]) {
+        result[serverName] = [];
+      }
+      result[serverName].push(...resources);
+    }
+    
+    return result;
   }
 
   public async callTool(serverId: string, toolName: string, args: any): Promise<any> {
