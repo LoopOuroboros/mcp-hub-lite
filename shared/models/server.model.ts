@@ -1,8 +1,7 @@
-import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '@shared/types';
+import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '../types/common.types';
 import type { Tool } from './tool.model';
 import type { Resource } from './resource.model';
 
-export type { ServerStatus, ServerTransport, ServerType, LogLevel };
 
 // 服务器配置接口
 export interface McpServerConfig {
