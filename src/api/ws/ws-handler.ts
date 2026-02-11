@@ -7,7 +7,15 @@ import { WebSocket } from 'ws';
 import { EventTypes } from '@services/event-bus.service.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { logger } from '@utils/logger.js';
-import { WEB_SOCKET_EVENT_TYPES } from '@shared/types/websocket.types';
+import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
+import type {
+  ClientMessage,
+  ServerMessage,
+  SubscribeMessage,
+  UnsubscribeMessage,
+  PingMessage,
+  FetchLogsMessage
+} from '@shared-types/websocket.types';
 
 // 事件类型映射
 const eventTypeMap: Record<string, string> = {
@@ -27,197 +35,6 @@ const eventTypeMap: Record<string, string> = {
   [EventTypes.CLIENT_CONNECTED]: WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED,
   [EventTypes.CLIENT_DISCONNECTED]: WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED
 };
-
-// 客户端到服务器的消息类型
-export interface SubscribeMessage {
-  type: 'subscribe';
-  eventTypes: Array<keyof typeof EventTypes>;
-}
-
-export interface UnsubscribeMessage {
-  type: 'unsubscribe';
-  eventTypes: Array<keyof typeof EventTypes>;
-}
-
-export interface PingMessage {
-  type: 'ping';
-  timestamp: number;
-}
-
-export interface FetchLogsMessage {
-  type: 'fetch-logs';
-  serverId: string;
-  limit?: number; // 可选：返回最新的 N 条日志
-  since?: number; // 可选：返回指定时间后的日志
-}
-
-export type ClientMessage = SubscribeMessage | UnsubscribeMessage | PingMessage | FetchLogsMessage;
-
-// 服务器到客户端的消息类型
-export interface ServerStatusEvent {
-  type: 'server-status';
-  data: {
-    serverId: string;
-    status: 'online' | 'offline' | 'error';
-    error?: string;
-    timestamp: number;
-  };
-}
-
-export interface LogEvent {
-  type: 'log';
-  data: {
-    serverId: string;
-    logs: Array<{
-      level: 'info' | 'warn' | 'error' | 'debug';
-      message: string;
-      timestamp: number;
-    }>;
-  };
-}
-
-export interface ToolsEvent {
-  type: 'tools';
-  data: {
-    serverId: string;
-    tools: any[];
-  };
-}
-
-export interface ResourcesEvent {
-  type: 'resources';
-  data: {
-    serverId: string;
-    resources: any[];
-  };
-}
-
-export interface ServerAddedEvent {
-  type: 'server-added';
-  data: any;
-}
-
-export interface ServerUpdatedEvent {
-  type: 'server-updated';
-  data: any;
-}
-
-export interface ServerDeletedEvent {
-  type: 'server-deleted';
-  data: string;
-}
-
-export interface ServerConnectedEvent {
-  type: 'server-connected';
-  data: {
-    serverId: string;
-    status: 'online';
-    timestamp: number;
-  };
-}
-
-export interface ServerDisconnectedEvent {
-  type: 'server-disconnected';
-  data: {
-    serverId: string;
-    status: 'offline';
-    timestamp: number;
-  };
-}
-
-export interface PongMessage {
-  type: 'pong';
-  timestamp: number;
-}
-
-export interface ErrorMessage {
-  type: 'error';
-  data: {
-    message: string;
-  };
-}
-
-export interface ToolCallStartedEvent {
-  type: 'tool-call-started';
-  data: {
-    requestId: string;
-    serverId: string;
-    serverName: string;
-    toolName: string;
-    timestamp: number;
-    args: Record<string, unknown>;
-  };
-}
-
-export interface ToolCallCompletedEvent {
-  type: 'tool-call-completed';
-  data: {
-    requestId: string;
-    serverId: string;
-    serverName: string;
-    toolName: string;
-    timestamp: number;
-    result: any;
-  };
-}
-
-export interface ToolCallErrorEvent {
-  type: 'tool-call-error';
-  data: {
-    requestId: string;
-    serverId: string;
-    serverName: string;
-    toolName: string;
-    timestamp: number;
-    error: string;
-    stack?: string;
-  };
-}
-
-export interface ConfigurationUpdatedEvent {
-  type: 'configuration-updated';
-  data: {
-    timestamp: number;
-    config: any;
-    changes?: any;
-  };
-}
-
-export interface ClientConnectedEvent {
-  type: 'client-connected';
-  data: {
-    timestamp: number;
-    client: any;
-  };
-}
-
-export interface ClientDisconnectedEvent {
-  type: 'client-disconnected';
-  data: {
-    timestamp: number;
-    clientId: string;
-    client?: any;
-  };
-}
-
-export type ServerMessage =
-  | ServerStatusEvent
-  | LogEvent
-  | ToolsEvent
-  | ResourcesEvent
-  | ServerAddedEvent
-  | ServerUpdatedEvent
-  | ServerDeletedEvent
-  | ServerConnectedEvent
-  | ServerDisconnectedEvent
-  | PongMessage
-  | ErrorMessage
-  | ToolCallStartedEvent
-  | ToolCallCompletedEvent
-  | ToolCallErrorEvent
-  | ConfigurationUpdatedEvent
-  | ClientConnectedEvent
-  | ClientDisconnectedEvent;
 
 export class WebSocketHandler {
   private subscriptions = new Map<keyof typeof EventTypes, () => void>(); // 存储订阅和对应的取消函数
@@ -286,7 +103,7 @@ export class WebSocketHandler {
         serverId: message.serverId,
         logs: logs
       }
-    });
+    } as ServerMessage);
   }
 
   /**
@@ -294,19 +111,24 @@ export class WebSocketHandler {
    */
   private handleSubscribe(message: SubscribeMessage): void {
     message.eventTypes.forEach(eventType => {
-      if (!this.subscriptions.has(eventType)) {
+      // 将 WebSocket 事件类型映射到内部事件类型
+      const internalEventType = Object.entries(eventTypeMap).find(
+        ([, wsType]) => wsType === eventType
+      )?.[0] as keyof typeof EventTypes;
+
+      if (internalEventType && !this.subscriptions.has(internalEventType)) {
         // 订阅事件总线
-        const unsubscribe = this.eventBus.subscribe(eventType, (data: any) => {
-          const mappedType = eventTypeMap[eventType] as any;
+        const unsubscribe = this.eventBus.subscribe(internalEventType, (data: any) => {
+          const mappedType = eventTypeMap[internalEventType] as any;
           if (mappedType) {
             this.send({
               type: mappedType,
               data
-            });
+            } as ServerMessage);
           }
         });
 
-        this.subscriptions.set(eventType, unsubscribe);
+        this.subscriptions.set(internalEventType, unsubscribe);
       }
     });
 
@@ -318,10 +140,17 @@ export class WebSocketHandler {
    */
   private handleUnsubscribe(message: UnsubscribeMessage): void {
     message.eventTypes.forEach(eventType => {
-      const unsubscribe = this.subscriptions.get(eventType);
-      if (unsubscribe) {
-        unsubscribe(); // 调用取消订阅函数
-        this.subscriptions.delete(eventType);
+      // 将 WebSocket 事件类型映射到内部事件类型
+      const internalEventType = Object.entries(eventTypeMap).find(
+        ([, wsType]) => wsType === eventType
+      )?.[0] as keyof typeof EventTypes;
+
+      if (internalEventType) {
+        const unsubscribe = this.subscriptions.get(internalEventType);
+        if (unsubscribe) {
+          unsubscribe(); // 调用取消订阅函数
+          this.subscriptions.delete(internalEventType);
+        }
       }
     });
 
@@ -349,14 +178,13 @@ export class WebSocketHandler {
     this.send({
       type: 'pong',
       timestamp: Date.now()
-    });
+    } as ServerMessage);
   }
-
 
   /**
    * 处理连接错误
    */
-  private handleError(error: Event): void {
+  private handleError(error: Error): void {
     logger.error(`error: ${error}`, { subModule: 'WebSocket' });
   }
 
@@ -376,7 +204,7 @@ export class WebSocketHandler {
     this.send({
       type: 'error',
       data: { message }
-    } as any);
+    } as ServerMessage);
   }
 
   /**
@@ -387,7 +215,7 @@ export class WebSocketHandler {
       this.send({
         type: 'pong',
         timestamp: Date.now()
-      });
+      } as ServerMessage);
     }, 30000); // 每30秒发送一次心跳
   }
 

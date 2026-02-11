@@ -1,4 +1,4 @@
-import type { ServerStatus, ServerTransport, ServerType } from '@shared/types';
+import type { ServerStatus, ServerTransport, ServerType } from '../../shared/types/common.types';
 import type { McpServerConfig as SharedMcpServerConfig, ServerInstanceConfig, LogEntry, McpStatus, Server as SharedServer } from '@shared-models/server.model';
 
 // 后端服务器配置接口，扩展共享配置

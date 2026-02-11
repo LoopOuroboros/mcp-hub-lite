@@ -1,11 +1,6 @@
-import { ClientContext } from '@utils/request-context.js';
+import type { ClientContext, ClientInfo, ClientRoot } from 'shared/types/client.types.js';
 import { logger } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
-
-export interface ClientInfo extends ClientContext {
-  lastSeen: number;
-  roots?: Array<{ uri: string; name?: string }>;
-}
 
 class ClientTrackerService {
   private clients: Map<string, ClientInfo> = new Map();
@@ -43,7 +38,7 @@ class ClientTrackerService {
     }
   }
 
-  public updateClientRoots(sessionId: string, roots: Array<{ uri: string; name?: string }>) {
+  public updateClientRoots(sessionId: string, roots: ClientRoot[]) {
     const client = this.clients.get(sessionId);
     if (client) {
       client.roots = roots;
