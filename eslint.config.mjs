@@ -20,6 +20,6 @@ export default [
     }
   },
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "poc/**", "docs/**"]
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "poc/**", "docs/**", "tests/temp/**"]
   }
 ];
