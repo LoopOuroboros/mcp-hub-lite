@@ -40,7 +40,11 @@ export default {
     serverTag: 'Server',
     systemResources: 'Gateway System Resources',
     serverResources: 'Server Resources',
-    toolResources: 'Tool Resources'
+    toolResources: 'Tool Resources',
+    dataResources: 'Data Resources',
+    name: 'Name',
+    uri: 'URI',
+    mimeType: 'MIME Type'
   },
   clients: {
     title: 'Connected Clients',

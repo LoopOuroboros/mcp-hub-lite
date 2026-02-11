@@ -43,15 +43,63 @@
             <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
               {{ $t('resources.serverResources') }}
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              <ResourceCard 
-                v-for="resource in getSystemServerResources(resources)" 
-                :key="resource.uri"
-                :resource="resource"
-                :server-name="serverName"
-                @view="viewResource"
-              />
-            </div>
+            <el-table :data="getSystemServerResources(resources)" style="width: 100%" class="custom-table mb-4">
+              <el-table-column prop="name" :label="$t('resources.name')" min-width="300">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2">
+                    <el-icon><Document /></el-icon>
+                    <span class="font-medium truncate" :title="row.name">{{ row.name }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="uri" :label="$t('resources.uri')" min-width="300">
+                <template #default="{ row }">
+                  <span class="truncate block" :title="row.uri">{{ row.uri }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="mimeType" :label="$t('resources.mimeType')" width="180">
+                <template #default="{ row }">
+                  <el-tag size="small" type="success" effect="plain">{{ row.mimeType || 'unknown' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="" width="100" align="right">
+                <template #default="{ row }">
+                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{ $t('action.view') }}</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
+          <!-- Data Resources Subsection -->
+          <div v-if="getSystemDataResources(resources).length > 0" class="mb-6 pl-4">
+            <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
+              {{ $t('resources.dataResources') }}
+            </h4>
+            <el-table :data="getSystemDataResources(resources)" style="width: 100%" class="custom-table mb-4">
+              <el-table-column prop="name" :label="$t('resources.name')" min-width="300">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2">
+                    <el-icon><Document /></el-icon>
+                    <span class="font-medium truncate" :title="row.name">{{ row.name }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="uri" :label="$t('resources.uri')" min-width="300">
+                <template #default="{ row }">
+                  <span class="truncate block" :title="row.uri">{{ row.uri }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="mimeType" :label="$t('resources.mimeType')" width="180">
+                <template #default="{ row }">
+                  <el-tag size="small" type="success" effect="plain">{{ row.mimeType || 'unknown' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="" width="100" align="right">
+                <template #default="{ row }">
+                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{ $t('action.view') }}</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
 
           <!-- Tool Resources Subsection -->
@@ -59,15 +107,31 @@
             <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
               {{ $t('resources.toolResources') }}
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              <ResourceCard 
-                v-for="resource in getSystemToolResources(resources)" 
-                :key="resource.uri"
-                :resource="resource"
-                :server-name="serverName"
-                @view="viewResource"
-              />
-            </div>
+            <el-table :data="getSystemToolResources(resources)" style="width: 100%" class="custom-table mb-4">
+              <el-table-column prop="name" :label="$t('resources.name')" min-width="300">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2">
+                    <el-icon><Document /></el-icon>
+                    <span class="font-medium truncate" :title="row.name">{{ row.name }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="uri" :label="$t('resources.uri')" min-width="300">
+                <template #default="{ row }">
+                  <span class="truncate block" :title="row.uri">{{ row.uri }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="mimeType" :label="$t('resources.mimeType')" width="180">
+                <template #default="{ row }">
+                  <el-tag size="small" type="success" effect="plain">{{ row.mimeType || 'unknown' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="" width="100" align="right">
+                <template #default="{ row }">
+                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{ $t('action.view') }}</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
         </template>
         
@@ -80,13 +144,31 @@
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <ResourceCard 
-              v-for="resource in resources" 
-              :key="resource.uri"
-              :resource="resource"
-              :server-name="serverName"
-              @view="viewResource"
-            />
+            <el-table :data="resources" style="width: 100%" class="custom-table col-span-full">
+              <el-table-column prop="name" :label="$t('resources.name')" min-width="300">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2">
+                    <el-icon><Document /></el-icon>
+                    <span class="font-medium truncate" :title="row.name">{{ row.name }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="uri" :label="$t('resources.uri')" min-width="300">
+                <template #default="{ row }">
+                  <span class="truncate block" :title="row.uri">{{ row.uri }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="mimeType" :label="$t('resources.mimeType')" width="180">
+                <template #default="{ row }">
+                  <el-tag size="small" type="success" effect="plain">{{ row.mimeType || 'unknown' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="" width="100" align="right">
+                <template #default="{ row }">
+                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{ $t('action.view') }}</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
         </template>
       </section>
@@ -97,9 +179,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Folder, Setting } from '@element-plus/icons-vue'
+import { Search, Folder, Setting, Document } from '@element-plus/icons-vue'
 import { useServerStore } from '@stores/server'
-import ResourceCard from '@components/ResourceCard.vue'
+// import ResourceCard from '@components/ResourceCard.vue'
 
 const router = useRouter()
 const store = useServerStore()
@@ -142,12 +224,20 @@ function isToolResource(uri: string) {
   return uri.endsWith('/tools')
 }
 
+function isDataResource(uri: string) {
+  return uri.endsWith('/resources')
+}
+
 function getSystemServerResources(resources: any[]) {
-  return resources.filter(r => !isToolResource(r.uri))
+  return resources.filter(r => !isToolResource(r.uri) && !isDataResource(r.uri))
 }
 
 function getSystemToolResources(resources: any[]) {
   return resources.filter(r => isToolResource(r.uri))
+}
+
+function getSystemDataResources(resources: any[]) {
+  return resources.filter(r => isDataResource(r.uri))
 }
 
 function viewResource(serverName: string, uri: string) {

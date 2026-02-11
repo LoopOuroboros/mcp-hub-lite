@@ -40,7 +40,11 @@ export default {
     serverTag: '服务器',
     systemResources: '网关系统资源',
     serverResources: '服务器资源',
-    toolResources: '工具资源'
+    toolResources: '工具资源',
+    dataResources: '数据资源',
+    name: '名称',
+    uri: 'URI',
+    mimeType: 'MIME 类型'
   },
   clients: {
     title: '已连接的客户端',
