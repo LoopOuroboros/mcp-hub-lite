@@ -1,23 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { http } from '@utils/http'
-
-export interface ClientContext {
-  sessionId: string
-  clientName?: string
-  clientVersion?: string
-  protocolVersion?: string
-  cwd?: string
-  project?: string
-  ip?: string
-  userAgent?: string
-  timestamp: number
-  lastSeen?: number
-  roots?: Array<{ uri: string; name?: string }>
-}
+import type { ClientInfo } from '@shared-types/client.types'
 
 export const useClientStore = defineStore('client', () => {
-  const clients = ref<ClientContext[]>([])
+  const clients = ref<ClientInfo[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -25,7 +12,7 @@ export const useClientStore = defineStore('client', () => {
     loading.value = true
     error.value = null
     try {
-      clients.value = await http.get<ClientContext[]>('/api/clients')
+      clients.value = await http.get<ClientInfo[]>('/api/clients')
     } catch (e: unknown) {
       if (e instanceof Error) {
         error.value = e.message || 'Failed to fetch clients'

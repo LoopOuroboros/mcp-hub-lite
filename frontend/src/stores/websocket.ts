@@ -14,7 +14,7 @@ import { useSystemStore } from '@stores/system'
 import { useClientStore } from '@stores/client'
 
 // 从共享类型导入 WebSocket 事件类型常量
-import { WEB_SOCKET_EVENT_TYPES } from '@shared/types/websocket.types'
+import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const connected = ref(false)
