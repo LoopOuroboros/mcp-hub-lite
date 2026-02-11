@@ -199,7 +199,7 @@ function formatJson() {
   try {
     const parsed = JSON.parse(argsJson.value);
     argsJson.value = JSON.stringify(parsed, null, 2);
-  } catch (e) {
+  } catch {
     ElMessage.warning(t('toolCallDialog.invalidJson'));
   }
 }
@@ -221,7 +221,7 @@ async function handleCall() {
     let args: unknown;
     try {
       args = JSON.parse(argsJson.value);
-    } catch (e) {
+    } catch {
       ElMessage.error(t('toolCallDialog.invalidJsonArguments'));
       return;
     }

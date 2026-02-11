@@ -163,7 +163,10 @@ export default {
     },
     status: {
       running: 'Running',
+      online: 'Running',
       stopped: 'Stopped',
+      offline: 'Stopped',
+      stopping: 'Stopping',
       error: 'Error',
       starting: 'Starting'
     }

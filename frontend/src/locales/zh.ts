@@ -163,7 +163,10 @@ export default {
     },
     status: {
       running: '运行中',
+      online: '运行中',
       stopped: '已停止',
+      offline: '已停止',
+      stopping: '停止中',
       error: '错误',
       starting: '启动中'
     }
