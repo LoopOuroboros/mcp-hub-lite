@@ -103,7 +103,8 @@ export default defineConfig({
 
       // 共享类型别名
       '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
-      '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url))
+      '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url)),
+      '@shared-types': fileURLToPath(new URL('./shared/types', import.meta.url))
     }
   },
   server: {

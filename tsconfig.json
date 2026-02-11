@@ -16,18 +16,19 @@
     "noUnusedParameters": true,
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["./src/*"],
       "@api/*": ["./src/api/*"],
       "@cli/*": ["./src/cli/*"],
       "@config/*": ["./src/config/*"],
+      "@helpers/*": ["./tests/helpers/*"],
       "@models/*": ["./src/models/*"],
-      "@shared-models/*": ["./shared/models/*"],
-      "@shared/*": ["./shared/*"],
       "@pid/*": ["./src/pid/*"],
-      "@services/*": ["./src/services/*"],
-      "@utils/*": ["./src/utils/*"],
       "@server/*": ["./src/server/*"],
-      "@helpers/*": ["./tests/helpers/*"]
+      "@services/*": ["./src/services/*"],
+      "@shared/*": ["./shared/*"],
+      "@shared-models/*": ["./shared/models/*"],
+      "@shared-types/*": ["./shared/types/*"],
+      "@src/*": ["./src/*"],
+      "@utils/*": ["./src/utils/*"]
     }
   },
   "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts", "shared/**/*"],
