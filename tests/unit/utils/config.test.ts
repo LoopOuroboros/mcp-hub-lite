@@ -108,6 +108,7 @@ describe('ConfigManager', () => {
           maxConcurrentConnections: 10,
           connectionTimeout: 15000,
           idleConnectionTimeout: 60000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 20
         },
         servers: {
@@ -587,6 +588,7 @@ describe('ConfigManager', () => {
           maxConcurrentConnections: 100,
           connectionTimeout: 30000,
           idleConnectionTimeout: 60000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 1000
         }
       };
@@ -699,6 +701,7 @@ describe('ConfigManager', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},

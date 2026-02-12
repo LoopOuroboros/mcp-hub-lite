@@ -67,6 +67,7 @@ export const SecurityConfigSchema = z.object({
   maxConcurrentConnections: z.number().min(1).max(1000).default(50),
   connectionTimeout: z.number().min(1000).default(30000),
   idleConnectionTimeout: z.number().min(30000).default(300000),
+  sessionTimeout: z.number().min(60000).default(30 * 60 * 1000), // Default 30 minutes, min 1 minute
   maxConnections: z.number().min(1).max(1000).default(50)
 }).default({
   allowedNetworks: [
@@ -78,6 +79,7 @@ export const SecurityConfigSchema = z.object({
   maxConcurrentConnections: 50,
   connectionTimeout: 30000,
   idleConnectionTimeout: 300000,
+  sessionTimeout: 30 * 60 * 1000,
   maxConnections: 50
 });
 

@@ -2,6 +2,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { gateway } from '@services/gateway.service.js';
 import { logger } from '@utils/logger.js';
+import { configManager } from '@config/config-manager.js';
 
 interface Session {
     server: McpServer;
@@ -12,7 +13,9 @@ interface Session {
 
 export class McpSessionManager {
     private sessions: Map<string, Session> = new Map();
-    private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    private get SESSION_TIMEOUT(): number {
+        return configManager.getConfig().security.sessionTimeout;
+    }
 
     constructor() {
         setInterval(() => this.cleanup(), 60000);

@@ -103,6 +103,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -153,6 +154,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -206,6 +208,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -269,6 +272,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -339,6 +343,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -430,6 +435,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -494,6 +500,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -554,6 +561,7 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
+          sessionTimeout: 30 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
