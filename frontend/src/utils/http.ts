@@ -1,4 +1,4 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code?: number;
   message?: string;
   data?: T;
@@ -7,9 +7,9 @@ export interface ApiResponse<T = any> {
 
 export class HttpError extends Error {
   status: number;
-  data: any;
+  data: unknown;
 
-  constructor(status: number, message: string, data?: any) {
+  constructor(status: number, message: string, data?: unknown) {
     super(message);
     this.status = status;
     this.data = data;
@@ -56,10 +56,10 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 export const http = {
   get: <T>(url: string, headers?: HeadersInit) => request<T>(url, { method: 'GET', headers }),
   
-  post: <T>(url: string, body: any, headers?: HeadersInit) => 
+  post: <T>(url: string, body: unknown, headers?: HeadersInit) =>
     request<T>(url, { method: 'POST', body: JSON.stringify(body), headers }),
-  
-  put: <T>(url: string, body: any, headers?: HeadersInit) => 
+
+  put: <T>(url: string, body: unknown, headers?: HeadersInit) =>
     request<T>(url, { method: 'PUT', body: JSON.stringify(body), headers }),
   
   delete: <T>(url: string, headers?: HeadersInit) => request<T>(url, { method: 'DELETE', headers }),

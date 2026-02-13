@@ -12,10 +12,48 @@ vi.mock('@config/config-manager.js', () => ({
   }
 }));
 
+// Helper function to create a complete system config with custom logging rotation
+function createTestConfig(rotationConfig: Partial<{enabled: boolean; maxAge: string}> = {}): ReturnType<typeof configManager.getConfig> {
+  return {
+    version: '1.0.0',
+    system: {
+      host: 'localhost',
+      port: 7788,
+      language: 'zh' as const,
+      theme: 'system' as const,
+      logging: {
+        level: 'info' as const,
+        rotation: {
+          enabled: rotationConfig.enabled ?? true,
+          maxAge: rotationConfig.maxAge ?? '7d',
+          maxSize: '100MB',
+          compress: false
+        }
+      }
+    },
+    security: {
+      allowedNetworks: ['127.0.0.1'],
+      maxConcurrentConnections: 50,
+      connectionTimeout: 30000,
+      idleConnectionTimeout: 300000,
+      maxConnections: 50
+    },
+    servers: {},
+    observability: {
+      tracing: {
+        enabled: false,
+        exporter: 'console' as const,
+        endpoint: 'http://localhost:4318/v1/traces',
+        sampleRate: 1.0
+      }
+    }
+  };
+}
+
 describe('LogRotator', () => {
   let logRotator: LogRotator;
   let tempLogDir: string;
-  let originalConfig: any;
+  let originalConfig: ReturnType<typeof configManager.getConfig>;
 
   beforeEach(() => {
     // 创建临时日志目录
@@ -23,18 +61,9 @@ describe('LogRotator', () => {
     fs.mkdirSync(tempLogDir, { recursive: true });
 
     // 设置默认配置
-    originalConfig = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: '7d'
-          }
-        }
-      }
-    };
+    originalConfig = createTestConfig();
 
-    (configManager.getConfig as any).mockReturnValue(originalConfig);
+    vi.mocked(configManager.getConfig).mockReturnValue(originalConfig);
   });
 
   afterEach(() => {
@@ -89,115 +118,68 @@ describe('LogRotator', () => {
   });
 
   it('should parse retention days correctly for days', () => {
-    const configWithDays = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: '30d'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configWithDays);
+    const configWithDays = createTestConfig({ maxAge: '30d' });
+    vi.mocked(configManager.getConfig).mockReturnValue(configWithDays);
 
     logRotator = new LogRotator(tempLogDir);
-    const retentionDays = (logRotator as any).getRetentionDays();
+    // @ts-expect-error - accessing private method for testing
+    const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(30);
   });
 
   it('should parse retention days correctly for hours', () => {
-    const configWithHours = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: '48h'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configWithHours);
+    const configWithHours = createTestConfig({ maxAge: '48h' });
+    vi.mocked(configManager.getConfig).mockReturnValue(configWithHours);
 
     logRotator = new LogRotator(tempLogDir);
-    const retentionDays = (logRotator as any).getRetentionDays();
+    // @ts-expect-error - accessing private method for testing
+    const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(2); // 48 hours = 2 days
   });
 
   it('should parse retention days correctly for minutes', () => {
-    const configWithMinutes = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: '1440m' // 24 hours
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configWithMinutes);
+    const configWithMinutes = createTestConfig({ maxAge: '1440m' });
+    vi.mocked(configManager.getConfig).mockReturnValue(configWithMinutes);
 
     logRotator = new LogRotator(tempLogDir);
-    const retentionDays = (logRotator as any).getRetentionDays();
+    // @ts-expect-error - accessing private method for testing
+    const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(1); // 1440 minutes = 1 day
   });
 
   it('should return default retention days for invalid format', () => {
-    const configWithInvalid = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: 'invalid'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configWithInvalid);
+    const configWithInvalid = createTestConfig({ maxAge: 'invalid' });
+    vi.mocked(configManager.getConfig).mockReturnValue(configWithInvalid);
 
     logRotator = new LogRotator(tempLogDir);
-    const retentionDays = (logRotator as any).getRetentionDays();
+    // @ts-expect-error - accessing private method for testing
+    const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(7); // default
   });
 
   it('should check if rotation is enabled', () => {
-    const configEnabled = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: true,
-            maxAge: '7d'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configEnabled);
+    const configEnabled = createTestConfig({ enabled: true });
+    vi.mocked(configManager.getConfig).mockReturnValue(configEnabled);
 
     logRotator = new LogRotator(tempLogDir);
-    expect((logRotator as any).isRotationEnabled()).toBe(true);
+    // @ts-expect-error - accessing private method for testing
+    expect(logRotator.isRotationEnabled()).toBe(true);
   });
 
   it('should check if rotation is disabled', () => {
-    const configDisabled = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: false,
-            maxAge: '7d'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configDisabled);
+    const configDisabled = createTestConfig({ enabled: false });
+    vi.mocked(configManager.getConfig).mockReturnValue(configDisabled);
 
     logRotator = new LogRotator(tempLogDir);
-    expect((logRotator as any).isRotationEnabled()).toBe(false);
+    // @ts-expect-error - accessing private method for testing
+    expect(logRotator.isRotationEnabled()).toBe(false);
   });
 
   it('should extract date from filename correctly', () => {
     logRotator = new LogRotator(tempLogDir);
     const filename = 'mcp-hub.2025-12-01.log';
-    const date = (logRotator as any).extractDateFromFilename(filename);
+    // @ts-expect-error - accessing private method for testing
+    const date = logRotator.extractDateFromFilename(filename);
 
     expect(date).toBeInstanceOf(Date);
     expect(date?.getFullYear()).toBe(2025);
@@ -208,7 +190,8 @@ describe('LogRotator', () => {
   it('should return null for invalid filename', () => {
     logRotator = new LogRotator(tempLogDir);
     const filename = 'invalid-filename.txt';
-    const date = (logRotator as any).extractDateFromFilename(filename);
+    // @ts-expect-error - accessing private method for testing
+    const date = logRotator.extractDateFromFilename(filename);
 
     expect(date).toBeNull();
   });
@@ -262,17 +245,8 @@ describe('LogRotator', () => {
   });
 
   it('should not rotate logs when disabled', () => {
-    const configDisabled = {
-      system: {
-        logging: {
-          rotation: {
-            enabled: false,
-            maxAge: '7d'
-          }
-        }
-      }
-    };
-    (configManager.getConfig as any).mockReturnValue(configDisabled);
+    const configDisabled = createTestConfig({ enabled: false });
+    vi.mocked(configManager.getConfig).mockReturnValue(configDisabled);
 
     // Create old log file
     const oldDate = new Date();

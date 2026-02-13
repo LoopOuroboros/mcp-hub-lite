@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+import type { LogLevel } from '@shared-types/common.types.js';
 
 export interface LogContext {
   pid?: number;
@@ -286,7 +285,7 @@ export class Logger {
 
   private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
     if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
-      const firstArg = args[0] as any;
+      const firstArg = args[0] as Record<string, unknown>;
       if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
         return [args[0] as LogOptions, args.slice(1)];
       }

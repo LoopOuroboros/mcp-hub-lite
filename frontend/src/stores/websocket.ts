@@ -15,6 +15,21 @@ import { useClientStore } from '@stores/client'
 
 // 从共享类型导入 WebSocket 事件类型常量
 import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types'
+// 从共享类型导入具体的 WebSocket 事件类型
+import type {
+  ConfigurationUpdatedEvent,
+  ClientConnectedEvent,
+  ClientDisconnectedEvent,
+  ServerStatusEvent,
+  LogEvent,
+  ToolsEvent,
+  ResourcesEvent,
+  ServerAddedEvent,
+  ServerUpdatedEvent,
+  ServerDeletedEvent,
+  ServerConnectedEvent,
+  ServerDisconnectedEvent
+} from '@shared-types/websocket.types'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const connected = ref(false)
@@ -151,26 +166,26 @@ export const useWebSocketStore = defineStore('websocket', () => {
         // 心跳响应，忽略
         break
       default:
-        console.warn('Unknown WebSocket message type:', (message as any).type)
+        console.warn('Unknown WebSocket message type:', (message as { type: string }).type)
     }
   }
 
-  function handleConfigurationUpdated(message: any): void {
+  function handleConfigurationUpdated(message: ConfigurationUpdatedEvent): void {
     console.log('Configuration updated:', message.data)
     systemStore.fetchConfig()
   }
 
-  function handleClientConnected(message: any): void {
+  function handleClientConnected(message: ClientConnectedEvent): void {
     console.log('Client connected:', message.data)
     clientStore.fetchClients()
   }
 
-  function handleClientDisconnected(message: any): void {
+  function handleClientDisconnected(message: ClientDisconnectedEvent): void {
     console.log('Client disconnected:', message.data)
     clientStore.fetchClients()
   }
 
-  function handleServerStatusChange(message: any): void {
+  function handleServerStatusChange(message: ServerStatusEvent): void {
     const { serverId, status, error } = message.data
     serverStore.updateServerStatus(serverId, mapStatus(status))
 
@@ -179,7 +194,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     }
   }
 
-  function handleLogEntry(message: any): void {
+  function handleLogEntry(message: LogEvent): void {
     const { serverId, logs } = message.data
     const server = serverStore.servers.find(s => s.id === serverId)
     if (server && logs && logs.length > 0) {
@@ -206,7 +221,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     }
   }
 
-  function handleToolsUpdated(message: any): void {
+  function handleToolsUpdated(message: ToolsEvent): void {
     const { serverId, tools } = message.data
     const server = serverStore.servers.find(s => s.id === serverId)
     if (server) {
@@ -215,7 +230,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     }
   }
 
-  function handleResourcesUpdated(message: any): void {
+  function handleResourcesUpdated(message: ResourcesEvent): void {
     const { serverId, resources } = message.data
     const server = serverStore.servers.find(s => s.id === serverId)
     if (server) {
@@ -224,29 +239,29 @@ export const useWebSocketStore = defineStore('websocket', () => {
     }
   }
 
-  function handleServerAdded(message: any): void {
+  function handleServerAdded(message: ServerAddedEvent): void {
     console.log('Server added:', message.data)
     serverStore.fetchServers()
   }
 
   // 服务器更新事件发射器
 
-  function handleServerUpdated(message: any): void {
+  function handleServerUpdated(message: ServerUpdatedEvent): void {
     console.log('Server updated:', message.data)
     serverStore.fetchServers()
   }
 
-  function handleServerDeleted(message: any): void {
+  function handleServerDeleted(message: ServerDeletedEvent): void {
     console.log('Server deleted:', message.data)
     serverStore.fetchServers()
   }
 
-  function handleServerConnected(message: any): void {
+  function handleServerConnected(message: ServerConnectedEvent): void {
     const { serverId } = message.data
     serverStore.updateServerStatus(serverId, 'online')
   }
 
-  function handleServerDisconnected(message: any): void {
+  function handleServerDisconnected(message: ServerDisconnectedEvent): void {
     const { serverId } = message.data
     serverStore.updateServerStatus(serverId, 'offline')
   }

@@ -4,7 +4,7 @@
  */
 
 // 系统工具参数类型定义
-export interface ListServersParams {}
+export type ListServersParams = Record<string, never>;
 
 export interface FindServersParams {
   pattern: string;
@@ -55,6 +55,16 @@ export interface FindToolsParams {
   searchIn?: 'name' | 'description' | 'both';
   caseSensitive?: boolean;
 }
+
+// 系统工具参数的联合类型
+export type SystemToolArgs =
+  | ListServersParams
+  | FindServersParams
+  | ListAllToolsInServerParams
+  | FindToolsInServerParams
+  | GetToolParams
+  | CallToolParams
+  | FindToolsParams;
 
 // Individual system tool name constants
 export const LIST_SERVERS_TOOL = 'list_servers';

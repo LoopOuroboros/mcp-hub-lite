@@ -36,7 +36,7 @@ import { logger } from '@utils/logger.js';
  */
 export class TelemetryManager {
   private static instance: TelemetryManager;
-  private provider: any | null = null;
+  private provider: NodeTracerProvider | null = null;
   private isInitialized = false;
 
   private constructor() {}

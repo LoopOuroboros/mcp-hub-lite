@@ -1,4 +1,4 @@
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { SearchResult, SearchOptions } from './types.js';
@@ -60,7 +60,7 @@ export class SearchCoreService {
     return paginatedResults;
   }
 
-  private async getToolsWithCache(): Promise<McpTool[]> {
+  private async getToolsWithCache(): Promise<Tool[]> {
     const cached = this.cacheService.get();
     if (cached) {
       return cached;
@@ -84,17 +84,17 @@ export class SearchCoreService {
     return filteredTools;
   }
 
-  private applyFilters(tools: McpTool[], filters?: SearchOptions['filters']): McpTool[] {
+  private applyFilters(tools: Tool[], filters?: SearchOptions['filters']): Tool[] {
     if (!filters) return tools;
 
     const filtered = tools;
 
-    // serverId 和 status 字段已从 McpTool 接口中移除，如需按服务器或状态筛选，请使用其他方法
+    // serverId 和 status 字段已从 Tool 接口中移除，如需按服务器或状态筛选，请使用其他方法
 
     return filtered;
   }
 
-  private performFuzzySearch(tools: McpTool[], query: string): SearchResult[] {
+  private performFuzzySearch(tools: Tool[], query: string): SearchResult[] {
     const results: SearchResult[] = [];
 
     for (const tool of tools) {

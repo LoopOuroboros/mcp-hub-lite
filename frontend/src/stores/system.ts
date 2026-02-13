@@ -33,7 +33,7 @@ export interface SystemConfig {
       sampleRate: number
     }
   }
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export const useSystemStore = defineStore('system', () => {
@@ -108,8 +108,9 @@ export const useSystemStore = defineStore('system', () => {
         }
       }
       return config.value
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch config'
+    } catch (e: unknown) {
+      const errorObj = e as Error;
+      error.value = errorObj.message || 'Failed to fetch config'
       console.error('Fetch config error:', e)
       throw e
     } finally {
@@ -136,8 +137,9 @@ export const useSystemStore = defineStore('system', () => {
         ...updates
       }
       
-    } catch (e: any) {
-      error.value = e.message || 'Failed to update config'
+    } catch (e: unknown) {
+      const errorObj = e as Error;
+      error.value = errorObj.message || 'Failed to update config'
       throw e
     } finally {
       loading.value = false

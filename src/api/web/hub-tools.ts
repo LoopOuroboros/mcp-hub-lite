@@ -1,13 +1,32 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubToolsService } from '@services/hub-tools.service.js';
-import { SystemToolName } from '@models/system-tools.constants.js';
+import {
+  SystemToolName,
+  ListServersParams,
+  FindServersParams,
+  ListAllToolsInServerParams,
+  FindToolsInServerParams,
+  GetToolParams,
+  CallToolParams,
+  FindToolsParams
+} from '@models/system-tools.constants.js';
 
 // 请求选项接口
 interface RequestOptions {
   sessionId?: string;  // 会话 ID（用于选择特定实例）
   tags?: Record<string, string>;  // 标签（后续支持）
 }
+
+// 系统工具参数的联合类型
+type SystemToolArgs =
+  | ListServersParams
+  | FindServersParams
+  | ListAllToolsInServerParams
+  | FindToolsInServerParams
+  | GetToolParams
+  | CallToolParams
+  | FindToolsParams;
 
 /**
  * Web API routes for MCP Hub tools operations
@@ -29,7 +48,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       const { toolArgs = {} } = request.body;
 
       // 通过 callSystemTool 方法统一处理系统工具调用，确保日志记录
-      return await hubToolsService.callSystemTool(toolName as SystemToolName, toolArgs);
+      return await hubToolsService.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
     } catch (error) {
       if (error instanceof Error && error.message.includes('System tool')) {
         return reply.code(404).send({

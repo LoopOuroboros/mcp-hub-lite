@@ -231,3 +231,6 @@ const summaryPath = path.join(logsDir, 'test-summary.log');
 fs.writeFileSync(summaryPath, summaryContent.trim());
 
 console.log(`Test summary saved to ${summaryPath}`);
+
+// 同时打印摘要内容到控制台
+console.log('\n' + summaryContent);

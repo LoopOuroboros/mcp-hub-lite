@@ -1,17 +1,31 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '@utils/logger.js';
 import { requestContext } from '@utils/request-context.js';
-import type { ClientContext } from 'shared/types/client.types.js';
+import type { ClientContext } from '@shared-types/client.types';
 import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
 import { randomUUID } from 'crypto';
 
-function extractSessionContext(request: any): { sessionId: string; clientContext: ClientContext } {
+// MCP Protocol Request Body Types
+interface RequestBody {
+  method?: string;
+  params?: {
+    clientInfo?: {
+      name: string;
+      version: string;
+    };
+    protocolVersion?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | null }>): { sessionId: string; clientContext: ClientContext } {
   const headers = request.headers;
 
   // 完全使用原 clientId 生成逻辑作为 sessionId
   // Priority 1: Session ID from Query (Standard MCP SSE)
-  let sessionId = request.query && (request.query as any).sessionId;
+  let sessionId = (request.query as { sessionId?: string })?.sessionId;
 
   if (request.url.includes('sessionId=')) {
       const match = request.url.match(/sessionId=([^&]+)/);
@@ -115,7 +129,7 @@ function extractSessionContext(request: any): { sessionId: string; clientContext
  */
 export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
-  const handleMcpRequest = async (request: any, reply: any) => {
+  const handleMcpRequest = async (request: FastifyRequest<{ Body: RequestBody | null }>, reply: FastifyReply) => {
       const { sessionId, clientContext } = extractSessionContext(request);
 
       // 更新客户端追踪信息
@@ -128,7 +142,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           try {
                 const preview = JSON.stringify(request.body);
                 logMsg += ` Body: ${preview}`;
-          } catch (e) {
+          } catch {
               logMsg += ` Body: [Unserializable]`;
           }
       }
@@ -147,7 +161,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           const session = await mcpSessionManager.getSession(sessionId);
 
           await requestContext.run(clientContext, async () => {
-              if (request.method === 'GET' && !request.raw.url.includes('sessionId=')) {
+              if (request.method === 'GET' && request.raw.url && !request.raw.url.includes('sessionId=')) {
                   const separator = request.raw.url.includes('?') ? '&' : '?';
                   request.raw.url = `${request.raw.url}${separator}sessionId=${sessionId}`;
                   logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`);

@@ -125,18 +125,11 @@ import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus
 import { http } from '@utils/http'
 import { useServerStore } from '@stores/server'
 import { useI18n } from 'vue-i18n'
+import type { Tool } from '@shared-models/tool.model'
 import ToolCallDialog from '@components/ToolCallDialog.vue'
 import ToolCard from '@components/ToolCard.vue'
 
 const { t } = useI18n()
-
-export interface Tool {
-  name: string
-  description?: string
-  inputSchema?: any
-  serverName: string
-  tags?: string[]
-}
 
 export interface SearchResult {
   tool: Tool
@@ -148,9 +141,9 @@ const loading = ref(false)
 const searchResults = ref<SearchResult[]>([])
 const store = useServerStore()
 
-const systemTools = ref<{ name: string; description: string; inputSchema?: any }[]>([])
+const systemTools = ref<Tool[]>([])
 const showCallDialog = ref(false)
-const selectedTool = ref<Tool | any>(null)
+const selectedTool = ref<Tool | null>(null)
 const collapsedServers = ref(new Set<string>())
 const collapsedSystemTools = ref(false)
 
@@ -165,13 +158,18 @@ function toggleServer(serverName: string) {
 async function fetchSystemTools() {
   try {
     const tools = await http.get<{ name: string; description: string }[]>('/web/hub-tools/system')
-    systemTools.value = tools.sort((a, b) => a.name.localeCompare(b.name))
+    // 将系统工具转换为完整的 Tool 对象
+    systemTools.value = tools.map(tool => ({
+      ...tool,
+      serverName: 'system',
+      inputSchema: undefined
+    })).sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error('Failed to fetch system tools:', error)
   }
 }
 
-function openCallDialog(tool: any) {
+function openCallDialog(tool: Tool) {
   // 直接使用工具对象的 serverName 属性
   selectedTool.value = {
     ...tool,

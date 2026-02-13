@@ -262,8 +262,8 @@ async function handleCall() {
             : JSON.stringify(e.data, null, 2);
     }
     // Legacy/Axios fallback (just in case)
-    else if (typeof e === 'object' && e !== null && 'response' in e && (e as any).response?.data) {
-        error.value = JSON.stringify((e as any).response.data, null, 2);
+    else if (typeof e === 'object' && e !== null && 'response' in e && (e as { response?: { data?: unknown } }).response?.data) {
+        error.value = JSON.stringify((e as { response?: { data?: unknown } }).response!.data!, null, 2);
     }
 
     ElMessage.error(t('toolCallDialog.executionFailed'));

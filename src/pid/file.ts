@@ -49,7 +49,7 @@ export function readPidFile(options?: PidFileOptions): number | null {
     const content = fs.readFileSync(filePath, 'utf8');
     const pid = parseInt(content.trim(), 10);
     return isNaN(pid) ? null : pid;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -63,7 +63,7 @@ export function removePidFile(options?: PidFileOptions): void {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
-  } catch (error) {
+  } catch {
     // 忽略删除错误
   }
 }

@@ -14,6 +14,23 @@ export default [
   ...tseslint.configs.recommended,
   ...pluginVue.configs["flat/essential"],
   {
+    rules: {
+      // 严格禁止 any（包括测试文件）
+      '@typescript-eslint/no-explicit-any': 'error',
+      // 允许 @ts-expect-error 但需要注释
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        {
+          'ts-expect-error': 'allow-with-description',
+          'ts-ignore': 'allow-with-description',
+          'ts-nocheck': true,
+          'ts-check': false,
+          minimumDescriptionLength: 5,
+        },
+      ],
+    }
+  },
+  {
     files: ["**/*.vue"], 
     languageOptions: { 
       parserOptions: { parser: tseslint.parser } 

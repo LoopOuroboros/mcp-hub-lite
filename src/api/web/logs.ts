@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { logStorage } from '@services/log-storage.service.js';
+import type { LogEntry } from '@shared-models/server.model.js';
+import type { LogLevel } from '@shared-types/common.types.js';
 
 /**
  * Web API routes for server logs
@@ -9,7 +11,7 @@ import { logStorage } from '@services/log-storage.service.js';
 export async function webLogRoutes(fastify: FastifyInstance) {
   // Query string schema for logs endpoints
   const logQuerySchema = z.object({
-    level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
+    level: z.custom<LogLevel>().optional(),
     limit: z.coerce.number().int().positive().optional(),
     offset: z.coerce.number().int().min(0).optional(),
     since: z.coerce.number().int().optional()
@@ -58,10 +60,10 @@ export async function webLogRoutes(fastify: FastifyInstance) {
     });
 
     // Create log listener
-    const listener = (log: any) => {
+    const listener = (log: LogEntry) => {
       try {
         reply.raw.write(`data: ${JSON.stringify(log)}\n\n`);
-      } catch (error) {
+      } catch {
         // Ignore write errors (e.g. client disconnected)
       }
     };
@@ -72,7 +74,7 @@ export async function webLogRoutes(fastify: FastifyInstance) {
     const keepAliveInterval = setInterval(() => {
       try {
         reply.raw.write(': ping\n\n');
-      } catch (error) {
+      } catch {
         clearInterval(keepAliveInterval);
         logStorage.removeLogListener(id, listener);
       }
@@ -128,7 +130,10 @@ export async function webLogRoutes(fastify: FastifyInstance) {
 
       let count = logStorage.getLogCount(id);
       if (level) {
-        count = logStorage.getLogs(id, { level: level as any }).length;
+        const validLevels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
+        if (validLevels.includes(level as LogLevel)) {
+          count = logStorage.getLogs(id, { level: level as LogLevel }).length;
+        }
       }
 
       return {

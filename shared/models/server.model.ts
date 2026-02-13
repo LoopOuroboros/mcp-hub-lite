@@ -4,7 +4,7 @@ import type { Resource } from './resource.model';
 
 
 // 服务器配置接口
-export interface McpServerConfig {
+export interface ServerConfig {
   command?: string;
   args?: string[];
   url?: string;
@@ -32,7 +32,7 @@ export interface LogEntry {
 }
 
 // 服务器状态信息接口
-export interface McpStatus {
+export interface StatusInfo {
   id: string;
   status: {
     connected: boolean;
@@ -43,6 +43,7 @@ export interface McpStatus {
     pid?: number;
     startTime?: number;
     version?: string;
+    hash?: string;
   };
 }
 
@@ -52,7 +53,7 @@ export interface Server {
   name: string;
   status: ServerStatus;
   type: ServerType;
-  config: McpServerConfig;
+  config: ServerConfig;
   instance: ServerInstanceConfig;
   logs: LogEntry[];
   uptime?: string;

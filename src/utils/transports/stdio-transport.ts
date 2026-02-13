@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -24,7 +24,7 @@ class ReadBuffer {
     this._buffer = this._buffer.subarray(index + 1);
     try {
         return JSON.parse(line);
-    } catch (e) {
+    } catch {
         return JSON.parse(line);
     }
   }
@@ -43,7 +43,7 @@ export interface StdioServerParameters {
 }
 
 export class StdioTransport implements Transport {
-    private _process?: any;
+    private _process?: ChildProcess;
     private _readBuffer = new ReadBuffer();
     private _stderrStream: PassThrough | null = null;
     private _serverParams: StdioServerParameters;
@@ -103,7 +103,7 @@ export class StdioTransport implements Transport {
                 resolve();
             });
 
-            this._process.on('close', (_code: number) => {
+            this._process.on('close', () => {
                 this._process = undefined;
                 this.onclose?.();
             });
@@ -171,8 +171,8 @@ export class StdioTransport implements Transport {
                     break;
                 }
                 this.onmessage?.(message);
-            } catch (error: any) {
-                this.onerror?.(error);
+            } catch (error) {
+                this.onerror?.(error as Error);
             }
         }
     }
@@ -187,12 +187,13 @@ export class StdioTransport implements Transport {
                     resolve();
                 };
 
-                this._process.once('close', cleanup);
-                this._process.once('exit', cleanup);
+                if (this._process) {
+                    this._process.once('close', cleanup);
+                    this._process.once('exit', cleanup);
 
-                // 发送 SIGTERM 信号，给子进程机会优雅关闭
-                try {
-                    this._process.kill('SIGTERM');
+                    // 发送 SIGTERM 信号，给子进程机会优雅关闭
+                    try {
+                        this._process.kill('SIGTERM');
 
                     // 设置超时保护，如果子进程在5秒内没有退出，强制终止
                     const timeout = setTimeout(() => {
@@ -209,6 +210,10 @@ export class StdioTransport implements Transport {
                     logger.error('Error closing stdio transport:', error);
                     cleanup();
                 }
+            } else {
+                // Process is already undefined, just resolve
+                resolve();
+            }
             });
         }
         this._readBuffer.clear();

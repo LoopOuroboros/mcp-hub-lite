@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { LogLevel } from '@shared-types/common.types.js';
 
 /**
  * MCP Server Configuration Schema
@@ -6,7 +7,7 @@ import { z } from 'zod';
  */
 
 // 服务器配置 Schema（以服务器名称为 key）
-export const McpServerConfigSchema = z.object({
+export const ServerConfigSchema = z.object({
   command: z.string().optional(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
@@ -31,7 +32,7 @@ export const ServerInstanceConfigSchema = z.object({
  * Logging Configuration Schema
  */
 export const LoggingConfigSchema = z.object({
-  level: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  level: z.custom<LogLevel>().default('info'),
   rotation: z.object({
     enabled: z.boolean().default(true),
     maxAge: z.string().default('7d'), // e.g., "7d", "30d"
@@ -131,12 +132,12 @@ export const SystemConfigSchema = z.object({
     }
   }),
   security: SecurityConfigSchema,
-  servers: z.record(z.string(), McpServerConfigSchema).default({}),
+  servers: z.record(z.string(), ServerConfigSchema).default({}),
   observability: ObservabilityConfigSchema
 });
 
 // Export types
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
-export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+export type ServerConfig = z.infer<typeof ServerConfigSchema>;
 export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
 export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;

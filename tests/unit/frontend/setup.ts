@@ -23,12 +23,12 @@ beforeAll(() => {
   process.env.VITEST = 'true'
 
   // Store for cleanup
-  ;(globalThis as any).__frontendTestConfigDir = tempTestConfigDir
+  ;(globalThis as { __frontendTestConfigDir?: string }).__frontendTestConfigDir = tempTestConfigDir
 })
 
 // Clean up after all frontend tests
 afterAll(() => {
-  const tempTestConfigDir = (globalThis as any).__frontendTestConfigDir
+  const tempTestConfigDir = (globalThis as { __frontendTestConfigDir?: string }).__frontendTestConfigDir
   if (tempTestConfigDir && fs.existsSync(tempTestConfigDir)) {
     try {
       fs.rmSync(tempTestConfigDir, { recursive: true, force: true })

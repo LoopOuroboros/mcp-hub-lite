@@ -3,6 +3,10 @@
  * 前后端共享的 WebSocket 协议类型定义
  */
 
+import type { Tool } from '@shared-models/tool.model';
+import type { Resource } from '@shared-models/resource.model';
+import type { LogLevel } from '@shared-types/common.types.js';
+
 // WebSocket 事件类型常量
 export const WEB_SOCKET_EVENT_TYPES = {
   SERVER_STATUS: 'server-status',
@@ -76,7 +80,7 @@ export interface LogEvent {
   data: {
     serverId: string;
     logs: Array<{
-      level: 'info' | 'warn' | 'error' | 'debug';
+      level: LogLevel;
       message: string;
       timestamp: number;
     }>;
@@ -87,7 +91,7 @@ export interface ToolsEvent {
   type: 'tools';
   data: {
     serverId: string;
-    tools: unknown[];
+    tools: Tool[];
   };
 }
 
@@ -95,7 +99,7 @@ export interface ResourcesEvent {
   type: 'resources';
   data: {
     serverId: string;
-    resources: unknown[];
+    resources: Resource[];
   };
 }
 

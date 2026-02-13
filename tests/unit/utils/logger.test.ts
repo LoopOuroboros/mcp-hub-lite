@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { Logger, LogLevel, logWithColor } from '@utils/logger.js';
+import { Logger, logWithColor } from '@utils/logger.js';
+import type { LogLevel } from '@shared-types/common.types.js';
+import type { WriteStream } from 'node:fs';
+import type { LoggerWithPrivateMethods } from '@tests/types/logger-test-helpers.js';
 
 describe('Logger', () => {
   let logger: Logger;
@@ -50,51 +53,66 @@ describe('Logger', () => {
     logger.setLevel('debug' as LogLevel);
 
     // 验证级别设置（通过内部方法模拟）
-    const shouldLogSpy = vi.spyOn(logger as any, 'shouldLog');
-    (logger as any).shouldLog('debug');
+    // @ts-expect-error - accessing private method for testing
+    const shouldLogSpy = vi.spyOn(logger, 'shouldLog');
+    // @ts-expect-error - accessing private method for testing
+    logger.shouldLog('debug');
     expect(shouldLogSpy).toHaveBeenCalledWith('debug');
   });
 
   it('should format timestamp correctly', () => {
     logger = new Logger();
     const testDate = new Date('2025-12-01T10:30:45.123Z');
-    const formatted = (logger as any).formatTimestamp(testDate);
+    // @ts-expect-error - accessing private method for testing
+    const formatted = logger.formatTimestamp(testDate);
     // 验证格式正确，但不硬编码具体时间值（因为时区可能影响）
     expect(formatted).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
   });
 
   it('should format log level correctly', () => {
     logger = new Logger();
-    expect((logger as any).formatLogLevel('debug')).toBe('DBG');
-    expect((logger as any).formatLogLevel('info')).toBe('INF');
-    expect((logger as any).formatLogLevel('warn')).toBe('WRN');
-    expect((logger as any).formatLogLevel('error')).toBe('ERR');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatLogLevel('debug')).toBe('DBG');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatLogLevel('info')).toBe('INF');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatLogLevel('warn')).toBe('WRN');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatLogLevel('error')).toBe('ERR');
   });
 
   it('should format PID correctly', () => {
     logger = new Logger();
-    expect((logger as any).formatPid(123)).toBe('PID:     123');
-    expect((logger as any).formatPid(123456)).toBe('PID:  123456');
-    expect((logger as any).formatPid(123456789)).toBe('PID:12345678'); // 测试超长PID截断
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatPid(123)).toBe('PID:     123');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatPid(123456)).toBe('PID:  123456');
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.formatPid(123456789)).toBe('PID:12345678'); // 测试超长PID截断
   });
 
   it('should determine if message should be logged based on level', () => {
     logger = new Logger('info');
 
     // info级别应该记录info、warn、error
-    expect((logger as any).shouldLog('info')).toBe(true);
-    expect((logger as any).shouldLog('warn')).toBe(true);
-    expect((logger as any).shouldLog('error')).toBe(true);
-    expect((logger as any).shouldLog('debug')).toBe(false);
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.shouldLog('info')).toBe(true);
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.shouldLog('warn')).toBe(true);
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.shouldLog('error')).toBe(true);
+    // @ts-expect-error - accessing private method for testing
+    expect(logger.shouldLog('debug')).toBe(false);
 
     // debug级别应该记录所有
     logger.setLevel('debug' as LogLevel);
-    expect((logger as any).shouldLog('debug')).toBe(true);
+    expect((logger as unknown as LoggerWithPrivateMethods).shouldLog('debug')).toBe(true);
   });
 
   it('should create colored log message with server name', () => {
     logger = new Logger();
-    const message = (logger as any).createColoredLogMessage('info', 'test message', {
+    // @ts-expect-error - accessing private method for testing
+    const message = logger.createColoredLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server'
     });
@@ -109,7 +127,8 @@ describe('Logger', () => {
 
   it('should create plain log message without server name', () => {
     logger = new Logger();
-    const message = (logger as any).createLogMessage('info', 'test message', {
+    // @ts-expect-error - accessing private method for testing
+    const message = logger.createLogMessage('info', 'test message', {
       pid: 123
     });
 
@@ -127,13 +146,15 @@ describe('Logger', () => {
     // 测试Error对象
     const error = new Error('Test error');
     error.stack = 'Error: Test error\n    at test (test.js:1:1)\n    at another (test.js:2:2)';
-    const formatted = (logger as any).formatError(error);
+    // @ts-expect-error - accessing private method for testing
+    const formatted = logger.formatError(error);
     expect(formatted).toContain('Test error');
     expect(formatted).toContain('at test (test.js:1:1)');
 
     // 测试非Error对象
     const stringError = 'string error';
-    const formattedString = (logger as any).formatError(stringError);
+    // @ts-expect-error - accessing private method for testing
+    const formattedString = logger.formatError(stringError);
     expect(formattedString).toBe('string error');
   });
 
@@ -145,16 +166,32 @@ describe('Logger', () => {
       process.env.DEV_LOG_FILE = 'true';
 
       // Mock fs和path模块以避免文件系统操作
-      const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation((() => {}) as any);
+      const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
       vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
       const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
-        return { write: vi.fn(), end: vi.fn() } as any;
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          bytesWritten: 0,
+          path: '',
+          pending: false,
+          writable: true,
+          writableEnded: false,
+          writableFinished: false,
+          writableHighWaterMark: 16384,
+          writableLength: 0,
+          writableObjectMode: false,
+          writableCorked: 0,
+          destroyed: false,
+          // 添加其他必要的属性...
+        } as unknown as WriteStream;
       });
 
       logger = new Logger();
 
-      // 验证 logFileStream 被正确设置
-      expect((logger as any).logFileStream).toBeDefined();
+      // @ts-expect-error - accessing private property for testing
+      expect(logger.logFileStream).toBeDefined();
 
       // 验证文件系统操作被调用
       expect(mkdirSyncSpy).toHaveBeenCalled();
@@ -232,7 +269,7 @@ describe('Logger', () => {
     logger = new Logger();
 
     // 测试彩色日志消息
-    const coloredMessage = (logger as any).createColoredLogMessage('info', 'test message', {
+    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server',
       traceId: '1234567890abcdef1234567890abcdef',
@@ -243,7 +280,7 @@ describe('Logger', () => {
     expect(coloredMessage).toContain('[SID:abcdef1234567890]');
 
     // 测试纯文本日志消息
-    const plainMessage = (logger as any).createLogMessage('info', 'test message', {
+    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server',
       traceId: '1234567890abcdef1234567890abcdef',
@@ -258,7 +295,7 @@ describe('Logger', () => {
     logger = new Logger();
 
     // 测试彩色日志消息
-    const coloredMessage = (logger as any).createColoredLogMessage('info', 'test message', {
+    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server'
     });
@@ -267,7 +304,7 @@ describe('Logger', () => {
     expect(coloredMessage).not.toContain('spanId');
 
     // 测试纯文本日志消息
-    const plainMessage = (logger as any).createLogMessage('info', 'test message', {
+    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server'
     });

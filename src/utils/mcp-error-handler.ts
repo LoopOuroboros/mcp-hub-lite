@@ -12,13 +12,23 @@ export interface MCPError {
   };
 }
 
+// JSON-RPC 2.0 响应接口
+interface JsonRpcResponse {
+  jsonrpc: string;
+  id?: string | number | null;
+  result?: unknown;
+  error?: unknown;
+}
+
 // 辅助函数：判断是否为CMDError
-function isCMDError(error: any): error is CMDError {
+function isCMDError(error: unknown): error is CMDError {
   return typeof error === 'object' &&
          error !== null &&
-         typeof error.code === 'number' &&
-         typeof error.message === 'string' &&
-         error.hasOwnProperty('data');
+         'code' in error &&
+         'message' in error &&
+         'data' in error &&
+         typeof (error as { code: unknown }).code === 'number' &&
+         typeof (error as { message: unknown }).message === 'string';
 }
 
 // MCP Hub Lite的MCP协议错误码映射 (符合MCP标准)
@@ -118,27 +128,45 @@ export class MCPErrorHandler {
 // MCP请求错误处理中间件
 export class MCPErrorsMiddleware {
   // 处理来自后端MCP服务器的错误响应
-  static handleBackendMCPErrors(response: any): any {
-    if (response.error) {
+  static handleBackendMCPErrors(response: unknown): unknown {
+    if (typeof response === 'object' && response !== null && 'error' in response) {
+      const rpcResponse = response as JsonRpcResponse;
       // 如果已经是标准MCP错误格式，直接返回
-      if (this.isStandardMCPError(response.error)) {
+      if (this.isStandardMCPError(rpcResponse.error)) {
         return response;
+      }
+
+      // 确保 error 是 Error 或 CMDError 类型
+      let errorToConvert: Error | CMDError;
+      if (rpcResponse.error instanceof Error) {
+        errorToConvert = rpcResponse.error;
+      } else if (isCMDError(rpcResponse.error)) {
+        errorToConvert = rpcResponse.error;
+      } else {
+        // 如果都不是，创建一个通用错误
+        errorToConvert = new Error(typeof rpcResponse.error === 'object' && rpcResponse.error !== null
+          ? (rpcResponse.error as { message?: string }).message || 'Unknown error'
+          : String(rpcResponse.error));
       }
 
       // 否则将非标准错误转换为标准格式
       return {
         jsonrpc: "2.0",
-        error: MCPErrorHandler.toMCPError(response.error),
-        id: response.id
+        error: MCPErrorHandler.toMCPError(errorToConvert),
+        id: rpcResponse.id
       };
     }
 
     return response;
   }
 
-  private static isStandardMCPError(error: any): error is MCPError {
-    return typeof error.code === 'number' &&
-           typeof error.message === 'string' &&
-           (error.data === undefined || typeof error.data !== 'undefined');
+  private static isStandardMCPError(error: unknown): error is MCPError {
+    return typeof error === 'object' &&
+           error !== null &&
+           'code' in error &&
+           'message' in error &&
+           typeof (error as { code: unknown }).code === 'number' &&
+           typeof (error as { message: unknown }).message === 'string' &&
+           ('data' in error ? error.data !== undefined : true);
   }
 }

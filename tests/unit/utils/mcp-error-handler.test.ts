@@ -55,10 +55,10 @@ describe('MCPErrorHandler', () => {
     });
 
     it('should handle unknown error type', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const unknownError = 'unknown error string' as any;
+      // Test with a string that is not an Error or CMDError
+      const unknownError = 'unknown error string' as unknown;
 
-      const mcpError = MCPErrorHandler.toMCPError(unknownError);
+      const mcpError = MCPErrorHandler.toMCPError(unknownError as Error | CMDError);
 
       expect(mcpError).toMatchObject({
         code: -32001,
@@ -123,7 +123,7 @@ describe('MCPErrorHandler', () => {
         error: new Error('Backend error')
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response);
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
 
       expect(result.jsonrpc).toBe('2.0');
       expect(result.id).toBe('test-id');
@@ -145,7 +145,7 @@ describe('MCPErrorHandler', () => {
         error: standardMCPError
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response);
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
 
       expect(result).toBe(response); // should be the same object
     });
@@ -157,7 +157,7 @@ describe('MCPErrorHandler', () => {
         result: { success: true }
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response);
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
 
       expect(result).toBe(response); // should be the same object
     });

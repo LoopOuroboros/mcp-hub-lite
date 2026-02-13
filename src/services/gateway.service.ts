@@ -10,7 +10,7 @@ import { SearchOptions } from "./search/types.js";
 import { hubToolsService } from "./hub-tools.service.js";
 import { getClientCwd, getClientContext } from "@utils/request-context.js";
 import { clientTrackerService } from "./client-tracker.service.js";
-import { McpToolSchema } from "@models/tool.model.js";
+import type { JsonSchema } from "@shared-models/tool.model.js";
 import {
   SYSTEM_TOOL_NAMES,
   SystemToolName,
@@ -348,7 +348,20 @@ export class GatewayService {
         }
 
         const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
-        return result;
+        // Wrap the result in a valid CallToolResult structure
+        if (typeof result === 'object' && result !== null) {
+          return {
+            content: [],
+            ...result
+          };
+        } else {
+          return {
+            content: [{
+              type: 'text',
+              text: String(result)
+            }]
+          };
+        }
       } catch (error: unknown) {
         logger.error(`Call tool error:`, error);
         if (error instanceof McpError) {
@@ -457,7 +470,7 @@ export class GatewayService {
             case LIST_SERVERS_TOOL:
               result = await hubToolsService.listServers();
               break;
-            case FIND_SERVERS_TOOL:
+            case FIND_SERVERS_TOOL: {
               const findServersArgs = toolArgs as unknown as FindServersParams;
               result = await hubToolsService.findServers(
                 findServersArgs.pattern,
@@ -465,14 +478,16 @@ export class GatewayService {
                 findServersArgs.caseSensitive
               );
               break;
-            case LIST_ALL_TOOLS_IN_SERVER_TOOL:
+            }
+            case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
               const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
               result = await hubToolsService.listAllToolsInServer(
                 listAllToolsArgs.serverName,
                 listAllToolsArgs.requestOptions
               );
               break;
-            case FIND_TOOLS_IN_SERVER_TOOL:
+            }
+            case FIND_TOOLS_IN_SERVER_TOOL: {
               const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
               result = await hubToolsService.findToolsInServer(
                 findToolsInServerArgs.serverName,
@@ -482,7 +497,8 @@ export class GatewayService {
                 findToolsInServerArgs.requestOptions
               );
               break;
-            case GET_TOOL_TOOL:
+            }
+            case GET_TOOL_TOOL: {
               const getToolArgs = toolArgs as unknown as GetToolParams;
               result = await hubToolsService.getTool(
                 getToolArgs.serverName,
@@ -490,7 +506,8 @@ export class GatewayService {
                 getToolArgs.requestOptions
               );
               break;
-            case CALL_TOOL_TOOL:
+            }
+            case CALL_TOOL_TOOL: {
               const callToolArgs = toolArgs as unknown as CallToolParams;
               let serverName = callToolArgs.serverName;
               if (!serverName || serverName === 'undefined') {
@@ -512,7 +529,8 @@ export class GatewayService {
                 callToolArgs.requestOptions
               );
               break;
-            case FIND_TOOLS_TOOL:
+            }
+            case FIND_TOOLS_TOOL: {
               const findToolsArgs = toolArgs as unknown as FindToolsParams;
               result = await hubToolsService.findTools(
                 findToolsArgs.pattern,
@@ -520,6 +538,7 @@ export class GatewayService {
                 findToolsArgs.caseSensitive
               );
               break;
+            }
           }
 
           logger.info(`[GATEWAY] System tool SUCCESS: ${toolName}`);
@@ -571,7 +590,21 @@ export class GatewayService {
 
         const duration = Date.now() - startTime;
         logger.info(`[GATEWAY] Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`);
-        return result;
+
+        // Wrap the result in a valid CallToolResult structure
+        if (typeof result === 'object' && result !== null) {
+          return {
+            content: [],
+            ...result
+          };
+        } else {
+          return {
+            content: [{
+              type: 'text',
+              text: String(result)
+            }]
+          };
+        }
       } catch (error: unknown) {
          const duration = Date.now() - startTime;
          if (error instanceof Error) {
@@ -607,7 +640,7 @@ export class GatewayService {
   public generateGatewayToolsList(toolMap: Map<string, { serverId: string; realToolName: string }>): Array<{
     name: string;
     description: string;
-    inputSchema?: McpToolSchema;
+    inputSchema?: JsonSchema;
     annotations?: {
       title?: string;
       readOnlyHint?: boolean;
@@ -794,7 +827,7 @@ export class GatewayService {
     return withSpan<void>(
       'mcp.gateway.start',
       createMcpSpanOptions('gateway_start', 'gateway'),
-      async (_span) => {
+      async () => {
         this.transport = new StdioServerTransport();
         await this.server.connect(this.transport);
         logger.info("MCP Gateway started on stdio");

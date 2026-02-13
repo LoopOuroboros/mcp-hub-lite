@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
+import type { Resource } from '@shared-models/resource.model.js';
 
 export async function webResourceRoutes(fastify: FastifyInstance) {
   // GET /web/servers/:name/resources/read
@@ -43,8 +44,9 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
       const result = await mcpConnectionManager.readResource(serverId, uri);
       return result;
 
-    } catch (error: any) {
-      return reply.code(500).send({ error: error.message || 'Failed to read resource' });
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      return reply.code(500).send({ error: errorObj.message || 'Failed to read resource' });
     }
     });
 
@@ -55,7 +57,7 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
       // Add Hub System resources
       const systemResources = await hubToolsService.listResources();
       
-      const resources: Record<string, any[]> = {};
+      const resources: Record<string, Resource[]> = {};
       
       // 1. Add Hub System resources first if they exist
       if (systemResources && systemResources.length > 0) {
@@ -70,8 +72,9 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
       }
 
       return { resources };
-    } catch (error: any) {
-      return reply.code(500).send({ error: error.message || 'Failed to fetch resources' });
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      return reply.code(500).send({ error: errorObj.message || 'Failed to fetch resources' });
     }
   });
 }

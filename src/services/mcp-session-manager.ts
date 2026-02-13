@@ -50,7 +50,7 @@ export class McpSessionManager {
                 try {
                     const messageStr = JSON.stringify(message);
                     logger.debug(`MCP message received: ${messageStr}`);
-                } catch (e) {
+                } catch {
                     logger.debug(`MCP message received: [Unserializable]`);
                 }
             };

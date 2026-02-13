@@ -4,20 +4,22 @@
  * 支持服务器状态变化、日志更新、工具更新等事件的传播
  */
 
+import type { EventData } from '@models/event.model.js';
+
 export interface EventBusEvent {
   type: string;
-  data: any;
+  data: EventData;
 }
 
 export class EventBusService {
-  private listeners = new Map<string, Set<(data: any) => void>>();
+  private listeners = new Map<string, Set<(data: EventData) => void>>();
 
   /**
    * 发布事件
    * @param eventType 事件类型
    * @param data 事件数据
    */
-  publish(eventType: string, data: any): void {
+  publish(eventType: string, data: EventData): void {
     const listeners = this.listeners.get(eventType);
     if (listeners) {
       listeners.forEach(listener => {
@@ -36,7 +38,7 @@ export class EventBusService {
    * @param listener 事件监听器
    * @returns 取消订阅函数
    */
-  subscribe(eventType: string, listener: (data: any) => void): () => void {
+  subscribe(eventType: string, listener: (data: EventData) => void): () => void {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, new Set());
     }
@@ -51,7 +53,7 @@ export class EventBusService {
    * @param eventType 事件类型
    * @param listener 事件监听器
    */
-  private unsubscribe(eventType: string, listener: (data: any) => void): void {
+  private unsubscribe(eventType: string, listener: (data: EventData) => void): void {
     const listeners = this.listeners.get(eventType);
     if (listeners) {
       listeners.delete(listener);

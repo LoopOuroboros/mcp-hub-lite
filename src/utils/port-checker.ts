@@ -29,7 +29,7 @@ export async function checkPort(port: number): Promise<PortCheckResult> {
     } else {
       return await checkPortUnix(port);
     }
-  } catch (error) {
+  } catch {
     // 检查失败时返回未占用（安全默认值）
     return { inUse: false };
   }
@@ -74,7 +74,7 @@ async function checkPortWindows(port: number): Promise<PortCheckResult> {
     }
 
     return { inUse: false };
-  } catch (error) {
+  } catch {
     return { inUse: false };
   }
 }
@@ -106,7 +106,7 @@ async function checkPortUnix(port: number): Promise<PortCheckResult> {
       commandLine: processInfo.commandLine,
       isSelfProject
     };
-  } catch (error) {
+  } catch {
     return { inUse: false };
   }
 }
@@ -134,7 +134,7 @@ async function getProcessInfoWindows(pid: number): Promise<{ processName: string
     }
 
     return { processName, commandLine };
-  } catch (error) {
+  } catch {
     return { processName: 'Unknown', commandLine: '' };
   }
 }
@@ -152,7 +152,7 @@ async function getProcessInfoUnix(pid: number): Promise<{ processName: string; c
     const commandLine = stdout.trim();
 
     return { processName, commandLine };
-  } catch (error) {
+  } catch {
     return { processName: 'Unknown', commandLine: '' };
   }
 }

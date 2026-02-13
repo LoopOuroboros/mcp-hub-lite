@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SearchCoreService } from '@services/search/search-core.service.js';
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 import type { MockInstance } from 'vitest';
 
 // 创建模拟工具数据
-const mockTools: McpTool[] = [
+const mockTools: Tool[] = [
   {
     name: 'MySQL Query',
     description: 'Execute MySQL queries',
@@ -31,7 +31,7 @@ describe('SearchCoreService', () => {
 
     // 模拟 mcpConnectionManager.getAllTools()
     mockGetAllTools = vi.spyOn(
-      searchService as unknown as { getToolsWithCache: () => Promise<McpTool[]> }, 'getToolsWithCache'
+      searchService as unknown as { getToolsWithCache: () => Promise<Tool[]> }, 'getToolsWithCache'
     ).mockImplementation(async () => mockTools);
   });
 
@@ -84,7 +84,7 @@ describe('SearchCoreService', () => {
   describe('search performance', () => {
     it('should handle large tool lists efficiently', async () => {
       // 创建包含200个工具的模拟数据
-      const largeMockTools: McpTool[] = [];
+      const largeMockTools: Tool[] = [];
       for (let i = 1; i <= 200; i++) {
         largeMockTools.push({
           name: `Tool ${i}`,

@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'async_hooks';
-import type { ClientContext } from 'shared/types/client.types.js';
+import type { ClientContext } from '@shared-types/client.types';
 
 export const requestContext = new AsyncLocalStorage<ClientContext>();
 

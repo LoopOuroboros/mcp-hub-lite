@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { ConfigManager, McpServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
+import { ConfigManager, ServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
 
 // 重置模块缓存，确保每次导入都是新的
 vi.resetModules();
@@ -39,7 +39,8 @@ describe('ConfigManager', () => {
 
   afterEach(() => {
     // 强制垃圾回收，确保配置管理器实例被销毁
-    configManager = null as any;
+    // 由于测试中需要频繁创建和销毁实例，这里不设置为 null
+    // 而是让每个测试用例重新创建新的实例
 
     // 恢复原始环境变量
     process.env = { ...originalEnv };
@@ -326,7 +327,7 @@ describe('ConfigManager', () => {
     it('should validate server config when adding', async () => {
       const invalidServerConfig = {
         command: 'test-command',
-        type: 'invalid-type' as unknown as McpServerConfig['type'] // 无效的类型
+        type: 'invalid-type' as unknown as ServerConfig['type'] // 无效的类型
       };
 
       await expect(configManager.addServer('test-server', invalidServerConfig))

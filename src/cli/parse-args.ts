@@ -3,6 +3,8 @@
  * 提供参数验证和解析函数
  */
 
+import type { LogLevel } from '@shared-types/common.types.js';
+
 export interface CliOptions {
   port?: number;
   host?: string;
@@ -46,13 +48,13 @@ export function validateConfigPath(path: string): string {
 /**
  * 验证日志级别
  */
-export function validateLogLevel(level: string): 'error' | 'warn' | 'info' | 'debug' {
-  const validLevels = ['error', 'warn', 'info', 'debug'];
-  const lowerLevel = level.toLowerCase();
+export function validateLogLevel(level: string): LogLevel {
+  const validLevels: LogLevel[] = ['error', 'warn', 'info', 'debug'];
+  const lowerLevel = level.toLowerCase() as LogLevel;
   if (!validLevels.includes(lowerLevel)) {
     throw new Error(`Invalid log level: ${level}. Must be one of: ${validLevels.join(', ')}`);
   }
-  return lowerLevel as 'error' | 'warn' | 'info' | 'debug';
+  return lowerLevel;
 }
 
 /**

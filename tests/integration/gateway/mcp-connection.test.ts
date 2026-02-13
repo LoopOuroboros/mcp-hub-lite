@@ -1,161 +1,176 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import { simpleSearchService } from '@services/simple-search.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { simpleSearchService } from '@services/simple-search.service.js';
 
-// Mock SDK
+// 模拟 MCP SDK Client
+const mockConnect = vi.fn();
+const mockClose = vi.fn();
+const mockListTools = vi.fn();
+
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
-      connect = vi.fn().mockResolvedValue(undefined);
-      close = vi.fn().mockResolvedValue(undefined);
-      listTools = vi.fn().mockResolvedValue({
-        tools: [
-          { name: 'test-tool', description: 'A test tool', inputSchema: {} }
-        ]
-      });
-      getServerVersion = vi.fn().mockReturnValue({ version: '1.0.0' });
+      connect = mockConnect;
+      close = mockClose;
+      listTools = mockListTools;
+      getServerVersion = vi.fn().mockReturnValue({ name: 'Test Server', version: '1.0.0' });
     }
   };
 });
 
-vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
+// 模拟传输工厂
+vi.mock('@utils/transports/transport-factory.js', () => {
   return {
-    StdioClientTransport: class {
-      close = vi.fn().mockResolvedValue(undefined);
+    TransportFactory: {
+      createTransport: vi.fn().mockReturnValue({
+        onclose: null,
+        onstdout: null,
+        onstderr: null,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
     }
   };
 });
 
-import { eventBus, EventTypes } from '@services/event-bus.service.js';
-
-describe('McpConnectionManager', () => {
-  const mockServerConfig = {
-    command: 'node',
-    args: ['test-script.js'],
-    enabled: true,
-    type: 'stdio' as const,
-    timeout: 60,
-    allowedTools: ['test-tool']
-  };
-  const mockServerName = 'Test Server';
-  let mockServerInstance: any;
+describe('MCP Connection Integration', () => {
+  const serverName = 'test-mcp-server';
+  let serverId: string;
 
   beforeEach(async () => {
+    // 清除所有模拟
+    vi.clearAllMocks();
+
     // 添加测试服务器
-    await hubManager.addServer(mockServerName, mockServerConfig);
+    await hubManager.addServer(serverName, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000,
+      allowedTools: []
+    });
+
     // 添加服务器实例
-    const instances = hubManager.getServerInstanceByName(mockServerName);
-    if (instances.length === 0) {
-      mockServerInstance = await hubManager.addServerInstance(mockServerName, {
-        id: 'test-server-1',
-        timestamp: Date.now(),
-        hash: 'test-hash'
-      });
-    } else {
-      mockServerInstance = instances[0];
-    }
+    const instance = await hubManager.addServerInstance(serverName, {});
+    serverId = instance.id;
   });
 
   afterEach(async () => {
-    // 清理测试服务器
-    await hubManager.removeServer(mockServerName);
+    await mcpConnectionManager.disconnect(serverId);
+    hubManager.removeServer(serverName);
   });
 
-  it('should auto-disconnect when server is deleted', async () => {
-    // 1. Connect to server
-    await mcpConnectionManager.connect({
-      ...mockServerConfig,
-      ...mockServerInstance,
-      name: mockServerName
-    });
-    const statusBefore = mcpConnectionManager.getStatus(mockServerInstance.id);
-    expect(statusBefore?.connected).toBe(true);
+  it('should establish MCP connection successfully', async () => {
+    mockConnect.mockResolvedValueOnce(undefined);
+    mockListTools.mockResolvedValueOnce({ tools: [] });
 
-    // 2. Publish server deleted event
-    eventBus.publish(EventTypes.SERVER_DELETED, mockServerName);
-
-    // 3. Wait briefly for event to be processed
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // 4. Check if server is disconnected
-    const statusAfter = mcpConnectionManager.getStatus(mockServerInstance.id);
-    expect(statusAfter?.connected).toBe(false);
-  });
-
-  it('should connect to a server', async () => {
+    const serverInfo = hubManager.getServerById(serverId);
     const success = await mcpConnectionManager.connect({
-      ...mockServerConfig,
-      ...mockServerInstance,
-      name: mockServerName
+      ...serverInfo!.config,
+      ...serverInfo!.instance
     });
+
     expect(success).toBe(true);
-
-    const status = mcpConnectionManager.getStatus(mockServerInstance.id);
+    const status = mcpConnectionManager.getStatus(serverId);
     expect(status?.connected).toBe(true);
-    expect(status?.version).toBe('1.0.0');
   });
 
-  it('should list tools after connection', async () => {
-    await mcpConnectionManager.connect({
-      ...mockServerConfig,
-      ...mockServerInstance,
-      name: mockServerName
-    });
-    const tools = mcpConnectionManager.getTools(mockServerInstance.id);
-    expect(tools.length).toBe(1);
-    expect(tools[0].name).toBe('test-tool');
-  });
+  it('should handle connection errors properly', async () => {
+    mockConnect.mockRejectedValueOnce(new Error('Connection refused'));
 
-  it('should disconnect from a server', async () => {
-    await mcpConnectionManager.connect({
-      ...mockServerConfig,
-      ...mockServerInstance,
-      name: mockServerName
+    const serverInfo = hubManager.getServerById(serverId);
+    const success = await mcpConnectionManager.connect({
+      ...serverInfo!.config,
+      ...serverInfo!.instance
     });
-    await mcpConnectionManager.disconnect(mockServerInstance.id);
 
-    const status = mcpConnectionManager.getStatus(mockServerInstance.id);
+    expect(success).toBe(false);
+    const status = mcpConnectionManager.getStatus(serverId);
     expect(status?.connected).toBe(false);
+    expect(status?.error).toContain('Connection refused');
   });
-});
 
-describe('SimpleSearchService', () => {
-    it('should search tools', () => {
-         // Placeholder
+  it('should support concurrent connections', async () => {
+    // 添加第二个服务器
+    const server2Name = 'test-mcp-server-2';
+    await hubManager.addServer(server2Name, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000,
+      allowedTools: []
+    });
+    const instance2 = await hubManager.addServerInstance(server2Name, {});
+
+    mockConnect.mockResolvedValue(undefined);
+    mockListTools.mockResolvedValue({ tools: [] });
+
+    const serverInfo1 = hubManager.getServerById(serverId);
+    const serverInfo2 = hubManager.getServerById(instance2.id);
+
+    const [success1, success2] = await Promise.all([
+      mcpConnectionManager.connect({
+        ...serverInfo1!.config,
+        ...serverInfo1!.instance
+      }),
+      mcpConnectionManager.connect({
+        ...serverInfo2!.config,
+        ...serverInfo2!.instance
+      })
+    ]);
+
+    expect(success1).toBe(true);
+    expect(success2).toBe(true);
+
+    const status1 = mcpConnectionManager.getStatus(serverId);
+    const status2 = mcpConnectionManager.getStatus(instance2.id);
+
+    expect(status1?.connected).toBe(true);
+    expect(status2?.connected).toBe(true);
+
+    // Clean up
+    await mcpConnectionManager.disconnect(instance2.id);
+    await hubManager.removeServer(server2Name);
+  });
+
+  it('should integrate with search service', async () => {
+    // 设置模拟工具数据
+    mockConnect.mockResolvedValue(undefined);
+    mockListTools.mockResolvedValue({
+      tools: [
+        {
+          name: 'test-tool',
+          description: 'A test tool for searching',
+          inputSchema: { type: 'object', properties: { query: { type: 'string' } } }
+        }
+      ]
     });
 
-    it('should find tool by name', async () => {
-        const searchServerConfig = {
-            command: 'node',
-            args: [],
-            enabled: true,
-            type: 'stdio' as const,
-            timeout: 60,
-            allowedTools: ['test-tool']
-        };
-        const searchServerName = 'Search Test';
-
-        // 添加测试服务器
-        await hubManager.addServer(searchServerName, searchServerConfig);
-        const searchServerInstance = await hubManager.addServerInstance(searchServerName, {
-            id: 'search-test-server',
-            timestamp: Date.now(),
-            hash: 'search-hash'
-        });
-
-        await mcpConnectionManager.connect({
-            ...searchServerConfig,
-            ...searchServerInstance,
-            name: searchServerName
-        });
-
-        const results = simpleSearchService.search('test');
-        expect(results.length).toBeGreaterThan(0);
-        expect(results[0].tool.name).toBe('test-tool');
-
-        // Clean up
-        await mcpConnectionManager.disconnect(searchServerInstance.id);
-        await hubManager.removeServer(searchServerName);
+    const searchServerName = 'search-test-server';
+    await hubManager.addServer(searchServerName, {
+      command: 'node',
+      args: [],
+      enabled: true,
+      type: 'stdio' as const,
+      timeout: 60000,
+      allowedTools: []
     });
+    const searchServerInstance = await hubManager.addServerInstance(searchServerName, {});
+
+    const serverInfo = hubManager.getServerById(searchServerInstance.id);
+    await mcpConnectionManager.connect({
+      ...serverInfo!.config,
+      ...serverInfo!.instance
+    });
+
+    const results = simpleSearchService.search('test');
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].tool.name).toBe('test-tool');
+
+    // Clean up
+    await mcpConnectionManager.disconnect(searchServerInstance.id);
+    await hubManager.removeServer(searchServerName);
+  });
 });

@@ -23,25 +23,28 @@ describe('HubToolsService', () => {
         {
           name: 'Test Server 1',
           config: {
-            type: 'stdio',
+            type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'Test Server 2',
           config: {
-            type: 'sse',
+            type: 'sse' as const,
             url: 'http://example.com',
+            args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         }
       ];
 
-      (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
       const servers = await hubToolsService.listServers();
@@ -59,34 +62,39 @@ describe('HubToolsService', () => {
         {
           name: 'Test Server 1',
           config: {
-            type: 'stdio',
+            type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'Production Server',
           config: {
-            type: 'sse',
+            type: 'sse' as const,
             url: 'http://example.com',
+            args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'Development Server',
           config: {
-            type: 'http',
+            type: 'http' as const,
             url: 'http://dev.example.com',
+            args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         }
       ];
 
-      (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('server', 'name', false);
@@ -102,25 +110,28 @@ describe('HubToolsService', () => {
         {
           name: 'Test Server 1',
           config: {
-            type: 'stdio',
+            type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'production server',
           config: {
-            type: 'sse',
+            type: 'sse' as const,
             url: 'http://example.com',
+            args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         }
       ];
 
-      (hubManager.getAllServers as any).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
       const results = await hubToolsService.findServers('Server', 'name', true);
@@ -140,26 +151,29 @@ describe('HubToolsService', () => {
         {
           name: 'readFile',
           description: 'Read file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+          inputSchema: { type: 'object' },
+          serverName: 'Test Server'
         },
         {
           name: 'writeFile',
           description: 'Write file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] }
+          inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] },
+          serverName: 'Test Server'
         }
       ];
 
       // getServerInstanceByName should return ServerInstanceConfig objects (with id, timestamp, hash)
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.listAllToolsInServer(serverName);
@@ -177,8 +191,8 @@ describe('HubToolsService', () => {
     it('should throw error if server not found', async () => {
       // Arrange
       const serverName = 'Non-existent Server';
-      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
-      (hubManager.getServerByName as any).mockReturnValue(undefined);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
 
       // Act & Assert
       await expect(hubToolsService.listAllToolsInServer(serverName)).rejects.toThrow(
@@ -196,30 +210,34 @@ describe('HubToolsService', () => {
         {
           name: 'readFile',
           description: 'Read file contents',
-          inputSchema: { type: 'object' }
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Test Server'
         },
         {
           name: 'writeFile',
           description: 'Write file contents',
-          inputSchema: { type: 'object' }
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Test Server'
         },
         {
           name: 'listFiles',
           description: 'List files in directory',
-          inputSchema: { type: 'object' }
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Test Server'
         }
       ];
 
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.findToolsInServer(serverName, 'File', 'both', false);
@@ -231,17 +249,17 @@ describe('HubToolsService', () => {
           {
             name: 'readFile',
             description: 'Read file contents',
-            inputSchema: { type: 'object' }
+            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
           },
           {
             name: 'writeFile',
             description: 'Write file contents',
-            inputSchema: { type: 'object' }
+            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
           },
           {
             name: 'listFiles',
             description: 'List files in directory',
-            inputSchema: { type: 'object' }
+            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
           }
         ]
       });
@@ -255,25 +273,26 @@ describe('HubToolsService', () => {
         {
           name: 'unmatchedTool',
           description: 'This should not match',
-          inputSchema: { type: 'object' }
+          inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
         },
         {
           name: 'anotherUnmatchedTool',
           description: 'This should also not match',
-          inputSchema: { type: 'object' }
+          inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
         }
       ];
 
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.findToolsInServer(serverName, 'File', 'both', false);
@@ -296,25 +315,28 @@ describe('HubToolsService', () => {
         {
           name: 'readFile',
           description: 'Read file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+          inputSchema: { type: 'object' },
+          serverName: 'Test Server'
         },
         {
           name: 'writeFile',
           description: 'Write file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] }
+          inputSchema: { type: 'object' },
+          serverName: 'Test Server'
         }
       ];
 
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const tool = await hubToolsService.getTool(serverName, toolName);
@@ -332,20 +354,22 @@ describe('HubToolsService', () => {
         {
           name: 'readFile',
           description: 'Read file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+          inputSchema: { type: 'object' },
+          serverName: 'Test Server'
         }
       ];
 
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const tool = await hubToolsService.getTool(serverName, toolName);
@@ -365,15 +389,16 @@ describe('HubToolsService', () => {
       const expectedResult = { content: 'Test file content' };
 
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue({
-        type: 'stdio',
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue({
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
-        allowedTools: []
+        allowedTools: [],
+        timeout: 30000
       });
-      (mcpConnectionManager.callTool as any).mockResolvedValue(expectedResult);
+      vi.mocked(mcpConnectionManager.callTool).mockResolvedValue(expectedResult);
 
       // Act
       const result = await hubToolsService.callTool(serverName, toolName, toolArgs);
@@ -386,8 +411,8 @@ describe('HubToolsService', () => {
     it('should throw error if server not found when calling tool', async () => {
       // Arrange
       const serverName = 'Non-existent Server';
-      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
-      (hubManager.getServerByName as any).mockReturnValue(undefined);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
 
       // Act & Assert
       await expect(hubToolsService.callTool(serverName, 'readFile', {})).rejects.toThrow(
@@ -403,20 +428,23 @@ describe('HubToolsService', () => {
         {
           name: 'Server 1',
           config: {
-            type: 'stdio',
+            type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'Server 2',
           config: {
-            type: 'sse',
+            type: 'sse' as const,
             url: 'http://example.com',
+            args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         }
       ];
@@ -429,20 +457,24 @@ describe('HubToolsService', () => {
       const mockTools = [
         {
           name: 'readFile',
-          description: 'Read file contents'
+          description: 'Read file contents',
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Server 1'
         },
         {
           name: 'writeFile',
-          description: 'Write file contents'
+          description: 'Write file contents',
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Server 1'
         }
       ];
 
-      (hubManager.getAllServers as any).mockReturnValue(mockServers);
-      (hubManager.getServerInstanceByName as any)
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstanceByName)
         .mockImplementation((name: string) => mockServerInstances[name]);
-      (hubManager.getServerByName as any)
+      vi.mocked(hubManager.getServerByName)
         .mockImplementation((name: string) => mockServers.find(s => s.name === name)?.config);
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const allTools = await hubToolsService.listAllTools();
@@ -497,7 +529,7 @@ describe('HubToolsService', () => {
   describe('listResources', () => {
     it('should return empty array when no servers are connected', async () => {
       // Arrange
-      (hubManager.getAllServers as any).mockReturnValue([]);
+      vi.mocked(hubManager.getAllServers).mockReturnValue([]);
 
       // Act
       const resources = await hubToolsService.listResources();
@@ -513,21 +545,22 @@ describe('HubToolsService', () => {
         {
           name: 'Test Server',
           config: {
-            type: 'stdio',
+            type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
-            allowedTools: []
+            allowedTools: [],
+            timeout: 30000
           }
         }
       ];
 
       const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
-      (hubManager.getAllServers as any).mockReturnValue(mockServers);
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue(mockServers[0].config);
-      (mcpConnectionManager.getTools as any).mockReturnValue([{ name: 'testTool', description: 'Test tool' }]);
-      (mcpConnectionManager.getResources as any).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([{ name: 'testTool', description: 'Test tool', serverName: 'test-server' }]);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
 
       // Act
       const resources = await hubToolsService.listResources();
@@ -567,7 +600,7 @@ describe('HubToolsService', () => {
 
     it('should throw error for non-existent server', async () => {
       // Arrange
-      (hubManager.getServerInstanceByName as any).mockReturnValue([]);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([]);
 
       // Act & Assert
       await expect(hubToolsService.readResource('hub://servers/NonExistent')).rejects.toThrow('Server not found or not connected');
@@ -578,18 +611,19 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
       const mockConfig = {
-        type: 'stdio',
+        type: 'stdio' as const,
         command: 'test-command',
         args: [],
         enabled: true,
         allowedTools: [],
+        timeout: 30000,
         tags: { env: 'test' }
       };
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (hubManager.getServerByName as any).mockReturnValue(mockConfig);
-      (mcpConnectionManager.getTools as any).mockReturnValue([{ name: 'testTool' }]);
-      (mcpConnectionManager.getResources as any).mockReturnValue([{ uri: 'test://resource' }]);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([{ name: 'testTool', serverName: 'test-server' }]);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}`);
@@ -612,10 +646,10 @@ describe('HubToolsService', () => {
       // Arrange
       const serverName = 'Test Server';
       const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
-      const mockTools = [{ name: 'testTool', description: 'Test tool' }];
+      const mockTools = [{ name: 'testTool', description: 'Test tool', serverName: 'test-server' }];
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (mcpConnectionManager.getTools as any).mockReturnValue(mockTools);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}/tools`);
@@ -630,8 +664,8 @@ describe('HubToolsService', () => {
       const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
       const mockResources = [{ uri: 'test://resource', name: 'Test Resource' }];
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
-      (mcpConnectionManager.getResources as any).mockReturnValue(mockResources);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue(mockResources);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}/resources`);
@@ -645,7 +679,7 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
 
-      (hubManager.getServerInstanceByName as any).mockReturnValue([mockInstance]);
+      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
 
       // Act & Assert
       await expect(hubToolsService.readResource(`hub://servers/${serverName}/unknown`)).rejects.toThrow('Unknown resource type');

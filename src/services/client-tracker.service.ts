@@ -1,6 +1,7 @@
-import type { ClientContext, ClientInfo, ClientRoot } from 'shared/types/client.types.js';
+import type { ClientContext, ClientInfo, ClientRoot } from '@shared-types/client.types';
 import { logger } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
+import { fileURLToPath } from 'node:url';
 
 class ClientTrackerService {
   private clients: Map<string, ClientInfo> = new Map();
@@ -50,11 +51,8 @@ class ClientTrackerService {
         const root = roots[0];
         if (root.uri.startsWith('file://')) {
              try {
-                 // Simple conversion for now, better to use url.fileURLToPath but avoiding extra imports if possible
-                 // Actually fileURLToPath is standard node:url
-                 const { fileURLToPath } = require('node:url');
                  client.cwd = fileURLToPath(root.uri);
-             } catch (e) {
+             } catch {
                  client.cwd = root.uri;
              }
         } else {

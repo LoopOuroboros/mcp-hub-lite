@@ -103,7 +103,7 @@ const resourceMimeType = computed(() => route.query.mimeType as string || 'appli
 
 const loading = ref(false)
 const error = ref<string | null>(null)
-const content = ref<any>(null)
+const content = ref<unknown>(null)
 const viewMode = ref('preview')
 
 const isImage = computed(() => resourceMimeType.value.startsWith('image/'))
@@ -111,15 +111,21 @@ const isImage = computed(() => resourceMimeType.value.startsWith('image/'))
 
 const contentText = computed(() => {
   if (!content.value) return ''
-  if (content.value.text) return content.value.text
-  if (content.value.blob) return '[Binary Data]' // Should handle base64 if needed
+  const contentVal = content.value as Record<string, unknown> | null;
+  if (contentVal && typeof contentVal === 'object' && 'text' in contentVal && typeof contentVal.text === 'string') {
+    return contentVal.text
+  }
+  if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal) {
+    return '[Binary Data]' // Should handle base64 if needed
+  }
   return ''
 })
 
 const imageSrc = computed(() => {
   if (!isImage.value || !content.value) return ''
-  if (content.value.blob) {
-    return `data:${resourceMimeType.value};base64,${content.value.blob}`
+  const contentVal = content.value as Record<string, unknown> | null;
+  if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal && typeof contentVal.blob === 'string') {
+    return `data:${resourceMimeType.value};base64,${contentVal.blob}`
   }
   // Fallback if we somehow got text for an image (unlikely but possible with some MCP servers)
   return ''
@@ -145,8 +151,8 @@ async function loadContent() {
   error.value = null
   try {
     content.value = await store.readResource(serverName.value, resourceUri.value)
-  } catch (e: any) {
-    error.value = e.message || 'Failed to load resource content'
+  } catch (e) {
+    error.value = (e as Error).message || 'Failed to load resource content'
   } finally {
     loading.value = false
   }
@@ -155,10 +161,11 @@ async function loadContent() {
 function downloadResource() {
   const element = document.createElement('a')
   const file = new Blob([contentText.value], {type: resourceMimeType.value})
-  
-  if (content.value.blob) {
+
+  const contentVal = content.value as Record<string, unknown> | null;
+  if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal && typeof contentVal.blob === 'string') {
       // Handle binary download
-      const byteCharacters = atob(content.value.blob);
+      const byteCharacters = atob(contentVal.blob);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);

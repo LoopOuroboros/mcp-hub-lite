@@ -5,7 +5,12 @@
 
 import { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
+import type { SystemConfig, ServerConfig } from '@config/config-manager.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
+
+interface ServersUpdateRequest {
+  servers: Record<string, ServerConfig>;
+}
 
 export async function configRoutes(fastify: FastifyInstance) {
   // GET /web/config - 获取当前配置
@@ -13,18 +18,19 @@ export async function configRoutes(fastify: FastifyInstance) {
     try {
       const config = configManager.getConfig();
       return reply.send(config);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as Error;
       return reply.code(500).send({
         error: 'Failed to get configuration',
-        message: error.message
+        message: errorObj.message
       });
     }
   });
 
   // PUT /web/config - 更新完整配置
-  fastify.put('/web/config', async (request, reply) => {
+  fastify.put<{ Body: SystemConfig }>('/web/config', async (request, reply) => {
     try {
-      const newConfig = request.body as any;
+      const newConfig = request.body;
       await configManager.updateConfig(newConfig);
 
       // 发布配置更新事件
@@ -34,10 +40,11 @@ export async function configRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ success: true, message: 'Configuration updated successfully' });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as Error;
       return reply.code(500).send({
         error: 'Failed to update configuration',
-        message: error.message
+        message: errorObj.message
       });
     }
   });
@@ -49,18 +56,19 @@ export async function configRoutes(fastify: FastifyInstance) {
       reply.header('Content-Disposition', 'attachment; filename=mcp-hub-config.json');
       reply.header('Content-Type', 'application/json');
       return reply.send(JSON.stringify(config, null, 2));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as Error;
       return reply.code(500).send({
         error: 'Failed to export configuration',
-        message: error.message
+        message: errorObj.message
       });
     }
   });
 
   // POST /web/config/import - 导入配置
-  fastify.post('/web/config/import', async (request, reply) => {
+  fastify.post<{ Body: SystemConfig }>('/web/config/import', async (request, reply) => {
     try {
-      const importedConfig = request.body as any;
+      const importedConfig = request.body;
       await configManager.updateConfig(importedConfig);
 
       // 发布配置更新事件
@@ -70,18 +78,19 @@ export async function configRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ success: true, message: 'Configuration imported successfully' });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as Error;
       return reply.code(400).send({
         error: 'Failed to import configuration',
-        message: error.message
+        message: errorObj.message
       });
     }
   });
 
   // PATCH /web/config/servers - 批量更新服务器配置
-  fastify.patch('/web/config/servers', async (request, reply) => {
+  fastify.patch<{ Body: ServersUpdateRequest }>('/web/config/servers', async (request, reply) => {
     try {
-      const { servers } = request.body as any;
+      const { servers } = request.body;
       const config = configManager.getConfig();
       config.servers = servers;
       await configManager.updateConfig(config);
@@ -93,10 +102,11 @@ export async function configRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ success: true, message: 'Servers configuration updated' });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as Error;
       return reply.code(500).send({
         error: 'Failed to update servers configuration',
-        message: error.message
+        message: errorObj.message
       });
     }
   });

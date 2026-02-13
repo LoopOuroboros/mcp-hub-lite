@@ -102,6 +102,30 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 // Import after mocks
 import { GatewayService } from '@services/gateway.service.js';
 // Don't import actual mcpConnectionManager, use the mocked version through vi.mocked
+import type { Tool } from '@shared-models/tool.model.js';
+import type { MockServerConfig, MockTool } from '../../types/test-helpers.js';
+
+// MCP 请求和响应类型定义
+interface McpRequest {
+  method: string;
+  params?: Record<string, unknown>;
+  id?: string | number;
+  jsonrpc: '2.0';
+}
+
+interface McpListToolsResponse {
+  tools: Tool[];
+}
+
+interface McpCallToolResponse {
+  content: Array<{
+    type: string;
+    text?: string;
+    [key: string]: unknown;
+  }>;
+}
+
+type McpHandler<T = unknown> = (request: McpRequest) => Promise<T>;
 
 
 describe('GatewayService', () => {
@@ -119,16 +143,16 @@ describe('GatewayService', () => {
 
   it('should list tools with prefixed names', async () => {
     // Setup mock data
-    const mockTools = [
+    const mockTools: MockTool[] = [
       { name: 'testTool', description: 'desc', inputSchema: {}, serverId: 'server1' }
     ];
-    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
+    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools);
     vi.mocked(mocks.getServerById).mockReturnValue({
       name: 'Test Server',
       id: 'server1',
       config: { allowedTools: ['testTool'] },
       instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
-    } as any);
+    } as MockServerConfig);
 
     // Populate toolCache for the test
     mocks.mockToolCache.set('server1', mockTools);
@@ -136,7 +160,7 @@ describe('GatewayService', () => {
     // Find the registered handler for ListTools
     // We can identify ListTools handler by checking if the schema has 'method' literal 'tools/list'
     // Since ListToolsRequestSchema is from @modelcontextprotocol/sdk, we can stringify schemas for comparison
-    let listToolsHandler: Function | undefined;
+    let listToolsHandler: McpHandler<McpListToolsResponse> | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schema = call[0];
       const handler = call[1];
@@ -163,26 +187,26 @@ describe('GatewayService', () => {
     // We expect 1 tool: 1 from mockTools
     // The name should be 'testTool' because it's unique
     expect(result.tools).toHaveLength(1);
-    const testTool = result.tools.find((t: any) => t.name === 'testTool');
+    const testTool = result.tools.find((t: Tool) => t.name === 'testTool');
     expect(testTool).toBeDefined();
-    expect(testTool.description).toContain('[From Test Server]');
+    expect(testTool!.description).toContain('[From Test Server]');
   });
 
   it('should route callTool to correct server', async () => {
     // Setup mock data for mapping (simulate listTools call first)
-    const mockTools = [
+    const mockTools: MockTool[] = [
       { name: 'testTool', description: 'desc', inputSchema: {}, serverId: 'server1' }
     ];
-    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
+    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools);
     vi.mocked(mocks.getServerById).mockReturnValue({
       name: 'Test Server',
       id: 'server1',
       config: { allowedTools: ['testTool'] },
       instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
-    } as any);
+    } as MockServerConfig);
 
     // Find list tools handler to populate tool map
-    let listToolsHandler: Function | undefined;
+    let listToolsHandler: McpHandler | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schemaStr = JSON.stringify(call[0]);
       if (schemaStr.includes('"tools/list"')) {
@@ -200,7 +224,7 @@ describe('GatewayService', () => {
     }); // This populates the internal map
 
     // Find call tool handler by checking if schema has 'method' literal 'tools/call'
-    let callToolHandler: Function | undefined;
+    let callToolHandler: McpHandler<McpCallToolResponse> | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schemaStr = JSON.stringify(call[0]);
       if (schemaStr.includes('"tools/call"')) {
@@ -229,8 +253,8 @@ describe('GatewayService', () => {
 
   it('should list system tools', async () => {
     // Setup mock data
-    const mockTools: any[] = [];
-    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools as any);
+    const mockTools: MockTool[] = [];
+    vi.mocked(mocks.getAllTools).mockReturnValue(mockTools);
     vi.mocked(mocks.getSystemTools).mockReturnValue([
         { name: 'list_servers', description: 'List all servers', inputSchema: {} },
         { name: 'find_servers', description: 'Find servers matching a pattern', inputSchema: {} },
@@ -247,7 +271,7 @@ describe('GatewayService', () => {
     mocks.mockToolCache.clear();
 
     // Find list tools handler
-    let listToolsHandler: Function | undefined;
+    let listToolsHandler: McpHandler<McpListToolsResponse> | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schemaStr = JSON.stringify(call[0]);
       if (schemaStr.includes('"tools/list"')) {
@@ -267,7 +291,7 @@ describe('GatewayService', () => {
 
     // Expect 9 system tools
     expect(result.tools).toHaveLength(9);
-    expect(result.tools.some((t: any) => t.name === 'list_servers')).toBe(true);
+    expect(result.tools.some((t: Tool) => t.name === 'list_servers')).toBe(true);
   });
 
   // it('should fetch roots on initialized notification', async () => {
@@ -300,7 +324,7 @@ describe('GatewayService', () => {
 
   it('should call system tools', async () => {
     // Find call tool handler
-    let callToolHandler: Function | undefined;
+    let callToolHandler: McpHandler<McpCallToolResponse> | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schemaStr = JSON.stringify(call[0]);
       if (schemaStr.includes('"tools/call"')) {
@@ -329,7 +353,7 @@ describe('GatewayService', () => {
 
   it('should call call_tool system tool with undefined serverName', async () => {
     // Find call tool handler
-    let callToolHandler: Function | undefined;
+    let callToolHandler: McpHandler<McpCallToolResponse> | undefined;
     for (const call of mocks.setRequestHandler.mock.calls) {
       const schemaStr = JSON.stringify(call[0]);
       if (schemaStr.includes('"tools/call"')) {
@@ -343,7 +367,7 @@ describe('GatewayService', () => {
     // Note: listServers returns server names, not server IDs
     vi.mocked(mocks.listServers).mockImplementation(async () => ['Test Server']);
     // Mock callToolDirect to return the expected result format
-    vi.mocked(mocks.callToolDirect).mockImplementation(async (_serverName, toolName, _toolArgs) => {
+    vi.mocked(mocks.callToolDirect).mockImplementation(async (_serverName, toolName) => {
       if (toolName === 'list_servers') {
         return {
           content: [

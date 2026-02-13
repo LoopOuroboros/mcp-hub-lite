@@ -181,12 +181,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Folder, Setting, Document } from '@element-plus/icons-vue'
 import { useServerStore } from '@stores/server'
+import type { Resource } from '@shared-models/resource.model'
 // import ResourceCard from '@components/ResourceCard.vue'
 
 const router = useRouter()
 const store = useServerStore()
 const searchQuery = ref('')
-const allResources = ref<Record<string, any[]>>({})
+const allResources = ref<Record<string, Resource[]>>({})
 const MCP_HUB_LITE_SERVER = 'mcp-hub-lite'
 
 onMounted(async () => {
@@ -205,7 +206,7 @@ const filteredResources = computed(() => {
   if (!searchQuery.value) return allResources.value
   
   const query = searchQuery.value.toLowerCase()
-  const result: Record<string, any[]> = {}
+  const result: Record<string, Resource[]> = {}
   
   for (const [serverName, resources] of Object.entries(allResources.value)) {
     const filtered = resources.filter(r => 
@@ -228,15 +229,15 @@ function isDataResource(uri: string) {
   return uri.endsWith('/resources')
 }
 
-function getSystemServerResources(resources: any[]) {
+function getSystemServerResources(resources: Resource[]) {
   return resources.filter(r => !isToolResource(r.uri) && !isDataResource(r.uri))
 }
 
-function getSystemToolResources(resources: any[]) {
+function getSystemToolResources(resources: Resource[]) {
   return resources.filter(r => isToolResource(r.uri))
 }
 
-function getSystemDataResources(resources: any[]) {
+function getSystemDataResources(resources: Resource[]) {
   return resources.filter(r => isDataResource(r.uri))
 }
 

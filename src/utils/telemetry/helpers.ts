@@ -1,6 +1,7 @@
-import { trace, Span, SpanOptions } from '@opentelemetry/api';
+import { trace, Span, SpanOptions, Attributes, AttributeValue } from '@opentelemetry/api';
 import { telemetryManager } from '@utils/telemetry/index.js';
-import { logger } from '@utils/logger.js';
+import { logger, LogContext, LogOptions } from '@utils/logger.js';
+import type { LogLevel } from '@shared-types/common.types.js';
 
 /**
  * Helper function to create and manage spans with automatic error handling
@@ -12,10 +13,10 @@ import { logger } from '@utils/logger.js';
 export async function withSpan<T>(
   name: string,
   options: SpanOptions,
-  fn: (span: Span) => Promise<T>
+  fn: (span: Span | null) => Promise<T>
 ): Promise<T> {
   if (!telemetryManager.isEnabled()) {
-    return fn(null as any); // Return without tracing if disabled
+    return fn(null); // Return without tracing if disabled
   }
 
   const tracer = trace.getTracer('mcp-hub');
@@ -28,66 +29,69 @@ export async function withSpan<T>(
     const originalServerLog = logger.serverLog;
 
     try {
+      // 创建带有trace上下文的日志选项
+      const logContext: LogOptions = {
+        traceId: span.spanContext().traceId,
+        spanId: span.spanContext().spanId
+      };
+
       logger.debug = (message: string, ...args: unknown[]) => {
-        const [opts, ...rest] = extractOptions(args);
-        const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-        (logger as any).log('debug', message, rest, logOptions);
+        // 如果第一个参数是LogOptions，合并trace上下文
+        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+          const firstArg = args[0] as Record<string, unknown>;
+          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+            const mergedOptions = { ...firstArg, ...logContext };
+            originalDebug(message, mergedOptions, ...args.slice(1));
+            return;
+          }
+        }
+        // 否则直接添加trace上下文
+        originalDebug(message, logContext, ...args);
       };
 
       logger.info = (message: string, ...args: unknown[]) => {
-        const [opts, ...rest] = extractOptions(args);
-        const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-        (logger as any).log('info', message, rest, logOptions);
+        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+          const firstArg = args[0] as Record<string, unknown>;
+          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+            const mergedOptions = { ...firstArg, ...logContext };
+            originalInfo(message, mergedOptions, ...args.slice(1));
+            return;
+          }
+        }
+        originalInfo(message, logContext, ...args);
       };
 
       logger.warn = (message: string, ...args: unknown[]) => {
-        const [opts, ...rest] = extractOptions(args);
-        const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-        (logger as any).log('warn', message, rest, logOptions);
+        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+          const firstArg = args[0] as Record<string, unknown>;
+          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+            const mergedOptions = { ...firstArg, ...logContext };
+            originalWarn(message, mergedOptions, ...args.slice(1));
+            return;
+          }
+        }
+        originalWarn(message, logContext, ...args);
       };
 
       logger.error = (message: string, ...args: unknown[]) => {
-        const [opts, ...rest] = extractOptions(args);
-        const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-        (logger as any).log('error', message, rest, logOptions);
+        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+          const firstArg = args[0] as Record<string, unknown>;
+          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+            const mergedOptions = { ...firstArg, ...logContext };
+            originalError(message, mergedOptions, ...args.slice(1));
+            return;
+          }
+        }
+        originalError(message, logContext, ...args);
       };
 
-      logger.serverLog = (level: any, serverName: string, message: string, context?: any) => {
-        const logContext = {
+      logger.serverLog = (level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>) => {
+        const serverContext: Omit<LogContext, 'serverName'> = {
           ...context,
-          serverName,
           traceId: span.spanContext().traceId,
           spanId: span.spanContext().spanId
         };
-        const coloredLogMsg = (logger as any).createColoredLogMessage(level, message, logContext);
-        const plainLogMsg = (logger as any).createLogMessage(level, message, logContext);
-
-        // 使用正确的控制台方法
-        if ((logger as any).useStderr) {
-          console.error(coloredLogMsg);
-        } else {
-          switch (level) {
-            case 'debug':
-              console.debug(coloredLogMsg);
-              break;
-            case 'info':
-              console.info(coloredLogMsg);
-              break;
-            case 'warn':
-              console.warn(coloredLogMsg);
-              break;
-            case 'error':
-              console.error(coloredLogMsg);
-              break;
-            default:
-              console.info(coloredLogMsg);
-          }
-        }
-
-        // 文件输出（如果启用）- 使用纯文本格式
-        if ((logger as any).logFileStream) {
-          (logger as any).logFileStream.write(plainLogMsg + '\n');
-        }
+        originalServerLog(level, serverName, message, serverContext);
       };
 
       const result = await fn(span);
@@ -111,6 +115,7 @@ export async function withSpan<T>(
       logger.info = originalInfo;
       logger.warn = originalWarn;
       logger.error = originalError;
+      logger.serverLog = originalServerLog;
 
       throw error;
     }
@@ -127,10 +132,10 @@ export async function withSpan<T>(
 export function withSpanSync<T>(
   name: string,
   options: SpanOptions,
-  fn: (span: Span) => T
+  fn: (span: Span | null) => T
 ): T {
   if (!telemetryManager.isEnabled()) {
-    return fn(null as any); // Return without tracing if disabled
+    return fn(null); // Return without tracing if disabled
   }
 
   const tracer = trace.getTracer('mcp-hub');
@@ -144,66 +149,67 @@ export function withSpanSync<T>(
   const originalServerLog = logger.serverLog;
 
   try {
+    // 创建带有trace上下文的日志选项
+    const logContext: LogOptions = {
+      traceId: span.spanContext().traceId,
+      spanId: span.spanContext().spanId
+    };
+
     logger.debug = (message: string, ...args: unknown[]) => {
-      const [opts, ...rest] = extractOptions(args);
-      const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-      (logger as any).log('debug', message, rest, logOptions);
+      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        const firstArg = args[0] as Record<string, unknown>;
+        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          const mergedOptions = { ...firstArg, ...logContext };
+          originalDebug(message, mergedOptions, ...args.slice(1));
+          return;
+        }
+      }
+      originalDebug(message, logContext, ...args);
     };
 
     logger.info = (message: string, ...args: unknown[]) => {
-      const [opts, ...rest] = extractOptions(args);
-      const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-      (logger as any).log('info', message, rest, logOptions);
+      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        const firstArg = args[0] as Record<string, unknown>;
+        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          const mergedOptions = { ...firstArg, ...logContext };
+          originalInfo(message, mergedOptions, ...args.slice(1));
+          return;
+        }
+      }
+      originalInfo(message, logContext, ...args);
     };
 
     logger.warn = (message: string, ...args: unknown[]) => {
-      const [opts, ...rest] = extractOptions(args);
-      const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-      (logger as any).log('warn', message, rest, logOptions);
+      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        const firstArg = args[0] as Record<string, unknown>;
+        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          const mergedOptions = { ...firstArg, ...logContext };
+          originalWarn(message, mergedOptions, ...args.slice(1));
+          return;
+        }
+      }
+      originalWarn(message, logContext, ...args);
     };
 
     logger.error = (message: string, ...args: unknown[]) => {
-      const [opts, ...rest] = extractOptions(args);
-      const logOptions = { ...opts, traceId: span.spanContext().traceId, spanId: span.spanContext().spanId };
-      (logger as any).log('error', message, rest, logOptions);
+      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        const firstArg = args[0] as Record<string, unknown>;
+        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          const mergedOptions = { ...firstArg, ...logContext };
+          originalError(message, mergedOptions, ...args.slice(1));
+          return;
+        }
+      }
+      originalError(message, logContext, ...args);
     };
 
-    logger.serverLog = (level: any, serverName: string, message: string, context?: any) => {
-      const logContext = {
+    logger.serverLog = (level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>) => {
+      const serverContext: Omit<LogContext, 'serverName'> = {
         ...context,
-        serverName,
         traceId: span.spanContext().traceId,
         spanId: span.spanContext().spanId
       };
-      const coloredLogMsg = (logger as any).createColoredLogMessage(level, message, logContext);
-      const plainLogMsg = (logger as any).createLogMessage(level, message, logContext);
-
-      // 使用正确的控制台方法
-      if ((logger as any).useStderr) {
-        console.error(coloredLogMsg);
-      } else {
-        switch (level) {
-          case 'debug':
-            console.debug(coloredLogMsg);
-            break;
-          case 'info':
-            console.info(coloredLogMsg);
-            break;
-          case 'warn':
-            console.warn(coloredLogMsg);
-            break;
-          case 'error':
-            console.error(coloredLogMsg);
-            break;
-          default:
-            console.info(coloredLogMsg);
-        }
-      }
-
-      // 文件输出（如果启用）- 使用纯文本格式
-      if ((logger as any).logFileStream) {
-        (logger as any).logFileStream.write(plainLogMsg + '\n');
-      }
+      originalServerLog(level, serverName, message, serverContext);
     };
 
     const result = fn(span);
@@ -227,24 +233,10 @@ export function withSpanSync<T>(
     logger.info = originalInfo;
     logger.warn = originalWarn;
     logger.error = originalError;
+    logger.serverLog = originalServerLog;
 
     throw error;
   }
-}
-
-/**
- * 辅助函数：提取选项和参数
- */
-function extractOptions(args: unknown[]): [any, unknown[]] {
-  // 我们需要正确地匹配 logger.ts 中的 extractOptionsAndArgs 方法的行为
-  if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
-    // 检查是否是 LogOptions 对象
-    const firstArg = args[0] as any;
-    if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
-      return [firstArg, args.slice(1)];
-    }
-  }
-  return [{}, args];
 }
 
 /**
@@ -259,9 +251,9 @@ export function createMcpSpanOptions(
   operation: string,
   serverId: string,
   toolName?: string,
-  additionalAttributes: Record<string, any> = {}
+  additionalAttributes: Record<string, AttributeValue> = {}
 ): SpanOptions {
-  const attributes: Record<string, any> = {
+  const attributes: Attributes = {
     'mcp.operation': operation,
     'mcp.server.id': serverId,
     ...additionalAttributes

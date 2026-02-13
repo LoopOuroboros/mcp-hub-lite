@@ -119,7 +119,7 @@ export class LogRotator {
    * Extract date from log filename
    */
   private extractDateFromFilename(filename: string): Date | null {
-    const match = filename.match(new RegExp(`${this.logBaseName}\.(\\d{4}-\\d{2}-\\d{2})\.log$`));
+    const match = filename.match(new RegExp(`${this.logBaseName}\\.(\\d{4}-\\d{2}-\\d{2})\\.log$`));
     if (match && match[1]) {
       return new Date(match[1]);
     }

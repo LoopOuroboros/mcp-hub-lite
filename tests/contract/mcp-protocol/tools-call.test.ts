@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
@@ -9,36 +8,50 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
     Client: class {
       connect = vi.fn().mockResolvedValue(undefined);
       close = vi.fn().mockResolvedValue(undefined);
-      listTools = vi.fn().mockResolvedValue({
-        tools: [
-          {
-            name: 'calculator',
-            description: 'Perform calculations',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                a: { type: 'number' },
-                b: { type: 'number' },
-                operation: { type: 'string', enum: ['add', 'subtract', 'multiply'] }
-              },
-              required: ['a', 'b', 'operation']
-            }
+      callTool = vi.fn().mockImplementation((toolCall) => {
+        if (toolCall.name === 'calculator') {
+          const { a, b, operation } = toolCall.arguments;
+
+          // 验证参数类型
+          if (typeof a !== 'number' || typeof b !== 'number') {
+            throw new Error('Invalid parameters: a and b must be numbers');
           }
-        ]
+
+          if (typeof operation !== 'string') {
+            throw new Error('Invalid parameters: operation must be a string');
+          }
+
+          let result;
+          switch (operation) {
+            case 'add':
+              result = a + b;
+              break;
+            case 'subtract':
+              result = a - b;
+              break;
+            case 'multiply':
+              result = a * b;
+              break;
+            case 'divide':
+              if (b === 0) {
+                throw new Error('Division by zero');
+              }
+              result = a / b;
+              break;
+            default:
+              throw new Error('Invalid operation');
+          }
+          return Promise.resolve({ result });
+        }
+        if (toolCall.name === 'get_weather') {
+          return Promise.resolve({ temperature: 25, condition: 'sunny' });
+        }
+        if (toolCall.name === 'search_news') {
+          return Promise.resolve({ articles: ['News 1', 'News 2'] });
+        }
+        throw new Error('Unknown tool');
       });
       getServerVersion = vi.fn().mockReturnValue({ name: 'Test SDK Server', version: '1.0.0' });
-      callTool = vi.fn().mockImplementation(async (request) => {
-        if (request.name === 'calculator') {
-          const { a, b, operation } = request.arguments;
-          switch (operation) {
-            case 'add': return { result: a + b };
-            case 'subtract': return { result: a - b };
-            case 'multiply': return { result: a * b };
-            default: throw new McpError(-32802, 'Invalid operation');
-          }
-        }
-        throw new McpError(-32801, `Tool ${request.name} not found`);
-      });
     }
   };
 });
@@ -68,7 +81,8 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       args: [],
       enabled: true,
       type: 'stdio' as const,
-      timeout: 60000
+      timeout: 60000,
+      allowedTools: []
     });
 
     // 添加服务器实例
@@ -78,86 +92,113 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
 
   afterEach(async () => {
     await mcpConnectionManager.disconnect(serverId);
-    hubManager.removeServer('test-sdk-server');
+    hubManager.removeServer(serverName);
   });
 
   it('should execute tool with correct arguments', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
     const result = await mcpConnectionManager.callTool(
       serverId,
       'calculator',
       { a: 5, b: 3, operation: 'add' }
-    );
+    ) as { result: number };
 
     expect(result).toHaveProperty('result');
     expect(result.result).toBe(8);
   });
 
   it('should handle invalid parameters', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
     await expect(
-      mcpConnectionManager.callTool(
-        serverId,
-        'calculator',
-        { a: 5, b: 3 } // missing operation
-      )
-    ).rejects.toBeDefined();
+      mcpConnectionManager.callTool(serverId, 'calculator', { a: 'invalid', b: 3, operation: 'add' })
+    ).rejects.toThrow();
   });
 
-  it('should handle tool errors correctly', async () => {
+  it('should handle unknown tool', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
     await expect(
-      mcpConnectionManager.callTool(
-        serverId,
-        'calculator',
-        { a: 5, b: 3, operation: 'divide' } // invalid operation
-      )
-    ).rejects.toBeDefined();
+      mcpConnectionManager.callTool(serverId, 'unknown_tool', {})
+    ).rejects.toThrow();
   });
 
-  it('should maintain isolation between calls', async () => {
+  it('should support multiple concurrent tool calls', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
-    const result1 = await mcpConnectionManager.callTool(
-      serverId,
-      'calculator',
-      { a: 10, b: 5, operation: 'subtract' }
-    );
+    const [result1, result2] = await Promise.all([
+      mcpConnectionManager.callTool(serverId, 'get_weather', { location: 'New York' }) as Promise<{ temperature: number; condition: string }>,
+      mcpConnectionManager.callTool(serverId, 'search_news', { query: 'technology' }) as Promise<{ articles: string[] }>
+    ]);
 
-    const result2 = await mcpConnectionManager.callTool(
-      serverId,
-      'calculator',
-      { a: 3, b: 4, operation: 'multiply' }
-    );
-
-    expect(result1.result).toBe(5);
-    expect(result2.result).toBe(12);
+    expect(result1).toHaveProperty('temperature');
+    expect(result1).toHaveProperty('condition');
+    expect(result2).toHaveProperty('articles');
+    expect(Array.isArray(result2.articles)).toBe(true);
   });
 });

@@ -58,7 +58,7 @@ describe('Server Store', () => {
     const { http } = await import('@frontend/utils/http')
 
     // Mock the implementations
-    ;(http.get as any).mockImplementation((url: string) => {
+    vi.mocked(http.get).mockImplementation((url: string) => {
       if (url === '/web/servers') return Promise.resolve(mockServers)
       if (url === '/web/server-instances') return Promise.resolve(mockInstances)
       if (url === '/web/mcp/status') return Promise.resolve(mockStatuses)
@@ -78,7 +78,7 @@ describe('Server Store', () => {
     const store = useServerStore()
 
     const { http } = await import('@frontend/utils/http')
-    ;(http.get as any).mockImplementation(() => Promise.reject(new Error('Network error')))
+    vi.mocked(http.get).mockImplementation(() => Promise.reject(new Error('Network error')))
 
     await store.fetchServers()
 
@@ -92,14 +92,14 @@ describe('Server Store', () => {
     const { http } = await import('@frontend/utils/http')
 
     // Mock the HTTP responses
-    ;(http.post as any).mockImplementation((url: string) => {
+    vi.mocked(http.post).mockImplementation((url: string) => {
       if (url === '/web/servers') {
         return Promise.resolve({ name: 'new-server', config: { type: 'stdio' as const } })
       }
       return Promise.reject(new Error('Unknown URL'))
     })
 
-    ;(http.get as any).mockImplementation((url: string) => {
+    vi.mocked(http.get).mockImplementation((url: string) => {
       if (url === '/web/servers') return Promise.resolve([{ name: 'new-server', config: { type: 'stdio' as const } }])
       if (url === '/web/server-instances') return Promise.resolve({})
       if (url === '/web/mcp/status') return Promise.resolve([])
@@ -120,7 +120,7 @@ describe('Server Store', () => {
     const store = useServerStore()
 
     const { http } = await import('@frontend/utils/http')
-    ;(http.post as any).mockImplementation(() => Promise.reject(new Error('Server error')))
+    vi.mocked(http.post).mockImplementation(() => Promise.reject(new Error('Server error')))
 
     await expect(store.addServer({ name: 'test', config: { type: 'stdio' } }))
       .rejects

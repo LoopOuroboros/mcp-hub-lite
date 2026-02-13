@@ -7,6 +7,8 @@ import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { gateway } from '@services/gateway.service.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPort } from '@utils/port-checker.js';
+import type { FastifyInstance } from 'fastify';
+import type { SystemConfig, ServerConfig } from '@config/config.schema.js';
 
 // Mock all dependencies
 vi.mock('@src/app.js', () => ({
@@ -76,18 +78,43 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      } as any;
+      } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
+          language: 'zh' as const,
+          theme: 'system' as const,
           logging: {
-            level: 'info'
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
+        },
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
           }
         }
-      } as any;
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
@@ -104,15 +131,40 @@ describe('Server Runner', () => {
 
     it('should start server in stdio mode successfully', async () => {
       // Setup mocks
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
+          language: 'zh' as const,
+          theme: 'system' as const,
           logging: {
-            level: 'info'
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
+        },
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
           }
         }
-      } as any;
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
 
@@ -129,18 +181,43 @@ describe('Server Runner', () => {
 
     it('should handle port already in use by self project', async () => {
       // Setup mocks
-      const mockApp = { listen: vi.fn(), close: vi.fn() } as any;
+      const mockApp = { listen: vi.fn(), close: vi.fn() } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
+          language: 'zh' as const,
+          theme: 'system' as const,
           logging: {
-            level: 'info'
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
+        },
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
           }
         }
-      } as any;
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({
@@ -150,7 +227,7 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
@@ -167,18 +244,43 @@ describe('Server Runner', () => {
 
     it('should handle port already in use by other application', async () => {
       // Setup mocks
-      const mockApp = { listen: vi.fn(), close: vi.fn() } as any;
+      const mockApp = { listen: vi.fn(), close: vi.fn() } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
+          language: 'zh' as const,
+          theme: 'system' as const,
           logging: {
-            level: 'info'
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
+        },
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
           }
         }
-      } as any;
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({
@@ -190,7 +292,7 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
@@ -212,43 +314,80 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      } as any;
+      } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
+        version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
+          language: 'zh' as const,
+          theme: 'system' as const,
           logging: {
-            level: 'info'
+            level: 'info' as const,
+            rotation: {
+              enabled: true,
+              maxAge: '7d',
+              maxSize: '100MB',
+              compress: false
+            }
+          }
+        },
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
           }
         }
-      } as any;
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
-      const mockServers = [
+      const mockServers: Array<{name: string; config: ServerConfig}> = [
         {
           name: 'enabled-server',
           config: {
             enabled: true,
-            command: 'test-command'
+            command: 'test-command',
+            type: 'stdio' as const,
+            args: [],
+            allowedTools: [],
+            timeout: 30000
           }
         },
         {
           name: 'disabled-server',
           config: {
             enabled: false,
-            command: 'test-command'
+            command: 'test-command',
+            type: 'stdio' as const,
+            args: [],
+            allowedTools: [],
+            timeout: 30000
           }
         }
-      ] as any;
+      ];
       vi.mocked(configManager.getServers).mockReturnValue(mockServers);
-      vi.mocked(configManager.getServerInstanceByName).mockImplementation(((name: string) => {
+      vi.mocked(configManager.getServerInstanceByName).mockImplementation((name: string) => {
         if (name === 'enabled-server') return [];
-        return [{ id: 'instance-1' }];
-      }) as any);
-      vi.mocked(configManager.addServerInstance).mockResolvedValue({ id: 'new-instance' } as any);
+        return [{ id: 'instance-1', timestamp: Date.now(), hash: 'test-hash' }];
+      });
+      vi.mocked(configManager.addServerInstance).mockResolvedValue({
+        id: 'new-instance',
+        timestamp: Date.now(),
+        hash: 'test-hash'
+      });
 
       // Execute
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -271,30 +410,44 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      } as any;
+      } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
         version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
-          language: 'zh',
-          theme: 'light',
+          language: 'zh' as const,
+          theme: 'light' as const,
           logging: {
-            level: 'info',
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+            level: 'info' as const,
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
           }
         },
-        security: { cors: { origin: '*' } },
-        servers: {}
-      } as any;
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
+          }
+        }
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as (code?: number | string | null) => never);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -321,30 +474,44 @@ describe('Server Runner', () => {
       const mockApp = {
         listen: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined)
-      } as any;
+      } as unknown as FastifyInstance;
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
         version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
-          language: 'zh',
-          theme: 'light',
+          language: 'zh' as const,
+          theme: 'light' as const,
           logging: {
-            level: 'info',
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+            level: 'info' as const,
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
           }
         },
-        security: { cors: { origin: '*' } },
-        servers: {}
-      } as any;
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
+          }
+        }
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as (code?: number | string | null) => never);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -370,25 +537,39 @@ describe('Server Runner', () => {
       // Setup mocks to throw error
       vi.mocked(buildApp).mockRejectedValue(new Error('Startup failed'));
 
-      const mockConfig = {
+      const mockConfig: SystemConfig = {
         version: '1.0.0',
         system: {
           host: 'localhost',
           port: 3000,
-          language: 'zh',
-          theme: 'light',
+          language: 'zh' as const,
+          theme: 'light' as const,
           logging: {
-            level: 'info',
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10m', compress: false }
+            level: 'info' as const,
+            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
           }
         },
-        security: { cors: { origin: '*' } },
-        servers: {}
-      } as any;
+        security: {
+          allowedNetworks: ['127.0.0.1'],
+          maxConcurrentConnections: 50,
+          connectionTimeout: 30000,
+          idleConnectionTimeout: 300000,
+          maxConnections: 50
+        },
+        servers: {},
+        observability: {
+          tracing: {
+            enabled: false,
+            exporter: 'console' as const,
+            endpoint: 'http://localhost:4318/v1/traces',
+            sampleRate: 1.0
+          }
+        }
+      };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as any);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
 
       // Execute and expect error
       await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))

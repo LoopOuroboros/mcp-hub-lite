@@ -1,14 +1,16 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
-import { McpTool } from '@models/tool.model.js';
-import { McpResource } from '@models/resource.model.js';
-import type { McpServerConfig } from '@config/config.schema.js';
+import type { JsonSchema } from '@shared-models/tool.model.js';
+import type { ServerConfig, ServerInstanceConfig } from '@config/config.schema.js';
+import type { Tool } from '@shared-models/tool.model.js';
+import type { Resource } from '@shared-models/resource.model.js';
+import type { ServerStatus } from '@shared-types/common.types.js';
+import type { ServerTransport } from '@shared-types/common.types.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger } from '@utils/logger.js';
 import {
   SYSTEM_TOOL_NAMES,
-  SystemToolName,
   LIST_SERVERS_TOOL,
   FIND_SERVERS_TOOL,
   LIST_ALL_TOOLS_IN_SERVER_TOOL,
@@ -16,14 +18,18 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
-  MCP_HUB_LITE_SERVER,
-  type ListServersParams,
-  type FindServersParams,
-  type ListAllToolsInServerParams,
-  type FindToolsInServerParams,
-  type GetToolParams,
-  type CallToolParams,
-  type FindToolsParams
+  MCP_HUB_LITE_SERVER
+} from '@models/system-tools.constants.js';
+import type {
+  SystemToolArgs,
+  SystemToolName,
+  ListServersParams,
+  FindServersParams,
+  ListAllToolsInServerParams,
+  FindToolsInServerParams,
+  GetToolParams,
+  CallToolParams,
+  FindToolsParams
 } from '@models/system-tools.constants.js';
 
 // 请求选项接口
@@ -37,8 +43,8 @@ export interface RequestOptions {
 // 根据服务器名称和请求选项选择最佳实例
 function selectBestInstance(serverName: string, requestOptions?: RequestOptions): {
   name: string;
-  config: McpServerConfig;
-  instance: any;
+  config: ServerConfig;
+  instance: ServerInstanceConfig & Record<string, unknown>;
 } | undefined {
   // 获取服务器的所有实例
   const instances = hubManager.getServerInstanceByName(serverName);
@@ -89,8 +95,12 @@ function selectBestInstance(serverName: string, requestOptions?: RequestOptions)
 }
 
 // Type guard for servers with valid name and config
-function hasValidId(server: any): server is { name: string; config: McpServerConfig } {
-  return typeof server.name === 'string' && server.name.length > 0 && typeof server.config === 'object';
+function hasValidId(server: unknown): server is { name: string; config: ServerConfig } {
+  if (typeof server !== 'object' || server === null) {
+    return false;
+  }
+  const s = server as { name?: unknown; config?: unknown };
+  return typeof s.name === 'string' && s.name.length > 0 && typeof s.config === 'object';
 }
 
 export class HubToolsService {
@@ -105,7 +115,7 @@ export class HubToolsService {
     const systemTools: Array<{
       name: string;
       description: string;
-      inputSchema: any;
+      inputSchema: JsonSchema;
       annotations?: {
         title?: string;
         readOnlyHint?: boolean;
@@ -341,7 +351,7 @@ export class HubToolsService {
    */
   async listAllToolsInServer(serverName: string, requestOptions?: RequestOptions): Promise<{
     serverName: string;
-    tools: McpTool[];
+    tools: Tool[];
   }> {
     // 处理 MCP Hub Lite 服务器（返回系统工具列表）
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
@@ -349,8 +359,8 @@ export class HubToolsService {
       const toolMap = new Map<string, { serverId: string; realToolName: string }>();
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
 
-      // 转换为 McpTool 格式
-      const tools: McpTool[] = gatewayTools.map(tool => ({
+      // 转换为 Tool 格式
+      const tools: Tool[] = gatewayTools.map(tool => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -399,7 +409,7 @@ export class HubToolsService {
     requestOptions?: RequestOptions
   ): Promise<{
     serverName: string;
-    tools: McpTool[];
+    tools: Tool[];
   }> {
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
@@ -429,7 +439,7 @@ export class HubToolsService {
    * @param requestOptions Request options for instance selection
    * @returns Complete tool schema
    */
-  async getTool(serverName: string, toolName: string, requestOptions?: RequestOptions): Promise<McpTool | undefined> {
+  async getTool(serverName: string, toolName: string, requestOptions?: RequestOptions): Promise<Tool | undefined> {
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
     if (!serverInfo) {
@@ -456,7 +466,16 @@ export class HubToolsService {
               T extends typeof CALL_TOOL_TOOL ? CallToolParams :
               T extends typeof FIND_TOOLS_TOOL ? FindToolsParams :
               never
-  ): Promise<any> {
+  ): Promise<
+    T extends typeof LIST_SERVERS_TOOL ? ServerConfig[] :
+    T extends typeof FIND_SERVERS_TOOL ? ServerConfig[] :
+    T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? Tool[] :
+    T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? Tool[] :
+    T extends typeof GET_TOOL_TOOL ? Tool | undefined :
+    T extends typeof CALL_TOOL_TOOL ? unknown :
+    T extends typeof FIND_TOOLS_TOOL ? Tool[] :
+    never
+  > {
     logger.info(`[HUB-TOOLS] System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`);
 
     try {
@@ -465,7 +484,7 @@ export class HubToolsService {
         case LIST_SERVERS_TOOL:
           result = await this.listServers();
           break;
-        case FIND_SERVERS_TOOL:
+        case FIND_SERVERS_TOOL: {
           const findServersArgs = toolArgs as FindServersParams;
           result = await this.findServers(
             findServersArgs.pattern,
@@ -473,11 +492,13 @@ export class HubToolsService {
             findServersArgs.caseSensitive
           );
           break;
-        case LIST_ALL_TOOLS_IN_SERVER_TOOL:
+        }
+        case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
           const listAllToolsArgs = toolArgs as ListAllToolsInServerParams;
           result = await this.listAllToolsInServer(listAllToolsArgs.serverName, listAllToolsArgs.requestOptions);
           break;
-        case FIND_TOOLS_IN_SERVER_TOOL:
+        }
+        case FIND_TOOLS_IN_SERVER_TOOL: {
           const findToolsInServerArgs = toolArgs as FindToolsInServerParams;
           result = await this.findToolsInServer(
             findToolsInServerArgs.serverName,
@@ -487,11 +508,13 @@ export class HubToolsService {
             findToolsInServerArgs.requestOptions
           );
           break;
-        case GET_TOOL_TOOL:
+        }
+        case GET_TOOL_TOOL: {
           const getToolArgs = toolArgs as GetToolParams;
           result = await this.getTool(getToolArgs.serverName, getToolArgs.toolName, getToolArgs.requestOptions);
           break;
-        case CALL_TOOL_TOOL:
+        }
+        case CALL_TOOL_TOOL: {
           const callToolArgs = toolArgs as CallToolParams;
           let serverName = callToolArgs.serverName;
           if (!serverName || serverName === 'undefined') {
@@ -504,7 +527,8 @@ export class HubToolsService {
             callToolArgs.requestOptions
           );
           break;
-        case FIND_TOOLS_TOOL:
+        }
+        case FIND_TOOLS_TOOL: {
           const findToolsArgs = toolArgs as FindToolsParams;
           result = await this.findTools(
             findToolsArgs.pattern,
@@ -512,12 +536,21 @@ export class HubToolsService {
             findToolsArgs.caseSensitive
           );
           break;
+        }
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
 
       logger.info(`[HUB-TOOLS] System tool SUCCESS: ${toolName}`);
-      return result;
+      // Type assertion based on toolName to match the expected return type
+      return result as T extends typeof LIST_SERVERS_TOOL ? ServerConfig[] :
+        T extends typeof FIND_SERVERS_TOOL ? ServerConfig[] :
+        T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? Tool[] :
+        T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? Tool[] :
+        T extends typeof GET_TOOL_TOOL ? Tool | undefined :
+        T extends typeof CALL_TOOL_TOOL ? unknown :
+        T extends typeof FIND_TOOLS_TOOL ? Tool[] :
+        never;
     } catch (error) {
       logger.error(`[HUB-TOOLS] System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error);
       throw error;
@@ -531,10 +564,10 @@ export class HubToolsService {
    * @param toolArgs Arguments to pass to the tool
    * @returns Result of the tool call
    */
-  async callTool(serverName: string, toolName: string, toolArgs: Record<string, unknown>, requestOptions?: RequestOptions): Promise<any> {
+  async callTool(serverName: string, toolName: string, toolArgs: Record<string, unknown>, requestOptions?: RequestOptions): Promise<unknown> {
     // 处理 MCP Hub Lite 服务器（系统工具调用）
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
-      return await this.callSystemTool(toolName as SystemToolName, toolArgs);
+      return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
     }
 
     logger.info(`[HUB-TOOLS] Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`);
@@ -596,10 +629,10 @@ export class HubToolsService {
    * @returns All tools grouped by server name
    */
   async listAllTools(): Promise<Record<string, {
-    tools: McpTool[];
+    tools: Tool[];
   }>> {
     const servers = hubManager.getAllServers();
-    const allTools: Record<string, { tools: McpTool[] }> = {};
+    const allTools: Record<string, { tools: Tool[] }> = {};
 
     // Add system tools under mcp-hub-lite server
     const systemTools = this.getSystemTools().map(tool => ({
@@ -642,12 +675,12 @@ export class HubToolsService {
     searchIn: 'name' | 'description' | 'both' = 'both',
     caseSensitive: boolean = false
   ): Promise<Record<string, {
-    tools: McpTool[];
+    tools: Tool[];
   }>> {
     const allTools = await this.listAllTools();
     const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
-    const matchingTools: Record<string, { tools: McpTool[] }> = {};
+    const matchingTools: Record<string, { tools: Tool[] }> = {};
 
     for (const [serverName, serverData] of Object.entries(allTools)) {
       const filteredTools = serverData.tools.filter(tool => {
@@ -670,8 +703,8 @@ export class HubToolsService {
    * Generate dynamic Hub resources based on connected servers
    * @returns Array of dynamically generated McpResource objects
    */
-  private generateDynamicResources(): McpResource[] {
-    const resources: McpResource[] = [];
+  private generateDynamicResources(): Resource[] {
+    const resources: Resource[] = [];
 
     // Get all connected servers
     const servers = hubManager.getAllServers();
@@ -730,7 +763,7 @@ export class HubToolsService {
    * List all Hub resources (dynamically generated based on connected servers)
    * @returns Array of McpResource objects representing Hub resources
    */
-  async listResources(): Promise<McpResource[]> {
+  async listResources(): Promise<Resource[]> {
     return this.generateDynamicResources();
   }
 
@@ -739,7 +772,7 @@ export class HubToolsService {
    * @param uri Resource URI to read (e.g., hub://servers/server-name)
    * @returns Resource content as JSON string or object
    */
-  async readResource(uri: string): Promise<any> {
+  async readResource(uri: string): Promise<{ name: string; status: ServerStatus; toolsCount: number; resourcesCount: number; tags: Record<string, string>; lastHeartbeat: number; uptime: number; type: ServerTransport; enabled: boolean } | Tool[] | Resource[]> {
     // Validate URI format
     if (!uri.startsWith('hub://')) {
       throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
@@ -771,13 +804,13 @@ export class HubToolsService {
 
       return {
         name: serverName,
-        status: serverInfo.instance.status,
+        status: serverInfo.instance.status as ServerStatus,
         toolsCount: tools.length,
         resourcesCount: resources.length,
         tags: serverConfig?.tags || {},
-        lastHeartbeat: serverInfo.instance.lastHeartbeat,
-        uptime: serverInfo.instance.uptime,
-        type: serverConfig?.type || 'unknown',
+        lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
+        uptime: serverInfo.instance.uptime as number,
+        type: (serverConfig?.type || 'unknown') as ServerTransport,
         enabled: serverConfig?.enabled || false
       };
     } else if (resourceType === 'tools') {

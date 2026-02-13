@@ -1,7 +1,7 @@
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 
 export class SearchScorer {
-  scoreTool(tool: McpTool, query: string): number {
+  scoreTool(tool: Tool, query: string): number {
     const lowerQuery = query.toLowerCase();
 
     // 计算各字段得分

@@ -158,6 +158,7 @@ import { useRouter } from 'vue-router'
 import { useServerStore } from '@stores/server'
 import { useSystemStore } from '@stores/system'
 import { useI18n } from 'vue-i18n'
+import type { Server, ServerConfig } from '@shared-models/server.model'
 import {
   Plus, Platform, VideoPlay, SwitchButton, Refresh, Setting,
   CircleCheckFilled,
@@ -187,12 +188,12 @@ async function handleSave() {
       servers: serversConfig.reduce((acc, curr) => {
         acc[curr.name] = curr.config
         return acc
-      }, {} as Record<string, any>)
+      }, {} as Record<string, ServerConfig>)
     })
 
     ElMessage.success(t('action.saveSuccess'))
-  } catch (err: any) {
-    ElMessage.error(err.message || t('error.saveFailed'))
+  } catch (err: unknown) {
+    ElMessage.error((err as Error).message || t('error.saveFailed'))
   }
 }
 
@@ -211,7 +212,7 @@ function navigateToTab(serverId: string, tabName: string) {
   router.push({ name: 'dashboard', query: { tab: tabName } })
 }
 
-function handleCardClick(server: any) {
+function handleCardClick(server: Server) {
   if (server.status === 'online') {
     navigateToTab(server.id, 'logs')
   } else {
@@ -219,31 +220,31 @@ function handleCardClick(server: any) {
   }
 }
 
-async function startServer(server: any) {
+async function startServer(server: Server) {
   try {
     await store.startServer(server.id)
     ElMessage.success(t('action.started'))
-  } catch (err: any) {
-    ElMessage.error(err.message || t('error.connectionFailed'))
+  } catch (err: unknown) {
+    ElMessage.error((err as Error).message || t('error.connectionFailed'))
   }
 }
 
-async function stopServer(server: any) {
+async function stopServer(server: Server) {
   try {
     await store.stopServer(server.id)
     ElMessage.success(t('action.stopped'))
-  } catch (err: any) {
-    ElMessage.error(err.message || t('error.connectionFailed'))
+  } catch (err: unknown) {
+    ElMessage.error((err as Error).message || t('error.connectionFailed'))
   }
 }
 
-async function restartServer(server: any) {
+async function restartServer(server: Server) {
   try {
     await store.stopServer(server.id)
     await store.startServer(server.id)
     ElMessage.success(t('action.restarted'))
-  } catch (err: any) {
-    ElMessage.error(err.message || t('error.connectionFailed'))
+  } catch (err: unknown) {
+    ElMessage.error((err as Error).message || t('error.connectionFailed'))
   }
 }
 </script>

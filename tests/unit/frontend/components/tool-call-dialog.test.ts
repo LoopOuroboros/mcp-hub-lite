@@ -57,7 +57,7 @@ describe('ToolCallDialog Component', () => {
     })
 
     // Access the component instance to check refs
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     // argsJson should be populated based on schema
     const expected = {
       timezone: 'UTC'

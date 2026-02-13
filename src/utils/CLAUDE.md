@@ -84,7 +84,7 @@ export interface McpTransport {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   sendRequest(method: string, params?: any): Promise<any>;
-  onEvent(event: string, handler: Function): void;
+  onEvent(event: string, handler: (data: any) => void): void;
   isConnected(): boolean;
 }
 ```

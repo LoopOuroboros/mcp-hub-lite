@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { SearchScorer } from '@services/search/search-scorer.js';
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 
 describe('SearchScorer', () => {
   const scorer = new SearchScorer();
 
   describe('scoreTool()', () => {
     it('should score exact match with highest value', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -19,7 +19,7 @@ describe('SearchScorer', () => {
     });
 
     it('should score partial match with lower value', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -33,7 +33,7 @@ describe('SearchScorer', () => {
     });
 
     it('should score description matches', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'Database Tool',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -46,7 +46,7 @@ describe('SearchScorer', () => {
     });
 
     it('should score tag matches', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'Database Tool',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -57,7 +57,7 @@ describe('SearchScorer', () => {
     });
 
     it('should handle no matches', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -68,7 +68,7 @@ describe('SearchScorer', () => {
     });
 
     it('should score tools with no description', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: '',
         serverName: 'mysql-server'
@@ -79,7 +79,7 @@ describe('SearchScorer', () => {
     });
 
     it('should score tools with no tags', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute MySQL queries',
         serverName: 'mysql-server'
@@ -92,7 +92,7 @@ describe('SearchScorer', () => {
 
   describe('score calculation', () => {
     it('should weight name higher than description', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute database queries',
         serverName: 'mysql-server'
@@ -106,7 +106,7 @@ describe('SearchScorer', () => {
     });
 
     it('should sum scores from multiple matches', () => {
-      const tool: McpTool = {
+      const tool: Tool = {
         name: 'MySQL Query',
         description: 'Execute MySQL database queries',
         serverName: 'mysql-server'

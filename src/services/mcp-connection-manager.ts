@@ -1,13 +1,16 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { TransportFactory } from '@utils/transports/transport-factory.js';
 import { logger } from '@utils/logger.js';
 import { withSpan, createMcpSpanOptions } from '@utils/index.js';
-import { McpTool } from '@models/tool.model.js';
-import { McpResource } from '@models/resource.model.js';
+import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
+import type { Resource } from '@shared-models/resource.model.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
+import type { ServerConfig } from '@config/config.schema.js';
+import type { ServerInstanceConfig } from '@config/config.schema.js';
 
 export interface ServerStatus {
   connected: boolean;
@@ -23,16 +26,17 @@ export interface ServerStatus {
 
 class McpConnectionManager {
   private clients: Map<string, Client> = new Map();
-  private transports: Map<string, any> = new Map(); // Using 'any' for transport types
+  private transports: Map<string, Transport> = new Map();
   private serverStatus: Map<string, ServerStatus> = new Map();
-  public toolCache: Map<string, McpTool[]> = new Map();
-  private serverNameToolCache: Map<string, McpTool[]> = new Map(); // 服务器名称级别的工具缓存
-  private resourceCache: Map<string, McpResource[]> = new Map();
+  public toolCache: Map<string, Tool[]> = new Map();
+  private serverNameToolCache: Map<string, Tool[]> = new Map(); // 服务器名称级别的工具缓存
+  private resourceCache: Map<string, Resource[]> = new Map();
   private nameToIdMap: Map<string, string> = new Map(); // 服务器名称到ID的映射
 
   constructor() {
     // 监听服务器删除事件，自动断开连接
-    eventBus.subscribe(EventTypes.SERVER_DELETED, (serverName: string) => {
+    eventBus.subscribe(EventTypes.SERVER_DELETED, (data: unknown) => {
+      const serverName = data as string;
       // 根据服务器名称找到所有实例并断开连接
       const serverInstances = hubManager.getServerInstanceByName(serverName);
       serverInstances.forEach(instance => {
@@ -43,16 +47,16 @@ class McpConnectionManager {
     });
   }
 
-  public async connect(server: any): Promise<boolean> {
+  public async connect(server: ServerConfig & ServerInstanceConfig): Promise<boolean> {
     // Use trace helper to wrap the entire connection process
     return withSpan<boolean>(
       'mcp.connection.connect',
       createMcpSpanOptions('connect', server.id || 'unknown', undefined, {
         'mcp.server.type': server.type,
-        'mcp.server.name': server.name || 'unknown'
+        'mcp.server.name': 'unknown' // Will be updated with actual name after serverInfo is retrieved
       }),
-      async (_span) => {
-        let serverInfo;
+      async () => {
+        let serverInfo: { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined;
         try {
           logger.info(`Connecting to server [${server.id || 'unknown'}]...`);
 
@@ -97,13 +101,13 @@ class McpConnectionManager {
               const currentStatus = this.serverStatus.get(server.id!);
               // Only update status if it was previously connected or starting
               if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-                 this.serverStatus.set(server.id!, {
-                   connected: false,
-                   lastCheck: Date.now(),
-                   toolsCount: 0,
-                   resourcesCount: 0,
-                   error: 'Connection closed unexpectedly'
-                 });
+                this.serverStatus.set(server.id!, {
+                  connected: false,
+                  lastCheck: Date.now(),
+                  toolsCount: 0,
+                  resourcesCount: 0,
+                  error: 'Connection closed unexpectedly'
+                });
               }
             };
           }
@@ -119,7 +123,7 @@ class McpConnectionManager {
             transport.onstderr = (data: string) => {
               // 使用服务器ID和名称进行日志存储
               const serverId = server?.id ?? 'unknown';
-              const serverName = server?.name ?? server?.id ?? 'unknown';
+              const serverName = serverInfo!.name;
               logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
             };
           }
@@ -266,7 +270,7 @@ class McpConnectionManager {
       }
       if (disconnectedServerName !== 'unknown') {
         // 重新计算该服务器名称下所有实例的工具
-        const allToolsForServer: McpTool[] = [];
+        const allToolsForServer: Tool[] = [];
         for (const [id, cachedTools] of this.toolCache.entries()) {
           let instanceServerName = 'unknown';
           for (const [name, instanceId] of this.nameToIdMap.entries()) {
@@ -338,7 +342,7 @@ class McpConnectionManager {
     logger.info('All servers disconnected');
   }
 
-  public async refreshTools(serverId: string): Promise<McpTool[]> {
+  public async refreshTools(serverId: string): Promise<Tool[]> {
     const client = this.clients.get(serverId);
     if (!client) {
       throw new Error(`Server ${serverId} not connected`);
@@ -354,10 +358,10 @@ class McpConnectionManager {
           break;
         }
       }
-      const tools: McpTool[] = result.tools.map(t => ({
+      const tools: Tool[] = result.tools.map(t => ({
         name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema as any,
+        inputSchema: t.inputSchema as JsonSchema,
         serverName: serverName
       }));
 
@@ -366,7 +370,7 @@ class McpConnectionManager {
       // 更新服务器名称级别的工具缓存
       if (serverName !== 'unknown') {
         // 获取该服务器名称下所有实例的工具
-        const allToolsForServer: McpTool[] = [];
+        const allToolsForServer: Tool[] = [];
         for (const [id, cachedTools] of this.toolCache.entries()) {
           // 检查这个 id 是否属于当前服务器名称
           let instanceServerName = 'unknown';
@@ -398,7 +402,7 @@ class McpConnectionManager {
     }
   }
 
-  public async refreshResources(serverId: string): Promise<McpResource[]> {
+  public async refreshResources(serverId: string): Promise<Resource[]> {
     const client = this.clients.get(serverId);
     if (!client) {
       throw new Error(`Server ${serverId} not connected`);
@@ -412,7 +416,7 @@ class McpConnectionManager {
       }
 
       const result = await client.listResources();
-      const resources: McpResource[] = result.resources.map(r => ({
+      const resources: Resource[] = result.resources.map(r => ({
         name: r.name,
         uri: r.uri,
         mimeType: r.mimeType,
@@ -430,9 +434,11 @@ class McpConnectionManager {
 
       logger.info(`Refreshed resources for server [${serverId}]: ${resources.length} resources found`);
       return resources;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check if error is "Method not found" (MCP error -32601), which means server doesn't implement resources
-      if (error.code === -32601 || error.message?.includes('Method not found')) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === -32601) {
+        logger.info(`Server [${serverId}] does not support resources functionality`);
+      } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.includes('Method not found')) {
         logger.info(`Server [${serverId}] does not support resources functionality`);
       } else {
         logger.warn(`Failed to list resources for server [${serverId}]:`, error);
@@ -445,19 +451,19 @@ class McpConnectionManager {
     return this.serverStatus.get(serverId);
   }
 
-  public getTools(serverId: string): McpTool[] {
+  public getTools(serverId: string): Tool[] {
     const tools = this.toolCache.get(serverId) || [];
     logger.info(`getTools for [${serverId}]: returned ${tools.length} tools`);
     return tools;
   }
 
-  public getResources(serverId: string): McpResource[] {
+  public getResources(serverId: string): Resource[] {
     const resources = this.resourceCache.get(serverId) || [];
     logger.info(`getResources for [${serverId}]: returned ${resources.length} resources`);
     return resources;
   }
 
-  public async readResource(serverId: string, uri: string): Promise<any> {
+  public async readResource(serverId: string, uri: string): Promise<unknown> {
     const client = this.clients.get(serverId);
     if (!client) {
       throw new Error(`Server ${serverId} not connected`);
@@ -465,15 +471,15 @@ class McpConnectionManager {
     return client.readResource({ uri });
   }
 
-  public getAllTools(): McpTool[] {
-    const allTools: McpTool[] = [];
+  public getAllTools(): Tool[] {
+    const allTools: Tool[] = [];
     for (const tools of this.toolCache.values()) {
       allTools.push(...tools);
     }
     return allTools;
   }
 
-  public getToolCacheEntries(): [string, McpTool[]][] {
+  public getToolCacheEntries(): [string, Tool[]][] {
     return Array.from(this.toolCache.entries());
   }
 
@@ -489,7 +495,7 @@ class McpConnectionManager {
     return this.clients.get(serverId);
   }
 
-  public async callToolByName(name: string, toolName: string, args: any): Promise<any> {
+  public async callToolByName(name: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
       throw new Error(`Server ${name} not connected or not found`);
@@ -506,7 +512,7 @@ class McpConnectionManager {
     return this.serverStatus.get(serverId);
   }
 
-  public getToolsByName(name: string): McpTool[] {
+  public getToolsByName(name: string): Tool[] {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
       return [];
@@ -514,7 +520,7 @@ class McpConnectionManager {
     return this.toolCache.get(serverId) || [];
   }
 
-  public getResourcesByName(name: string): McpResource[] {
+  public getResourcesByName(name: string): Resource[] {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
       return [];
@@ -522,14 +528,14 @@ class McpConnectionManager {
     return this.resourceCache.get(serverId) || [];
   }
 
-  public getTool(serverName: string, toolName: string): McpTool | undefined {
+  public getTool(serverName: string, toolName: string): Tool | undefined {
     const tools = this.serverNameToolCache.get(serverName);
     return tools?.find(t => t.name === toolName);
   }
 
-  public getAllResources(): Record<string, McpResource[]> {
-    const result: Record<string, McpResource[]> = {};
-    
+  public getAllResources(): Record<string, Resource[]> {
+    const result: Record<string, Resource[]> = {};
+
     // Group resources by server name
     for (const [serverId, resources] of this.resourceCache.entries()) {
       // Find server name for this ID
@@ -540,24 +546,24 @@ class McpConnectionManager {
           break;
         }
       }
-      
+
       if (!result[serverName]) {
         result[serverName] = [];
       }
       result[serverName].push(...resources);
     }
-    
+
     return result;
   }
 
-  public async callTool(serverId: string, toolName: string, args: any): Promise<any> {
+  public async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
     // Use trace helper to wrap the tool call
-    return withSpan<any>(
+    return withSpan<unknown>(
       'mcp.tool.call',
       createMcpSpanOptions('call', serverId, toolName, {
         'mcp.tool.args': JSON.stringify(args)
       }),
-      async (_span) => {
+      async () => {
         const client = this.clients.get(serverId);
         if (!client) {
           throw new Error(`Server ${serverId} not connected`);
@@ -578,13 +584,13 @@ class McpConnectionManager {
   }
 
   // 获取基于服务器名称的工具缓存
-  public getToolsByServerName(serverName: string): McpTool[] {
+  public getToolsByServerName(serverName: string): Tool[] {
     return this.serverNameToolCache.get(serverName) || [];
   }
 
   // 获取所有服务器名称的工具（用于搜索）
-  public getAllToolsByServerName(): McpTool[] {
-    const allTools: McpTool[] = [];
+  public getAllToolsByServerName(): Tool[] {
+    const allTools: Tool[] = [];
     for (const tools of this.serverNameToolCache.values()) {
       allTools.push(...tools);
     }

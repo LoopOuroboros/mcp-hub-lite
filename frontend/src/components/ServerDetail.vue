@@ -614,7 +614,7 @@ const saveConfig = async () => {
 const openEditJson = () => {
   if (!server.value) return
 
-  const configObj: any = {
+  const configObj: Record<string, unknown> = {
     env: server.value.config.env || {},
     enabled: server.value.config.enabled
   }

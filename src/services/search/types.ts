@@ -1,7 +1,7 @@
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 
 export interface SearchResult {
-  tool: McpTool;
+  tool: Tool;
   score: number;
 }
 
@@ -18,7 +18,5 @@ export interface SearchOptions {
 export interface SearchQuery {
   original: string;
   tokens: string[];
-  filters?: {
-    // serverId 字段已从 McpTool 接口中移除，如需按服务器筛选，请使用其他方法
-  };
+  filters?: Record<string, never>;
 }

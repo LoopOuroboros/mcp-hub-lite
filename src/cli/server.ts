@@ -48,7 +48,7 @@ export async function getServerStatus(pid?: string) {
       pid: actualPid,
       servers: hubManager.getAllServers().length
     };
-  } catch (error) {
+  } catch {
     return { running: false, message: 'Server process not found' };
   }
 }

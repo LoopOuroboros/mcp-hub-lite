@@ -1,8 +1,8 @@
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 
 export interface SearchResult {
-  tool: McpTool;
+  tool: Tool;
   score: number;
 }
 

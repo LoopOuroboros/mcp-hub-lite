@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SearchCacheService } from '@services/search/search-cache.js';
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 
 describe('SearchCacheService', () => {
   const cacheService = new SearchCacheService();
@@ -13,7 +13,7 @@ describe('SearchCacheService', () => {
     });
 
     it('should set and retrieve cache data', () => {
-      const mockTools: McpTool[] = [
+      const mockTools: Tool[] = [
         { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
@@ -25,7 +25,7 @@ describe('SearchCacheService', () => {
     });
 
     it('should invalidate cache', () => {
-      const mockTools: McpTool[] = [
+      const mockTools: Tool[] = [
         { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
@@ -40,7 +40,7 @@ describe('SearchCacheService', () => {
 
   describe('cache expiration', () => {
     it('should invalidate cache after TTL', () => {
-      const mockTools: McpTool[] = [
+      const mockTools: Tool[] = [
         { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 
@@ -58,7 +58,7 @@ describe('SearchCacheService', () => {
     });
 
     it('should return valid data before TTL expires', () => {
-      const mockTools: McpTool[] = [
+      const mockTools: Tool[] = [
         { name: 'Tool 1', description: 'Description', serverName: 'test-server' }
       ];
 

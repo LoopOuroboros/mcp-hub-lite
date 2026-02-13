@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ServerRequest } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * 创建模拟的 MCP 服务器用于测试
@@ -13,8 +14,8 @@ export class MockMcpServer {
       tools?: Array<{
         name: string;
         description?: string;
-        inputSchema?: any;
-        handler: (args: any) => Promise<any>;
+        inputSchema?: unknown;
+        handler: (args: unknown) => Promise<unknown>;
       }>;
     }
   ) {
@@ -40,8 +41,28 @@ export class MockMcpServer {
           jsonrpc: '2.0' as const
         };
 
-        this.server.server.setRequestHandler(schema as any, async (request) => {
-          return tool.handler(request.params?.arguments);
+        // @ts-expect-error - Test helper schema doesn't need full type safety
+        this.server.server.setRequestHandler(schema, async (request: ServerRequest) => {
+          // Safely extract arguments from request params
+          let args: unknown = undefined;
+          if (request.params && typeof request.params === 'object' && 'arguments' in request.params) {
+            args = (request.params as { arguments?: unknown }).arguments;
+          }
+          const result = await tool.handler(args);
+          // For test purposes, wrap the result in a valid CallToolResult structure
+          if (typeof result === 'object' && result !== null) {
+            return {
+              content: [],
+              ...result
+            };
+          } else {
+            return {
+              content: [{
+                type: 'text',
+                text: String(result)
+              }]
+            };
+          }
         });
       }
     }
@@ -71,18 +92,7 @@ export class MockMcpServer {
  * 更高效，无需启动子进程
  */
 export class InMemoryMcpServer {
-  constructor(
-    _config: {
-      name: string;
-      version: string;
-      tools?: Array<{
-        name: string;
-        description?: string;
-        inputSchema?: any;
-        handler: (args: any) => Promise<any>;
-      }>;
-    }
-  ) {
+  constructor() {
     // 目前未实现内存传输
   }
 }

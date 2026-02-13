@@ -2,11 +2,11 @@ import * as fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { logger } from '@utils/logger.js';
-import { SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema } from './config.schema.js';
-import type { McpServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig } from './config.schema.js';
+import { SystemConfigSchema, ServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema } from './config.schema.js';
+import type { ServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig } from './config.schema.js';
 
 // Re-export types for external use
-export { McpServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig, SystemConfigSchema, McpServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema };
+export { ServerConfig, SystemConfig, ServerInstanceConfig, ObservabilityConfig, SystemConfigSchema, ServerConfigSchema, ServerInstanceConfigSchema, ObservabilityConfigSchema };
 
 export class ConfigManager {
   private configPath: string;
@@ -23,7 +23,7 @@ export class ConfigManager {
    * 统一的类型转换方法：将 type: 'http' 转换为 type: 'streamable-http'
    * 确保所有场景（加载、添加、更新）的兼容性
    */
-  private convertHttpToStreamableHttp(config: any): any {
+  private convertHttpToStreamableHttp(config: unknown): unknown {
     if (!config) return config;
 
     // 如果是数组，处理每个元素
@@ -32,18 +32,16 @@ export class ConfigManager {
     }
 
     // 如果是对象，创建副本以避免直接修改原始对象
-    if (typeof config === 'object') {
-      const result = { ...config };
+    if (typeof config === 'object' && config !== null) {
+      const result: Record<string, unknown> = {};
 
-      // 处理单个服务器配置
-      if (result.type === 'http') {
-        result.type = 'streamable-http';
-      }
-
-      // 递归处理嵌套对象
-      for (const key in result) {
-        if (typeof result[key] === 'object') {
-          result[key] = this.convertHttpToStreamableHttp(result[key]);
+      for (const [key, value] of Object.entries(config)) {
+        if (key === 'type' && value === 'http') {
+          result[key] = 'streamable-http';
+        } else if (typeof value === 'object' && value !== null) {
+          result[key] = this.convertHttpToStreamableHttp(value);
+        } else {
+          result[key] = value;
         }
       }
 
@@ -61,7 +59,7 @@ export class ConfigManager {
         const content = fs.readFileSync(this.configPath, 'utf-8');
         this.config = JSON.parse(content);
         // 统一类型转换：将 http 转换为 streamable-http
-        this.config = this.convertHttpToStreamableHttp(this.config);
+        this.config = this.convertHttpToStreamableHttp(this.config) as SystemConfig;
         // Ensure defaults without validation errors blocking
         try {
           // 使用 safeParse 验证配置
@@ -114,7 +112,7 @@ export class ConfigManager {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
-    } catch (error) {
+    } catch {
       // Ignore
     }
   }
@@ -123,7 +121,7 @@ export class ConfigManager {
     return { ...this.config };
   }
 
-  public getServers(sortByName: boolean = false): Array<{ name: string; config: McpServerConfig }> {
+  public getServers(sortByName: boolean = false): Array<{ name: string; config: ServerConfig }> {
     let servers = Object.entries(this.config.servers || {}).map(([name, config]) => ({ name, config }));
     if (sortByName) {
       servers = [...servers].sort((a, b) => a.name.localeCompare(b.name));
@@ -131,7 +129,7 @@ export class ConfigManager {
     return servers;
   }
 
-  public getServerByName(name: string): McpServerConfig | undefined {
+  public getServerByName(name: string): ServerConfig | undefined {
     return this.config.servers?.[name];
   }
 
@@ -143,7 +141,7 @@ export class ConfigManager {
     return this.serverInstances[name] || [];
   }
 
-  public getServerById(id: string): { name: string; config: McpServerConfig; instance: ServerInstanceConfig } | undefined {
+  public getServerById(id: string): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
     for (const [serverName, instances] of Object.entries(this.serverInstances)) {
       const instance = instances.find(inst => inst.id === id);
       if (instance) {
@@ -153,11 +151,11 @@ export class ConfigManager {
     return undefined;
   }
 
-  public async addServers(servers: Array<{name: string, config: Partial<McpServerConfig>}>): Promise<void> {
+  public async addServers(servers: Array<{name: string, config: Partial<ServerConfig>}>): Promise<void> {
     for (const {name, config} of servers) {
       // 统一类型转换：将 http 转换为 streamable-http
-      const convertedConfig = this.convertHttpToStreamableHttp(config);
-      this.config.servers[name] = McpServerConfigSchema.parse(convertedConfig);
+      const convertedConfig = this.convertHttpToStreamableHttp(config) as Partial<ServerConfig>;
+      this.config.servers[name] = ServerConfigSchema.parse(convertedConfig);
       if (!this.serverInstances[name]) this.serverInstances[name] = [];
     }
     // 确保服务器配置按名称排序
@@ -167,10 +165,10 @@ export class ConfigManager {
     this.saveConfig();
   }
 
-  public async addServer(name: string, config: Partial<McpServerConfig>): Promise<McpServerConfig> {
+  public async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
     // 统一类型转换：将 http 转换为 streamable-http
     const convertedConfig = this.convertHttpToStreamableHttp(config);
-    const validated = McpServerConfigSchema.parse(convertedConfig);
+    const validated = ServerConfigSchema.parse(convertedConfig);
     this.config.servers[name] = validated;
     if (!this.serverInstances[name]) this.serverInstances[name] = [];
     // 确保服务器配置按名称排序
@@ -197,10 +195,10 @@ export class ConfigManager {
     return validated;
   }
 
-  public async updateServer(name: string, updates: Partial<McpServerConfig>): Promise<void> {
+  public async updateServer(name: string, updates: Partial<ServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
       // 统一类型转换：将 http 转换为 streamable-http
-      const convertedUpdates = this.convertHttpToStreamableHttp(updates);
+      const convertedUpdates = this.convertHttpToStreamableHttp(updates) as Partial<ServerConfig>;
       this.config.servers[name] = { ...this.config.servers[name], ...convertedUpdates };
       // 确保服务器配置按名称排序
       this.config.servers = Object.fromEntries(
@@ -238,7 +236,7 @@ export class ConfigManager {
   public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
     // 统一类型转换：将 http 转换为 streamable-http
-    const convertedConfig = this.convertHttpToStreamableHttp(newConfig);
+    const convertedConfig = this.convertHttpToStreamableHttp(newConfig) as Partial<SystemConfig>;
     this.config = SystemConfigSchema.parse({ ...this.config, ...convertedConfig });
     this.logConfigChanges(oldConfig, this.config);
     this.saveConfig();
@@ -247,20 +245,20 @@ export class ConfigManager {
   private logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfig): void {
     const changes: string[] = [];
     
-    const compare = (obj1: any, obj2: any, path: string) => {
+    const compare = (obj1: unknown, obj2: unknown, path: string) => {
       const allKeys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
       
       for (const key of allKeys) {
         const currentPath = path ? `${path}.${key}` : key;
-        const val1 = obj1?.[key];
-        const val2 = obj2?.[key];
+        const val1 = obj1 && typeof obj1 === 'object' ? (obj1 as Record<string, unknown>)[key] : undefined;
+        const val2 = obj2 && typeof obj2 === 'object' ? (obj2 as Record<string, unknown>)[key] : undefined;
         
         if (JSON.stringify(val1) === JSON.stringify(val2)) continue;
         
         if (typeof val1 === 'object' && val1 !== null && typeof val2 === 'object' && val2 !== null && !Array.isArray(val1) && !Array.isArray(val2)) {
           compare(val1, val2, currentPath);
         } else {
-          const formatVal = (v: any) => v === undefined ? 'undefined' : JSON.stringify(v);
+          const formatVal = (v: unknown) => v === undefined ? 'undefined' : JSON.stringify(v);
           changes.push(`${currentPath} = ${formatVal(val1)} -> ${formatVal(val2)}`);
         }
       }

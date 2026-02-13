@@ -1,8 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
-import { McpServerConfigSchema, ServerInstanceConfigSchema } from '@config/config.schema.js';
+import { ServerConfigSchema, ServerInstanceConfigSchema } from '@config/config.schema.js';
+import type { ServerConfig } from '@config/config.schema.js';
 import { logger } from '@utils/logger.js';
+
+interface BatchResultSuccess {
+  name: string;
+  config: Partial<ServerConfig>;
+}
 
 /**
  * Web API routes for server management
@@ -43,7 +49,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       // 接受服务器名称和配置作为请求体
       const postSchema = z.object({
         name: z.string().min(1).max(100),
-        config: McpServerConfigSchema.partial()
+        config: ServerConfigSchema.partial()
       });
       const body = postSchema.parse(request.body);
       const newServer = await hubManager.addServer(body.name, body.config);
@@ -92,7 +98,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // PUT /web/servers/:name
   fastify.put<{ Params: { name: string } }>('/web/servers/:name', async (request, reply) => {
     try {
-      const partialSchema = McpServerConfigSchema.partial();
+      const partialSchema = ServerConfigSchema.partial();
       const body = partialSchema.parse(request.body);
 
       const updatedServer = await hubManager.updateServer(request.params.name, body);
@@ -155,14 +161,14 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       const batchSchema = z.object({
         mcpServers: z.array(z.object({
           name: z.string().min(1).max(100),
-          config: McpServerConfigSchema.partial()
+          config: ServerConfigSchema.partial()
         }))
       });
 
       const body = batchSchema.parse(request.body);
 
       const results = {
-        success: [] as any[],
+        success: [] as BatchResultSuccess[],
         errors: [] as { name: string; error: string }[]
       };
 
@@ -187,7 +193,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
           }
 
           // 使用 Zod 验证服务器配置（现在支持 "http" 类型）
-          const validatedConfig = McpServerConfigSchema.partial().parse(serverConfig);
+          const validatedConfig = ServerConfigSchema.partial().parse(serverConfig);
 
           serversToAdd.push({ name: processedName, config: validatedConfig });
           if (validatedConfig.enabled !== false && validatedConfig.enabled !== undefined) {

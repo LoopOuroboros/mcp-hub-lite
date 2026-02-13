@@ -97,7 +97,7 @@ program
                   break;
                 }
               }
-            } catch (err) {
+            } catch {
               // Ignore log read errors
             }
 
@@ -132,8 +132,8 @@ program
         const servers = await response.json();
         console.table(servers);
         process.exit(0);
-    } catch (error: any) {
-        console.error('Failed to list servers:', error.message);
+    } catch (error) {
+        console.error('Failed to list servers:', (error as Error).message);
         console.error('Is the server running?');
         process.exit(1);
     }
@@ -192,7 +192,7 @@ program
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
-        const servers = await response.json() as any[];
+        const servers = await response.json() as Array<{ name: string; config: Record<string, unknown> }>;
 
         if (servers.length > 0) {
           console.log(`${colors.bold}Managed MCP Servers:${colors.reset}`);
@@ -201,8 +201,8 @@ program
         } else {
           console.log('No managed MCP servers configured.');
         }
-      } catch (error: any) {
-        console.error('Warning: Failed to fetch server list:', error.message);
+      } catch (error) {
+        console.error('Warning: Failed to fetch server list:', (error as Error).message);
       }
     } else {
       console.log('Server is not running. Start it with: npm run start');
@@ -229,13 +229,13 @@ program
       setTimeout(() => {
         process.exit(0);
       }, 100);
-    } catch (error: any) {
-      if (error.code === 'ESRCH') {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') {
         console.error('Server process not found (stale PID file?). Cleaning up...');
         PidManager.removePid();
         process.exit(0);
       } else {
-        console.error('Failed to stop server:', error.message);
+        console.error('Failed to stop server:', (error as Error).message);
         process.exit(1);
       }
     }
@@ -257,8 +257,8 @@ program
                 await new Promise(r => setTimeout(r, 500));
                 tries++;
             }
-        } catch (error: any) {
-             if (error.code !== 'ESRCH') console.error('Error stopping:', error.message);
+        } catch (error) {
+             if ((error as NodeJS.ErrnoException).code !== 'ESRCH') console.error('Error stopping:', (error as Error).message);
         }
     }
 
@@ -282,8 +282,8 @@ program
         child.on('close', (code) => {
            process.exit(code || 0);
         });
-    } catch (e: any) {
-        console.error('Failed to restart server:', e.message);
+    } catch (e) {
+        console.error('Failed to restart server:', (e as Error).message);
         process.exit(1);
     }
   });

@@ -50,7 +50,8 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       args: [],
       enabled: true,
       type: 'stdio' as const,
-      timeout: 60000
+      timeout: 60000,
+      allowedTools: []
     });
 
     // 添加服务器实例
@@ -64,12 +65,22 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   });
 
   it('should correctly initialize MCP connection with SDK', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
     const status = mcpConnectionManager.getStatus(serverId);
@@ -78,12 +89,22 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   });
 
   it('should list tools using SDK Client', async () => {
+    // 获取服务器配置和实例配置
+    const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
     await mcpConnectionManager.connect({
       id: serverId,
-      name: serverName,
-      command: 'node',
-      args: [],
-      type: 'stdio'
+      command: serverInfo.config.command,
+      args: serverInfo.config.args,
+      enabled: serverInfo.config.enabled,
+      type: serverInfo.config.type,
+      timeout: serverInfo.config.timeout,
+      allowedTools: serverInfo.config.allowedTools,
+      timestamp: serverInfo.instance.timestamp,
+      hash: serverInfo.instance.hash
     });
 
     const tools = mcpConnectionManager.getTools(serverId);

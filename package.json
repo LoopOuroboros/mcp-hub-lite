@@ -28,7 +28,7 @@
     "test:frontend": "vitest run --config vitest.frontend.config.ts",
     "test:summary": "node scripts/generate-test-summary.js",
     "lint": "eslint . --fix",
-    "lint:log": "eslint . --no-color --format stylish --output-file logs/lint.log && node scripts/analyze-lint-log.js || node scripts/analyze-lint-log.js",
+    "lint:log": "eslint . --no-color --format stylish --output-file logs/lint.log || node scripts/analyze-lint-log.js",
     "format": "prettier --write .",
     "prepare": "husky",
     "validate:esm": "node --input-type=module -e \"console.log('ESM Environment Valid')\"",

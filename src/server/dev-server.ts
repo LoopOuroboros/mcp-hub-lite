@@ -1,4 +1,5 @@
 import { buildApp } from '@src/app.js';
+import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
 import { logger } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
@@ -11,7 +12,7 @@ logger.setLevel('debug');
 // Enable dev logging to file
 logger.enableDevLog();
 
-let app: any = null;
+let app: FastifyInstance | null = null;
 
 async function startDevServer() {
   try {

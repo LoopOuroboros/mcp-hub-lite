@@ -1,8 +1,8 @@
-import { McpTool } from '@models/tool.model.js';
+import type { Tool } from '@shared-models/tool.model.js';
 import { logger } from '@utils/logger.js';
 
 export class SearchCacheService {
-  private cache: McpTool[] | null = null;
+  private cache: Tool[] | null = null;
   private lastUpdate: number = 0;
   private readonly CACHE_TTL = 30 * 1000;
 
@@ -12,7 +12,7 @@ export class SearchCacheService {
     return Date.now() - this.lastUpdate < this.CACHE_TTL;
   }
 
-  get(): McpTool[] | null {
+  get(): Tool[] | null {
     if (!this.isValid()) {
       this.cache = null;
       return null;
@@ -21,7 +21,7 @@ export class SearchCacheService {
     return this.cache;
   }
 
-  set(tools: McpTool[]): void {
+  set(tools: Tool[]): void {
     this.cache = tools;
     this.lastUpdate = Date.now();
   }
@@ -32,8 +32,8 @@ export class SearchCacheService {
   }
 
   updateTool(): void {
-    // 由于 McpTool 接口已移除 serverId 字段，此方法需要重构
+    // 由于 Tool 接口已移除 serverId 字段，此方法需要重构
     // 目前暂时保留但不执行任何操作，或根据实际需求修改
-    logger.warn('updateTool method is deprecated because serverId field is removed from McpTool', { subModule: 'Search' });
+    logger.warn('updateTool method is deprecated because serverId field is removed from Tool', { subModule: 'Search' });
   }
 }

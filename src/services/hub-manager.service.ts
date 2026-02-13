@@ -1,4 +1,4 @@
-import { ConfigManager, configManager, McpServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
+import { ConfigManager, configManager, ServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
 import { logger } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
@@ -13,7 +13,7 @@ export class HubManagerService {
   /**
    * 批量添加服务器配置（不自动启动，用于优化批量操作性能）
    */
-  async addServersWithoutAutoStart(servers: Array<{ name: string; config: Partial<McpServerConfig> }>): Promise<void> {
+  async addServersWithoutAutoStart(servers: Array<{ name: string; config: Partial<ServerConfig> }>): Promise<void> {
     await this.configManager.addServers(servers);
     // 为所有新增的服务器发布 SERVER_ADDED 事件
     for (const { name } of servers) {
@@ -60,11 +60,11 @@ export class HubManagerService {
     await Promise.all(connectPromises);
   }
 
-  getAllServers(): Array<{ name: string; config: McpServerConfig }> {
+  getAllServers(): Array<{ name: string; config: ServerConfig }> {
     return this.configManager.getServers();
   }
 
-  getServerById(id: string): { name: string; config: McpServerConfig; instance: ServerInstanceConfig } | undefined {
+  getServerById(id: string): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
     // 遍历所有服务器和实例，查找匹配的 id
     const serverInstances = this.configManager.getServerInstances();
     for (const [serverName, instances] of Object.entries(serverInstances)) {
@@ -83,7 +83,7 @@ export class HubManagerService {
     return undefined;
   }
 
-  getServerByName(name: string): McpServerConfig | undefined {
+  getServerByName(name: string): ServerConfig | undefined {
     return this.configManager.getServerByName(name);
   }
 
@@ -95,7 +95,7 @@ export class HubManagerService {
     return this.configManager.getServerInstanceByName(name);
   }
 
-  async addServer(name: string, config: Partial<McpServerConfig>): Promise<McpServerConfig> {
+  async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
     const newServer = await this.configManager.addServer(name, config);
     logger.info(`Server added: [${name}]`);
 
@@ -123,7 +123,7 @@ export class HubManagerService {
     return newInstance;
   }
 
-  async updateServer(name: string, updates: Partial<McpServerConfig>): Promise<McpServerConfig | null> {
+  async updateServer(name: string, updates: Partial<ServerConfig>): Promise<ServerConfig | null> {
     const existing = this.getServerByName(name);
     if (!existing) {
       logger.warn(`Attempted to update non-existent server: ${name}`);

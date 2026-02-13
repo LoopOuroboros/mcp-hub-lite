@@ -1,19 +1,3 @@
-import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-
-/**
- * 通用传输接口
- * 所有传输类型都必须实现此接口
- */
-export interface Transport {
-  onmessage?: (message: JSONRPCMessage) => void;
-  onerror?: (error: Error) => void;
-  onclose?: () => void;
-
-  start(): Promise<void>;
-  close(): Promise<void>;
-  send(message: JSONRPCMessage): Promise<void>;
-}
-
 /**
  * STDIO 传输配置
  */

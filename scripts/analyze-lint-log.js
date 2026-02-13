@@ -51,7 +51,7 @@ async function analyzeLintLog() {
         const sortedStats = [...messageCounts.entries()].sort((a, b) => b[1] - a[1]);
 
         let summary = '\n\n=================================================================\n';
-        summary += `LINT ANALYSIS REPORT (${new Date().toISOString()})\n`;
+        summary += `LINT ANALYSIS REPORT (${new Date().toLocaleString()})\n`;
         summary += '=================================================================\n';
         summary += `Total Issues Found: ${totalIssues}\n\n`;
         summary += 'Top Issues by Message:\n';

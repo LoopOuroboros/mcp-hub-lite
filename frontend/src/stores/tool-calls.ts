@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { ToolCallStartedEvent, ToolCallCompletedEvent, ToolCallErrorEvent } from '@shared-types/websocket.types'
 
 export interface ToolCall {
   requestId: string
@@ -49,7 +50,7 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
   }
 
   // 处理工具调用开始事件
-  function handleToolCallStarted(data: any) {
+  function handleToolCallStarted(data: ToolCallStartedEvent['data']) {
     updateCall({
       requestId: data.requestId,
       serverId: data.serverId,
@@ -63,12 +64,12 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
   }
 
   // 处理工具调用完成事件
-  function handleToolCallCompleted(data: any) {
+  function handleToolCallCompleted(data: ToolCallCompletedEvent['data']) {
     completeCall(data.requestId, data.result)
   }
 
   // 处理工具调用错误事件
-  function handleToolCallError(data: any) {
+  function handleToolCallError(data: ToolCallErrorEvent['data']) {
     completeCall(data.requestId, undefined, data.error)
   }
 

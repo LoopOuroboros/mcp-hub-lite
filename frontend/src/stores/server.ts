@@ -2,26 +2,12 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { http } from '@utils/http'
 import { useWebSocketStore } from '@stores/websocket'
-import type { McpServerConfig, ServerInstanceConfig, LogEntry, Server } from '@shared-models/server.model'
+import type { ServerConfig, ServerInstanceConfig, LogEntry, Server, StatusInfo } from '@shared-models/server.model'
 import type { ServerStatus } from '@shared-types/common.types'
 import type { Tool } from '@shared-models/tool.model'
 import type { Resource } from '@shared-models/resource.model'
 
-interface McpStatus {
-  id: string
-  status: {
-    connected: boolean
-    error?: string
-    lastCheck: number
-    toolsCount: number
-    resourcesCount: number
-    pid?: number
-    startTime?: number
-    version?: string
-  }
-}
-
-export type { Server, ServerStatus, McpServerConfig, ServerInstanceConfig, LogEntry, Tool, Resource }
+export type { Server, ServerStatus, ServerConfig, ServerInstanceConfig, LogEntry, Tool, Resource, StatusInfo }
 
 export const useServerStore = defineStore('server', () => {
   const servers = ref<Server[]>([])
@@ -48,9 +34,9 @@ export const useServerStore = defineStore('server', () => {
     error.value = null
     try {
       const [serverConfigs, serverInstances, statuses] = await Promise.all([
-        http.get<Array<{ name: string; config: McpServerConfig }>>('/web/servers'),
+        http.get<Array<{ name: string; config: ServerConfig }>>('/web/servers'),
         http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances'),
-        http.get<McpStatus[]>('/web/mcp/status')
+        http.get<StatusInfo[]>('/web/mcp/status')
       ])
 
       const existingLogs = new Map(servers.value.map(s => [s.id, s.logs]))
@@ -159,7 +145,7 @@ export const useServerStore = defineStore('server', () => {
         config: serverData.config || {}
       }
 
-      await http.post<{ name: string; config: McpServerConfig }>('/web/servers', serverBasePayload)
+      await http.post<{ name: string; config: ServerConfig }>('/web/servers', serverBasePayload)
 
       // 第二步：添加服务器实例配置（现在自动在后端完成）
 
@@ -205,7 +191,7 @@ export const useServerStore = defineStore('server', () => {
 
       if (serverData.config) {
         // 更新服务器配置
-        const payload: Partial<McpServerConfig> = {}
+        const payload: Partial<ServerConfig> = {}
         if (serverData.config.command) payload.command = serverData.config.command
         if (serverData.config.args) payload.args = serverData.config.args
         if (serverData.config.env) payload.env = serverData.config.env

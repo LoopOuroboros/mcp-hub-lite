@@ -1,5 +1,5 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { Transport } from './transport.interface.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
 
 // Use EventSource from the 'eventsource' package for Node.js compatibility
@@ -36,7 +36,7 @@ export class SseTransport implements Transport {
     // Note: The 'eventsource' package doesn't support custom headers directly,
     // but we can pass them as options
     try {
-      const options: any = {};
+      const options: Record<string, unknown> = {};
       if (Object.keys(this.headers).length > 0) {
         options.headers = this.headers;
       }
@@ -53,7 +53,7 @@ export class SseTransport implements Transport {
         }
       };
 
-      this.eventSource.onerror = (_event) => {
+      this.eventSource.onerror = () => {
         const error = new Error(`SSE connection error for ${this.url}`);
         logger.error('SSE connection error:', error);
 
@@ -101,10 +101,25 @@ export class SseTransport implements Transport {
     }
   }
 
-  async send(_message: JSONRPCMessage): Promise<void> {
+  async send(message: JSONRPCMessage): Promise<void> {
     // SSE is unidirectional (server to client only)
     // For bidirectional communication, we need a separate HTTP endpoint
     // This is a limitation of SSE protocol
-    throw new Error('SSE transport does not support sending messages (unidirectional protocol)');
+    const error = new Error(
+      'SSE transport does not support sending messages. ' +
+      'SSE is a unidirectional protocol (server-to-client only). ' +
+      'For bidirectional MCP communication, use stdio or HTTP transports instead.'
+    );
+
+    // Type-safe way to access message properties
+    const messageId = 'id' in message ? String(message.id) : 'unknown';
+    const method = 'method' in message ? String(message.method) : 'unknown';
+
+    logger.warn('Attempted to send message via SSE transport', {
+      messageId,
+      method
+    });
+
+    throw error;
   }
 }

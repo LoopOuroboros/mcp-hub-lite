@@ -55,7 +55,7 @@ export class PidManager {
       // process.kill(pid, 0) 检查进程是否存在，不会实际杀死进程
       process.kill(pid, 0);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

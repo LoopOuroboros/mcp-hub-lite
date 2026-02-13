@@ -1,7 +1,6 @@
 import { logger } from '@utils/logger.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
-
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+import type { LogLevel } from '@shared-types/common.types.js';
 
 export interface LogEntry {
   timestamp: number;

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import Fastify from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import { webServerRoutes } from '@api/web/servers.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import type { ServerConfig } from '@config/config.schema.js';
 
 // Mock hubManager
 vi.mock('@services/hub-manager.service.js', () => ({
@@ -21,7 +22,7 @@ vi.mock('@services/hub-manager.service.js', () => ({
 }));
 
 describe('Server API Routes', () => {
-  let app: any;
+  let app: FastifyInstance;
 
   beforeEach(async () => {
     app = Fastify();
@@ -35,8 +36,19 @@ describe('Server API Routes', () => {
   });
 
   it('GET /api/servers should return all servers', async () => {
-    const mockServers = [{ id: '1', name: 'test' }];
-    vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers as any);
+    const mockServers = [{
+      id: '1',
+      name: 'test',
+      config: {
+        type: 'stdio' as const,
+        command: 'test',
+        args: [],
+        enabled: true,
+        allowedTools: [],
+        timeout: 30000
+      }
+    }];
+    vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
     const response = await app.inject({
       method: 'GET',
@@ -57,14 +69,17 @@ describe('Server API Routes', () => {
             enabled: true
         }
     };
-    const createdServer = {
+    const createdServer: ServerConfig = {
+        type: 'stdio' as const,
         command: 'node',
         args: [],
         env: {},
-        enabled: true
+        enabled: true,
+        allowedTools: [],
+        timeout: 30000
     };
 
-    vi.mocked(hubManager.addServer).mockReturnValue(createdServer as any);
+    vi.mocked(hubManager.addServer).mockReturnValue(Promise.resolve(createdServer));
 
     const response = await app.inject({
       method: 'POST',

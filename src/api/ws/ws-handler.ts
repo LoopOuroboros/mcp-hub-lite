@@ -4,17 +4,17 @@
  */
 
 import { WebSocket } from 'ws';
-import { EventTypes } from '@services/event-bus.service.js';
+import { EventBusService, EventTypes } from '@services/event-bus.service.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { logger } from '@utils/logger.js';
-import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
+import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types.js';
 import type {
   ClientMessage,
   ServerMessage,
   SubscribeMessage,
   UnsubscribeMessage,
-  PingMessage,
-  FetchLogsMessage
+  FetchLogsMessage,
+  WebSocketEventType
 } from '@shared-types/websocket.types';
 
 // 事件类型映射
@@ -42,7 +42,7 @@ export class WebSocketHandler {
 
   constructor(
     private socket: WebSocket,
-    private eventBus: any // 事件总线实例
+    private eventBus: EventBusService // 事件总线实例
   ) {}
 
   /**
@@ -74,13 +74,13 @@ export class WebSocketHandler {
           this.handleUnsubscribe(message);
           break;
         case 'ping':
-          this.handlePing(message);
+          this.handlePing();
           break;
         case 'fetch-logs':
           this.handleFetchLogs(message);
           break;
         default:
-          logger.warn(`Unknown message type: ${(message as any).type}`, { subModule: 'WebSocket' });
+          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, { subModule: 'WebSocket' });
       }
     } catch (error) {
       logger.error(`Failed to parse WebSocket message: ${error}`, { subModule: 'WebSocket' });
@@ -118,8 +118,8 @@ export class WebSocketHandler {
 
       if (internalEventType && !this.subscriptions.has(internalEventType)) {
         // 订阅事件总线
-        const unsubscribe = this.eventBus.subscribe(internalEventType, (data: any) => {
-          const mappedType = eventTypeMap[internalEventType] as any;
+        const unsubscribe = this.eventBus.subscribe(internalEventType, (data) => {
+          const mappedType = eventTypeMap[internalEventType] as WebSocketEventType;
           if (mappedType) {
             this.send({
               type: mappedType,
@@ -174,7 +174,7 @@ export class WebSocketHandler {
   /**
    * 处理心跳请求
    */
-  private handlePing(_message: PingMessage): void {
+  private handlePing(): void {
     this.send({
       type: 'pong',
       timestamp: Date.now()

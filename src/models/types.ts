@@ -1,30 +1,30 @@
 // CMD 错误类型层级定义
-namespace CMDErrors {
+export const CMDErrors = {
   // === 系统级错误 (1000-1999) ===
   // 基础设施故障、运行时错误
-  export const SystemErrors = {
+  SystemErrors: {
     DATABASE_CONNECTION_FAILED: 1001,
     MEMORY_INSUFFICIENT: 1002,
     NETWORK_UNREACHABLE: 1003,
     DISK_FULL: 1004,
     SERVICE_UNAVAILABLE: 1005,
     INTERNAL_SERVER_ERROR: 1500
-  } as const;
+  } as const,
 
   // === 安全错误 (2000-2999) ===
   // 认证、授权、安全策略相关
-  export const SecurityErrors = {
+  SecurityErrors: {
     UNAUTHORIZED: 2001,
     FORBIDDEN: 2003,
     TOKEN_EXPIRED: 2004,
     INVALID_CREDENTIALS: 2005,
     ACCESS_DENIED: 2006,
     RATE_LIMIT_EXCEEDED: 2007
-  } as const;
+  } as const,
 
   // === 业务逻辑错误 (3000-3999) ===
   // 业务规则验证、资源状态等
-  export const BusinessErrors = {
+  BusinessErrors: {
     VALIDATION_FAILED: 3001,
     RESOURCE_NOT_FOUND: 3004,
     RESOURCE_ALREADY_EXISTS: 3009,
@@ -32,21 +32,21 @@ namespace CMDErrors {
     GROUP_CONSTRAINT_VIOLATION: 3010,
     SERVER_STATUS_CONFLICT: 3011,
     CONFIGURATION_INVALID: 3012
-  } as const;
+  } as const,
 
   // === API错误 (4000-4999) ===
   // 请求格式、参数验证
-  export const APIErrors = {
+  APIErrors: {
     INVALID_REQUEST_FORMAT: 4000,
     MISSING_REQUIRED_PARAMETER: 4001,
     INVALID_PARAMETER_VALUE: 4002,
     UNSUPPORTED_MEDIA_TYPE: 4003,
     BAD_REQUEST: 4000
-  } as const;
+  } as const,
 
   // === MCP协议错误 (根据MCP标准规范) ===
   // 基于MCP协议标准的错误码定义 (https://modelcontextprotocol.io/specification/2025-11-25)
-  export const MCPProtocolErrors = {
+  MCPProtocolErrors: {
     // 标准JSON-RPC 2.0错误码范围 (-32099 to -32000)
     MCP_SERVER_UNREACHABLE: -32001,  // 服务不可达
     MCP_REQUEST_TIMEOUT: -32002,     // 请求超时
@@ -68,8 +68,8 @@ namespace CMDErrors {
     MCP_NOT_SUPPORTED: -32813,       // 不支持
     MCP_TOO_BUSY: -32814,            // 过载
     MCP_SERVER_SHUTDOWN: -32815      // 服务器关闭
-  } as const;
-}
+  } as const
+} as const;
 
 // 合并所有错误码
 export type AllErrorCodes =

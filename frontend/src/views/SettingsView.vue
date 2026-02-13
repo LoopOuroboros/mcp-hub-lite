@@ -318,8 +318,8 @@ async function saveConfig() {
   try {
     await systemStore.updateConfig(config.value);
     ElMessage.success(t('settings.saveSuccess'));
-  } catch (error: any) {
-    ElMessage.error(t('settings.saveError') + ': ' + error.message);
+  } catch (error: unknown) {
+    ElMessage.error(t('settings.saveError') + ': ' + (error as Error).message);
   } finally {
     saving.value = false;
   }
