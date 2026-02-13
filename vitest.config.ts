@@ -11,15 +11,22 @@ if (!existsSync(logDir)) {
 export default defineConfig({
   resolve: {
     alias: {
+      // Source code aliases
       '@src': resolve(__dirname, './src'),
       '@api': resolve(__dirname, './src/api'),
       '@cli': resolve(__dirname, './src/cli'),
       '@config': resolve(__dirname, './src/config'),
       '@models': resolve(__dirname, './src/models'),
       '@pid': resolve(__dirname, './src/pid'),
+      '@server': resolve(__dirname, './src/server'),
       '@services': resolve(__dirname, './src/services'),
       '@utils': resolve(__dirname, './src/utils'),
-      '@server': resolve(__dirname, './src/server'),
+
+      // Shared code aliases
+      '@shared-models': resolve(__dirname, './shared/models'),
+      '@shared-types': resolve(__dirname, './shared/types'),
+
+      // Test aliases
       '@helpers': resolve(__dirname, './tests/helpers')
     }
   },

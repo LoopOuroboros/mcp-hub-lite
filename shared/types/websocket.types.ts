@@ -5,7 +5,7 @@
 
 import type { Tool } from '@shared-models/tool.model';
 import type { Resource } from '@shared-models/resource.model';
-import type { LogLevel } from '@shared-types/common.types.js';
+import type { LogLevel } from '@shared-types/common.types';
 
 // WebSocket 事件类型常量
 export const WEB_SOCKET_EVENT_TYPES = {

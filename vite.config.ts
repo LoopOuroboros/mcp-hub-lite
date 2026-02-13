@@ -88,10 +88,8 @@ export default defineConfig({
   root: 'frontend',
   resolve: {
     alias: {
-      // 基础别名
+      // Frontend source code aliases
       '@': fileURLToPath(new URL('./frontend/src', import.meta.url)),
-
-      // 前端模块专用别名
       '@components': fileURLToPath(new URL('./frontend/src/components', import.meta.url)),
       '@views': fileURLToPath(new URL('./frontend/src/views', import.meta.url)),
       '@stores': fileURLToPath(new URL('./frontend/src/stores', import.meta.url)),
@@ -101,7 +99,7 @@ export default defineConfig({
       '@composables': fileURLToPath(new URL('./frontend/src/composables', import.meta.url)),
       '@utils': fileURLToPath(new URL('./frontend/src/utils', import.meta.url)),
 
-      // 共享类型别名
+      // Shared code aliases
       '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
       '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url)),
       '@shared-types': fileURLToPath(new URL('./shared/types', import.meta.url))

@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 import { EventBusService, EventTypes } from '@services/event-bus.service.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { logger } from '@utils/logger.js';
-import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types.js';
+import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 import type {
   ClientMessage,
   ServerMessage,
