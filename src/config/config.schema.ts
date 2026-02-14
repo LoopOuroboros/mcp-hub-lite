@@ -33,25 +33,10 @@ export const ServerInstanceConfigSchema = z.object({
  */
 export const LoggingConfigSchema = z.object({
   level: z.custom<LogLevel>().default('info'),
-  rotation: z.object({
-    enabled: z.boolean().default(true),
-    maxAge: z.string().default('7d'), // e.g., "7d", "30d"
-    maxSize: z.string().default('100MB'), // e.g., "100MB", "1GB"
-    compress: z.boolean().default(false)
-  }).default({
-    enabled: true,
-    maxAge: '7d',
-    maxSize: '100MB',
-    compress: false
-  })
+  rotationAge: z.string().default('7d') // e.g., "7d", "30d"
 }).default({
   level: 'info',
-  rotation: {
-    enabled: true,
-    maxAge: '7d',
-    maxSize: '100MB',
-    compress: false
-  }
+  rotationAge: '7d'
 });
 
 /**
@@ -125,12 +110,7 @@ export const SystemConfigSchema = z.object({
     theme: 'system',
     logging: {
       level: 'info',
-      rotation: {
-        enabled: true,
-        maxAge: '7d',
-        maxSize: '100MB',
-        compress: false
-      }
+      rotationAge: '7d'
     }
   }),
   security: SecurityConfigSchema,

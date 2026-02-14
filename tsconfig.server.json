@@ -28,6 +28,7 @@
       "@shared-models/*": ["./shared/models/*"],
       "@shared-types/*": ["./shared/types/*"],
       "@src/*": ["./src/*"],
+      "@types/*": ["./src/types/*"],
       "@tests/*": ["./tests/*"],
       "@utils/*": ["./src/utils/*"]
     }

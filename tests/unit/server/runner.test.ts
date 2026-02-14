@@ -90,12 +90,7 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -141,12 +136,7 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -195,12 +185,7 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -259,12 +244,7 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -330,12 +310,7 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -427,7 +402,7 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -492,7 +467,7 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -553,7 +528,7 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotation: { enabled: false, maxAge: '7d', maxSize: '10MB', compress: false }
+            rotationAge: '7d'
           }
         },
         security: {

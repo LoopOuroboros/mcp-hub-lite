@@ -9,7 +9,7 @@ import { telemetryManager } from '@utils/telemetry/index.js';
 // Set log level to debug for development server
 logger.setLevel('debug');
 
-// Enable dev logging to file
+// Enable dev logging to file (this also enables communication debug logging)
 logger.enableDevLog();
 
 let app: FastifyInstance | null = null;

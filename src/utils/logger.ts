@@ -35,6 +35,9 @@ export class Logger {
     // Enable dev logging to file via environment variable
     process.env.DEV_LOG_FILE = '1';
 
+    // Enable communication debug logging for development
+    process.env.MCP_COMM_DEBUG = '1';
+
     const logDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });

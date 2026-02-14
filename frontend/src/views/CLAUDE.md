@@ -87,10 +87,7 @@ ToolsView
 | 配置项 | 类型 | 默认值 | 描述 |
 |---------|------|---------|------|
 | `logging.level` | string | 'info' | 日志级别 |
-| `logging.rotation.enabled` | boolean | true | 启用日志轮转 |
-| `logging.rotation.maxAge` | string | '7d' | 日志最大保留时间 |
-| `logging.rotation.maxSize` | string | '100MB' | 日志最大文件大小 |
-| `logging.rotation.compress` | boolean | false | 是否压缩日志 |
+| `logging.rotationAge` | string | '7d' | 日志最大保留时间 |
 | `security.allowedNetworks` | string[] | [] | 允许的网络 CIDR |
 | `security.maxConcurrentConnections` | number | 50 | 最大并发连接数 |
 | `security.maxConnections` | number | 50 | 最大连接数 |

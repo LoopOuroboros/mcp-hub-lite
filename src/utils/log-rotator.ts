@@ -23,7 +23,7 @@ export class LogRotator {
   }
 
   private getRetentionDays(): number {
-    const maxAge = this.config.system.logging.rotation.maxAge;
+    const maxAge = this.config.system.logging.rotationAge;
     // Parse maxAge like "7d", "30d", etc.
     const match = maxAge.match(/^(\d+)([dhm])$/);
     if (match) {
@@ -43,9 +43,6 @@ export class LogRotator {
     return 7; // default to 7 days
   }
 
-  private isRotationEnabled(): boolean {
-    return this.config.system.logging.rotation.enabled;
-  }
 
   /**
    * Get the current log file path based on today's date
@@ -64,11 +61,6 @@ export class LogRotator {
    */
   public rotateLogs(): void {
     try {
-      // Check if rotation is enabled
-      if (!this.isRotationEnabled()) {
-        return;
-      }
-
       const files = fs.readdirSync(this.logDir);
       const logFiles = files.filter(file =>
         file.startsWith(`${this.logBaseName}.`) && file.endsWith('.log')

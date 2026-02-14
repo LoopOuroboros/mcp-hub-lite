@@ -13,7 +13,7 @@ vi.mock('@config/config-manager.js', () => ({
 }));
 
 // Helper function to create a complete system config with custom logging rotation
-function createTestConfig(rotationConfig: Partial<{enabled: boolean; maxAge: string}> = {}): ReturnType<typeof configManager.getConfig> {
+function createTestConfig(rotationConfig: Partial<{rotationAge: string}> = {}): ReturnType<typeof configManager.getConfig> {
   return {
     version: '1.0.0',
     system: {
@@ -23,12 +23,7 @@ function createTestConfig(rotationConfig: Partial<{enabled: boolean; maxAge: str
       theme: 'system' as const,
       logging: {
         level: 'info' as const,
-        rotation: {
-          enabled: rotationConfig.enabled ?? true,
-          maxAge: rotationConfig.maxAge ?? '7d',
-          maxSize: '100MB',
-          compress: false
-        }
+        rotationAge: rotationConfig.rotationAge ?? '7d',
       }
     },
     security: {
@@ -119,7 +114,7 @@ describe('LogRotator', () => {
   });
 
   it('should parse retention days correctly for days', () => {
-    const configWithDays = createTestConfig({ maxAge: '30d' });
+    const configWithDays = createTestConfig({ rotationAge: '30d' });
     vi.mocked(configManager.getConfig).mockReturnValue(configWithDays);
 
     logRotator = new LogRotator(tempLogDir);
@@ -129,7 +124,7 @@ describe('LogRotator', () => {
   });
 
   it('should parse retention days correctly for hours', () => {
-    const configWithHours = createTestConfig({ maxAge: '48h' });
+    const configWithHours = createTestConfig({ rotationAge: '48h' });
     vi.mocked(configManager.getConfig).mockReturnValue(configWithHours);
 
     logRotator = new LogRotator(tempLogDir);
@@ -139,7 +134,7 @@ describe('LogRotator', () => {
   });
 
   it('should parse retention days correctly for minutes', () => {
-    const configWithMinutes = createTestConfig({ maxAge: '1440m' });
+    const configWithMinutes = createTestConfig({ rotationAge: '1440m' });
     vi.mocked(configManager.getConfig).mockReturnValue(configWithMinutes);
 
     logRotator = new LogRotator(tempLogDir);
@@ -149,7 +144,7 @@ describe('LogRotator', () => {
   });
 
   it('should return default retention days for invalid format', () => {
-    const configWithInvalid = createTestConfig({ maxAge: 'invalid' });
+    const configWithInvalid = createTestConfig({ rotationAge: 'invalid' });
     vi.mocked(configManager.getConfig).mockReturnValue(configWithInvalid);
 
     logRotator = new LogRotator(tempLogDir);
@@ -158,23 +153,6 @@ describe('LogRotator', () => {
     expect(retentionDays).toBe(7); // default
   });
 
-  it('should check if rotation is enabled', () => {
-    const configEnabled = createTestConfig({ enabled: true });
-    vi.mocked(configManager.getConfig).mockReturnValue(configEnabled);
-
-    logRotator = new LogRotator(tempLogDir);
-    // @ts-expect-error - accessing private method for testing
-    expect(logRotator.isRotationEnabled()).toBe(true);
-  });
-
-  it('should check if rotation is disabled', () => {
-    const configDisabled = createTestConfig({ enabled: false });
-    vi.mocked(configManager.getConfig).mockReturnValue(configDisabled);
-
-    logRotator = new LogRotator(tempLogDir);
-    // @ts-expect-error - accessing private method for testing
-    expect(logRotator.isRotationEnabled()).toBe(false);
-  });
 
   it('should extract date from filename correctly', () => {
     logRotator = new LogRotator(tempLogDir);
@@ -245,23 +223,6 @@ describe('LogRotator', () => {
     expect(fs.existsSync(recentFilePath)).toBe(true);
   });
 
-  it('should not rotate logs when disabled', () => {
-    const configDisabled = createTestConfig({ enabled: false });
-    vi.mocked(configManager.getConfig).mockReturnValue(configDisabled);
-
-    // Create old log file
-    const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 10);
-    const oldDateString = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}-${String(oldDate.getDate()).padStart(2, '0')}`;
-    const oldFilePath = path.join(tempLogDir, `mcp-hub.${oldDateString}.log`);
-    fs.writeFileSync(oldFilePath, 'old log content');
-
-    logRotator = new LogRotator(tempLogDir);
-    logRotator.rotateLogs();
-
-    // File should still exist since rotation is disabled
-    expect(fs.existsSync(oldFilePath)).toBe(true);
-  });
 
   it('should handle rotation errors gracefully', () => {
     // Mock fs.readdirSync to throw an error

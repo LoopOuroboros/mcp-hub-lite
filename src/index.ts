@@ -6,6 +6,7 @@ import { PidManager } from '@pid/manager.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { LogRotator } from '@utils/log-rotator.js';
 
 const program = new Command();
@@ -29,7 +30,7 @@ program
       if (options.port) args.push('--port', options.port);
       if (options.host) args.push('--host', options.host);
 
-      const logDir = path.join(process.cwd(), 'logs');
+      const logDir = path.join(os.homedir(), '.mcp-hub-lite', 'logs');
       const logRotator = new LogRotator(logDir, 'mcp-hub');
 
       // Rotate old logs before starting

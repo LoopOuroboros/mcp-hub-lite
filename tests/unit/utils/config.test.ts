@@ -98,8 +98,6 @@ describe('ConfigManager', () => {
             rotation: {
               enabled: true,
               maxAge: '30d',
-              maxSize: '50MB',
-              compress: true
             }
           }
         },
@@ -177,12 +175,7 @@ describe('ConfigManager', () => {
           theme: 'system',
           logging: {
             level: 'info',
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         }
       });
@@ -238,12 +231,7 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         }
       });
@@ -286,12 +274,7 @@ describe('ConfigManager', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         }
       };
@@ -575,12 +558,7 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {
@@ -613,12 +591,7 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         }
       });
@@ -668,12 +641,7 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         }
       });
@@ -688,12 +656,7 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotation: {
-              enabled: true,
-              maxAge: '7d',
-              maxSize: '100MB',
-              compress: false
-            }
+            rotationAge: '7d'
           }
         },
         security: {

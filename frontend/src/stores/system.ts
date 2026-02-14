@@ -2,6 +2,34 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { http } from '@utils/http'
 
+// 深度合并函数
+function deepMerge<T extends object>(target: T, source: Partial<T>): T {
+  const result = { ...target } as Record<string, unknown>
+  for (const key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      const targetValue = target[key as keyof T]
+      const sourceValue = source[key as keyof T]
+
+      if (
+        typeof targetValue === 'object' &&
+        targetValue !== null &&
+        typeof sourceValue === 'object' &&
+        sourceValue !== null &&
+        !Array.isArray(targetValue) &&
+        !Array.isArray(sourceValue)
+      ) {
+        result[key] = deepMerge(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        )
+      } else {
+        result[key] = sourceValue
+      }
+    }
+  }
+  return result as T
+}
+
 export interface SystemConfig {
   system: {
     host: string
@@ -10,12 +38,7 @@ export interface SystemConfig {
     theme: string
     logging: {
       level: string
-      rotation: {
-        enabled: boolean
-        maxAge: string
-        maxSize: string
-        compress: boolean
-      }
+      rotationAge: string
     }
   }
   security: {
@@ -23,6 +46,7 @@ export interface SystemConfig {
     maxConcurrentConnections: number
     connectionTimeout: number
     idleConnectionTimeout: number
+    sessionTimeout: number
     maxConnections: number
   }
   observability: {
@@ -45,12 +69,7 @@ export const useSystemStore = defineStore('system', () => {
       theme: 'system',
       logging: {
         level: 'info',
-        rotation: {
-          enabled: true,
-          maxAge: '7d',
-          maxSize: '100MB',
-          compress: false
-        }
+        rotationAge: '7d'
       }
     },
     security: {
@@ -58,6 +77,7 @@ export const useSystemStore = defineStore('system', () => {
       maxConcurrentConnections: 50,
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
+      sessionTimeout: 30 * 60 * 1000,
       maxConnections: 50
     },
     observability: {
@@ -69,44 +89,17 @@ export const useSystemStore = defineStore('system', () => {
       }
     }
   })
-  
+
   const loading = ref(false)
   const error = ref<string | null>(null)
-  
+
   async function fetchConfig() {
     loading.value = true
     try {
       const data = await http.get<SystemConfig>('/web/config')
 
-      // Merge with default/current config - 修复属性路径错误
-      config.value = {
-        ...config.value,
-        ...data,
-        system: {
-          ...config.value.system,
-          ...(data.system || {}),
-          logging: {
-            ...config.value.system.logging,
-            ...(data.system?.logging || {}),
-            rotation: {
-              ...config.value.system.logging.rotation,
-              ...(data.system?.logging?.rotation || {})
-            }
-          }
-        },
-        security: {
-          ...config.value.security,
-          ...(data.security || {})
-        },
-        observability: {
-          ...config.value.observability,
-          ...(data.observability || {}),
-          tracing: {
-            ...config.value.observability.tracing,
-            ...(data.observability?.tracing || {})
-          }
-        }
-      }
+      // 使用深度合并替代手动合并
+      config.value = deepMerge(config.value, data)
       return config.value
     } catch (e: unknown) {
       const errorObj = e as Error;
@@ -122,21 +115,10 @@ export const useSystemStore = defineStore('system', () => {
     loading.value = true
     try {
       await http.put('/web/config', updates)
-      
-      // Merge updates into local state
-      // Note: This is a shallow merge for top-level properties. 
-      // For nested properties like logging.rotation, we rely on the component to pass the full object or we need deeper merge.
-      // But typically updateConfig is called with the full object from SettingsView, 
-      // or partial objects from Header (theme/language).
-      
-      // If updates contains nested objects (like logging), we should merge them carefully or replace them.
-      // For simplicity, we assume updates are either full objects or top-level keys like theme/language.
-      
-      config.value = {
-        ...config.value,
-        ...updates
-      }
-      
+
+      // 使用深度合并更新本地状态
+      config.value = deepMerge(config.value, updates)
+
     } catch (e: unknown) {
       const errorObj = e as Error;
       error.value = errorObj.message || 'Failed to update config'

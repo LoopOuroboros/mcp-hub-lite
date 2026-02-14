@@ -42,7 +42,6 @@ config/
 - `LOG_ROTATION_ENABLED` - 是否启用日志轮转
 - `LOG_MAX_AGE` - 日志最大保留时间
 - `LOG_MAX_SIZE` - 日志最大文件大小
-- `LOG_COMPRESS` - 是否压缩日志
 
 ### SystemConfigSchema (`config.schema.ts`)
 
@@ -84,8 +83,6 @@ export const SystemConfigSchema = z.object({
     "rotation": {
       "enabled": true,
       "maxAge": "7d",
-      "maxSize": "100MB",
-      "compress": true
     }
   },
   "security": {

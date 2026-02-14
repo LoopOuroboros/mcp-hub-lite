@@ -153,6 +153,114 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         request.headers['accept'] = 'application/json, text/event-stream';
       }
 
+      // 在开发模式下，包装 reply.raw 以捕获响应内容
+      if (process.env.DEV_LOG_FILE || process.env.MCP_COMM_DEBUG) {
+        const originalWrite = reply.raw.write.bind(reply.raw);
+        const originalEnd = reply.raw.end.bind(reply.raw);
+        let responseBuffer = '';
+
+        logger.debug(`MCP Gateway: Wrapping reply.raw for session ${sessionId}`, { subModule: 'Communication' });
+
+        // 包装 write 方法
+        reply.raw.write = function(chunk: any, encoding?: any, callback?: any) {
+          try {
+            let chunkStr = '';
+            if (typeof chunk === 'string') {
+              chunkStr = chunk;
+            } else if (chunk instanceof Buffer) {
+              chunkStr = chunk.toString(encoding || 'utf8');
+            } else if (chunk instanceof Uint8Array) {
+              // 尝试将 Uint8Array 转换为字符串（用于SSE事件流）
+              try {
+                chunkStr = new TextDecoder('utf-8').decode(chunk);
+              } catch {
+                // 如果无法解码为文本，提供二进制摘要
+                chunkStr = `[Binary data: ${chunk.length} bytes]`;
+              }
+            } else if (typeof chunk === 'object') {
+              chunkStr = JSON.stringify(chunk);
+            } else {
+              chunkStr = String(chunk);
+            }
+            responseBuffer += chunkStr;
+          } catch (error) {
+            logger.debug(`MCP Gateway: Error processing write chunk: ${error}`, { subModule: 'Communication' });
+          }
+          return originalWrite(chunk, encoding, callback);
+        };
+
+        // 包装 end 方法
+        reply.raw.end = function(chunk?: any, encoding?: any, callback?: any) {
+          try {
+            if (chunk !== undefined && chunk !== null) {
+              let chunkStr = '';
+              if (typeof chunk === 'string') {
+                chunkStr = chunk;
+              } else if (chunk instanceof Buffer) {
+                chunkStr = chunk.toString(encoding || 'utf8');
+              } else if (chunk instanceof Uint8Array) {
+                // 尝试将 Uint8Array 转换为字符串（用于SSE事件流）
+                try {
+                  chunkStr = new TextDecoder('utf-8').decode(chunk);
+                } catch {
+                  // 如果无法解码为文本，提供二进制摘要
+                  chunkStr = `[Binary data: ${chunk.length} bytes]`;
+                }
+              } else if (typeof chunk === 'object') {
+                chunkStr = JSON.stringify(chunk);
+              } else {
+                chunkStr = String(chunk);
+              }
+              responseBuffer += chunkStr;
+            }
+
+            // 记录完整的响应内容（截断过长的内容）
+            const truncatedResponse = responseBuffer.length > 2000
+              ? responseBuffer.substring(0, 2000) + '... [truncated]'
+              : responseBuffer;
+            logger.debug(`MCP Gateway response for ${sessionId}: ${truncatedResponse}`, { subModule: 'Communication' });
+          } catch (error) {
+            logger.debug(`MCP Gateway: Error processing end chunk: ${error}`, { subModule: 'Communication' });
+          }
+          return originalEnd(chunk, encoding, callback);
+        };
+
+        // 同时包装 writeHead 方法，以捕获错误响应的头部信息
+        const originalWriteHead = reply.raw.writeHead.bind(reply.raw);
+        reply.raw.writeHead = function(statusCode: number, ...args: any[]) {
+          try {
+            // 如果是错误响应，记录状态码和头部
+            if (statusCode >= 400) {
+              let statusMessage: string | undefined;
+              let headers: Record<string, any> | undefined;
+
+              // 处理 Node.js writeHead 的多种参数形式
+              if (args.length === 1) {
+                // writeHead(statusCode, headers)
+                headers = args[0] as Record<string, any>;
+              } else if (args.length === 2) {
+                // writeHead(statusCode, statusMessage, headers) 或 writeHead(statusCode, headers)
+                if (typeof args[0] === 'string') {
+                  statusMessage = args[0];
+                  headers = args[1] as Record<string, any>;
+                } else {
+                  headers = args[0] as Record<string, any>;
+                }
+              }
+
+              if (headers) {
+                logger.debug(`MCP Gateway error response: ${statusCode} ${statusMessage || ''} Headers: ${JSON.stringify(headers)}`, { subModule: 'Communication' });
+              } else {
+                logger.debug(`MCP Gateway error response: ${statusCode} ${statusMessage || ''}`, { subModule: 'Communication' });
+              }
+            }
+          } catch (error) {
+            logger.debug(`MCP Gateway: Error processing writeHead: ${error}`, { subModule: 'Communication' });
+          }
+          return originalWriteHead(statusCode, ...args);
+        };
+      }
+
       reply.hijack();
 
       const startTime = Date.now();
@@ -174,6 +282,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           logger.info(`MCP Gateway response for ${sessionId}: handled in ${duration}ms`);
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
+
           logger.error(`Error handling MCP request for session ${sessionId}: ${errorMessage}`, error);
           if (!reply.raw.headersSent) {
               reply.raw.writeHead(500, { 'Content-Type': 'application/json' });

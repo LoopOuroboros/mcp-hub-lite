@@ -89,36 +89,9 @@
                 </el-select>
               </el-form-item>
               
-              <div class="flex items-center my-4">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 mr-4">{{ $t('settings.logRotation') }}</span>
-                <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
-              </div>
-              
-              <el-form-item>
-                <el-checkbox v-model="config.system.logging.rotation.enabled">{{ $t('settings.enableRotation') }}</el-checkbox>
+              <el-form-item :label="$t('settings.maxAge')">
+                <el-input-number v-model="maxAgeDays" :min="1" class="w-[150px]" />
               </el-form-item>
-              
-              <div class="flex flex-col gap-2" v-if="config.system.logging.rotation.enabled">
-                <el-form-item :label="$t('settings.maxAge')">
-                  <el-input-number v-model="maxAgeDays" :min="1" class="w-[150px]" />
-                </el-form-item>
-                <el-form-item :label="$t('settings.maxSize')">
-                  <el-input v-model="maxSizeValue" type="number" class="w-[240px]">
-                    <template #append>
-                      <el-select v-model="maxSizeUnit" style="width: 80px">
-                        <el-option label="KB" value="KB" />
-                        <el-option label="MB" value="MB" />
-                        <el-option label="GB" value="GB" />
-                      </el-select>
-                    </template>
-                  </el-input>
-                </el-form-item>
-                <el-form-item :label="$t('settings.compress')">
-                   <div class="h-8 flex items-center">
-                     <el-switch v-model="config.system.logging.rotation.compress" />
-                   </div>
-                </el-form-item>
-              </div>
             </el-form>
           </div>
         </el-tab-pane>
@@ -215,6 +188,9 @@
                 <el-form-item :label="$t('settings.idleConnectionTimeout') + ' (s)'">
                    <el-input-number v-model="idleConnectionTimeoutSeconds" :min="1" :step="1" class="w-[150px]" />
                 </el-form-item>
+                <el-form-item :label="$t('settings.sessionTimeout') + ' (s)'">
+                   <el-input-number v-model="sessionTimeoutSeconds" :min="1" :step="1" class="w-[150px]" />
+                </el-form-item>
              </div>
             </el-form>
           </div>
@@ -241,43 +217,16 @@ const activeTab = ref('system');
 
 const maxAgeDays = computed({
     get: () => {
-      const val = config.value?.system?.logging?.rotation?.maxAge || '7d';
+      const val = config.value?.system?.logging?.rotationAge || '7d';
       return parseInt(val.replace(/[^\d]/g, '')) || 7;
     },
     set: (val: number | undefined | null) => {
-      if (config.value?.system?.logging?.rotation && val) {
-        config.value.system.logging.rotation.maxAge = `${val}d`;
+      if (config.value?.system?.logging && val) {
+        config.value.system.logging.rotationAge = `${val}d`;
       }
     }
   });
 
-  const maxSizeValue = computed({
-    get: () => {
-      const val = config.value?.system?.logging?.rotation?.maxSize || '100MB';
-      const match = val.match(/^(\d+(\.\d+)?)/);
-      return match ? Number(match[1]) : 100;
-    },
-    set: (val: string | number) => {
-      const currentUnit = maxSizeUnit.value;
-      if (config.value?.system?.logging?.rotation) {
-        config.value.system.logging.rotation.maxSize = `${val}${currentUnit}`;
-      }
-    }
-  });
-
-  const maxSizeUnit = computed({
-    get: () => {
-      const val = config.value?.system?.logging?.rotation?.maxSize || '100MB';
-      const match = val.match(/([a-zA-Z]+)$/);
-      return (match && match[1]) ? match[1].toUpperCase() : 'MB';
-    },
-    set: (val: string) => {
-      const currentValue = maxSizeValue.value;
-      if (config.value?.system?.logging?.rotation) {
-        config.value.system.logging.rotation.maxSize = `${currentValue}${val}`;
-      }
-    }
-  });
 
   const connectionTimeoutSeconds = computed({
     get: () => {
@@ -297,6 +246,17 @@ const maxAgeDays = computed({
     set: (val: number | undefined | null) => {
       if (config.value?.security && val) {
         config.value.security.idleConnectionTimeout = val * 1000;
+      }
+    }
+  });
+
+  const sessionTimeoutSeconds = computed({
+    get: () => {
+      return (config.value?.security?.sessionTimeout || 30 * 60 * 1000) / 1000;
+    },
+    set: (val: number | undefined | null) => {
+      if (config.value?.security && val) {
+        config.value.security.sessionTimeout = val * 1000;
       }
     }
   });

@@ -18,6 +18,7 @@ export class McpSessionManager {
     }
 
     constructor() {
+        // Start cleanup interval
         setInterval(() => this.cleanup(), 60000);
     }
 
@@ -29,7 +30,15 @@ export class McpSessionManager {
             this.sessions.set(sessionId, session);
         }
 
-        session.lastAccessed = Date.now();
+        const now = Date.now();
+        const timeDiff = Math.abs(now - session.lastAccessed);
+
+        // Only update lastAccessed if meaningful time has passed
+        // This prevents excessive updates for rapid successive requests
+        if (timeDiff >= 100) {
+            session.lastAccessed = now;
+        }
+
         return session;
     }
 
@@ -46,31 +55,56 @@ export class McpSessionManager {
                 this.sessions.delete(id);
             }
         });
-        
-        // 条件性调试日志：仅当 DEV_LOG_FILE 环境变量设置时才记录详细消息
-        if (process.env.DEV_LOG_FILE) {
+
+        // 条件性调试日志：支持多种环境变量控制
+        if (process.env.DEV_LOG_FILE || process.env.MCP_COMM_DEBUG) {
             transport.onmessage = (message) => {
                 try {
                     const messageStr = JSON.stringify(message);
-                    logger.debug(`MCP message received: ${messageStr}`);
+                    if (process.env.MCP_COMM_DEBUG) {
+                        logger.debug(`MCP message received: ${messageStr}`, { subModule: 'Communication' });
+                    }
                 } catch {
-                    logger.debug(`MCP message received: [Unserializable]`);
+                    if (process.env.MCP_COMM_DEBUG) {
+                        logger.debug(`MCP message received: [Unserializable]`, { subModule: 'Communication' });
+                    }
                 }
+            };
+
+            // 包装send方法以记录响应
+            const originalSend = transport.send;
+            transport.send = async (message, options) => {
+                try {
+                    // 记录响应消息
+                    const messageStr = JSON.stringify(message, null, 2);
+                    const truncatedMessage = messageStr.length > 2000
+                        ? messageStr.substring(0, 2000) + '... [truncated]'
+                        : messageStr;
+                    logger.debug(`MCP message sent: ${truncatedMessage}`, { subModule: 'Communication' });
+                } catch (error) {
+                    logger.debug(`MCP message sent: [Error formatting response]`, { subModule: 'Communication' });
+                }
+
+                // 调用原始send方法
+                return await originalSend.call(transport, message, options);
             };
         }
 
         const server = gateway.createConnectionServer();
 
+        // 确保服务器完全连接后再返回会话
         await server.connect(transport);
 
         logger.info(`MCP session created successfully: ${sessionId}`);
 
-        return {
+        const session = {
             server,
             transport,
             sessionId,
             lastAccessed: Date.now()
         };
+
+        return session;
     }
 
     private cleanup() {

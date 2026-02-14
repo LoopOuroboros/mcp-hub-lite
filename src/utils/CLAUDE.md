@@ -55,8 +55,6 @@ logger.debug('Tool called', { toolName, args });
 - `logDir` - 日志目录
 - `logPrefix` - 日志文件前缀
 - `maxAge` - 最大保留时间（如 "7d"）
-- `maxSize` - 最大文件大小（如 "100MB"）
-- `compress` - 是否压缩旧日志
 
 ### PortChecker (`port-checker.ts`)
 

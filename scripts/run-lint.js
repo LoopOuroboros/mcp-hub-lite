@@ -1,21 +1,56 @@
+#!/usr/bin/env node
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-// 定义日志文件路径
 const LOG_FILE = path.join(process.cwd(), 'logs', 'lint.log');
 
-async function analyzeLintLog() {
+function runEslintCheck() {
+    try {
+        // 确保 logs 目录存在
+        if (!fs.existsSync(path.dirname(LOG_FILE))) {
+            fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+        }
+
+        // 运行 eslint 检查
+        console.log('Running eslint check...');
+        execSync('npx eslint . --no-color --format stylish --output-file logs/lint.log', {
+            encoding: 'utf8',
+            stdio: 'inherit'
+        });
+    } catch {
+        console.log('eslint check completed with errors');
+    }
+}
+
+function analyzeLintLog() {
     try {
         console.log(`Analyzing log file: ${LOG_FILE}`);
-        
+
         if (!fs.existsSync(LOG_FILE)) {
             console.error(`Log file not found: ${LOG_FILE}`);
             return;
         }
 
         const content = fs.readFileSync(LOG_FILE, 'utf-8');
+
+        // 检查日志文件是否为空
+        if (!content.trim()) {
+            let summary = '\n\n=================================================================\n';
+            summary += `LINT ANALYSIS REPORT (${new Date().toLocaleString()})\n`;
+            summary += '=================================================================\n';
+            summary += 'No lint issues found (log file is empty).\n';
+            summary += 'All files passed linting checks.\n';
+            summary += '=================================================================\n';
+
+            fs.appendFileSync(LOG_FILE, summary);
+            console.log(`Analysis successfully appended to ${LOG_FILE}`);
+            console.log(summary);
+            return;
+        }
+
         const lines = content.split('\n');
-        
+
         const messageCounts = new Map();
         let totalIssues = 0;
 
@@ -68,7 +103,7 @@ async function analyzeLintLog() {
         // 追加到日志文件末尾
         fs.appendFileSync(LOG_FILE, summary);
         console.log(`Analysis successfully appended to ${LOG_FILE}`);
-        
+
         // 同时也输出到控制台以便查看
         console.log(summary);
 
@@ -77,4 +112,6 @@ async function analyzeLintLog() {
     }
 }
 
+// 执行完整流程
+runEslintCheck();
 analyzeLintLog();
