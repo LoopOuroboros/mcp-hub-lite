@@ -29,6 +29,7 @@
     "test:summary": "node scripts/generate-test-summary.js",
     "lint": "eslint . --fix",
     "lint:log": "node scripts/run-lint.js",
+    "full:check": "npm run build && npm run test && npm run lint:log",
     "format": "prettier --write .",
     "prepare": "husky",
     "validate:esm": "node --input-type=module -e \"console.log('ESM Environment Valid')\"",

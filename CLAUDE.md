@@ -103,6 +103,9 @@ npm run dev
 # 构建生产版本
 npm run build
 
+# 完整检查（构建 + 测试 + 代码检查）
+npm run full:check
+
 # 运行生产版本
 npm start
 

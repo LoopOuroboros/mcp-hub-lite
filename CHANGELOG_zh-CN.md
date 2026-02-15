@@ -1,5 +1,11 @@
 # 变更记录 (Changelog)
 
+## 2026-02-15
+- **添加完整检查命令**：新增 `npm run full:check` 命令，用于简化完整项目检查流程
+- **功能说明**：该命令整合了构建、测试和代码检查三个步骤，提供一站式完整项目验证
+- **执行流程**：自动依次执行 `npm run build`（构建）、`npm run test`（测试）和 `npm run lint:log`（代码检查）
+- **文档更新**：在 CLAUDE.md 中添加了该命令的详细说明
+
 ## 2026-02-10
 - **修复 config.test.ts 间歇性测试失败**：解决 "should save config to file" 测试间歇性失败问题
 - **原因分析**：ConfigManager 单例模式导致测试状态污染，临时文件路径冲突

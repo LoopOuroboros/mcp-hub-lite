@@ -175,22 +175,60 @@
                  <div class="text-xs text-gray-500 mt-1">{{ $t('settings.allowedNetworksHint') }}</div>
               </el-form-item>
 
-              <div class="flex flex-col gap-2">
-                <el-form-item :label="$t('settings.maxConcurrentConnections')">
-                   <el-input-number v-model="config.security.maxConcurrentConnections" :min="1" :max="1000" class="w-[150px]" />
-                </el-form-item>
-                <el-form-item :label="$t('settings.maxConnections')">
-                   <el-input-number v-model="config.security.maxConnections" :min="1" :max="1000" class="w-[150px]" />
-                </el-form-item>
-                <el-form-item :label="$t('settings.connectionTimeout') + ' (s)'">
-                   <el-input-number v-model="connectionTimeoutSeconds" :min="1" :step="1" class="w-[150px]" />
-                </el-form-item>
-                <el-form-item :label="$t('settings.idleConnectionTimeout') + ' (s)'">
-                   <el-input-number v-model="idleConnectionTimeoutSeconds" :min="1" :step="1" class="w-[150px]" />
-                </el-form-item>
-                <el-form-item :label="$t('settings.sessionTimeout') + ' (s)'">
-                   <el-input-number v-model="sessionTimeoutSeconds" :min="1" :step="1" class="w-[150px]" />
-                </el-form-item>
+              <div class="space-y-4">
+                <!-- 最大并发连接数 -->
+                <div class="flex items-center gap-4">
+                  <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('settings.maxConcurrentConnections') }}</span>
+                  <el-input-number v-model="config.security.maxConcurrentConnections" :min="1" :max="1000" class="w-32" />
+                </div>
+
+                <!-- 最大连接数 -->
+                <div class="flex items-center gap-4">
+                  <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('settings.maxConnections') }}</span>
+                  <el-input-number v-model="config.security.maxConnections" :min="1" :max="1000" class="w-32" />
+                </div>
+
+                <!-- 连接超时 -->
+                <div class="flex items-center gap-4">
+                  <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('settings.connectionTimeout') }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number v-model="connectionTimeoutValue" :min="1" :step="1" class="w-32" />
+                    <el-select v-model="connectionTimeoutUnit" class="w-24">
+                      <el-option label="秒" value="seconds" />
+                      <el-option label="分钟" value="minutes" />
+                      <el-option label="小时" value="hours" />
+                      <el-option label="天" value="days" />
+                    </el-select>
+                  </div>
+                </div>
+
+                <!-- 空闲连接超时 -->
+                <div class="flex items-center gap-4">
+                  <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('settings.idleConnectionTimeout') }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number v-model="idleConnectionTimeoutValue" :min="1" :step="1" class="w-32" />
+                    <el-select v-model="idleConnectionTimeoutUnit" class="w-24">
+                      <el-option label="秒" value="seconds" />
+                      <el-option label="分钟" value="minutes" />
+                      <el-option label="小时" value="hours" />
+                      <el-option label="天" value="days" />
+                    </el-select>
+                  </div>
+                </div>
+
+                <!-- 会话超时 -->
+                <div class="flex items-center gap-4">
+                  <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('settings.sessionTimeout') }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number v-model="sessionTimeoutValue" :min="1" :step="1" class="w-32" />
+                    <el-select v-model="sessionTimeoutUnit" class="w-24">
+                      <el-option label="秒" value="seconds" />
+                      <el-option label="分钟" value="minutes" />
+                      <el-option label="小时" value="hours" />
+                      <el-option label="天" value="days" />
+                    </el-select>
+                  </div>
+                </div>
              </div>
             </el-form>
           </div>
@@ -202,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Check, Document, Lock, Setting, Sunny, Moon, Monitor, DataAnalysis } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
@@ -214,6 +252,29 @@ const systemStore = useSystemStore();
 const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
 const activeTab = ref('system');
+
+// 单位转换系数
+type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
+const unitFactors: Record<TimeUnit, number> = {
+  seconds: 1,
+  minutes: 60,
+  hours: 3600,
+  days: 86400
+};
+
+// 单位优先级（从大到小）
+const unitPriority: TimeUnit[] = ['days', 'hours', 'minutes', 'seconds'];
+
+// 根据秒数自动选择最合适的单位
+const getOptimalUnit = (seconds: number): TimeUnit => {
+  for (const unit of unitPriority) {
+    const factor = unitFactors[unit];
+    if (seconds >= factor && seconds % factor === 0) {
+      return unit;
+    }
+  }
+  return 'seconds';
+};
 
 const maxAgeDays = computed({
     get: () => {
@@ -227,37 +288,101 @@ const maxAgeDays = computed({
     }
   });
 
+// 连接超时
+const connectionTimeoutUnit = ref<TimeUnit>('seconds');
+const connectionTimeoutValue = computed({
+  get: () => {
+    const ms = config.value?.security?.connectionTimeout || 30000;
+    const seconds = ms / 1000;
+    // 自动选择最合适的单位
+    const optimalUnit = getOptimalUnit(seconds);
+    return seconds / unitFactors[optimalUnit];
+  },
+  set: (val: number | undefined | null) => {
+    if (config.value?.security && val) {
+      config.value.security.connectionTimeout = val * unitFactors[connectionTimeoutUnit.value] * 1000;
+    }
+  }
+});
 
-  const connectionTimeoutSeconds = computed({
-    get: () => {
-      return (config.value?.security?.connectionTimeout || 30000) / 1000;
-    },
-    set: (val: number | undefined | null) => {
-      if (config.value?.security && val) {
-        config.value.security.connectionTimeout = val * 1000;
-      }
+// 空闲连接超时
+const idleConnectionTimeoutUnit = ref<TimeUnit>('seconds');
+const idleConnectionTimeoutValue = computed({
+  get: () => {
+    const ms = config.value?.security?.idleConnectionTimeout || 300000;
+    const seconds = ms / 1000;
+    // 自动选择最合适的单位
+    const optimalUnit = getOptimalUnit(seconds);
+    return seconds / unitFactors[optimalUnit];
+  },
+  set: (val: number | undefined | null) => {
+    if (config.value?.security && val) {
+      config.value.security.idleConnectionTimeout = val * unitFactors[idleConnectionTimeoutUnit.value] * 1000;
+    }
+  }
+});
+
+// 会话超时
+const sessionTimeoutUnit = ref<TimeUnit>('seconds');
+const sessionTimeoutValue = computed({
+  get: () => {
+    const ms = config.value?.security?.sessionTimeout || 30 * 60 * 1000;
+    const seconds = ms / 1000;
+    // 自动选择最合适的单位
+    const optimalUnit = getOptimalUnit(seconds);
+    return seconds / unitFactors[optimalUnit];
+  },
+  set: (val: number | undefined | null) => {
+    if (config.value?.security && val) {
+      config.value.security.sessionTimeout = val * unitFactors[sessionTimeoutUnit.value] * 1000;
+    }
+  }
+});
+
+// 在 config 变化时更新单位选择
+watch(() => config.value?.security?.connectionTimeout, (ms) => {
+  if (ms) {
+    const seconds = ms / 1000;
+    connectionTimeoutUnit.value = getOptimalUnit(seconds);
+  }
+});
+
+watch(() => config.value?.security?.idleConnectionTimeout, (ms) => {
+  if (ms) {
+    const seconds = ms / 1000;
+    idleConnectionTimeoutUnit.value = getOptimalUnit(seconds);
+  }
+});
+
+watch(() => config.value?.security?.sessionTimeout, (ms) => {
+  if (ms) {
+    const seconds = ms / 1000;
+    sessionTimeoutUnit.value = getOptimalUnit(seconds);
+  }
+});
+
+  // 单位切换时自动转换值
+  watch(connectionTimeoutUnit, (newUnit, oldUnit) => {
+    if (oldUnit && newUnit !== oldUnit) {
+      const factor = unitFactors[newUnit] / unitFactors[oldUnit];
+      const currentValue = connectionTimeoutValue.value;
+      connectionTimeoutValue.value = Math.round(currentValue / factor);
     }
   });
 
-  const idleConnectionTimeoutSeconds = computed({
-    get: () => {
-      return (config.value?.security?.idleConnectionTimeout || 300000) / 1000;
-    },
-    set: (val: number | undefined | null) => {
-      if (config.value?.security && val) {
-        config.value.security.idleConnectionTimeout = val * 1000;
-      }
+  watch(idleConnectionTimeoutUnit, (newUnit, oldUnit) => {
+    if (oldUnit && newUnit !== oldUnit) {
+      const factor = unitFactors[newUnit] / unitFactors[oldUnit];
+      const currentValue = idleConnectionTimeoutValue.value;
+      idleConnectionTimeoutValue.value = Math.round(currentValue / factor);
     }
   });
 
-  const sessionTimeoutSeconds = computed({
-    get: () => {
-      return (config.value?.security?.sessionTimeout || 30 * 60 * 1000) / 1000;
-    },
-    set: (val: number | undefined | null) => {
-      if (config.value?.security && val) {
-        config.value.security.sessionTimeout = val * 1000;
-      }
+  watch(sessionTimeoutUnit, (newUnit, oldUnit) => {
+    if (oldUnit && newUnit !== oldUnit) {
+      const factor = unitFactors[newUnit] / unitFactors[oldUnit];
+      const currentValue = sessionTimeoutValue.value;
+      sessionTimeoutValue.value = Math.round(currentValue / factor);
     }
   });
 

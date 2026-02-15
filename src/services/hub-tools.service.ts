@@ -476,7 +476,7 @@ export class HubToolsService {
     T extends typeof FIND_TOOLS_TOOL ? Tool[] :
     never
   > {
-    logger.info(`[HUB-TOOLS] System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`);
+    logger.info(`System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`, { subModule: 'HUB-TOOLS' });
 
     try {
       let result;
@@ -541,7 +541,7 @@ export class HubToolsService {
           throw new Error(`System tool "${toolName}" not found`);
       }
 
-      logger.info(`[HUB-TOOLS] System tool SUCCESS: ${toolName}`);
+      logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL ? ServerConfig[] :
         T extends typeof FIND_SERVERS_TOOL ? ServerConfig[] :
@@ -552,7 +552,7 @@ export class HubToolsService {
         T extends typeof FIND_TOOLS_TOOL ? Tool[] :
         never;
     } catch (error) {
-      logger.error(`[HUB-TOOLS] System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error);
+      logger.error(`System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, { subModule: 'HUB-TOOLS' });
       throw error;
     }
   }
@@ -570,12 +570,12 @@ export class HubToolsService {
       return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
     }
 
-    logger.info(`[HUB-TOOLS] Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`);
+    logger.info(`Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`, { subModule: 'HUB-TOOLS' });
 
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
     if (!serverInfo) {
-      logger.error(`[HUB-TOOLS] Server not found: ${serverName}`);
+      logger.error(`Server not found: ${serverName}`, { subModule: 'HUB-TOOLS' });
       throw new Error(`Server not found: ${serverName}`);
     }
 
@@ -605,7 +605,7 @@ export class HubToolsService {
         result
       });
 
-      logger.info(`[HUB-TOOLS] Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`);
+      logger.info(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, { subModule: 'HUB-TOOLS' });
       return result;
     } catch (error) {
       // 发布工具调用错误事件
@@ -619,7 +619,7 @@ export class HubToolsService {
         stack: error instanceof Error ? error.stack : undefined
       });
 
-      logger.error(`[HUB-TOOLS] Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error);
+      logger.error(`Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, { subModule: 'HUB-TOOLS' });
       throw error;
     }
   }

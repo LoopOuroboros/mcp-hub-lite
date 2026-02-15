@@ -458,12 +458,12 @@ export class GatewayService {
       const toolArgs: Record<string, unknown> = request.params.arguments || {};
 
       // Log incoming tool request with full context
-      logger.info(`[GATEWAY] Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`);
-      logger.debug(`[GATEWAY] Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`);
+      logger.info(`Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
+      logger.debug(`Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`, { subModule: 'GATEWAY' });
 
       // Handle system tools
       if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-        logger.info(`[GATEWAY] System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`);
+        logger.info(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
         try {
           let result;
           switch (toolName) {
@@ -541,7 +541,7 @@ export class GatewayService {
             }
           }
 
-          logger.info(`[GATEWAY] System tool SUCCESS: ${toolName}`);
+          logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'GATEWAY' });
 
           // Check if result is already in Mcp content format (especially for call-tool)
           if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
@@ -558,10 +558,10 @@ export class GatewayService {
           };
         } catch (error: unknown) {
           if (error instanceof Error) {
-            logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${error.message}`, error);
+            logger.error(`System tool FAILED: ${toolName}, error=${error.message}`, error, { subModule: 'GATEWAY' });
             throw new McpError(-32802, error.message || "System Tool Error");
           } else {
-            logger.error(`[GATEWAY] System tool FAILED: ${toolName}, error=${String(error)}`, error);
+            logger.error(`System tool FAILED: ${toolName}, error=${String(error)}`, error, { subModule: 'GATEWAY' });
             throw new McpError(-32802, String(error) || "System Tool Error");
           }
         }
@@ -569,10 +569,10 @@ export class GatewayService {
 
       const target = toolMap.get(toolName);
 
-      logger.debug(`[GATEWAY] Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`);
+      logger.debug(`Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`, { subModule: 'GATEWAY' });
 
       if (!target) {
-          logger.error(`[GATEWAY] Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`);
+          logger.error(`Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`, { subModule: 'GATEWAY' });
           throw new McpError(-32801, `Tool ${toolName} not found`);
       }
 
@@ -582,14 +582,14 @@ export class GatewayService {
         const cwd = getClientCwd();
         if (cwd && !toolArgs.cwd) {
             toolArgs.cwd = cwd;
-            logger.debug(`Injected CWD into tool call [${toolName}]: ${cwd}`);
+            logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, { subModule: toolName });
         }
-        logger.info(`[GATEWAY] Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`);
+        logger.info(`Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
 
         const result = await mcpConnectionManager.callTool(target.serverId, target.realToolName, toolArgs);
 
         const duration = Date.now() - startTime;
-        logger.info(`[GATEWAY] Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`);
+        logger.info(`Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`, { subModule: 'GATEWAY' });
 
         // Wrap the result in a valid CallToolResult structure
         if (typeof result === 'object' && result !== null) {
@@ -608,10 +608,10 @@ export class GatewayService {
       } catch (error: unknown) {
          const duration = Date.now() - startTime;
          if (error instanceof Error) {
-           logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`);
+           logger.error(`Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`, { subModule: 'GATEWAY' });
 
            if (error.stack) {
-             logger.debug(`[GATEWAY] Error stack for ${target.realToolName}:`, error.stack);
+             logger.debug(`Error stack for ${target.realToolName}:`, error.stack, { subModule: 'GATEWAY' });
            }
 
            if (error instanceof McpError) {
@@ -625,7 +625,7 @@ export class GatewayService {
 
            throw new McpError(-32802, error.message || "Internal Gateway Error");
          } else {
-           logger.error(`[GATEWAY] Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`);
+           logger.error(`Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`, { subModule: 'GATEWAY' });
            throw new McpError(-32802, String(error) || "Internal Gateway Error");
          }
       }

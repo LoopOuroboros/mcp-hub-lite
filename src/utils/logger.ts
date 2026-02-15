@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import type { LogLevel } from '@shared-types/common.types.js';
 
 export interface LogContext {
@@ -38,7 +39,10 @@ export class Logger {
     // Enable communication debug logging for development
     process.env.MCP_COMM_DEBUG = '1';
 
-    const logDir = path.join(process.cwd(), 'logs');
+    // Enable session debug logging for development
+    process.env.SESSION_DEBUG = '1';
+
+    const logDir = path.join(os.homedir(), '.mcp-hub-lite', 'logs');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
@@ -345,6 +349,131 @@ export const logger = new Logger();
  * @param coloredMessage 控制台显示的消息（包含 ANSI 颜色代码）
  * @param plainMessage 文件日志的消息（纯文本）
  */
+/**
+ * 检查数据是否为 tools/list 响应
+ * @param data stdout 或响应数据
+ * @returns 如果是 tools/list 响应返回 true
+ */
+export function isToolsListResponse(data: string): boolean {
+  try {
+    const trimmed = data.trim();
+
+    // 处理 SSE 格式响应 (event: message 后面跟着 data: JSON)
+    if (trimmed.includes('event: message') && trimmed.includes('data:')) {
+      const dataMatch = trimmed.match(/data: ([^\n]+)/);
+      if (dataMatch) {
+        const jsonData = dataMatch[1].trim();
+        return isToolsListResponse(jsonData); // 递归调用，检查 data 字段内容
+      }
+    }
+
+    if (trimmed.startsWith('{')) {
+      const message = JSON.parse(trimmed) as unknown;
+      // 检查是否为响应且包含 tools 或 resources 字段
+      if (typeof message === 'object' && message !== null) {
+        const msg = message as { result?: unknown };
+        if (msg.result && typeof msg.result === 'object' && msg.result !== null) {
+          const result = msg.result as Record<string, unknown>;
+          // 匹配 tools/list 响应格式: {"result":{"tools": [...]} }
+          if ('tools' in result) {
+            return true;
+          }
+          // 匹配 resources/list 响应格式: {"result":{"resources": [...]} }
+          if ('resources' in result) {
+            return true;
+          }
+          // 匹配 initialize 响应格式: {"result":{"capabilities":{"tools": {...}} } }
+          if ('capabilities' in result &&
+              typeof result.capabilities === 'object' &&
+              result.capabilities !== null) {
+            const capabilities = result.capabilities as Record<string, unknown>;
+            if ('tools' in capabilities || 'resources' in capabilities) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // 非JSON数据，忽略
+  }
+  return false;
+}
+
+/**
+ * 简略化 tools/list 响应的日志信息
+ * @param data 完整的响应数据
+ * @returns 简略化的日志信息
+ */
+export function simplifyToolsListResponse(data: string): string {
+  try {
+    const trimmed = data.trim();
+
+    // 处理 SSE 格式响应
+    if (trimmed.includes('event: message') && trimmed.includes('data:')) {
+      const dataMatch = trimmed.match(/data: ([^\n]+)/);
+      if (dataMatch) {
+        const jsonData = dataMatch[1].trim();
+        const simplified = simplifyToolsListResponse(jsonData); // 递归调用
+        return `event: message\ndata: ${simplified}`;
+      }
+    }
+
+    if (trimmed.startsWith('{')) {
+      const message = JSON.parse(trimmed) as unknown;
+      if (typeof message === 'object' && message !== null) {
+        const msg = message as { result?: unknown };
+        if (msg.result && typeof msg.result === 'object' && msg.result !== null) {
+          const result = msg.result as Record<string, unknown>;
+          // 处理 tools/list 响应
+          if ('tools' in result) {
+            const toolsCount = Array.isArray(result.tools) ? result.tools.length : 0;
+            return `Returned ${toolsCount} tools`;
+          }
+          // 处理 resources/list 响应
+          if ('resources' in result) {
+            const resourcesCount = Array.isArray(result.resources) ? result.resources.length : 0;
+            return `Returned ${resourcesCount} resources`;
+          }
+          // 处理 initialize 响应中的工具/资源信息
+          if ('capabilities' in result &&
+              typeof result.capabilities === 'object' &&
+              result.capabilities !== null) {
+            const capabilities = result.capabilities as Record<string, unknown>;
+            let toolsCount = 0;
+            let resourcesCount = 0;
+
+            if ('tools' in capabilities &&
+                typeof capabilities.tools === 'object' &&
+                capabilities.tools !== null) {
+              toolsCount = Object.keys(capabilities.tools as Record<string, unknown>).length;
+            }
+
+            if ('resources' in capabilities &&
+                typeof capabilities.resources === 'object' &&
+                capabilities.resources !== null) {
+              resourcesCount = Object.keys(capabilities.resources as Record<string, unknown>).length;
+            }
+
+            if (toolsCount > 0 && resourcesCount > 0) {
+              return `Returned ${toolsCount} tools and ${resourcesCount} resources`;
+            } else if (toolsCount > 0) {
+              return `Returned ${toolsCount} tools`;
+            } else if (resourcesCount > 0) {
+              return `Returned ${resourcesCount} resources`;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // 解析失败，返回原始数据的截断版本
+  }
+
+  // 如果不是工具列表响应或解析失败，返回原始数据的截断版本
+  return data.length > 200 ? data.substring(0, 200) + '...' : data;
+}
+
 export function logWithColor(coloredMessage: string, plainMessage: string, context?: LogContext): void {
   // 使用新的颜色格式
   const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage, context);

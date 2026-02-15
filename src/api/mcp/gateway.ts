@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { logger } from '@utils/logger.js';
+import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
 import { requestContext } from '@utils/request-context.js';
 import type { ClientContext } from '@shared-types/client.types';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -37,8 +37,10 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
 
   let clientName = (headers['x-mcp-client-id'] as string) || (headers['x-client-id'] as string);
   const clients = clientTrackerService.getClients();
+  const existingSessionStates = mcpSessionManager.getAllSessionStates();
   let clientVersion: string | undefined;
   let protocolVersion: string | undefined;
+  logger.debug(`ClientName: ${clientName}, Query SessionId: ${sessionId}, Active Clients: ${clients.length}, Persisted Sessions: ${existingSessionStates.length}`, { subModule: 'Context' });
 
   // Priority 2: For JSON-RPC requests like initialize, maintain session consistency
   if (!sessionId && request.body) {
@@ -69,13 +71,35 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
       } else if (request.body.method === 'notifications/initialized' || request.body.method === 'tools/list') {
           // 对于 notifications/initialized 和 tools/list 请求，我们需要找到已存在的会话
           // 因为这些请求通常是在 initialize 之后立即发送的
-          if (clients.length > 0) {
-              // 尝试找到最近的客户端会话
-              const latestClient = clients.reduce((latest, current) => {
-                  return current.timestamp > latest.timestamp ? current : latest;
-              });
-              sessionId = latestClient.sessionId;
-              logger.debug(`Extracted sessionId from latest client for ${request.body.method}: ${sessionId}`);
+          if (existingSessionStates.length > 0) {
+              // 如果有持久化的会话，优先使用（这说明是重启后恢复）
+              logger.debug(`Found ${existingSessionStates.length} persisted session states, will try to match`);
+              // 首先查找是否有与当前 clientName 匹配的会话
+              if (clientName) {
+                  const matchedSession = existingSessionStates.find(state =>
+                      state.clientName === clientName);
+                  if (matchedSession) {
+                      sessionId = matchedSession.sessionId;
+                      logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`);
+                  }
+              }
+
+              if (!sessionId && clients.length > 0) {
+                  // 没有找到匹配的持久化会话，使用最新活动会话
+                  const latestClient = clients.reduce((latest, current) => {
+                      return current.timestamp > latest.timestamp ? current : latest;
+                  });
+                  sessionId = latestClient.sessionId;
+                  logger.debug(`Extracted sessionId from latest client for ${request.body.method}: ${sessionId}`);
+              }
+
+              if (!sessionId && existingSessionStates.length > 0) {
+                  // 最后尝试使用最近访问的持久化会话
+                  const sortedSessions = [...existingSessionStates].sort((a, b) =>
+                      b.lastAccessedAt - a.lastAccessedAt);
+                  sessionId = sortedSessions[0].sessionId;
+                  logger.debug(`Using most recently accessed persisted session: ${sessionId}`);
+              }
           }
       }
   }
@@ -101,11 +125,38 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
       }
   }
 
+  // Priority 4.5: Try to find from persisted session states (when clientTracker has no clients but sessions are persisted)
+  if (!sessionId && existingSessionStates.length > 0) {
+      logger.debug(`ClientTracker has no clients, using persisted session states`);
+      // 首先尝试找匹配 clientName 的
+      if (clientName) {
+          const matchedSession = existingSessionStates.find(state =>
+              state.clientName === clientName);
+          if (matchedSession) {
+              sessionId = matchedSession.sessionId;
+              logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`);
+          }
+      }
+
+      if (!sessionId) {
+          // 使用最近访问的
+          const sortedSessions = [...existingSessionStates].sort((a, b) =>
+              b.lastAccessedAt - a.lastAccessedAt);
+          sessionId = sortedSessions[0].sessionId;
+          logger.debug(`Using most recently accessed persisted session: ${sessionId}`);
+      }
+  }
+
   // Priority 5: Generate new unique session ID only if no other method works
   if (!sessionId) {
       const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
       sessionId = `${prefix}${randomUUID().substring(0, 8)}`;
-      logger.debug(`Generated new sessionId: ${sessionId}`);
+      // Detect if this is an initial StreamableHttp connection (GET request without any session context)
+      if (!clientName && !request.body) {
+          logger.debug(`Initial StreamableHttp connection - created new sessionId: ${sessionId}`);
+      } else {
+          logger.debug(`Generated new sessionId: ${sessionId}`);
+      }
   }
 
   const clientContext: ClientContext = {
@@ -153,8 +204,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         request.headers['accept'] = 'application/json, text/event-stream';
       }
 
+
       // 在开发模式下，包装 reply.raw 以捕获响应内容
-      if (process.env.DEV_LOG_FILE || process.env.MCP_COMM_DEBUG) {
+      const wrapReplyForDebug = () => {
         const originalWrite = reply.raw.write.bind(reply.raw);
         const originalEnd = reply.raw.end.bind(reply.raw);
         let responseBuffer = '';
@@ -162,6 +214,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         logger.debug(`MCP Gateway: Wrapping reply.raw for session ${sessionId}`, { subModule: 'Communication' });
 
         // 包装 write 方法
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reply.raw.write = function(chunk: any, encoding?: any, callback?: any) {
           try {
             let chunkStr = '';
@@ -190,6 +243,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         };
 
         // 包装 end 方法
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reply.raw.end = function(chunk?: any, encoding?: any, callback?: any) {
           try {
             if (chunk !== undefined && chunk !== null) {
@@ -214,11 +268,38 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
               responseBuffer += chunkStr;
             }
 
-            // 记录完整的响应内容（截断过长的内容）
-            const truncatedResponse = responseBuffer.length > 2000
-              ? responseBuffer.substring(0, 2000) + '... [truncated]'
-              : responseBuffer;
-            logger.debug(`MCP Gateway response for ${sessionId}: ${truncatedResponse}`, { subModule: 'Communication' });
+            // 记录响应内容，对 tools/list 响应进行简略化处理
+            let logResponse = responseBuffer;
+            try {
+                if (isToolsListResponse(responseBuffer)) {
+                    logResponse = simplifyToolsListResponse(responseBuffer);
+                } else {
+                    // 处理 SSE 格式响应 (event: message 后面跟着 data: JSON)
+                    if (responseBuffer.includes('event: message') && responseBuffer.includes('data:')) {
+                        const dataMatch = responseBuffer.match(/data: ([^\n]+)/);
+                        if (dataMatch) {
+                            const jsonData = dataMatch[1].trim();
+                            try {
+                                const parsed = JSON.parse(jsonData);
+                                const formattedData = JSON.stringify(parsed, null, 2);
+                                logResponse = `event: message\ndata: ${formattedData}`;
+                            } catch {
+                                logResponse = responseBuffer;
+                            }
+                        } else {
+                            logResponse = responseBuffer;
+                        }
+                    } else {
+                        // 尝试格式化其他 JSON 响应，提高可读性
+                        const parsed = JSON.parse(responseBuffer);
+                        logResponse = JSON.stringify(parsed, null, 2);
+                    }
+                }
+            } catch {
+                // 如果不是有效的 JSON，则原样输出，截断过长内容
+                logResponse = responseBuffer.length > 500 ? responseBuffer.substring(0, 500) + '...' : responseBuffer;
+            }
+            logger.debug(`MCP Gateway response for ${sessionId}:\n${logResponse.trimEnd()}`, { subModule: 'Communication' });
           } catch (error) {
             logger.debug(`MCP Gateway: Error processing end chunk: ${error}`, { subModule: 'Communication' });
           }
@@ -227,24 +308,25 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
         // 同时包装 writeHead 方法，以捕获错误响应的头部信息
         const originalWriteHead = reply.raw.writeHead.bind(reply.raw);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reply.raw.writeHead = function(statusCode: number, ...args: any[]) {
           try {
             // 如果是错误响应，记录状态码和头部
             if (statusCode >= 400) {
               let statusMessage: string | undefined;
-              let headers: Record<string, any> | undefined;
+              let headers: Record<string, unknown> | undefined;
 
               // 处理 Node.js writeHead 的多种参数形式
               if (args.length === 1) {
                 // writeHead(statusCode, headers)
-                headers = args[0] as Record<string, any>;
+                headers = args[0] as Record<string, unknown>;
               } else if (args.length === 2) {
                 // writeHead(statusCode, statusMessage, headers) 或 writeHead(statusCode, headers)
                 if (typeof args[0] === 'string') {
                   statusMessage = args[0];
-                  headers = args[1] as Record<string, any>;
+                  headers = args[1] as Record<string, unknown>;
                 } else {
-                  headers = args[0] as Record<string, any>;
+                  headers = args[0] as Record<string, unknown>;
                 }
               }
 
@@ -259,14 +341,24 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           }
           return originalWriteHead(statusCode, ...args);
         };
-      }
+      };
+
+      wrapReplyForDebug();
 
       reply.hijack();
 
       const startTime = Date.now();
 
       try {
-          const session = await mcpSessionManager.getSession(sessionId);
+          // 判断是否需要 initialize 请求
+          // 只有明确的 initialize 请求才需要 SDK 处理初始化
+          // 对于其他所有请求（tools/list 等），都跳过初始化检查
+          const isInitializeRequest = request.body?.method === 'initialize';
+          const hasRestoredState = !!mcpSessionManager.getSessionState(sessionId);
+          const requireInitialize = isInitializeRequest;
+          logger.debug(`Request for session: ${sessionId}, method: ${request.body?.method || 'GET'}, isInitialize: ${isInitializeRequest}, hasRestoredState: ${hasRestoredState}, requireInitialize: ${requireInitialize}`, { subModule: 'Gateway' });
+
+          const session = await mcpSessionManager.getSession(sessionId, requireInitialize);
 
           await requestContext.run(clientContext, async () => {
               if (request.method === 'GET' && request.raw.url && !request.raw.url.includes('sessionId=')) {

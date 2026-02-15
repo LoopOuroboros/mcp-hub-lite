@@ -15,7 +15,7 @@ export class ConfigManager {
 
   constructor(configPath?: string) {
     this.configPath = configPath || process.env.MCP_HUB_CONFIG_PATH || path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
-    logger.info(`[ConfigManager] Using config file: ${this.configPath}`);
+    logger.info(`Using config file: ${this.configPath}`, { subModule: 'ConfigManager' });
     this.loadConfig();
   }
 
@@ -267,7 +267,7 @@ export class ConfigManager {
     compare(oldConfig, newConfig, '');
 
     if (changes.length > 0) {
-      logger.info(`[System Config Changes]\n${changes.join('\n')}`);
+      logger.info(`${changes.join('\n')}`, { subModule: 'System Config Changes' });
     }
   }
 
