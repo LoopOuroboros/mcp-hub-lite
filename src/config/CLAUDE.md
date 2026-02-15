@@ -74,11 +74,16 @@ export const SystemConfigSchema = z.object({
 
 ```typescript
 export const SecurityConfigSchema = z.object({
-  allowedNetworks: z.array(z.string()).default(['127.0.0.1', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12']),
+  allowedNetworks: z
+    .array(z.string())
+    .default(['127.0.0.1', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12']),
   maxConcurrentConnections: z.number().min(1).max(1000).default(50),
   connectionTimeout: z.number().min(1000).default(30000),
   idleConnectionTimeout: z.number().min(30000).default(300000),
-  sessionTimeout: z.number().min(60000).default(30 * 60 * 1000), // Default 30 minutes, min 1 minute
+  sessionTimeout: z
+    .number()
+    .min(60000)
+    .default(30 * 60 * 1000), // Default 30 minutes, min 1 minute
   maxConnections: z.number().min(1).max(1000).default(50)
 });
 ```
@@ -133,30 +138,30 @@ export const SecurityConfigSchema = z.object({
 
 ### 安全配置 (security)
 
-| 配置项 | 类型 | 默认值 | 说明 |
-| ------ | ---- | ------ | ---- |
-| `allowedNetworks` | string[] | `['127.0.0.1', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12']` | 允许访问的网络列表 |
-| `maxConcurrentConnections` | number | `50` | 最大并发连接数 (1-1000) |
-| `connectionTimeout` | number | `30000` | 连接超时（毫秒，最小 1000） |
-| `idleConnectionTimeout` | number | `300000` | 空闲连接超时（毫秒，最小 30000） |
-| `sessionTimeout` | number | `1800000` | 会话超时（毫秒，最小 60000，默认 30 分钟） |
-| `maxConnections` | number | `50` | 最大连接数 (1-1000) |
+| 配置项                     | 类型     | 默认值                                                           | 说明                                       |
+| -------------------------- | -------- | ---------------------------------------------------------------- | ------------------------------------------ |
+| `allowedNetworks`          | string[] | `['127.0.0.1', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12']` | 允许访问的网络列表                         |
+| `maxConcurrentConnections` | number   | `50`                                                             | 最大并发连接数 (1-1000)                    |
+| `connectionTimeout`        | number   | `30000`                                                          | 连接超时（毫秒，最小 1000）                |
+| `idleConnectionTimeout`    | number   | `300000`                                                         | 空闲连接超时（毫秒，最小 30000）           |
+| `sessionTimeout`           | number   | `1800000`                                                        | 会话超时（毫秒，最小 60000，默认 30 分钟） |
+| `maxConnections`           | number   | `50`                                                             | 最大连接数 (1-1000)                        |
 
 ### 服务器配置 (servers)
 
 服务器配置以服务器名称为 key，每个服务器包含以下配置：
 
-| 配置项 | 类型 | 默认值 | 说明 |
-| ------ | ---- | ------ | ---- |
-| `command` | string | - | 启动命令（stdio 类型必需） |
-| `args` | string[] | `[]` | 命令参数 |
-| `env` | Record<string, string> | - | 环境变量 |
-| `enabled` | boolean | `true` | 是否启用 |
-| `tags` | Record<string, string> | - | 配置标签 |
-| `type` | 'stdio' \| 'sse' \| 'streamable-http' \| 'http' | `'stdio'` | 传输类型 |
-| `timeout` | number | `60000` | 超时时间（毫秒） |
-| `url` | string | - | 服务器 URL（sse/streamable-http/http 类型必需） |
-| `allowedTools` | string[] | `[]` | 允许的工具列表 |
+| 配置项         | 类型                                            | 默认值    | 说明                                            |
+| -------------- | ----------------------------------------------- | --------- | ----------------------------------------------- |
+| `command`      | string                                          | -         | 启动命令（stdio 类型必需）                      |
+| `args`         | string[]                                        | `[]`      | 命令参数                                        |
+| `env`          | Record<string, string>                          | -         | 环境变量                                        |
+| `enabled`      | boolean                                         | `true`    | 是否启用                                        |
+| `tags`         | Record<string, string>                          | -         | 配置标签                                        |
+| `type`         | 'stdio' \| 'sse' \| 'streamable-http' \| 'http' | `'stdio'` | 传输类型                                        |
+| `timeout`      | number                                          | `60000`   | 超时时间（毫秒）                                |
+| `url`          | string                                          | -         | 服务器 URL（sse/streamable-http/http 类型必需） |
+| `allowedTools` | string[]                                        | `[]`      | 允许的工具列表                                  |
 
 ## 依赖关系
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
-// 模拟 MCP SDK
+// Mock MCP SDK
 const mockListTools = vi.fn();
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -16,7 +16,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-// 模拟传输
+// Mock transport
 vi.mock('@utils/transports/transport-factory.js', () => {
   return {
     TransportFactory: {
@@ -35,7 +35,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
   let serverId: string;
 
   beforeEach(async () => {
-    // 添加到 hub manager
+    // Add to hub manager
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
@@ -45,7 +45,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       allowedTools: []
     });
 
-    // 添加服务器实例
+    // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
   });
@@ -56,7 +56,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
   });
 
   it('should return tools with correct MCP schema', async () => {
-    // 模拟返回2个工具，包括 calculator 工具
+    // Mock returning 2 tools, including calculator tool
     mockListTools.mockResolvedValueOnce({
       tools: [
         {
@@ -86,7 +86,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       ]
     });
 
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -108,7 +108,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
 
     expect(tools).toHaveLength(2);
 
-    // 验证 calculator 工具
+    // Verify calculator tool
     const calculator = tools.find((t) => t.name === 'calculator');
     expect(calculator).toBeDefined();
     expect(calculator?.description).toBe('Perform mathematical calculations');
@@ -123,7 +123,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
   });
 
   it('should maintain tool identity across calls', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -145,14 +145,14 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     const tools2 = mcpConnectionManager.getTools(serverId);
 
     expect(tools1).toEqual(tools2);
-    expect(tools1[0]).toBe(tools2[0]); // 引用相等
+    expect(tools1[0]).toBe(tools2[0]); // Reference equality
   });
 
   it('should handle empty tool list', async () => {
-    // 模拟空工具列表
+    // Simulate empty tool list
     mockListTools.mockResolvedValueOnce({ tools: [] });
 
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import type { LogLevel } from '@shared-types/common.types.js';
 
 export interface LogContext {
@@ -13,7 +12,7 @@ export interface LogContext {
 
 export type LogOptions = Omit<LogContext, 'pid' | 'serverName'>;
 
-// PID 格式化配置
+// PID formatting configuration
 const PID_WIDTH = 8;
 
 export class Logger {
@@ -24,7 +23,7 @@ export class Logger {
   constructor(level: LogLevel = 'info') {
     this.level = level;
 
-    // 检查是否启用了开发日志文件
+    // Check if development log file is enabled
     if (process.env.DEV_LOG_FILE) {
       this.enableDevLog();
     }
@@ -42,13 +41,13 @@ export class Logger {
     // Enable session debug logging for development
     process.env.SESSION_DEBUG = '1';
 
-    const logDir = path.join(os.homedir(), '.mcp-hub-lite', 'logs');
+    const logDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
     const logFile = path.join(logDir, 'dev-server.log');
 
-    // 开发模式下清空日志文件，避免过期日志干扰
+    // Clear log file in development mode to avoid interference from stale logs
     if (fs.existsSync(logFile)) {
       fs.truncateSync(logFile, 0);
     }
@@ -77,17 +76,17 @@ export class Logger {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
-  // ANSI 颜色代码
+  // ANSI color codes
   private getColorCodeForLevel(level: LogLevel): string {
     switch (level) {
       case 'debug':
-        return '\x1b[36m'; // 青色
+        return '\x1b[36m'; // Cyan
       case 'info':
-        return '\x1b[32m'; // 绿色
+        return '\x1b[32m'; // Green
       case 'warn':
-        return '\x1b[33m'; // 黄色
+        return '\x1b[33m'; // Yellow
       case 'error':
-        return '\x1b[31m'; // 红色
+        return '\x1b[31m'; // Red
       default:
         return '\x1b[0m';
     }
@@ -108,17 +107,17 @@ export class Logger {
       case 'error':
         return 'ERR';
       default:
-        // 这个分支在TypeScript中实际上不会到达，因为LogLevel是联合类型
-        // 但为了编译通过，我们返回一个默认值
+        // This branch will never be reached in TypeScript because LogLevel is a union type
+        // but we return a default value to satisfy the compiler
         return 'UNK';
     }
   }
 
   private formatPid(pid: number): string {
-    // 固定宽度用于数字部分，右对齐，不足补空格
+    // Fixed width for numeric part, right-aligned, padded with spaces if necessary
     const pidStr = pid.toString();
     if (pidStr.length > PID_WIDTH) {
-      return `PID:${pidStr.substring(0, PID_WIDTH)}`; // 截断超长的PID
+      return `PID:${pidStr.substring(0, PID_WIDTH)}`; // Truncate overly long PID
     }
     return `PID:${pidStr.padStart(PID_WIDTH, ' ')}`;
   }
@@ -130,19 +129,19 @@ export class Logger {
     const formattedPid = this.formatPid(processPid);
     const actualServerName = context?.serverName || 'mcp-hub';
 
-    // 时间戳 - 白色/灰色
+    // Timestamp - white/gray
     const timestampColor = '\x1b[90m';
-    // 日志级别 - 根据级别着色
+    // Log level - colored according to level
     const levelColor = this.getColorCodeForLevel(level);
-    // PID - 青色
+    // PID - cyan
     const pidColor = '\x1b[36m';
-    // 服务器名称或 mcp-hub - 淡青色（亮青色）
+    // Server name or mcp-hub - light cyan (bright cyan)
     const serverColor = '\x1b[96m';
-    // 子模块 - 淡紫色
+    // Submodule - light purple
     const subModuleColor = '\x1b[95m';
-    // TraceId 和 SpanId - 黄色
+    // TraceId and SpanId - yellow
     const traceColor = '\x1b[33m';
-    // 重置颜色
+    // Reset color
     const resetColor = this.getResetColor();
 
     let result = `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor}`;
@@ -169,7 +168,7 @@ export class Logger {
     const timestamp = this.formatTimestamp(new Date());
     const processPid = context?.pid ?? process.pid;
     const formattedLevel = this.formatLogLevel(level);
-    // 对于纯文本日志，PID 格式保持简单
+    // For plain text logs, keep PID format simple
     const pidStr = processPid.toString().padStart(PID_WIDTH, ' ');
     const serverIdentifier = context?.serverName || 'mcp-hub';
 
@@ -193,34 +192,34 @@ export class Logger {
     return result;
   }
 
-  // 辅助方法：格式化错误对象
+  // Helper method: format error object
   private formatError(error: unknown): string {
     if (error instanceof Error) {
       let result = error.message;
       if (error.stack) {
-        // 添加堆栈跟踪，但限制长度以避免过长
-        const stackLines = error.stack.split('\n').slice(1, 6); // 取前5行堆栈
+        // Add stack trace but limit length to avoid being too long
+        const stackLines = error.stack.split('\n').slice(1, 6); // Take first 5 stack lines
         if (stackLines.length > 0) {
           result += '\n' + stackLines.join('\n');
         }
       }
       return result;
     }
-    // 对于非 Error 对象的参数，我们需要正确地格式化它们
+    // For non-Error object arguments, we need to format them properly
     if (typeof error === 'object' && error !== null) {
-      // 检查是否是 LogOptions 对象
+      // Check if it's a LogOptions object
       if ('subModule' in error || 'traceId' in error || 'spanId' in error) {
-        // 如果是 LogOptions 对象，我们应该忽略它，因为它不应该被作为参数输出
+        // If it's a LogOptions object, we should ignore it as it shouldn't be output as an argument
         return '';
       }
-      // 检查是否是空数组或空对象
+      // Check if it's an empty array or empty object
       if (Array.isArray(error) && error.length === 0) {
         return '';
       }
       if (Object.keys(error).length === 0) {
         return '';
       }
-      // 对于其他对象，我们应该将其转换为 JSON 字符串
+      // For other objects, we should convert them to JSON string
       try {
         return JSON.stringify(error);
       } catch {
@@ -230,20 +229,20 @@ export class Logger {
     return String(error);
   }
 
-  // 通用日志方法，消除代码重复
+  // Generic logging method to eliminate code duplication
   private log(level: LogLevel, message: string, args: unknown[], options?: LogOptions): void {
     if (!this.shouldLog(level)) {
       return;
     }
 
-    // 处理多个参数
+    // Handle multiple arguments
     let fullMessage = message;
     if (args.length > 0) {
       const formattedArgs = args.map((arg) => this.formatError(arg)).join(' ');
       fullMessage = `${message} ${formattedArgs}`;
     }
 
-    // 将 LogOptions 转换为 LogContext
+    // Convert LogOptions to LogContext
     const context: LogContext | undefined = options
       ? {
           subModule: options.subModule,
@@ -255,7 +254,7 @@ export class Logger {
     const coloredLogMsg = this.createColoredLogMessage(level, fullMessage, context);
     const plainLogMsg = this.createLogMessage(level, fullMessage, context);
 
-    // 控制台输出
+    // Console output
     if (this.useStderr) {
       console.error(coloredLogMsg);
     } else {
@@ -275,7 +274,7 @@ export class Logger {
       }
     }
 
-    // 文件输出（如果启用）- 使用纯文本格式
+    // File output (if enabled) - use plain text format
     if (this.logFileStream) {
       this.logFileStream.write(plainLogMsg + '\n');
     }
@@ -320,7 +319,7 @@ export class Logger {
     this.level = level;
   }
 
-  // 专门用于MCP Server日志的方法
+  // Method specifically for MCP Server logging
   serverLog(
     level: LogLevel,
     serverName: string,
@@ -335,7 +334,7 @@ export class Logger {
       const coloredLogMsg = this.createColoredLogMessage(level, message, logContext);
       const plainLogMsg = this.createLogMessage(level, message, logContext);
 
-      // 使用正确的控制台方法
+      // Use correct console method
       if (this.useStderr) {
         console.error(coloredLogMsg);
       } else {
@@ -355,7 +354,7 @@ export class Logger {
         }
       }
 
-      // 文件输出（如果启用）- 使用纯文本格式
+      // File output (if enabled) - use plain text format
       if (this.logFileStream) {
         this.logFileStream.write(plainLogMsg + '\n');
       }
@@ -366,44 +365,44 @@ export class Logger {
 export const logger = new Logger();
 
 /**
- * 带颜色的日志记录函数
- * @param coloredMessage 控制台显示的消息（包含 ANSI 颜色代码）
- * @param plainMessage 文件日志的消息（纯文本）
+ * Colored logging function
+ * @param coloredMessage Message displayed in console (with ANSI color codes)
+ * @param plainMessage Message for file logs (plain text)
  */
 /**
- * 检查数据是否为 tools/list 响应
- * @param data stdout 或响应数据
- * @returns 如果是 tools/list 响应返回 true
+ * Check if data is a tools/list response
+ * @param data stdout or response data
+ * @returns true if it's a tools/list response
  */
 export function isToolsListResponse(data: string): boolean {
   try {
     const trimmed = data.trim();
 
-    // 处理 SSE 格式响应 (event: message 后面跟着 data: JSON)
+    // Handle SSE format responses (event: message followed by data: JSON)
     if (trimmed.includes('event: message') && trimmed.includes('data:')) {
       const dataMatch = trimmed.match(/data: ([^\n]+)/);
       if (dataMatch) {
         const jsonData = dataMatch[1].trim();
-        return isToolsListResponse(jsonData); // 递归调用，检查 data 字段内容
+        return isToolsListResponse(jsonData); // Recursive call to check data field content
       }
     }
 
     if (trimmed.startsWith('{')) {
       const message = JSON.parse(trimmed) as unknown;
-      // 检查是否为响应且包含 tools 或 resources 字段
+      // Check if it's a response containing tools or resources fields
       if (typeof message === 'object' && message !== null) {
         const msg = message as { result?: unknown };
         if (msg.result && typeof msg.result === 'object' && msg.result !== null) {
           const result = msg.result as Record<string, unknown>;
-          // 匹配 tools/list 响应格式: {"result":{"tools": [...]} }
+          // Match tools/list response format: {"result":{"tools": [...]} }
           if ('tools' in result) {
             return true;
           }
-          // 匹配 resources/list 响应格式: {"result":{"resources": [...]} }
+          // Match resources/list response format: {"result":{"resources": [...]} }
           if ('resources' in result) {
             return true;
           }
-          // 匹配 initialize 响应格式: {"result":{"capabilities":{"tools": {...}} } }
+          // Match initialize response format: {"result":{"capabilities":{"tools": {...}} } }
           if (
             'capabilities' in result &&
             typeof result.capabilities === 'object' &&
@@ -418,26 +417,26 @@ export function isToolsListResponse(data: string): boolean {
       }
     }
   } catch {
-    // 非JSON数据，忽略
+    // Non-JSON data, ignore
   }
   return false;
 }
 
 /**
- * 简略化 tools/list 响应的日志信息
- * @param data 完整的响应数据
- * @returns 简略化的日志信息
+ * Simplify tools/list response log information
+ * @param data Complete response data
+ * @returns Simplified log information
  */
 export function simplifyToolsListResponse(data: string): string {
   try {
     const trimmed = data.trim();
 
-    // 处理 SSE 格式响应
+    // Handle SSE format responses
     if (trimmed.includes('event: message') && trimmed.includes('data:')) {
       const dataMatch = trimmed.match(/data: ([^\n]+)/);
       if (dataMatch) {
         const jsonData = dataMatch[1].trim();
-        const simplified = simplifyToolsListResponse(jsonData); // 递归调用
+        const simplified = simplifyToolsListResponse(jsonData); // Recursive call
         return `event: message\ndata: ${simplified}`;
       }
     }
@@ -448,17 +447,17 @@ export function simplifyToolsListResponse(data: string): string {
         const msg = message as { result?: unknown };
         if (msg.result && typeof msg.result === 'object' && msg.result !== null) {
           const result = msg.result as Record<string, unknown>;
-          // 处理 tools/list 响应
+          // Handle tools/list responses
           if ('tools' in result) {
             const toolsCount = Array.isArray(result.tools) ? result.tools.length : 0;
             return `Returned ${toolsCount} tools`;
           }
-          // 处理 resources/list 响应
+          // Handle resources/list responses
           if ('resources' in result) {
             const resourcesCount = Array.isArray(result.resources) ? result.resources.length : 0;
             return `Returned ${resourcesCount} resources`;
           }
-          // 处理 initialize 响应中的工具/资源信息
+          // Handle tool/resource information in initialize responses
           if (
             'capabilities' in result &&
             typeof result.capabilities === 'object' &&
@@ -498,10 +497,10 @@ export function simplifyToolsListResponse(data: string): string {
       }
     }
   } catch {
-    // 解析失败，返回原始数据的截断版本
+    // Parsing failed, return truncated version of original data
   }
 
-  // 如果不是工具列表响应或解析失败，返回原始数据的截断版本
+  // If not a tool list response or parsing failed, return truncated version of original data
   return data.length > 200 ? data.substring(0, 200) + '...' : data;
 }
 
@@ -510,11 +509,11 @@ export function logWithColor(
   plainMessage: string,
   context?: LogContext
 ): void {
-  // 使用新的颜色格式
+  // Use new color format
   const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage, context);
   console.info(coloredLogMsg);
 
-  // 文件输出（无颜色）- 直接使用 createLogMessage 方法
+  // File output (no colors) - directly use createLogMessage method
   if (logger['logFileStream']) {
     const plainLogMsg = logger['createLogMessage']('info', plainMessage, context);
     logger['logFileStream'].write(plainLogMsg + '\n');

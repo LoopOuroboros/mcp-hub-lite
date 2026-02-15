@@ -1,6 +1,6 @@
 /**
- * 事件数据模型
- * 包含所有事件总线使用的数据接口定义
+ * Event data models
+ * Contains all data interface definitions used by the event bus
  */
 
 import type { ServerConfig, ServerInstanceConfig } from '@config/config.schema.js';
@@ -8,7 +8,7 @@ import type { Tool } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { LogLevel } from '@shared-types/common.types.js';
 
-// 服务器相关事件数据
+// Server-related event data
 export interface ServerAddedEventData {
   name: string;
   config: ServerConfig;
@@ -38,7 +38,7 @@ export interface ServerInstanceDeletedEventData {
   index: number;
 }
 
-// 连接状态事件数据
+// Connection status event data
 export interface ServerConnectedEventData {
   serverId: string;
   status: 'online';
@@ -58,7 +58,7 @@ export interface ServerStatusChangeEventData {
   timestamp: number;
 }
 
-// 工具相关事件数据
+// Tool-related event data
 export interface ToolsUpdatedEventData {
   serverId: string;
   tools: Tool[];
@@ -92,13 +92,13 @@ export interface ToolCallErrorEventData {
   stack?: string;
 }
 
-// 资源相关事件数据
+// Resource-related event data
 export interface ResourcesUpdatedEventData {
   serverId: string;
   resources: Resource[];
 }
 
-// 日志相关事件数据
+// Log-related event data
 export interface LogEntryEventData {
   serverId: string;
   logs: Array<{
@@ -112,14 +112,14 @@ export interface LogsClearedEventData {
   serverId: string;
 }
 
-// 系统相关事件数据
+// System-related event data
 export interface ConfigurationUpdatedEventData {
   timestamp: number;
   config: unknown;
   changes?: unknown;
 }
 
-// 客户端相关事件数据
+// Client-related event data
 export interface ClientConnectedEventData {
   timestamp: number;
   client: unknown;
@@ -131,6 +131,6 @@ export interface ClientDisconnectedEventData {
   client?: unknown;
 }
 
-// 事件数据类型的联合类型
-// 使用 unknown 作为基础类型以保持向后兼容性
+// Union type for event data types
+// Use unknown as the base type to maintain backward compatibility
 export type EventData = unknown;

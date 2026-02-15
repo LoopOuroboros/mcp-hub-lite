@@ -29,15 +29,15 @@ class McpConnectionManager {
   private transports: Map<string, Transport> = new Map();
   private serverStatus: Map<string, ServerStatus> = new Map();
   public toolCache: Map<string, Tool[]> = new Map();
-  private serverNameToolCache: Map<string, Tool[]> = new Map(); // 服务器名称级别的工具缓存
+  private serverNameToolCache: Map<string, Tool[]> = new Map(); // Server name-level tool cache
   private resourceCache: Map<string, Resource[]> = new Map();
-  private nameToIdMap: Map<string, string> = new Map(); // 服务器名称到ID的映射
+  private nameToIdMap: Map<string, string> = new Map(); // Server name to ID mapping
 
   constructor() {
-    // 监听服务器删除事件，自动断开连接
+    // Listen for server deletion events and automatically disconnect
     eventBus.subscribe(EventTypes.SERVER_DELETED, (data: unknown) => {
       const serverName = data as string;
-      // 根据服务器名称找到所有实例并断开连接
+      // Find all instances by server name and disconnect them
       const serverInstances = hubManager.getServerInstanceByName(serverName);
       serverInstances.forEach((instance) => {
         this.disconnect(instance.id!).catch((err) => {
@@ -67,7 +67,7 @@ class McpConnectionManager {
             throw new Error('Server ID is required');
           }
 
-          // 首先设置 starting 状态（connected: false，无 error）
+          // First set starting state (connected: false, no error)
           this.serverStatus.set(server.id, {
             connected: false,
             lastCheck: Date.now(),
@@ -75,7 +75,7 @@ class McpConnectionManager {
             resourcesCount: 0
           });
 
-          // 从服务器实例ID中获取服务器名称（通过 hubManager.getServerById）
+          // Get server name from server instance ID (via hubManager.getServerById)
           serverInfo = hubManager.getServerById(server.id);
           if (!serverInfo) {
             throw new Error(`Server not found for instance: ${server.id}`);
@@ -119,16 +119,16 @@ class McpConnectionManager {
             };
           }
 
-          // 添加日志监听器
+          // Add log listeners
           if ('onstdout' in transport) {
             transport.onstdout = () => {
-              // 不记录原始的JSON-RPC通信到日志或控制台，以避免日志噪音
-              // 只有在开发调试时才需要查看原始通信
+              // Don't log raw JSON-RPC communication to logs or console to avoid log noise
+              // Only view raw communication during development debugging
             };
           }
           if ('onstderr' in transport) {
             transport.onstderr = (data: string) => {
-              // 使用服务器ID和名称进行日志存储
+              // Use server ID and name for log storage
               const serverId = server?.id ?? 'unknown';
               const serverName = serverInfo!.name;
               logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
@@ -161,14 +161,14 @@ class McpConnectionManager {
           const clientServerInfo = client.getServerVersion();
           const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
 
-          // 更新服务器实例信息（合并 pid 和 startTime）
+          // Update server instance info (merge pid and startTime)
           const serverName = serverInfo.name;
           const instances = hubManager.getServerInstanceByName(serverName);
           const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
           if (instanceIndex !== -1) {
             hubManager.updateServerInstance(serverName, instanceIndex, {
               pid: pid,
-              startTime: Date.now() // 启动时间与 timestamp 相同
+              startTime: Date.now() // Startup time is the same as timestamp
             });
           }
 
@@ -185,14 +185,14 @@ class McpConnectionManager {
 
           logger.info(`Connected to server [${server.id}]`);
 
-          // 发布服务器连接成功事件
+          // Publish server connected event
           eventBus.publish(EventTypes.SERVER_CONNECTED, {
             serverId: server.id,
             status: 'online',
             timestamp: Date.now()
           });
 
-          // 发布服务器状态变化事件
+          // Publish server status change event
           eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
             serverId: server.id,
             status: 'online',
@@ -204,7 +204,7 @@ class McpConnectionManager {
             const tools = await this.refreshTools(server.id);
             const resources = await this.refreshResources(server.id);
 
-            // 发布工具和资源更新事件
+            // Publish tools and resources updated event
             eventBus.publish(EventTypes.TOOLS_UPDATED, {
               serverId: server.id,
               tools
@@ -233,7 +233,7 @@ class McpConnectionManager {
             resourcesCount: 0
           });
 
-          // 发布服务器状态变化事件（错误状态）
+          // Publish server status change event (error state)
           eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
             serverId,
             status: 'error',
@@ -273,7 +273,7 @@ class McpConnectionManager {
       this.toolCache.delete(serverId);
       this.resourceCache.delete(serverId);
 
-      // 更新服务器名称级别的工具缓存
+      // Update server name-level tool cache
       let disconnectedServerName = 'unknown';
       for (const [name, id] of this.nameToIdMap.entries()) {
         if (id === serverId) {
@@ -282,7 +282,7 @@ class McpConnectionManager {
         }
       }
       if (disconnectedServerName !== 'unknown') {
-        // 重新计算该服务器名称下所有实例的工具
+        // Recalculate tools for all instances under this server name
         const allToolsForServer: Tool[] = [];
         for (const [id, cachedTools] of this.toolCache.entries()) {
           let instanceServerName = 'unknown';
@@ -303,7 +303,7 @@ class McpConnectionManager {
         }
       }
 
-      // 删除名称到ID的映射
+      // Remove name to ID mapping
       for (const [name, id] of this.nameToIdMap.entries()) {
         if (id === serverId) {
           this.nameToIdMap.delete(name);
@@ -318,14 +318,14 @@ class McpConnectionManager {
         resourcesCount: 0
       });
 
-      // 发布服务器断开连接事件
+      // Publish server disconnected event
       eventBus.publish(EventTypes.SERVER_DISCONNECTED, {
         serverId,
         status: 'offline',
         timestamp: Date.now()
       });
 
-      // 发布服务器状态变化事件
+      // Publish server status change event
       eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
         serverId,
         status: 'offline',
@@ -363,7 +363,7 @@ class McpConnectionManager {
 
     try {
       const result = await client.listTools();
-      // 从 serverId 找到对应的服务器名称
+      // Find corresponding server name from serverId
       let serverName = 'unknown';
       for (const [name, id] of this.nameToIdMap.entries()) {
         if (id === serverId) {
@@ -380,12 +380,12 @@ class McpConnectionManager {
 
       this.toolCache.set(serverId, tools);
 
-      // 更新服务器名称级别的工具缓存
+      // Update server name-level tool cache
       if (serverName !== 'unknown') {
-        // 获取该服务器名称下所有实例的工具
+        // Get tools for all instances under this server name
         const allToolsForServer: Tool[] = [];
         for (const [id, cachedTools] of this.toolCache.entries()) {
-          // 检查这个 id 是否属于当前服务器名称
+          // Check if this ID belongs to the current server name
           let instanceServerName = 'unknown';
           for (const [name, instanceId] of this.nameToIdMap.entries()) {
             if (instanceId === id) {
@@ -612,12 +612,12 @@ class McpConnectionManager {
     );
   }
 
-  // 获取基于服务器名称的工具缓存
+  // Get tool cache based on server name
   public getToolsByServerName(serverName: string): Tool[] {
     return this.serverNameToolCache.get(serverName) || [];
   }
 
-  // 获取所有服务器名称的工具（用于搜索）
+  // Get all tools by server name (for search)
   public getAllToolsByServerName(): Tool[] {
     const allTools: Tool[] = [];
     for (const tools of this.serverNameToolCache.values()) {

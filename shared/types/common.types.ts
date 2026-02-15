@@ -1,13 +1,13 @@
-// 共享通用类型定义
+// Shared common type definitions
 
-// 服务器状态类型
+// Server status type
 export type ServerStatus = 'online' | 'offline' | 'error' | 'starting' | 'stopping';
 
-// 服务器传输协议类型
+// Server transport protocol type
 export type ServerTransport = 'stdio' | 'sse' | 'streamable-http' | 'http';
 
-// 服务器类型
+// Server type
 export type ServerType = 'local' | 'remote';
 
-// 日志级别类型
+// Log level type
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

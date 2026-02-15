@@ -32,8 +32,8 @@ export class SearchCacheService {
   }
 
   updateTool(): void {
-    // 由于 Tool 接口已移除 serverId 字段，此方法需要重构
-    // 目前暂时保留但不执行任何操作，或根据实际需求修改
+    // Since serverId field has been removed from Tool interface, this method needs refactoring
+    // Currently kept but not performing any operations, or modify according to actual requirements
     logger.warn('updateTool method is deprecated because serverId field is removed from Tool', {
       subModule: 'Search'
     });

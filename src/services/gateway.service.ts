@@ -51,12 +51,12 @@ export class GatewayService {
       {
         capabilities: {
           tools: {},
-          resources: {} // 添加资源能力支持
+          resources: {} // Add resource capability support
         }
       }
     );
 
-    // 直接在构造函数中调用 registerHandlers
+    // Call registerHandlers directly in constructor
     this.registerHandlers(this.server, this.toolMap);
   }
 
@@ -137,7 +137,7 @@ export class GatewayService {
     });
 
     server.server.setRequestHandler(PingRequestSchema, async () => {
-      return { pong: true }; // 符合 MCP 规范的响应格式
+      return { pong: true }; // Response format compliant with MCP specification
     });
 
     // Define search tool schema
@@ -175,7 +175,7 @@ export class GatewayService {
         if (filters.serverName) {
           const serverInstances = hubManager.getServerInstanceByName(filters.serverName);
           if (serverInstances.length > 0) {
-            // 使用第一个实例的 ID 作为筛选条件
+            // Use the first instance's ID as filter condition
             searchOptions.filters!.serverId = serverInstances[0].id;
           }
         }
@@ -465,7 +465,7 @@ export class GatewayService {
       try {
         const { uri } = request.params;
         const content = await hubToolsService.readResource(uri);
-        // 转换为官方 MCP 格式：contents 数组
+        // Convert to official MCP format: contents array
         return {
           contents: [
             {
@@ -566,7 +566,7 @@ export class GatewayService {
               // Inject CWD for nested call-tool
               const cwd = getClientCwd();
               if (cwd && callToolArgs.toolArgs && !callToolArgs.toolArgs.cwd) {
-                // 使用类型断言确保我们可以安全地添加 cwd 属性
+                // Use type assertion to ensure we can safely add cwd property
                 const toolArgsWithCwd = callToolArgs.toolArgs as Record<string, unknown> & {
                   cwd?: string;
                 };
@@ -756,7 +756,7 @@ export class GatewayService {
 
     // First pass: Count tool name frequencies to determine uniqueness
     const toolNameCounts = new Map<string, number>();
-    // 遍历 toolCache 来获取所有工具及其服务器ID
+    // Iterate through toolCache to get all tools and their server IDs
     for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
       for (const tool of tools) {
         const serverConfig = hubManager.getServerById(serverId);
@@ -798,14 +798,14 @@ export class GatewayService {
 
         // If tool name is not unique or conflicts with system tool, append server hash
         if (!isUnique || isSystemConflict) {
-          // 从 serverConfig 中获取实例的 hash，使用 serverId 的前4位作为默认值
+          // Get instance hash from serverConfig, use first 4 characters of serverId as default
           const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
           gatewayToolName = `${tool.name}_${hash}`;
         }
 
         // Ensure name doesn't exceed 60 chars
         if (gatewayToolName.length > 60) {
-          // 使用 serverId 的前4位作为默认 hash
+          // Use first 4 characters of serverId as default hash
           const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
           // Reserve space for hash and separator
           const maxToolNameLen = 60 - hash.length - 1;
@@ -909,7 +909,7 @@ export class GatewayService {
       {
         capabilities: {
           tools: {},
-          resources: {} // 添加资源能力支持
+          resources: {} // Add resource capability support
         }
       }
     );

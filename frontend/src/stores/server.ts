@@ -56,27 +56,27 @@ export const useServerStore = defineStore('server', () => {
       const existingTools = new Map(servers.value.map((s) => [s.id, s.tools]));
       const existingResources = new Map(servers.value.map((s) => [s.id, s.resources]));
 
-      // 显示所有服务器配置，包括没有实例的
+      // Display all server configurations, including those without instances
       const combinedServers: Server[] = [];
 
       serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
-        // 获取该服务器名称对应的所有实例
+        // Get all instances corresponding to this server name
         const instances = serverInstances[serverName] || [];
 
         if (instances.length > 0) {
-          // 有实例的情况 - 保持原有逻辑
+          // Case with instances - keep original logic
           instances.forEach((instanceConfig) => {
-            const serverId = instanceConfig.id; // 使用实例ID作为服务器唯一ID
+            const serverId = instanceConfig.id; // Use instance ID as unique server ID
             const statusInfo = statuses.find((s) => s.id === serverId)?.status;
 
-            // 根据 config.enabled 和 statusInfo 来判断状态
+            // Determine status based on config.enabled and statusInfo
             let status: ServerStatus;
             if (statusInfo?.connected) {
               status = 'online';
             } else if (statusInfo?.error) {
               status = 'error';
             } else if (serverConfig.enabled) {
-              // 如果配置为 enabled 但尚未连接，显示为 starting
+              // If configured as enabled but not yet connected, show as starting
               status = 'starting';
             } else {
               status = 'offline';
@@ -104,15 +104,15 @@ export const useServerStore = defineStore('server', () => {
             });
           });
         } else {
-          // 没有实例的情况 - 创建一个虚拟实例用于显示
+          // Case without instances - create a virtual instance for display
           const serverId = `config-${serverName}-${Date.now()}`;
 
-          // 根据配置的 enabled 状态确定显示状态
+          // Determine display status based on configured enabled state
           let status: ServerStatus;
           if (serverConfig.enabled) {
-            status = 'starting'; // 配置为启用但未启动
+            status = 'starting'; // Configured as enabled but not started
           } else {
-            status = 'offline'; // 配置为禁用
+            status = 'offline'; // Configured as disabled
           }
 
           combinedServers.push({
@@ -158,7 +158,7 @@ export const useServerStore = defineStore('server', () => {
   async function addServer(serverData: Partial<Server>) {
     loading.value = true;
     try {
-      // 第一步：创建服务器基础配置
+      // Step 1: Create server base configuration
       const serverBasePayload = {
         name: serverData.name || 'Unnamed Server',
         config: serverData.config || {}
@@ -166,18 +166,18 @@ export const useServerStore = defineStore('server', () => {
 
       await http.post<{ name: string; config: ServerConfig }>('/web/servers', serverBasePayload);
 
-      // 第二步：添加服务器实例配置（现在自动在后端完成）
+      // Step 2: Add server instance configuration (now automatically handled by backend)
 
-      // 如果启用了自动启动，立即更新状态为 starting，提供更好的用户体验
+      // If auto-start is enabled, immediately update status to starting for better user experience
       if (serverData.config?.enabled) {
-        await fetchServers(); // 先获取服务器列表以获取新服务器的 ID
+        await fetchServers(); // First fetch server list to get new server ID
         const newServer = servers.value.find((s) => s.name === serverData.name);
         if (newServer) {
           updateServerStatus(newServer.id, 'starting');
 
-          // 等待连接完成（使用 setTimeout 避免阻塞 UI）
+          // Wait for connection to complete (using setTimeout to avoid blocking UI)
           setTimeout(async () => {
-            await fetchServers(); // 再次获取服务器状态，确保显示最终状态
+            await fetchServers(); // Fetch server status again to ensure final state is displayed
           }, 1000);
         }
       } else {
@@ -204,12 +204,12 @@ export const useServerStore = defineStore('server', () => {
       }
 
       if (serverData.name && serverData.name !== server.name) {
-        // 更新服务器基础配置（名称）
+        // Update server base configuration (name)
         await http.put(`/web/servers/${server.name}`, { name: serverData.name });
       }
 
       if (serverData.config) {
-        // 更新服务器配置
+        // Update server configuration
         const payload: Partial<ServerConfig> = {};
         if (serverData.config.command) payload.command = serverData.config.command;
         if (serverData.config.args) payload.args = serverData.config.args;
@@ -245,14 +245,14 @@ export const useServerStore = defineStore('server', () => {
         throw new Error('Server not found');
       }
 
-      // 立即更新状态为 starting，提供更好的用户体验
+      // Immediately update status to starting for better user experience
       updateServerStatus(id, 'starting');
 
       let actualServerId = id;
 
-      // 如果是配置-only的服务器（虚拟ID），需要创建实例
+      // If it's a config-only server (virtual ID), need to create an instance
       if (id.startsWith('config-')) {
-        // 创建服务器实例
+        // Create server instance
         const response = await http.post<ServerInstanceConfig>(
           `/web/server-instances/${server.name}`,
           {}
@@ -260,7 +260,7 @@ export const useServerStore = defineStore('server', () => {
         actualServerId = response.id;
       }
 
-      // 连接服务器（使用实际的实例ID）
+      // Connect server (using actual instance ID)
       await http.post(`/web/mcp/servers/${actualServerId}/connect`, {});
       await fetchServers();
     } catch (e: unknown) {
@@ -269,7 +269,7 @@ export const useServerStore = defineStore('server', () => {
       } else {
         error.value = String(e) || 'Failed to start server';
       }
-      // 失败时更新为 error 状态
+      // Update to error state on failure
       updateServerStatus(id, 'error');
       throw e;
     }
@@ -282,13 +282,13 @@ export const useServerStore = defineStore('server', () => {
         throw new Error('Server not found');
       }
 
-      // 如果是配置-only的服务器，不需要断开连接
+      // If it's a config-only server, no need to disconnect
       if (id.startsWith('config-')) {
         await fetchServers();
         return;
       }
 
-      // 断开服务器连接（使用实例ID）
+      // Disconnect server (using instance ID)
       await http.post(`/web/mcp/servers/${id}/disconnect`, {});
       await fetchServers();
     } catch (e: unknown) {
@@ -305,23 +305,23 @@ export const useServerStore = defineStore('server', () => {
     try {
       const server = servers.value.find((s) => s.id === id);
       if (server) {
-        // 如果是配置-only的服务器（虚拟ID），直接删除整个服务器配置
+        // If it's a config-only server (virtual ID), delete the entire server configuration directly
         if (id.startsWith('config-')) {
           await http.delete(`/web/servers/${server.name}`);
         } else {
-          // 检查是否还有其他实例
+          // Check if there are other instances
           const serverInstances =
             await http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances');
           const instances = serverInstances[server.name] || [];
 
           if (instances.length > 1) {
-            // 如果还有其他实例，只删除该实例
+            // If there are other instances, only delete this instance
             const instanceIndex = instances.findIndex((inst) => inst.id === id);
             if (instanceIndex !== -1) {
               await http.delete(`/web/server-instances/${server.name}/${instanceIndex}`);
             }
           } else {
-            // 如果是最后一个实例，删除整个服务器
+            // If it's the last instance, delete the entire server
             await http.delete(`/web/servers/${server.name}`);
           }
         }
@@ -344,7 +344,7 @@ export const useServerStore = defineStore('server', () => {
   async function importServersFromJson(jsonData: { mcpServers: Record<string, unknown> }) {
     loading.value = true;
     try {
-      // 转换为新的配置结构
+      // Convert to new config structure
       const formattedData = {
         mcpServers: Object.entries(jsonData.mcpServers).map(([key, config]) => ({
           name: key,
@@ -411,13 +411,13 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
-   * 使用 WebSocket 获取服务器日志
-   * 不再使用 HTTP 请求，改为通过 WebSocket 订阅和获取
+   * Fetch server logs using WebSocket
+   * No longer use HTTP requests, instead subscribe and fetch via WebSocket
    */
   function fetchLogs(serverId: string) {
-    // 获取 WebSocket store 实例
+    // Get WebSocket store instance
     const wsStore = useWebSocketStore();
-    wsStore.fetchLogs(serverId, 100); // 获取最新的 100 条日志
+    wsStore.fetchLogs(serverId, 100); // Fetch the latest 100 log entries
   }
 
   async function clearLogs(serverId: string) {

@@ -105,7 +105,7 @@ import { GatewayService } from '@services/gateway.service.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import type { MockServerConfig, MockTool } from '../../types/test-helpers.js';
 
-// MCP 请求和响应类型定义
+// MCP request and response type definitions
 interface McpRequest {
   method: string;
   params?: Record<string, unknown>;

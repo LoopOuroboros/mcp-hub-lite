@@ -7,7 +7,7 @@ export interface JsonSchema {
   [key: string]: unknown;
 }
 
-// 工具注解接口
+// Tool annotations interface
 export interface ToolAnnotations {
   title?: string;
   readOnlyHint?: boolean;
@@ -16,7 +16,7 @@ export interface ToolAnnotations {
   openWorldHint?: boolean;
 }
 
-// 统一的工具模型接口
+// Unified tool model interface
 export interface Tool {
   name: string;
   description?: string;

@@ -5,12 +5,12 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { URL } from 'url';
 
 /**
- * Streamable HTTP 传输客户端
- * 用于连接支持 MCP Streamable HTTP 协议的服务器
+ * Streamable HTTP transport client
+ * Used to connect to servers supporting MCP Streamable HTTP protocol
  *
- * Streamable HTTP 使用:
- * - HTTP POST 发送消息
- * - HTTP GET + Server-Sent Events (SSE) 接收消息
+ * Streamable HTTP uses:
+ * - HTTP POST to send messages
+ * - HTTP GET + Server-Sent Events (SSE) to receive messages
  */
 export class StreamableHttpTransport implements Transport {
   private transport: StreamableHTTPClientTransport | null = null;

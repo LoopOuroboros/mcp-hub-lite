@@ -42,18 +42,18 @@ export class ConfigManager {
   }
 
   /**
-   * 统一的类型转换方法：将 type: 'http' 转换为 type: 'streamable-http'
-   * 确保所有场景（加载、添加、更新）的兼容性
+   * Unified type conversion method: convert type: 'http' to type: 'streamable-http'
+   * Ensure compatibility across all scenarios (loading, adding, updating)
    */
   private convertHttpToStreamableHttp(config: unknown): unknown {
     if (!config) return config;
 
-    // 如果是数组，处理每个元素
+    // If it's an array, process each element
     if (Array.isArray(config)) {
       return config.map((item) => this.convertHttpToStreamableHttp(item));
     }
 
-    // 如果是对象，创建副本以避免直接修改原始对象
+    // If it's an object, create a copy to avoid directly modifying the original object
     if (typeof config === 'object' && config !== null) {
       const result: Record<string, unknown> = {};
 
@@ -70,7 +70,7 @@ export class ConfigManager {
       return result;
     }
 
-    // 基本类型直接返回
+    // Return primitive types directly
     return config;
   }
 
@@ -80,14 +80,14 @@ export class ConfigManager {
         logger.info(`Loading configuration from: ${this.configPath}`);
         const content = fs.readFileSync(this.configPath, 'utf-8');
         this.config = JSON.parse(content);
-        // 统一类型转换：将 http 转换为 streamable-http
+        // Unified type conversion: convert http to streamable-http
         this.config = this.convertHttpToStreamableHttp(this.config) as SystemConfig;
         // Ensure defaults without validation errors blocking
         try {
-          // 使用 safeParse 验证配置
+          // Use safeParse to validate configuration
           const parsed = SystemConfigSchema.safeParse(this.config);
           if (parsed.success) {
-            // 确保服务器配置按名称排序
+            // Ensure server configurations are sorted by name
             const configWithSortedServers = {
               ...parsed.data,
               servers: Object.fromEntries(
@@ -96,23 +96,23 @@ export class ConfigManager {
             };
             this.config = configWithSortedServers;
           } else {
-            // 验证失败时，记录错误并使用默认配置
+            // On validation failure, log error and use default configuration
             logger.error(`Config validation failed: ${parsed.error}`);
             this.config = SystemConfigSchema.parse({});
           }
         } catch (e) {
           logger.error(`Failed to parse config: ${e}`);
-          // 解析失败时，使用默认配置
+          // On parsing failure, use default configuration
           this.config = SystemConfigSchema.parse({});
         }
       } else {
-        // 配置文件不存在时，仅在内存中创建默认配置，不自动保存到文件
-        // 防止 npm build 或 npm test 等操作自动创建配置文件
+        // When config file doesn't exist, create default config in memory only, don't auto-save to file
+        // Prevent npm build or npm test operations from automatically creating config files
         this.config = SystemConfigSchema.parse({});
       }
     } catch (error) {
       logger.error(`Failed to load config: ${error}`);
-      // 配置文件加载失败时，使用默认配置
+      // On config file load failure, use default configuration
       this.config = SystemConfigSchema.parse({});
     }
 
@@ -182,12 +182,12 @@ export class ConfigManager {
     servers: Array<{ name: string; config: Partial<ServerConfig> }>
   ): Promise<void> {
     for (const { name, config } of servers) {
-      // 统一类型转换：将 http 转换为 streamable-http
+      // Unified type conversion: convert http to streamable-http
       const convertedConfig = this.convertHttpToStreamableHttp(config) as Partial<ServerConfig>;
       this.config.servers[name] = ServerConfigSchema.parse(convertedConfig);
       if (!this.serverInstances[name]) this.serverInstances[name] = [];
     }
-    // 确保服务器配置按名称排序
+    // Ensure server configurations are sorted by name
     this.config.servers = Object.fromEntries(
       Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
     );
@@ -195,12 +195,12 @@ export class ConfigManager {
   }
 
   public async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
-    // 统一类型转换：将 http 转换为 streamable-http
+    // Unified type conversion: convert http to streamable-http
     const convertedConfig = this.convertHttpToStreamableHttp(config);
     const validated = ServerConfigSchema.parse(convertedConfig);
     this.config.servers[name] = validated;
     if (!this.serverInstances[name]) this.serverInstances[name] = [];
-    // 确保服务器配置按名称排序
+    // Ensure server configurations are sorted by name
     this.config.servers = Object.fromEntries(
       Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
     );
@@ -229,10 +229,10 @@ export class ConfigManager {
 
   public async updateServer(name: string, updates: Partial<ServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
-      // 统一类型转换：将 http 转换为 streamable-http
+      // Unified type conversion: convert http to streamable-http
       const convertedUpdates = this.convertHttpToStreamableHttp(updates) as Partial<ServerConfig>;
       this.config.servers[name] = { ...this.config.servers[name], ...convertedUpdates };
-      // 确保服务器配置按名称排序
+      // Ensure server configurations are sorted by name
       this.config.servers = Object.fromEntries(
         Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
       );
@@ -254,7 +254,7 @@ export class ConfigManager {
     if (this.config.servers[name]) {
       delete this.config.servers[name];
       delete this.serverInstances[name];
-      // 确保服务器配置按名称排序
+      // Ensure server configurations are sorted by name
       this.config.servers = Object.fromEntries(
         Object.entries(this.config.servers).sort(([a], [b]) => a.localeCompare(b))
       );
@@ -271,7 +271,7 @@ export class ConfigManager {
 
   public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
-    // 统一类型转换：将 http 转换为 streamable-http
+    // Unified type conversion: convert http to streamable-http
     const convertedConfig = this.convertHttpToStreamableHttp(newConfig) as Partial<SystemConfig>;
     this.config = SystemConfigSchema.parse({ ...this.config, ...convertedConfig });
     this.logConfigChanges(oldConfig, this.config);

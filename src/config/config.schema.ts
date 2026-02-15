@@ -6,7 +6,7 @@ import type { LogLevel } from '@shared-types/common.types.js';
  * Simplified schema for MCP-HUB-LITE Lite version
  */
 
-// 服务器配置 Schema（以服务器名称为 key）
+// Server configuration schema (keyed by server name)
 export const ServerConfigSchema = z.object({
   command: z.string().optional(),
   args: z.array(z.string()).default([]),
@@ -19,13 +19,13 @@ export const ServerConfigSchema = z.object({
   allowedTools: z.array(z.string()).default([])
 });
 
-// 服务器实例 Schema（每个实例包含 id、timestamp、hash）
+// Server instance schema (each instance contains id, timestamp, hash)
 export const ServerInstanceConfigSchema = z.object({
   id: z.string(),
-  timestamp: z.number(), // 启动时间
+  timestamp: z.number(), // Startup time
   hash: z.string(),
-  pid: z.number().optional(), // 进程ID
-  startTime: z.number().optional() // 启动时间（与 timestamp 相同，保持兼容性）
+  pid: z.number().optional(), // Process ID
+  startTime: z.number().optional() // Startup time (same as timestamp, for compatibility)
 });
 
 /**

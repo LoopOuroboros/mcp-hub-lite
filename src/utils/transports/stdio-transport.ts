@@ -123,12 +123,12 @@ export class StdioTransport implements Transport {
       this._process.stdout?.on('data', (chunk: Buffer) => {
         const dataStr = chunk.toString('utf8');
 
-        // 转发原始 stdout 数据
+        // Forward raw stdout data
         this.onstdout?.(dataStr);
 
-        // 不记录原始的JSON-RPC通信到日志，以避免日志噪音
-        // 只有在开发调试时才需要查看原始通信
-        // 解析 JSON-RPC 消息
+        // Don't log raw JSON-RPC communication to avoid log noise
+        // Only need to view raw communication during development debugging
+        // Parse JSON-RPC messages
         this._readBuffer.append(chunk);
         this.processReadBuffer();
       });
@@ -140,7 +140,7 @@ export class StdioTransport implements Transport {
       if (this._stderrStream && this._process.stderr) {
         this._process.stderr.on('data', (chunk: Buffer) => {
           const dataStr = chunk.toString('utf8');
-          // 转发原始 stderr 数据
+          // Forward raw stderr data
           this.onstderr?.(dataStr);
 
           if (this._serverName) {
@@ -152,11 +152,11 @@ export class StdioTransport implements Transport {
               pid: this._process?.pid
             });
           }
-          // 也可以将 stderr 数据写入 PassThrough 流
+          // Also write stderr data to PassThrough stream
           this._stderrStream?.write(chunk);
         });
       } else if (this._process.stderr) {
-        // 如果 stderr 不是 pipe 模式，直接监听
+        // If stderr is not in pipe mode, listen directly
         this._process.stderr.on('data', (chunk: Buffer) => {
           const dataStr = chunk.toString('utf8');
           this.onstderr?.(dataStr);
@@ -196,7 +196,7 @@ export class StdioTransport implements Transport {
   async close(): Promise<void> {
     if (this._process) {
       return new Promise((resolve) => {
-        // 监听子进程退出事件
+        // Listen for child process exit events
         const cleanup = () => {
           this._process = undefined;
           this._readBuffer.clear();
@@ -207,11 +207,11 @@ export class StdioTransport implements Transport {
           this._process.once('close', cleanup);
           this._process.once('exit', cleanup);
 
-          // 发送 SIGTERM 信号，给子进程机会优雅关闭
+          // Send SIGTERM signal to give child process a chance to shut down gracefully
           try {
             this._process.kill('SIGTERM');
 
-            // 设置超时保护，如果子进程在5秒内没有退出，强制终止
+            // Set timeout protection to force kill if child process doesn't exit within 5 seconds
             const timeout = setTimeout(() => {
               if (this._process) {
                 logger.warn('Child process did not exit gracefully, force killing...');
@@ -219,7 +219,7 @@ export class StdioTransport implements Transport {
               }
             }, 5000);
 
-            // 确保超时定时器在进程退出后被清除
+            // Ensure timeout timer is cleared after process exits
             this._process.once('close', () => clearTimeout(timeout));
             this._process.once('exit', () => clearTimeout(timeout));
           } catch (error) {

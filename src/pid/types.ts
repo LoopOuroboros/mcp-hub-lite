@@ -1,5 +1,5 @@
 /**
- * PID管理相关类型定义
+ * PID management related type definitions
  */
 
 export interface PidInfo {

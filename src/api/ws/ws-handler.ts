@@ -1,6 +1,6 @@
 /**
- * WebSocket 连接管理器
- * 管理单个 WebSocket 连接的生命周期和消息处理
+ * WebSocket connection manager
+ * Manages the lifecycle and message handling of a single WebSocket connection
  */
 
 import { WebSocket } from 'ws';
@@ -17,7 +17,7 @@ import type {
   WebSocketEventType
 } from '@shared-types/websocket.types';
 
-// 事件类型映射
+// Event type mapping
 const eventTypeMap: Record<string, string> = {
   [EventTypes.SERVER_STATUS_CHANGE]: WEB_SOCKET_EVENT_TYPES.SERVER_STATUS,
   [EventTypes.SERVER_CONNECTED]: WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED,
@@ -37,30 +37,30 @@ const eventTypeMap: Record<string, string> = {
 };
 
 export class WebSocketHandler {
-  private subscriptions = new Map<keyof typeof EventTypes, () => void>(); // 存储订阅和对应的取消函数
+  private subscriptions = new Map<keyof typeof EventTypes, () => void>(); // Store subscriptions and their corresponding unsubscribe functions
   private heartbeatInterval?: NodeJS.Timeout;
 
   constructor(
     private socket: WebSocket,
-    private eventBus: EventBusService // 事件总线实例
+    private eventBus: EventBusService // Event bus instance
   ) {}
 
   /**
-   * 初始化 WebSocket 连接
+   * Initialize WebSocket connection
    */
   initialize(): void {
     this.socket.on('message', this.handleMessage.bind(this));
     this.socket.on('close', this.handleClose.bind(this));
     this.socket.on('error', this.handleError.bind(this));
 
-    // 启动心跳检测
+    // Start heartbeat detection
     this.startHeartbeat();
 
     logger.info('connection established', { subModule: 'WebSocket' });
   }
 
   /**
-   * 处理客户端消息
+   * Handle client messages
    */
   private handleMessage(data: Buffer | string): void {
     try {
@@ -91,7 +91,7 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理获取历史日志请求
+   * Handle fetch historical logs request
    */
   private handleFetchLogs(message: FetchLogsMessage): void {
     const logs = logStorage.getLogs(message.serverId, {
@@ -109,17 +109,17 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理订阅事件
+   * Handle subscription events
    */
   private handleSubscribe(message: SubscribeMessage): void {
     message.eventTypes.forEach((eventType) => {
-      // 将 WebSocket 事件类型映射到内部事件类型
+      // Map WebSocket event types to internal event types
       const internalEventType = Object.entries(eventTypeMap).find(
         ([, wsType]) => wsType === eventType
       )?.[0] as keyof typeof EventTypes;
 
       if (internalEventType && !this.subscriptions.has(internalEventType)) {
-        // 订阅事件总线
+        // Subscribe to event bus
         const unsubscribe = this.eventBus.subscribe(internalEventType, (data) => {
           const mappedType = eventTypeMap[internalEventType] as WebSocketEventType;
           if (mappedType) {
@@ -141,11 +141,11 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理取消订阅事件
+   * Handle unsubscribe events
    */
   private handleUnsubscribe(message: UnsubscribeMessage): void {
     message.eventTypes.forEach((eventType) => {
-      // 将 WebSocket 事件类型映射到内部事件类型
+      // Map WebSocket event types to internal event types
       const internalEventType = Object.entries(eventTypeMap).find(
         ([, wsType]) => wsType === eventType
       )?.[0] as keyof typeof EventTypes;
@@ -153,7 +153,7 @@ export class WebSocketHandler {
       if (internalEventType) {
         const unsubscribe = this.subscriptions.get(internalEventType);
         if (unsubscribe) {
-          unsubscribe(); // 调用取消订阅函数
+          unsubscribe(); // Call unsubscribe function
           this.subscriptions.delete(internalEventType);
         }
       }
@@ -166,13 +166,13 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理连接关闭
+   * Handle connection close
    */
   private handleClose(): void {
     logger.info('connection closed', { subModule: 'WebSocket' });
     this.stopHeartbeat();
 
-    // 取消所有订阅
+    // Unsubscribe from all events
     this.subscriptions.forEach((unsubscribe) => {
       unsubscribe();
     });
@@ -180,7 +180,7 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理心跳请求
+   * Handle heartbeat request
    */
   private handlePing(): void {
     this.send({
@@ -190,14 +190,14 @@ export class WebSocketHandler {
   }
 
   /**
-   * 处理连接错误
+   * Handle connection error
    */
   private handleError(error: Error): void {
     logger.error(`error: ${error}`, { subModule: 'WebSocket' });
   }
 
   /**
-   * 发送消息到客户端
+   * Send message to client
    */
   private send(message: ServerMessage): void {
     if (this.socket.readyState === WebSocket.OPEN) {
@@ -206,7 +206,7 @@ export class WebSocketHandler {
   }
 
   /**
-   * 发送错误消息
+   * Send error message
    */
   private sendError(message: string): void {
     this.send({
@@ -216,7 +216,7 @@ export class WebSocketHandler {
   }
 
   /**
-   * 启动心跳检测
+   * Start heartbeat detection
    */
   private startHeartbeat(): void {
     this.heartbeatInterval = setInterval(() => {
@@ -224,11 +224,11 @@ export class WebSocketHandler {
         type: 'pong',
         timestamp: Date.now()
       } as ServerMessage);
-    }, 30000); // 每30秒发送一次心跳
+    }, 30000); // Send heartbeat every 30 seconds
   }
 
   /**
-   * 停止心跳检测
+   * Stop heartbeat detection
    */
   private stopHeartbeat(): void {
     if (this.heartbeatInterval) {

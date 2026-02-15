@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
-// 模拟 MCP SDK
+// Mock MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
@@ -25,7 +25,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-// 模拟传输
+// Mock transport
 vi.mock('@utils/transports/transport-factory.js', () => {
   return {
     TransportFactory: {
@@ -44,7 +44,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   let serverId: string;
 
   beforeEach(async () => {
-    // 添加到 hub manager
+    // Add to hub manager
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
@@ -54,7 +54,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       allowedTools: []
     });
 
-    // 添加服务器实例
+    // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
   });
@@ -65,7 +65,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   });
 
   it('should correctly initialize MCP connection with SDK', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -89,7 +89,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   });
 
   it('should list tools using SDK Client', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');

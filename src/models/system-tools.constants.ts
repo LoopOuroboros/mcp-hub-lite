@@ -3,7 +3,7 @@
  * Centralized definition of system tool names and gateway server names
  */
 
-// 系统工具参数类型定义
+// System tool parameter type definitions
 export type ListServersParams = Record<string, never>;
 
 export interface FindServersParams {
@@ -56,7 +56,7 @@ export interface FindToolsParams {
   caseSensitive?: boolean;
 }
 
-// 系统工具参数的联合类型
+// Union type for system tool parameters
 export type SystemToolArgs =
   | ListServersParams
   | FindServersParams

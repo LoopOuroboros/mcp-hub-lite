@@ -59,7 +59,7 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
           return reply.code(500).send({ error: 'Failed to connect to server' });
         }
 
-        // Update enabled status in config - 现在 enabled 字段属于服务器配置，而非实例配置
+        // Update enabled status in config - The enabled field now belongs to server configuration, not instance configuration
         await hubManager.updateServer(server.name, { enabled: true });
 
         return { success: true };
@@ -78,7 +78,7 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         await mcpConnectionManager.disconnect(request.params.id);
 
         // Update enabled status in config to ensure it doesn't show as "starting"
-        // 现在 enabled 字段属于服务器配置，而非实例配置
+        // The enabled field now belongs to server configuration, not instance configuration
         const server = hubManager.getServerById(request.params.id);
         if (server) {
           await hubManager.updateServer(server.name, { enabled: false });

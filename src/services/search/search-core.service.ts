@@ -12,13 +12,13 @@ export class SearchCoreService {
   private scorer = new SearchScorer();
 
   constructor() {
-    // 监听服务器更新事件，清除搜索缓存以确保结果最新
+    // Listen for server update events and clear search cache to ensure results are up-to-date
     eventBus.subscribe(EventTypes.SERVER_UPDATED, () => {
       logger.debug('Server updated event received, clearing search cache', { subModule: 'Search' });
       this.cacheService.invalidate();
     });
 
-    // 监听服务器添加和删除事件，同样清除缓存
+    // Listen for server add/delete events and also clear cache
     eventBus.subscribe(EventTypes.SERVER_ADDED, () => {
       logger.debug('Server added event received, clearing search cache', { subModule: 'Search' });
       this.cacheService.invalidate();
@@ -66,18 +66,18 @@ export class SearchCoreService {
       return cached;
     }
 
-    // 使用新的服务器名称级别缓存获取所有工具
+    // Use new server name-level cache to get all tools
     const tools = mcpConnectionManager.getAllToolsByServerName();
 
-    // 基于服务器名称获取配置并应用 allowedTools 过滤
+    // Get configuration based on server name and apply allowedTools filtering
     const filteredTools = tools.filter((tool) => {
       const serverConfig = hubManager.getServerByName(tool.serverName);
       if (!serverConfig) return true;
 
       const allowed = serverConfig.allowedTools;
-      if (allowed == null) return true; // 未配置 allowedTools，显示所有工具
-      if (allowed.length === 0) return false; // 空数组，不显示任何工具
-      return allowed.includes(tool.name); // 严格过滤
+      if (allowed == null) return true; // No allowedTools configured, show all tools
+      if (allowed.length === 0) return false; // Empty array, don't show any tools
+      return allowed.includes(tool.name); // Strict filtering
     });
 
     this.cacheService.set(filteredTools);
@@ -89,7 +89,7 @@ export class SearchCoreService {
 
     const filtered = tools;
 
-    // serverId 和 status 字段已从 Tool 接口中移除，如需按服务器或状态筛选，请使用其他方法
+    // serverId and status fields have been removed from Tool interface, use other methods for server or status filtering
 
     return filtered;
   }

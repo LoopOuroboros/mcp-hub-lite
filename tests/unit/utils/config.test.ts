@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { ConfigManager, ServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
 
-// 重置模块缓存，确保每次导入都是新的
+// Reset module cache to ensure each import is fresh
 vi.resetModules();
 
 describe('ConfigManager', () => {
@@ -14,38 +14,38 @@ describe('ConfigManager', () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    // 保存原始环境变量
+    // Save original environment variables
     originalEnv = { ...process.env };
 
-    // 创建临时配置目录
+    // Create temporary config directory
     const testRunId = `config-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     tempConfigDir = path.join(os.tmpdir(), `mcp-hub-config-test-${testRunId}`);
     tempConfigPath = path.join(tempConfigDir, '.mcp-hub.json');
 
-    // 确保临时目录存在
+    // Ensure temporary directory exists
     fs.mkdirSync(tempConfigDir, { recursive: true });
 
-    // 设置环境变量指向临时配置文件
+    // Set environment variable to point to temporary config file
     process.env.MCP_HUB_CONFIG_PATH = tempConfigPath;
 
-    // 清除可能影响测试的其他环境变量
+    // Clear other environment variables that might affect tests
     delete process.env.PORT;
     delete process.env.HOST;
     delete process.env.LOG_LEVEL;
 
-    // 直接创建新实例，不使用单例模式
+    // Create new instance directly, without using singleton pattern
     configManager = new ConfigManager(tempConfigPath);
   });
 
   afterEach(() => {
-    // 强制垃圾回收，确保配置管理器实例被销毁
-    // 由于测试中需要频繁创建和销毁实例，这里不设置为 null
-    // 而是让每个测试用例重新创建新的实例
+    // Force garbage collection to ensure config manager instance is destroyed
+    // Since tests need to frequently create and destroy instances, don't set to null here
+    // Instead, let each test case create a new instance
 
-    // 恢复原始环境变量
+    // Restore original environment variables
     process.env = { ...originalEnv };
 
-    // 清理临时目录，增加重试机制以防止权限问题
+    // Clean up temporary directory with retry mechanism to prevent permission issues
     if (fs.existsSync(tempConfigDir)) {
       let retries = 3;
       while (retries > 0) {
@@ -58,20 +58,20 @@ describe('ConfigManager', () => {
           );
           retries--;
           if (retries > 0) {
-            // 等待一段时间后重试
+            // Wait for a while before retrying
             Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
           }
         }
       }
     }
 
-    // 清理mocks
+    // Clean up mocks
     vi.restoreAllMocks();
   });
 
   describe('Configuration Loading', () => {
     it('should create default config when no config file exists', () => {
-      // 确保配置文件不存在
+      // Ensure config file doesn't exist
       if (fs.existsSync(tempConfigPath)) {
         fs.unlinkSync(tempConfigPath);
       }
@@ -79,7 +79,7 @@ describe('ConfigManager', () => {
       configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
-      // 验证默认配置
+      // Verify default configuration
       expect(config).toBeDefined();
       expect(config.version).toBe('1.0.0');
       expect(config.system.host).toBe('localhost');
@@ -130,13 +130,13 @@ describe('ConfigManager', () => {
         }
       };
 
-      // 写入测试配置文件
+      // Write test config file
       fs.writeFileSync(tempConfigPath, JSON.stringify(testConfig, null, 2));
 
       configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
-      // 验证加载的配置
+      // Verify loaded configuration
       expect(config.system.host).toBe('test-host');
       expect(config.system.port).toBe(8080);
       expect(config.servers['test-server']).toBeDefined();
@@ -144,13 +144,13 @@ describe('ConfigManager', () => {
     });
 
     it('should handle invalid config file gracefully', () => {
-      // 写入无效的JSON
+      // Write invalid JSON
       fs.writeFileSync(tempConfigPath, 'invalid json content');
 
       configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
-      // 应该回退到默认配置
+      // Should fall back to default configuration
       expect(config.version).toBe('1.0.0');
       expect(config.system.host).toBe('localhost');
     });
@@ -163,11 +163,11 @@ describe('ConfigManager', () => {
 
       configManager = new ConfigManager(tempConfigPath);
 
-      // 记录初始配置
+      // Log initial configuration
       const initialConfig = configManager.getConfig();
       console.log('[TEST] Initial config:', JSON.stringify(initialConfig));
 
-      // 修改配置
+      // Modify configuration
       configManager.updateConfig({
         system: {
           host: 'new-host',
@@ -181,11 +181,11 @@ describe('ConfigManager', () => {
         }
       });
 
-      // 记录内存中的配置
+      // Log in-memory configuration
       const memoryConfig = configManager.getConfig();
       console.log('[TEST] Memory config after update:', JSON.stringify(memoryConfig));
 
-      // 验证文件已创建并包含正确内容
+      // Verify file was created and contains correct content
       expect(fs.existsSync(tempConfigPath)).toBe(true);
 
       const savedContent = fs.readFileSync(tempConfigPath, 'utf-8');
@@ -204,7 +204,7 @@ describe('ConfigManager', () => {
       const testRunId = `non-existent-dir-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       const nonExistentPath = path.join(os.tmpdir(), testRunId, '.mcp-hub.json');
 
-      // 确保目录不存在
+      // Ensure directory doesn't exist
       if (fs.existsSync(path.dirname(nonExistentPath))) {
         let retries = 3;
         while (retries > 0) {
@@ -225,7 +225,7 @@ describe('ConfigManager', () => {
 
       configManager = new ConfigManager(nonExistentPath);
 
-      // 修改配置以触发保存
+      // Modify configuration to trigger save
       configManager.updateConfig({
         system: {
           host: 'test-host',
@@ -239,10 +239,10 @@ describe('ConfigManager', () => {
         }
       });
 
-      // 验证目录和文件都已创建
+      // Verify both directory and file were created
       expect(fs.existsSync(nonExistentPath)).toBe(true);
 
-      // 清理
+      // Clean up
       if (fs.existsSync(path.dirname(nonExistentPath))) {
         let retries = 3;
         while (retries > 0) {
@@ -270,7 +270,7 @@ describe('ConfigManager', () => {
         throw new Error('Permission denied');
       });
 
-      // 提供完整的 system 配置以通过 schema 验证
+      // Provide complete system config to pass schema validation
       const validConfig = {
         system: {
           host: 'test-host',
@@ -284,10 +284,10 @@ describe('ConfigManager', () => {
         }
       };
 
-      // 这个调用不应该抛出异常
+      // This call should not throw an exception
       await expect(configManager.updateConfig(validConfig)).resolves.not.toThrow();
 
-      // 恢复mock
+      // Restore mock
       vi.restoreAllMocks();
     });
   });
@@ -316,7 +316,7 @@ describe('ConfigManager', () => {
     it('should validate server config when adding', async () => {
       const invalidServerConfig = {
         command: 'test-command',
-        type: 'invalid-type' as unknown as ServerConfig['type'] // 无效的类型
+        type: 'invalid-type' as unknown as ServerConfig['type'] // Invalid type
       };
 
       await expect(configManager.addServer('test-server', invalidServerConfig)).rejects.toThrow();
@@ -382,7 +382,7 @@ describe('ConfigManager', () => {
 
     it('should not remove non-existent server', async () => {
       await configManager.removeServer('non-existent');
-      // 不应该抛出异常
+      // Should not throw an exception
     });
   });
 
@@ -392,7 +392,7 @@ describe('ConfigManager', () => {
     });
 
     it('should add server instance with auto-generated ID', async () => {
-      // 先添加服务器
+      // Add server first
       await configManager.addServer('test-server', {
         command: 'test-command',
         enabled: true,
@@ -442,7 +442,7 @@ describe('ConfigManager', () => {
 
       const invalidInstance = {
         id: 'test-id',
-        timestamp: 'invalid-timestamp' as unknown as number // 应该是数字
+        timestamp: 'invalid-timestamp' as unknown as number // Should be a number
       } as ServerInstanceConfig;
 
       await expect(
@@ -454,7 +454,7 @@ describe('ConfigManager', () => {
       const instances = configManager.getServerInstanceByName('non-existent');
       expect(instances).toHaveLength(0);
 
-      // 添加服务器和实例
+      // Add server and instance
       configManager.addServer('test-server', {
         command: 'test-command',
         enabled: true,
@@ -471,7 +471,7 @@ describe('ConfigManager', () => {
       const allInstances = configManager.getServerInstances();
       expect(Object.keys(allInstances)).toHaveLength(0);
 
-      // 添加服务器和实例
+      // Add server and instance
       configManager.addServer('server1', {
         command: 'cmd1',
         enabled: true,
@@ -601,8 +601,8 @@ describe('ConfigManager', () => {
         }
       });
 
-      // 验证日志被调用（注意：实际的日志记录在logger模块中）
-      // 由于logger是外部依赖，我们主要验证配置更新本身
+      // Verify logger is called (note: actual logging happens in logger module)
+      // Since logger is an external dependency, we primarily verify the configuration update itself
 
       const config = configManager.getConfig();
       expect(config.system.host).toBe('new-host');
@@ -611,10 +611,10 @@ describe('ConfigManager', () => {
     });
 
     it('should handle partial config updates', async () => {
-      // 初始配置
+      // Initial configuration
       const initialConfig = configManager.getConfig();
 
-      // 只更新部分配置
+      // Update only partial configuration
       await configManager.updateConfig({
         system: {
           port: 9999,
@@ -627,9 +627,9 @@ describe('ConfigManager', () => {
 
       const updatedConfig = configManager.getConfig();
 
-      // 验证只有指定的部分被更新
+      // Verify only the specified parts are updated
       expect(updatedConfig.system.port).toBe(9999);
-      expect(updatedConfig.system.host).toBe(initialConfig.system.host); // 未改变
+      expect(updatedConfig.system.host).toBe(initialConfig.system.host); // Not changed
     });
   });
 
@@ -637,7 +637,7 @@ describe('ConfigManager', () => {
     it('should reload config from file', async () => {
       configManager = new ConfigManager(tempConfigPath);
 
-      // 修改内存中的配置
+      // Modify configuration in memory
       await configManager.updateConfig({
         system: {
           host: 'memory-host',
@@ -651,7 +651,7 @@ describe('ConfigManager', () => {
         }
       });
 
-      // 直接修改文件内容
+      // Directly modify file content
       const fileConfig = {
         version: '1.0.0',
         system: {
@@ -685,7 +685,7 @@ describe('ConfigManager', () => {
 
       fs.writeFileSync(tempConfigPath, JSON.stringify(fileConfig, null, 2));
 
-      // 同步配置
+      // Synchronize configuration
       await configManager.syncConfig();
 
       const syncedConfig = configManager.getConfig();
@@ -695,7 +695,7 @@ describe('ConfigManager', () => {
 
   describe('Edge Cases and Error Handling', () => {
     it('should handle constructor with temp config path', () => {
-      // 使用临时目录创建配置文件路径
+      // Use temporary directory to create config file path
       const tempDir = path.join(
         os.tmpdir(),
         `mcp-hub-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
@@ -703,7 +703,7 @@ describe('ConfigManager', () => {
       fs.mkdirSync(tempDir, { recursive: true });
       const testTempConfigPath = path.join(tempDir, '.mcp-hub.json');
 
-      // 写入初始配置
+      // Write initial configuration
       fs.writeFileSync(testTempConfigPath, JSON.stringify({ version: '1.0.0' }));
 
       configManager = new ConfigManager(testTempConfigPath);
@@ -712,7 +712,7 @@ describe('ConfigManager', () => {
       expect(config).toBeDefined();
       expect(config.version).toBe('1.0.0');
 
-      // 清理，添加重试机制
+      // Clean up, add retry mechanism
       let retries = 3;
       while (retries > 0) {
         try {
@@ -736,7 +736,7 @@ describe('ConfigManager', () => {
       configManager = new ConfigManager(tempConfigPath);
       const config = configManager.getConfig();
 
-      // 应该填充默认值
+      // Should fill in default values
       expect(config.version).toBe('1.0.0');
       expect(config.system.host).toBe('localhost');
     });

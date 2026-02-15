@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
-// 模拟 MCP SDK
+// Mock MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
@@ -12,7 +12,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
         if (toolCall.name === 'calculator') {
           const { a, b, operation } = toolCall.arguments;
 
-          // 验证参数类型
+          // Validate parameter types
           if (typeof a !== 'number' || typeof b !== 'number') {
             throw new Error('Invalid parameters: a and b must be numbers');
           }
@@ -56,7 +56,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-// 模拟传输
+// Mock transport
 vi.mock('@utils/transports/transport-factory.js', () => {
   return {
     TransportFactory: {
@@ -75,7 +75,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   let serverId: string;
 
   beforeEach(async () => {
-    // 添加到 hub manager
+    // Add to hub manager
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
@@ -85,7 +85,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       allowedTools: []
     });
 
-    // 添加服务器实例
+    // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
   });
@@ -96,7 +96,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   });
 
   it('should execute tool with correct arguments', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -125,7 +125,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   });
 
   it('should handle invalid parameters', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -153,7 +153,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   });
 
   it('should handle unknown tool', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');
@@ -175,7 +175,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   });
 
   it('should support multiple concurrent tool calls', async () => {
-    // 获取服务器配置和实例配置
+    // Get server configuration and instance configuration
     const serverInfo = hubManager.getServerById(serverId);
     if (!serverInfo) {
       throw new Error('Server not found');

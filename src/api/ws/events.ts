@@ -1,6 +1,6 @@
 /**
- * WebSocket 路由处理器
- * 注册 WebSocket 端点并创建连接管理器实例
+ * WebSocket route handler
+ * Registers WebSocket endpoints and creates connection manager instances
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -10,15 +10,15 @@ import { eventBus } from '@services/event-bus.service.js';
 import { logger } from '@utils/logger.js';
 
 /**
- * WebSocket 路由配置
+ * WebSocket route configuration
  */
 export async function webSocketRoutes(fastify: FastifyInstance): Promise<void> {
-  // 注册 WebSocket 插件
+  // Register WebSocket plugin
   await fastify.register(fastifyWebSocket);
 
-  // 注册 WebSocket 路由
+  // Register WebSocket routes
   fastify.register(async function (fastify) {
-    // WebSocket 端点：/ws
+    // WebSocket endpoint: /ws
     fastify.get('/ws', { websocket: true }, (socket, request) => {
       logger.info(`connection established from ${request.ip}`, { subModule: 'WebSocket' });
 

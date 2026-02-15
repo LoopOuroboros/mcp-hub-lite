@@ -49,7 +49,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // POST /web/servers
   fastify.post('/web/servers', async (request, reply) => {
     try {
-      // 接受服务器名称和配置作为请求体
+      // Accept server name and configuration as request body
       const postSchema = z.object({
         name: z.string().min(1).max(100),
         config: ServerConfigSchema.partial()
@@ -57,12 +57,12 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       const body = postSchema.parse(request.body);
       const newServer = await hubManager.addServer(body.name, body.config);
 
-      // 如果启用了自动启动，添加服务器实例（addServerInstance 会自动检查并处理启动）
+      // If auto-start is enabled, add server instance (addServerInstance will automatically check and handle startup)
       if (newServer.enabled !== false && newServer.enabled !== undefined) {
         try {
           await hubManager.addServerInstance(body.name, {});
         } catch (error) {
-          // 自动启动失败不影响服务器添加操作
+          // Auto-start failure does not affect server addition operation
           logger.warn(`Failed to auto-start server instance for ${body.name}:`, error);
         }
       }
@@ -84,7 +84,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
         const instanceSchema = ServerInstanceConfigSchema.partial();
         const body = instanceSchema.parse(request.body);
 
-        // 检查服务器是否存在
+        // Check if server exists
         const server = hubManager.getServerByName(request.params.name);
         if (!server) {
           return reply.code(404).send({ error: 'Server not found' });
@@ -169,7 +169,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // POST /web/servers/batch
   fastify.post('/web/servers/batch', async (request, reply) => {
     try {
-      // 首先解析基本结构，不严格验证服务器配置，以便我们可以进行预处理
+      // First parse the basic structure without strict validation of server configuration to allow preprocessing
       const batchSchema = z.object({
         mcpServers: z.array(
           z.object({
@@ -192,12 +192,12 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       const serversToAdd = [];
       const serversToConnect = [];
 
-      // 阶段 1: 收集和验证所有服务器
+      // Phase 1: Collect and validate all servers
       for (const { name, config: serverConfig } of body.mcpServers) {
         try {
           const processedName = name.toLowerCase();
 
-          // 检查名称是否重复
+          // Check for duplicate names
           if (existingNames.has(processedName)) {
             results.errors.push({
               name: name,
@@ -206,7 +206,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
             continue;
           }
 
-          // 使用 Zod 验证服务器配置（现在支持 "http" 类型）
+          // Validate server configuration using Zod (now supports "http" type)
           const validatedConfig = ServerConfigSchema.partial().parse(serverConfig);
 
           serversToAdd.push({ name: processedName, config: validatedConfig });
@@ -214,7 +214,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
             serversToConnect.push(processedName);
           }
           results.success.push({ name: processedName, config: validatedConfig });
-          existingNames.add(processedName); // 防止同一批次中的重复
+          existingNames.add(processedName); // Prevent duplicates within the same batch
         } catch (error) {
           results.errors.push({
             name: name,
@@ -223,17 +223,17 @@ export async function webServerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // 阶段 2: 批量保存配置（只保存一次）
+      // Phase 2: Batch save configuration (save only once)
       if (serversToAdd.length > 0) {
         await hubManager.addServersWithoutAutoStart(serversToAdd);
       }
 
-      // 阶段 3: 批量创建服务器实例（不自动连接）
+      // Phase 3: Batch create server instances (without auto-connect)
       if (serversToAdd.length > 0) {
         await hubManager.addServerInstancesWithoutConnect(serversToAdd.map((s) => s.name));
       }
 
-      // 阶段 4: 并发启动所有需要连接的服务器实例
+      // Phase 4: Concurrently start all server instances that need to be connected
       if (serversToConnect.length > 0) {
         await hubManager.connectServerInstances(serversToConnect);
       }

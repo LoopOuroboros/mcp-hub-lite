@@ -30,7 +30,7 @@ class ClientTrackerService {
     };
     this.clients.set(context.sessionId, clientInfo);
 
-    // 如果是新客户端，发布连接事件
+    // If it's a new client, publish connection event
     if (!existing) {
       eventBus.publish('client-connected', {
         timestamp: Date.now(),
@@ -78,7 +78,7 @@ class ClientTrackerService {
         this.clients.delete(id);
         logger.debug(`Removed stale client: ${id}`);
 
-        // 发布客户端断开事件
+        // Publish client disconnection event
         eventBus.publish('client-disconnected', {
           timestamp: Date.now(),
           clientId: id,

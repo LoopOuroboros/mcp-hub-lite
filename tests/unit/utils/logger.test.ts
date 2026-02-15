@@ -13,34 +13,34 @@ describe('Logger', () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    // 保存原始环境变量
+    // Save original environment variables
     originalEnv = { ...process.env };
 
-    // 创建临时日志目录
+    // Create temporary log directory
     tempLogDir = path.join(os.tmpdir(), `logger-test-${Date.now()}`);
     fs.mkdirSync(tempLogDir, { recursive: true });
 
-    // 重置环境变量
+    // Reset environment variables
     delete process.env.DEV_LOG_FILE;
   });
 
   afterEach(() => {
-    // 恢复环境变量
+    // Restore environment variables
     process.env = { ...originalEnv };
 
-    // 清理临时目录
+    // Clean up temporary directory
     if (fs.existsSync(tempLogDir)) {
       fs.rmSync(tempLogDir, { recursive: true, force: true });
     }
 
-    // 清理mocks
+    // Clean up mocks
     vi.restoreAllMocks();
   });
 
   it('should create logger with default level', () => {
     logger = new Logger();
     expect(logger).toBeDefined();
-    // 注意：由于logger是私有属性，我们无法直接访问，但可以通过行为测试
+    // Note: Since logger is a private property, we cannot access it directly, but we can test through behavior
   });
 
   it('should create logger with specified level', () => {
@@ -52,7 +52,7 @@ describe('Logger', () => {
     logger = new Logger('info');
     logger.setLevel('debug' as LogLevel);
 
-    // 验证级别设置（通过内部方法模拟）
+    // Verify level setting (via internal method simulation)
     // @ts-expect-error - accessing private method for testing
     const shouldLogSpy = vi.spyOn(logger, 'shouldLog');
     // @ts-expect-error - accessing private method for testing
@@ -65,7 +65,7 @@ describe('Logger', () => {
     const testDate = new Date('2025-12-01T10:30:45.123Z');
     // @ts-expect-error - accessing private method for testing
     const formatted = logger.formatTimestamp(testDate);
-    // 验证格式正确，但不硬编码具体时间值（因为时区可能影响）
+    // Verify format is correct, but don't hardcode specific time values (timezone may affect)
     expect(formatted).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
   });
 
@@ -88,13 +88,13 @@ describe('Logger', () => {
     // @ts-expect-error - accessing private method for testing
     expect(logger.formatPid(123456)).toBe('PID:  123456');
     // @ts-expect-error - accessing private method for testing
-    expect(logger.formatPid(123456789)).toBe('PID:12345678'); // 测试超长PID截断
+    expect(logger.formatPid(123456789)).toBe('PID:12345678'); // Test long PID truncation
   });
 
   it('should determine if message should be logged based on level', () => {
     logger = new Logger('info');
 
-    // info级别应该记录info、warn、error
+    // info level should log info, warn, error
     // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('info')).toBe(true);
     // @ts-expect-error - accessing private method for testing
@@ -104,7 +104,7 @@ describe('Logger', () => {
     // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('debug')).toBe(false);
 
-    // debug级别应该记录所有
+    // debug level should log all
     logger.setLevel('debug' as LogLevel);
     expect((logger as unknown as LoggerWithPrivateMethods).shouldLog('debug')).toBe(true);
   });
@@ -117,7 +117,7 @@ describe('Logger', () => {
       serverName: 'test-server'
     });
 
-    // 验证消息包含正确的组件（不验证具体时间戳）
+    // Verify message contains correct components (don't verify specific timestamp)
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
     expect(message).toContain('[INF]');
     expect(message).toContain('[PID:     123]');
@@ -132,7 +132,7 @@ describe('Logger', () => {
       pid: 123
     });
 
-    // 验证消息包含正确的组件（不验证具体时间戳）
+    // Verify message contains correct components (don't verify specific timestamp)
     expect(message).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/);
     expect(message).toContain('[INF]');
     expect(message).toContain('[PID:     123]');
@@ -143,7 +143,7 @@ describe('Logger', () => {
   it('should format error objects correctly', () => {
     logger = new Logger();
 
-    // 测试Error对象
+    // Test Error object
     const error = new Error('Test error');
     error.stack = 'Error: Test error\n    at test (test.js:1:1)\n    at another (test.js:2:2)';
     // @ts-expect-error - accessing private method for testing
@@ -151,7 +151,7 @@ describe('Logger', () => {
     expect(formatted).toContain('Test error');
     expect(formatted).toContain('at test (test.js:1:1)');
 
-    // 测试非Error对象
+    // Test non-Error object
     const stringError = 'string error';
     // @ts-expect-error - accessing private method for testing
     const formattedString = logger.formatError(stringError);
@@ -159,13 +159,13 @@ describe('Logger', () => {
   });
 
   it('should enable dev log when DEV_LOG_FILE is set', () => {
-    // 保存原始环境变量
+    // Save original environment variables
     const originalDevLogFile = process.env.DEV_LOG_FILE;
 
     try {
       process.env.DEV_LOG_FILE = 'true';
 
-      // Mock fs和path模块以避免文件系统操作
+      // Mock fs and path modules to avoid file system operations
       const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
       vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
       const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
@@ -184,7 +184,7 @@ describe('Logger', () => {
           writableObjectMode: false,
           writableCorked: 0,
           destroyed: false
-          // 添加其他必要的属性...
+          // Add other necessary properties...
         } as unknown as WriteStream;
       });
 
@@ -193,14 +193,14 @@ describe('Logger', () => {
       // @ts-expect-error - accessing private property for testing
       expect(logger.logFileStream).toBeDefined();
 
-      // 验证文件系统操作被调用
+      // Verify file system operations were called
       expect(mkdirSyncSpy).toHaveBeenCalled();
       expect(createWriteStreamSpy).toHaveBeenCalled();
     } finally {
-      // 恢复原始环境变量
+      // Restore original environment variables
       process.env.DEV_LOG_FILE = originalDevLogFile;
 
-      // 恢复mocks
+      // Restore mocks
       vi.restoreAllMocks();
     }
   });
@@ -214,23 +214,23 @@ describe('Logger', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // 测试debug方法
+    // Test debug method
     logger.debug('test', 'arg1', 'arg2');
     expect(consoleDebugSpy).toHaveBeenCalled();
 
-    // 测试info方法
+    // Test info method
     logger.info('test', 'arg1', 'arg2');
     expect(consoleInfoSpy).toHaveBeenCalled();
 
-    // 测试warn方法
+    // Test warn method
     logger.warn('test', 'arg1', 'arg2');
     expect(consoleWarnSpy).toHaveBeenCalled();
 
-    // 测试error方法
+    // Test error method
     logger.error('test', 'arg1', 'arg2');
     expect(consoleErrorSpy).toHaveBeenCalled();
 
-    // 恢复console方法
+    // Restore console methods
     consoleDebugSpy.mockRestore();
     consoleInfoSpy.mockRestore();
     consoleWarnSpy.mockRestore();
@@ -245,11 +245,11 @@ describe('Logger', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // debug和info不应该被调用
+    // debug and info should not be called
     logger.debug('debug message');
     logger.info('info message');
 
-    // warn和error应该被调用
+    // warn and error should be called
     logger.warn('warn message');
     logger.error('error message');
 
@@ -258,7 +258,7 @@ describe('Logger', () => {
     expect(consoleWarnSpy).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalled();
 
-    // 恢复console方法
+    // Restore console methods
     consoleDebugSpy.mockRestore();
     consoleInfoSpy.mockRestore();
     consoleWarnSpy.mockRestore();
@@ -268,7 +268,7 @@ describe('Logger', () => {
   it('should include traceId and spanId in log messages when provided', () => {
     logger = new Logger();
 
-    // 测试彩色日志消息
+    // Test colored log message
     const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage(
       'info',
       'test message',
@@ -283,7 +283,7 @@ describe('Logger', () => {
     expect(coloredMessage).toContain('[TID:1234567890abcdef1234567890abcdef]');
     expect(coloredMessage).toContain('[SID:abcdef1234567890]');
 
-    // 测试纯文本日志消息
+    // Test plain text log message
     const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage(
       'info',
       'test message',
@@ -302,7 +302,7 @@ describe('Logger', () => {
   it('should handle log messages without traceId and spanId', () => {
     logger = new Logger();
 
-    // 测试彩色日志消息
+    // Test colored log message
     const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage(
       'info',
       'test message',
@@ -315,7 +315,7 @@ describe('Logger', () => {
     expect(coloredMessage).not.toContain('traceId');
     expect(coloredMessage).not.toContain('spanId');
 
-    // 测试纯文本日志消息
+    // Test plain text log message
     const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage(
       'info',
       'test message',
@@ -345,7 +345,7 @@ describe('Logger', () => {
     );
     expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
 
-    // 恢复console方法
+    // Restore console methods
     consoleInfoSpy.mockRestore();
   });
 
@@ -357,10 +357,10 @@ describe('Logger', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // debug不应该被调用（因为级别是info）
+    // debug should not be called (because level is info)
     logger.serverLog('debug', 'test-server', 'debug message');
 
-    // info、warn、error应该被调用
+    // info, warn, error should be called
     logger.serverLog('info', 'test-server', 'info message');
     logger.serverLog('warn', 'test-server', 'warn message');
     logger.serverLog('error', 'test-server', 'error message');
@@ -370,7 +370,7 @@ describe('Logger', () => {
     expect(consoleWarnSpy).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalled();
 
-    // 恢复console方法
+    // Restore console methods
     consoleDebugSpy.mockRestore();
     consoleInfoSpy.mockRestore();
     consoleWarnSpy.mockRestore();
@@ -378,7 +378,7 @@ describe('Logger', () => {
   });
 
   it('should handle logWithColor function with traceId and spanId', () => {
-    // 重置 logger 实例以避免测试间的相互影响
+    // Reset logger instance to avoid interference between tests
     const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
     logWithColor('colored message', 'plain message', {
@@ -393,19 +393,19 @@ describe('Logger', () => {
     );
     expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
 
-    // 恢复console方法
+    // Restore console methods
     consoleInfoSpy.mockRestore();
   });
 
   it('should handle logWithColor function without context', () => {
-    // 重置 logger 实例以避免测试间的相互影响
+    // Reset logger instance to avoid interference between tests
     const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
     logWithColor('colored message', 'plain message');
 
     expect(consoleInfoSpy).toHaveBeenCalled();
 
-    // 恢复console方法
+    // Restore console methods
     consoleInfoSpy.mockRestore();
   });
 });

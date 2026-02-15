@@ -1,6 +1,6 @@
 /**
- * WebSocket 客户端工具
- * 管理与后端的 WebSocket 连接和消息处理
+ * WebSocket client utility
+ * Manages WebSocket connection and message handling with backend
  */
 
 import type {
@@ -30,7 +30,7 @@ import type {
   ErrorMessage
 } from '@shared-types/websocket.types';
 
-// 重新导出类型以保持向后兼容性
+// Re-export types for backward compatibility
 export type {
   WebSocketEventType,
   ClientMessage,
@@ -135,7 +135,7 @@ export class WebSocketClient {
   }
 }
 
-// 创建全局 WebSocket 客户端实例
+// Create global WebSocket client instance
 export function createWebSocketClient(url: string): WebSocketClient {
   return new WebSocketClient(url);
 }

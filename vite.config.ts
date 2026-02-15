@@ -5,9 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-// 动态获取后端端口：优先使用环境变量，其次查找配置文件
+// Dynamically get backend port: prioritize environment variables, then look for config files
 function getBackendPort(): string {
-  // 1. 优先使用环境变量
+  // 1. Prioritize environment variables
   if (process.env.VITE_BACKEND_PORT) {
     return process.env.VITE_BACKEND_PORT;
   }
@@ -15,7 +15,7 @@ function getBackendPort(): string {
     return process.env.PORT;
   }
 
-  // 2. 尝试从配置文件读取
+  // 2. Try to read from config files
   const configPaths = [
     process.env.MCP_HUB_CONFIG_PATH,
     path.join(process.cwd(), 'config', '.mcp-hub.json'),
@@ -29,21 +29,21 @@ function getBackendPort(): string {
         if (config.system?.port && typeof config.system.port === 'number') {
           return String(config.system.port);
         }
-        // 兼容旧配置格式
+        // Compatibility with old config format
         if (config.port && typeof config.port === 'number') {
           return String(config.port);
         }
       } catch {
-        // 忽略读取错误
+        // Ignore read errors
       }
     }
   }
 
-  // 3. 默认值
+  // 3. Default value
   return '7788';
 }
 
-// 动态获取后端主机
+// Dynamically get backend host
 function getBackendHost(): string {
   if (process.env.VITE_BACKEND_HOST) {
     return process.env.VITE_BACKEND_HOST;
@@ -65,12 +65,12 @@ function getBackendHost(): string {
         if (config.system?.host && typeof config.system.host === 'string') {
           return config.system.host;
         }
-        // 兼容旧配置格式
+        // Compatibility with old config format
         if (config.host && typeof config.host === 'string') {
           return config.host;
         }
       } catch {
-        // 忽略读取错误
+        // Ignore read errors
       }
     }
   }
@@ -106,9 +106,9 @@ export default defineConfig({
     }
   },
   server: {
-    host: '127.0.0.1', // 明确使用 IPv4 地址
-    port: 5173, // 使用常用的端口号避免权限问题
-    strictPort: true, // 允许自动选择可用端口
+    host: '127.0.0.1', // Explicitly use IPv4 address
+    port: 5173, // Use common port number to avoid permission issues
+    strictPort: true, // Allow automatic selection of available port
     proxy: {
       '/api': {
         target: `http://${backendHost}:${backendPort}`,

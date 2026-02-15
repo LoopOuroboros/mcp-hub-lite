@@ -95,13 +95,13 @@ api/
 
 ### 配置管理 API (`api/web/config.ts`)
 
-| 路径                  | 方法   | 描述             |
-| --------------------- | ------ | ---------------- |
-| `/web/config`         | GET    | 获取系统配置     |
-| `/web/config`         | PUT    | 更新系统配置     |
-| `/web/config/export`  | POST   | 导出配置         |
-| `/web/config/import`  | POST   | 导入配置         |
-| `/web/config/servers` | PATCH  | 批量更新服务器配置 |
+| 路径                  | 方法  | 描述               |
+| --------------------- | ----- | ------------------ |
+| `/web/config`         | GET   | 获取系统配置       |
+| `/web/config`         | PUT   | 更新系统配置       |
+| `/web/config/export`  | POST  | 导出配置           |
+| `/web/config/import`  | POST  | 导入配置           |
+| `/web/config/servers` | PATCH | 批量更新服务器配置 |
 
 ### 日志 API (`api/web/logs.ts`)
 
@@ -114,18 +114,18 @@ api/
 
 **系统工具接口**：
 
-| 路径                                                    | 方法  | 描述                           |
-| ------------------------------------------------------- | ----- | ------------------------------ |
-| `/web/hub-tools/system`                                 | GET   | 列出系统工具                   |
-| `/web/hub-tools/system/:toolName/call`                  | POST  | 调用系统工具                   |
-| `/web/hub-tools/servers`                                | GET   | 列出所有连接的服务器           |
-| `/web/hub-tools/servers/find`                           | GET   | 查找匹配模式的服务器           |
-| `/web/hub-tools/servers/:serverId/tools`                | GET   | 列出特定服务器的所有工具       |
-| `/web/hub-tools/servers/:serverId/tools/find`           | GET   | 在特定服务器中查找工具         |
-| `/web/hub-tools/servers/:serverId/tools/:toolName`      | GET   | 获取特定工具详情               |
-| `/web/hub-tools/servers/:serverId/tools/:toolName/call` | POST  | 调用特定工具                   |
-| `/web/hub-tools/tools`                                  | GET   | 列出所有服务器的所有工具       |
-| `/web/hub-tools/tools/find`                             | GET   | 查找所有服务器中匹配模式的工具 |
+| 路径                                                    | 方法 | 描述                           |
+| ------------------------------------------------------- | ---- | ------------------------------ |
+| `/web/hub-tools/system`                                 | GET  | 列出系统工具                   |
+| `/web/hub-tools/system/:toolName/call`                  | POST | 调用系统工具                   |
+| `/web/hub-tools/servers`                                | GET  | 列出所有连接的服务器           |
+| `/web/hub-tools/servers/find`                           | GET  | 查找匹配模式的服务器           |
+| `/web/hub-tools/servers/:serverId/tools`                | GET  | 列出特定服务器的所有工具       |
+| `/web/hub-tools/servers/:serverId/tools/find`           | GET  | 在特定服务器中查找工具         |
+| `/web/hub-tools/servers/:serverId/tools/:toolName`      | GET  | 获取特定工具详情               |
+| `/web/hub-tools/servers/:serverId/tools/:toolName/call` | POST | 调用特定工具                   |
+| `/web/hub-tools/tools`                                  | GET  | 列出所有服务器的所有工具       |
+| `/web/hub-tools/tools/find`                             | GET  | 查找所有服务器中匹配模式的工具 |
 
 **支持的系统工具**：
 
@@ -152,9 +152,9 @@ api/
 
 ### 会话管理 API (`api/web/sessions.ts`)
 
-| 路径                      | 方法   | 描述               |
-| ------------------------- | ------ | ------------------ |
-| `/web/sessions`           | GET    | 列出所有持久化会话 |
+| 路径                       | 方法   | 描述               |
+| -------------------------- | ------ | ------------------ |
+| `/web/sessions`            | GET    | 列出所有持久化会话 |
 | `/web/sessions/:sessionId` | GET    | 获取会话详情       |
 | `/web/sessions/:sessionId` | DELETE | 删除会话           |
 
@@ -322,8 +322,8 @@ A:
 | `api/web/logs.ts`       | 日志 API           |
 | `api/web/hub-tools.ts`  | 系统工具 API       |
 | `api/web/clients.ts`    | 客户端管理 API     |
-| `api/web/resources.ts`   | 资源 API           |
-| `api/web/sessions.ts`    | 会话管理 API       |
+| `api/web/resources.ts`  | 资源 API           |
+| `api/web/sessions.ts`   | 会话管理 API       |
 | `api/ws/events.ts`      | WebSocket 事件处理 |
 | `api/ws/ws-handler.ts`  | WebSocket 处理器   |
 

@@ -11,7 +11,7 @@ import {
   validateSessionStore
 } from '@models/session.model.js';
 
-// 重置模块缓存
+// Reset module cache
 vi.resetModules();
 
 describe('Session Model', () => {
@@ -28,7 +28,7 @@ describe('Session Model', () => {
         metadata: {}
       };
 
-      // 验证基本类型检查
+      // Verify basic type checking
       expect(validState.sessionId).toBe('test-session-123');
       expect(validState.clientName).toBe('test-client');
       expect(validState.createdAt).toBeTypeOf('number');
@@ -125,22 +125,22 @@ describe('Session Persistence', () => {
   beforeEach(() => {
     originalEnv = { ...process.env };
 
-    // 创建临时目录
+    // Create temporary directory
     const testRunId = `session-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     tempDir = path.join(os.tmpdir(), `mcp-hub-session-test-${testRunId}`);
     sessionsPath = path.join(tempDir, 'sessions.json');
 
     fs.mkdirSync(tempDir, { recursive: true });
 
-    // 设置环境变量
+    // Set environment variables
     process.env.MCP_HUB_CONFIG_PATH = path.join(tempDir, '.mcp-hub.json');
   });
 
   afterEach(() => {
-    // 恢复环境变量
+    // Restore environment variables
     process.env = { ...originalEnv };
 
-    // 清理临时目录
+    // Clean up temporary directory
     if (fs.existsSync(tempDir)) {
       let retries = 3;
       while (retries > 0) {
@@ -175,19 +175,19 @@ describe('Session Persistence', () => {
       }
     };
 
-    // 确保目录不存在
+    // Ensure directory doesn't exist
     if (fs.existsSync(path.dirname(sessionsPath))) {
       fs.rmSync(path.dirname(sessionsPath), { recursive: true, force: true });
     }
 
-    // 模拟保存操作
+    // Simulate save operation
     const dir = path.dirname(sessionsPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(sessionsPath, JSON.stringify(testStore, null, 2));
 
-    // 验证文件已创建
+    // Verify file was created
     expect(fs.existsSync(sessionsPath)).toBe(true);
     const savedContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
     expect(savedContent.version).toBe('1.0.0');
@@ -242,14 +242,14 @@ describe('Session Persistence', () => {
     const content = fs.readFileSync(sessionsPath, 'utf-8');
     expect(() => JSON.parse(content)).toThrow();
 
-    // 验证会返回空存储
+    // Verify it returns empty store
     const store = validateSessionStore(null);
     expect(store.version).toBe('1.0.0');
     expect(store.sessions).toEqual({});
   });
 
   it('should update sessions incrementally', () => {
-    // 初始存储
+    // Initial store
     const initialStore: SessionStore = {
       version: '1.0.0',
       sessions: {
@@ -264,7 +264,7 @@ describe('Session Persistence', () => {
 
     fs.writeFileSync(sessionsPath, JSON.stringify(initialStore, null, 2));
 
-    // 加载并更新
+    // Load and update
     const loaded = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
     const updatedStore: SessionStore = {
       ...loaded,
@@ -281,7 +281,7 @@ describe('Session Persistence', () => {
 
     fs.writeFileSync(sessionsPath, JSON.stringify(updatedStore, null, 2));
 
-    // 验证两个会话都存在
+    // Verify both sessions exist
     const finalContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
     expect(Object.keys(finalContent.sessions)).toHaveLength(2);
     expect(finalContent.sessions['session-1']).toBeDefined();
@@ -309,7 +309,7 @@ describe('Session Persistence', () => {
 
     fs.writeFileSync(sessionsPath, JSON.stringify(initialStore, null, 2));
 
-    // 删除 session-1
+    // Delete session-1
     const loaded = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { ['session-1']: unused, ...remainingSessions } = loaded.sessions;
@@ -320,7 +320,7 @@ describe('Session Persistence', () => {
 
     fs.writeFileSync(sessionsPath, JSON.stringify(updatedStore, null, 2));
 
-    // 验证 session-1 已被删除
+    // Verify session-1 has been deleted
     const finalContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
     expect(Object.keys(finalContent.sessions)).toHaveLength(1);
     expect(finalContent.sessions['session-1']).toBeUndefined();
@@ -335,22 +335,22 @@ describe('McpSessionManager with Real SDK', () => {
   beforeEach(() => {
     originalEnv = { ...process.env };
 
-    // 创建临时目录
+    // Create temporary directory
     const testRunId = `session-mgr-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     tempDir = path.join(os.tmpdir(), `mcp-hub-session-mgr-test-${testRunId}`);
 
     fs.mkdirSync(tempDir, { recursive: true });
 
-    // 设置环境变量
+    // Set environment variables
     process.env.MCP_HUB_CONFIG_PATH = path.join(tempDir, '.mcp-hub.json');
-    process.env.SESSION_FLUSH_INTERVAL = '100'; // 快速刷新用于测试
+    process.env.SESSION_FLUSH_INTERVAL = '100'; // Fast refresh for testing
   });
 
   afterEach(() => {
-    // 恢复环境变量
+    // Restore environment variables
     process.env = { ...originalEnv };
 
-    // 清理临时目录
+    // Clean up temporary directory
     if (fs.existsSync(tempDir)) {
       let retries = 3;
       while (retries > 0) {
@@ -371,10 +371,10 @@ describe('McpSessionManager with Real SDK', () => {
   });
 
   it('should manually initialize transport._webStandardTransport for restored sessions', async () => {
-    // 这个测试验证 createSession 方法中的核心修复逻辑
-    // 使用真实的 SDK 类型，模拟实际运行流程
+    // This test verifies the core fix logic in createSession method
+    // Use real SDK types to simulate actual runtime flow
 
-    // 1. 准备测试数据 - 创建真实的会话状态
+    // 1. Prepare test data - create real session state
     const testSessionId = 'test-session-restore-001';
     const testState: SessionState = {
       sessionId: testSessionId,
@@ -390,14 +390,14 @@ describe('McpSessionManager with Real SDK', () => {
       }
     };
 
-    // 2. 导入真实的 SDK 类型
-    // 注意：我们不实际创建 SDK 实例（避免副作用），但验证类型兼容性
-    // 验证类型导入路径存在
+    // 2. Import real SDK types
+    // Note: We don't actually create SDK instances (to avoid side effects), but verify type compatibility
+    // Verify type import path exists
     const { McpSessionManager: McpSessionManagerClass } =
       await import('@services/mcp-session-manager.js');
 
-    // 3. 创建测试实例并注入模拟状态
-    // 使用类型断言是为了测试目的，访问私有成员
+    // 3. Create test instance and inject mock state
+    // Use type assertion for testing purposes to access private members
     interface McpSessionManagerTest {
       sessionStates: Map<string, SessionState>;
     }
@@ -405,7 +405,7 @@ describe('McpSessionManager with Real SDK', () => {
     const manager = new McpSessionManagerClass() as unknown as McpSessionManagerTest;
     manager.sessionStates.set(testSessionId, testState);
 
-    // 验证状态注入成功
+    // Verify state injection succeeded
     expect(manager.sessionStates.has(testSessionId)).toBe(true);
     const injectedState = manager.sessionStates.get(testSessionId);
     expect(injectedState).toBeDefined();
@@ -416,9 +416,9 @@ describe('McpSessionManager with Real SDK', () => {
   });
 
   it('should persist and reload session states using SessionStore schema', async () => {
-    // 这个测试验证完整的持久化流程 - 使用真实的 SessionStore 模型
+    // This test verifies the complete persistence flow - using real SessionStore model
 
-    // 1. 创建测试会话存储
+    // 1. Create test session store
     const sessionsPath = path.join(tempDir, 'sessions.json');
     const sessionIds = ['session-abc-123', 'session-def-456', 'session-ghi-789'];
 
@@ -443,11 +443,11 @@ describe('McpSessionManager with Real SDK', () => {
       sessions
     };
 
-    // 2. 保存到磁盘 - 模拟真实的持久化流程
+    // 2. Save to disk - simulate real persistence flow
     fs.mkdirSync(path.dirname(sessionsPath), { recursive: true });
     fs.writeFileSync(sessionsPath, JSON.stringify(testStore, null, 2));
 
-    // 3. 验证可以使用 SessionStoreSchema 解析
+    // 3. Verify can be parsed using SessionStoreSchema
     const rawContent = fs.readFileSync(sessionsPath, 'utf-8');
     const parsed = JSON.parse(rawContent);
     const validated = SessionStoreSchema.safeParse(parsed);
@@ -464,9 +464,9 @@ describe('McpSessionManager with Real SDK', () => {
   });
 
   it('should support SessionState type with all optional fields', () => {
-    // 这个测试验证 SessionState 类型的灵活性
+    // This test verifies SessionState type flexibility
 
-    // 测试完整版本
+    // Test full version
     const fullState: SessionState = {
       sessionId: 'full-session-001',
       clientName: 'test-client',
@@ -480,7 +480,7 @@ describe('McpSessionManager with Real SDK', () => {
     expect(fullState.sessionId).toBe('full-session-001');
     expect(fullState.clientName).toBe('test-client');
 
-    // 测试最小版本
+    // Test minimal version
     const minimalState: SessionState = {
       sessionId: 'minimal-session-001',
       createdAt: Date.now(),
@@ -490,7 +490,7 @@ describe('McpSessionManager with Real SDK', () => {
     expect(minimalState.sessionId).toBe('minimal-session-001');
     expect(minimalState.clientName).toBeUndefined();
 
-    // 验证 Schema 验证
+    // Verify Schema validation
     const fullResult = SessionStateSchema.safeParse(fullState);
     const minimalResult = SessionStateSchema.safeParse(minimalState);
 
@@ -499,14 +499,14 @@ describe('McpSessionManager with Real SDK', () => {
   });
 
   it('should integrate with real StreamableHTTPServerTransport structure', () => {
-    // 这个测试验证我们的修复与 SDK 的实际结构兼容
+    // This test verifies our fix is compatible with SDK's actual structure
 
-    // 验证我们访问的属性路径是合理的
-    // _webStandardTransport, sessionId, _initialized - 这些都是 SDK 中实际存在的
+    // Verify the property paths we access are reasonable
+    // _webStandardTransport, sessionId, _initialized - these all actually exist in SDK
 
-    // 我们不实际创建 SDK 实例（可能有副作用），但验证路径的逻辑一致性
+    // We don't actually create SDK instances (may have side effects), but verify logical consistency of paths
 
-    // 1. 验证传输的预期结构（基于我们分析的 SDK 代码）
+    // 1. Verify expected transport structure (based on our SDK code analysis)
     const expectedTransportStructure = {
       _webStandardTransport: {
         sessionId: 'test-session-id',
@@ -514,8 +514,8 @@ describe('McpSessionManager with Real SDK', () => {
       }
     };
 
-    // 2. 验证我们的修复逻辑可以安全地访问这些属性
-    // 使用类型断言来模拟我们在实际代码中的做法
+    // 2. Verify our fix logic can safely access these properties
+    // Use type assertion to simulate our approach in actual code
     interface MockTransport {
       _webStandardTransport?: {
         sessionId?: string;
@@ -525,7 +525,7 @@ describe('McpSessionManager with Real SDK', () => {
 
     const mockTransport = expectedTransportStructure as unknown as MockTransport;
 
-    // 这是我们在实际代码中要做的操作
+    // This is what we do in the actual code
     const webTransport = mockTransport._webStandardTransport;
     expect(webTransport).toBeDefined();
 

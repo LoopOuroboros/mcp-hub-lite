@@ -4,25 +4,25 @@ export class SearchScorer {
   scoreTool(tool: Tool, query: string): number {
     const lowerQuery = query.toLowerCase();
 
-    // 计算各字段得分
+    // Calculate scores for each field
     const nameScore = this.scoreField(tool.name, lowerQuery, 12);
     const descScore = this.scoreField(tool.description || '', lowerQuery, 3);
 
-    // 确保名称完全匹配的得分是最高的
+    // Ensure exact name match has the highest score
     if (nameScore === 120) {
-      // 10 * 12 = 120 表示名称精确匹配
+      // 10 * 12 = 120 indicates exact name match
       return nameScore;
     }
 
-    // 如果没有名称完全匹配，确保名称前缀匹配的得分高于其他组合得分
+    // If no exact name match, ensure name prefix match score is higher than other combined scores
     if (nameScore === 60) {
-      // 5 * 12 = 60 表示名称前缀匹配
-      // 限制描述的得分，确保不超过名称前缀匹配的得分
+      // 5 * 12 = 60 indicates name prefix match
+      // Limit description score to ensure it doesn't exceed name prefix match score
       const additionalScore = Math.min(descScore, 55);
       return nameScore + additionalScore;
     }
 
-    // 对于其他情况，返回各字段得分的总和
+    // For other cases, return the sum of scores from all fields
     return nameScore + descScore;
   }
 

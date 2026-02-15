@@ -97,7 +97,13 @@ export default {
     exporterConsole: '控制台',
     exporterOtlp: 'OTLP (OpenTelemetry 协议)',
     endpoint: '端点',
-    sampleRate: '采样率'
+    sampleRate: '采样率',
+    timeUnits: {
+      seconds: '秒',
+      minutes: '分钟',
+      hours: '小时',
+      days: '天'
+    }
   },
   dashboard: {
     title: '仪表盘',

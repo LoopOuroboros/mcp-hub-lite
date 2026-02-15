@@ -170,7 +170,7 @@ function toggleServer(serverName: string) {
 async function fetchSystemTools() {
   try {
     const tools = await http.get<{ name: string; description: string }[]>('/web/hub-tools/system');
-    // 将系统工具转换为完整的 Tool 对象
+    // Convert system tools to complete Tool objects
     systemTools.value = tools
       .map((tool) => ({
         ...tool,
@@ -184,10 +184,10 @@ async function fetchSystemTools() {
 }
 
 function openCallDialog(tool: Tool) {
-  // 直接使用工具对象的 serverName 属性
+  // Use tool object's serverName property directly
   selectedTool.value = {
     ...tool,
-    serverName: tool.serverName // 工具对象本身已经包含 serverName 属性
+    serverName: tool.serverName // Tool object already contains serverName property
   };
   showCallDialog.value = true;
 }
@@ -216,7 +216,7 @@ const groupedTools = computed(() => {
   const groups: Record<string, SearchResult[]> = {};
 
   searchResults.value.forEach((result) => {
-    // 直接使用 tool.serverName 进行分组（后端已处理 allowedTools 过滤）
+    // Use tool.serverName directly for grouping (backend has already handled allowedTools filtering)
     const server = store.servers.find((s) => s.name === result.tool.serverName);
 
     const statusText = server?.status === 'online' ? t('tools.online') : t('tools.offline');

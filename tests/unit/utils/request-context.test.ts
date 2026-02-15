@@ -3,12 +3,12 @@ import { requestContext, getClientContext, getClientCwd } from '@utils/request-c
 
 describe('Request Context', () => {
   beforeEach(() => {
-    // 清理任何现有的上下文
+    // Clean up any existing context
     requestContext.disable();
   });
 
   afterEach(() => {
-    // 确保上下文被清理
+    // Ensure context is cleaned up
     requestContext.disable();
   });
 
@@ -69,13 +69,13 @@ describe('Request Context', () => {
     let result2: string | undefined;
 
     const operation1 = requestContext.run(context1, async () => {
-      // 模拟异步操作
+      // Simulate async operation
       await new Promise((resolve) => setTimeout(resolve, 10));
       result1 = getClientCwd();
     });
 
     const operation2 = requestContext.run(context2, async () => {
-      // 模拟异步操作
+      // Simulate async operation
       await new Promise((resolve) => setTimeout(resolve, 5));
       result2 = getClientCwd();
     });

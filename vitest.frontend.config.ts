@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 
-// 确保 logs 目录存在
+// Ensure logs directory exists
 const logDir = resolve(fileURLToPath(new URL('.', import.meta.url)), 'logs');
 if (!existsSync(logDir)) {
   mkdirSync(logDir, { recursive: true });
@@ -15,10 +15,10 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      // 基础别名
+      // Basic aliases
       '@': fileURLToPath(new URL('./frontend/src', import.meta.url)),
 
-      // 前端模块专用别名
+      // Frontend module specific aliases
       '@components': fileURLToPath(new URL('./frontend/src/components', import.meta.url)),
       '@views': fileURLToPath(new URL('./frontend/src/views', import.meta.url)),
       '@stores': fileURLToPath(new URL('./frontend/src/stores', import.meta.url)),
@@ -28,10 +28,10 @@ export default defineConfig({
       '@composables': fileURLToPath(new URL('./frontend/src/composables', import.meta.url)),
       '@utils': fileURLToPath(new URL('./frontend/src/utils', import.meta.url)),
 
-      // @frontend/* 别名（用于测试文件）
+      // @frontend/* aliases (for test files)
       '@frontend': fileURLToPath(new URL('./frontend/src', import.meta.url)),
 
-      // 共享类型别名
+      // Shared type aliases
       '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
       '@shared-models': fileURLToPath(new URL('./shared/models', import.meta.url)),
       '@shared-types': fileURLToPath(new URL('./shared/types', import.meta.url))

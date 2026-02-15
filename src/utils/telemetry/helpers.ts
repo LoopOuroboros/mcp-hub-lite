@@ -21,7 +21,7 @@ export async function withSpan<T>(
 
   const tracer = trace.getTracer('mcp-hub');
   return tracer.startActiveSpan(name, options, async (span: Span) => {
-    // 设置日志上下文
+    // Set up log context
     const originalDebug = logger.debug;
     const originalInfo = logger.info;
     const originalWarn = logger.warn;
@@ -29,14 +29,14 @@ export async function withSpan<T>(
     const originalServerLog = logger.serverLog;
 
     try {
-      // 创建带有trace上下文的日志选项
+      // Create log options with trace context
       const logContext: LogOptions = {
         traceId: span.spanContext().traceId,
         spanId: span.spanContext().spanId
       };
 
       logger.debug = (message: string, ...args: unknown[]) => {
-        // 如果第一个参数是LogOptions，合并trace上下文
+        // If the first argument is LogOptions, merge trace context
         if (
           args.length > 0 &&
           typeof args[0] === 'object' &&
@@ -50,7 +50,7 @@ export async function withSpan<T>(
             return;
           }
         }
-        // 否则直接添加trace上下文
+        // Otherwise, add trace context directly
         originalDebug(message, logContext, ...args);
       };
 
@@ -122,7 +122,7 @@ export async function withSpan<T>(
       const result = await fn(span);
       span.end();
 
-      // 恢复原始方法
+      // Restore original methods
       logger.debug = originalDebug;
       logger.info = originalInfo;
       logger.warn = originalWarn;
@@ -135,7 +135,7 @@ export async function withSpan<T>(
       span.setAttribute('error', true);
       span.end();
 
-      // 恢复原始方法
+      // Restore original methods
       logger.debug = originalDebug;
       logger.info = originalInfo;
       logger.warn = originalWarn;
@@ -166,7 +166,7 @@ export function withSpanSync<T>(
   const tracer = trace.getTracer('mcp-hub');
   const span = tracer.startSpan(name, options);
 
-  // 设置日志上下文
+  // Set up log context
   const originalDebug = logger.debug;
   const originalInfo = logger.info;
   const originalWarn = logger.warn;
@@ -174,7 +174,7 @@ export function withSpanSync<T>(
   const originalServerLog = logger.serverLog;
 
   try {
-    // 创建带有trace上下文的日志选项
+    // Create log options with trace context
     const logContext: LogOptions = {
       traceId: span.spanContext().traceId,
       spanId: span.spanContext().spanId
@@ -265,7 +265,7 @@ export function withSpanSync<T>(
     const result = fn(span);
     span.end();
 
-    // 恢复原始方法
+    // Restore original methods
     logger.debug = originalDebug;
     logger.info = originalInfo;
     logger.warn = originalWarn;
@@ -278,7 +278,7 @@ export function withSpanSync<T>(
     span.setAttribute('error', true);
     span.end();
 
-    // 恢复原始方法
+    // Restore original methods
     logger.debug = originalDebug;
     logger.info = originalInfo;
     logger.warn = originalWarn;

@@ -18,7 +18,7 @@ export class HttpError extends Error {
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
-  // 只有在有请求体时才设置 Content-Type 头部
+  // Only set Content-Type header when there is a request body
   const headers: Record<string, string> = {};
   if (options.body) {
     headers['Content-Type'] = 'application/json';

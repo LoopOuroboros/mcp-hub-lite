@@ -378,7 +378,7 @@ async function importBatchJson() {
       }
     });
   } catch (e: unknown) {
-    console.error('Import error:', e); // 添加错误调试信息
+    console.error('Import error:', e); // Add error debugging information
     if (e instanceof Error) {
       ElMessage.error('Import failed: ' + e.message);
     } else {
@@ -477,13 +477,13 @@ async function createServer() {
 </script>
 
 <style>
-/* 适配暗色模式，仅在 dark 下应用深色背景 */
+/* Adapt to dark mode, apply dark background only in dark mode */
 html.dark .custom-dialog {
   --el-dialog-bg-color: #1e293b;
   border: 1px solid #334155;
 }
 
-/* 确保标题和关闭按钮颜色正确 */
+/* Ensure title and close button colors are correct */
 html.dark .custom-dialog .el-dialog__title {
   color: white;
 }

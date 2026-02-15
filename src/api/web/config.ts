@@ -1,6 +1,6 @@
 /**
- * 配置管理API
- * 提供配置的GET/PUT/导入/导出接口
+ * Configuration Management API
+ * Provides GET/PUT/import/export interfaces for configuration
  */
 
 import { FastifyInstance } from 'fastify';
@@ -13,7 +13,7 @@ interface ServersUpdateRequest {
 }
 
 export async function configRoutes(fastify: FastifyInstance) {
-  // GET /web/config - 获取当前配置
+  // GET /web/config - Get current configuration
   fastify.get('/web/config', async (_request, reply) => {
     try {
       const config = configManager.getConfig();
@@ -27,13 +27,13 @@ export async function configRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // PUT /web/config - 更新完整配置
+  // PUT /web/config - Update complete configuration
   fastify.put<{ Body: SystemConfig }>('/web/config', async (request, reply) => {
     try {
       const newConfig = request.body;
       await configManager.updateConfig(newConfig);
 
-      // 发布配置更新事件
+      // Publish configuration update event
       eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
         timestamp: Date.now(),
         config: newConfig
@@ -49,7 +49,7 @@ export async function configRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /web/config/export - 导出配置
+  // POST /web/config/export - Export configuration
   fastify.post('/web/config/export', async (_request, reply) => {
     try {
       const config = configManager.getConfig();
@@ -65,13 +65,13 @@ export async function configRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /web/config/import - 导入配置
+  // POST /web/config/import - Import configuration
   fastify.post<{ Body: SystemConfig }>('/web/config/import', async (request, reply) => {
     try {
       const importedConfig = request.body;
       await configManager.updateConfig(importedConfig);
 
-      // 发布配置更新事件
+      // Publish configuration update event
       eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
         timestamp: Date.now(),
         config: importedConfig
@@ -87,7 +87,7 @@ export async function configRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // PATCH /web/config/servers - 批量更新服务器配置
+  // PATCH /web/config/servers - Batch update server configuration
   fastify.patch<{ Body: ServersUpdateRequest }>('/web/config/servers', async (request, reply) => {
     try {
       const { servers } = request.body;
@@ -95,7 +95,7 @@ export async function configRoutes(fastify: FastifyInstance) {
       config.servers = servers;
       await configManager.updateConfig(config);
 
-      // 发布配置更新事件
+      // Publish configuration update event
       eventBus.publish(EventTypes.CONFIGURATION_UPDATED, {
         timestamp: Date.now(),
         config

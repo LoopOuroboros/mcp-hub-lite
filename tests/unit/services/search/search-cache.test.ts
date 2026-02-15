@@ -47,7 +47,7 @@ describe('SearchCacheService', () => {
       cacheService.set(mockTools);
       expect(cacheService.isValid()).toBe(true);
 
-      // 模拟 TTL 到期
+      // Simulate TTL expiration
       vi.useFakeTimers();
       vi.advanceTimersByTime(31000);
 

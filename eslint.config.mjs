@@ -15,9 +15,9 @@ export default [
   ...pluginVue.configs['flat/essential'],
   {
     rules: {
-      // 严格禁止 any（包括测试文件）
+      // Strictly prohibit any (including test files)
       '@typescript-eslint/no-explicit-any': 'error',
-      // 允许 @ts-expect-error 但需要注释
+      // Allow @ts-expect-error but require comment
       '@typescript-eslint/ban-ts-comment': [
         'error',
         {

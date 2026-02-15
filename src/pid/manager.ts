@@ -1,6 +1,6 @@
 /**
- * PID管理器
- * 职责：进程生命周期管理、信号处理
+ * PID Manager
+ * Responsibility: Process lifecycle management and signal handling
  */
 
 import { logger } from '@utils/logger.js';
@@ -9,13 +9,13 @@ import type { PidFileOptions } from './types.js';
 
 export class PidManager {
   /**
-   * 写入当前进程PID并注册清理钩子
+   * Write current process PID and register cleanup hooks
    */
   public static writePid(options?: PidFileOptions): void {
     try {
       writePidFile(process.pid, options);
 
-      // 注册进程退出时的清理钩子
+      // Register cleanup hooks for process exit
       process.on('exit', () => this.removePid(options));
       process.on('SIGINT', () => {
         this.removePid(options);
@@ -31,28 +31,28 @@ export class PidManager {
   }
 
   /**
-   * 删除PID文件
+   * Remove PID file
    */
   public static removePid(options?: PidFileOptions): void {
     removePidFile(options);
   }
 
   /**
-   * 获取已保存的PID
+   * Get saved PID
    */
   public static getPid(options?: PidFileOptions): number | null {
     return readPidFile(options);
   }
 
   /**
-   * 检查进程是否正在运行
+   * Check if process is running
    */
   public static isRunning(options?: PidFileOptions): boolean {
     const pid = this.getPid(options);
     if (!pid) return false;
 
     try {
-      // process.kill(pid, 0) 检查进程是否存在，不会实际杀死进程
+      // process.kill(pid, 0) checks if process exists without actually killing it
       process.kill(pid, 0);
       return true;
     } catch {
@@ -61,7 +61,7 @@ export class PidManager {
   }
 
   /**
-   * 检查PID文件是否存在
+   * Check if PID file exists
    */
   public static pidFileExists(options?: PidFileOptions): boolean {
     return pidFileExists(options);

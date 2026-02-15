@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 
-// 确保 logs 目录存在
+// Ensure logs directory exists
 const logDir = resolve(__dirname, 'logs');
 if (!existsSync(logDir)) {
   mkdirSync(logDir, { recursive: true });

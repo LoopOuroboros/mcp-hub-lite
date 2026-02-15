@@ -1,7 +1,7 @@
 /**
- * 事件总线服务
- * 用于在整个应用程序中发布和订阅事件
- * 支持服务器状态变化、日志更新、工具更新等事件的传播
+ * Event Bus Service
+ * Used for publishing and subscribing to events throughout the application
+ * Supports propagation of server status changes, log updates, tool updates, and other events
  */
 
 import type { EventData } from '@models/event.model.js';
@@ -15,9 +15,9 @@ export class EventBusService {
   private listeners = new Map<string, Set<(data: EventData) => void>>();
 
   /**
-   * 发布事件
-   * @param eventType 事件类型
-   * @param data 事件数据
+   * Publish event
+   * @param eventType Event type
+   * @param data Event data
    */
   publish(eventType: string, data: EventData): void {
     const listeners = this.listeners.get(eventType);
@@ -33,10 +33,10 @@ export class EventBusService {
   }
 
   /**
-   * 订阅事件
-   * @param eventType 事件类型
-   * @param listener 事件监听器
-   * @returns 取消订阅函数
+   * Subscribe to event
+   * @param eventType Event type
+   * @param listener Event listener
+   * @returns Unsubscribe function
    */
   subscribe(eventType: string, listener: (data: EventData) => void): () => void {
     if (!this.listeners.has(eventType)) {
@@ -44,20 +44,20 @@ export class EventBusService {
     }
     this.listeners.get(eventType)!.add(listener);
 
-    // 返回取消订阅函数
+    // Return unsubscribe function
     return () => this.unsubscribe(eventType, listener);
   }
 
   /**
-   * 取消订阅事件
-   * @param eventType 事件类型
-   * @param listener 事件监听器
+   * Unsubscribe from event
+   * @param eventType Event type
+   * @param listener Event listener
    */
   private unsubscribe(eventType: string, listener: (data: EventData) => void): void {
     const listeners = this.listeners.get(eventType);
     if (listeners) {
       listeners.delete(listener);
-      // 如果该事件类型的监听器为空，删除该事件类型的条目
+      // If the listeners for this event type are empty, remove the event type entry
       if (listeners.size === 0) {
         this.listeners.delete(eventType);
       }
@@ -65,22 +65,22 @@ export class EventBusService {
   }
 
   /**
-   * 取消所有事件的订阅
+   * Unsubscribe from all events
    */
   unsubscribeAll(): void {
     this.listeners.clear();
   }
 
   /**
-   * 获取所有已注册的事件类型
+   * Get all registered event types
    */
   getEventTypes(): string[] {
     return Array.from(this.listeners.keys());
   }
 
   /**
-   * 获取指定事件类型的监听器数量
-   * @param eventType 事件类型
+   * Get the number of listeners for a specific event type
+   * @param eventType Event type
    */
   getListenerCount(eventType: string): number {
     const listeners = this.listeners.get(eventType);
@@ -88,14 +88,14 @@ export class EventBusService {
   }
 }
 
-// 事件类型常量
+// Event type constants
 export const EventTypes = {
-  // 服务器状态相关事件
+  // Server status related events
   SERVER_STATUS_CHANGE: 'server-status',
   SERVER_CONNECTED: 'server-connected',
   SERVER_DISCONNECTED: 'server-disconnected',
 
-  // 服务器管理事件
+  // Server management events
   SERVER_ADDED: 'server-added',
   SERVER_UPDATED: 'server-updated',
   SERVER_DELETED: 'server-deleted',
@@ -103,27 +103,27 @@ export const EventTypes = {
   SERVER_INSTANCE_UPDATED: 'server-instance-updated',
   SERVER_INSTANCE_DELETED: 'server-instance-deleted',
 
-  // 工具相关事件
+  // Tool related events
   TOOLS_UPDATED: 'tools',
   TOOL_CALL_STARTED: 'tool-call-started',
   TOOL_CALL_COMPLETED: 'tool-call-completed',
   TOOL_CALL_ERROR: 'tool-call-error',
 
-  // 资源相关事件
+  // Resource related events
   RESOURCES_UPDATED: 'resources',
 
-  // 日志相关事件
+  // Log related events
   LOG_ENTRY: 'log',
   LOGS_CLEARED: 'logs-cleared',
 
-  // 系统相关事件
+  // System related events
   SYSTEM_HEALTH: 'system-health',
   CONFIGURATION_UPDATED: 'configuration-updated',
 
-  // 客户端相关事件
+  // Client related events
   CLIENT_CONNECTED: 'client-connected',
   CLIENT_DISCONNECTED: 'client-disconnected'
 } as const;
 
-// 创建全局事件总线实例
+// Create global event bus instance
 export const eventBus = new EventBusService();

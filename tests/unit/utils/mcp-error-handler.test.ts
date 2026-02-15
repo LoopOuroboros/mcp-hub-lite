@@ -30,7 +30,7 @@ describe('MCPErrorHandler', () => {
           stack: 'Error: Test error\n    at test (test.js:1:1)',
           name: 'TestError'
         },
-        suggestedActions: ['检查服务器状态', '重试请求']
+        suggestedActions: ['Check server status', 'Retry request']
       });
     });
 
@@ -55,7 +55,7 @@ describe('MCPErrorHandler', () => {
       expect(mcpError.data).toBeNull();
       expect(mcpError['x-mcp']).toMatchObject({
         details: { serverId: 'server-1' },
-        suggestedActions: ['参考错误详情', '重试或联系管理员']
+        suggestedActions: ['Refer to error details', 'Retry or contact administrator']
       });
     });
 
@@ -67,11 +67,11 @@ describe('MCPErrorHandler', () => {
 
       expect(mcpError).toMatchObject({
         code: -32001,
-        message: '未知错误'
+        message: 'Unknown error'
       });
 
       expect(mcpError['x-mcp']).toMatchObject({
-        suggestedActions: ['重试请求']
+        suggestedActions: ['Retry request']
       });
     });
   });

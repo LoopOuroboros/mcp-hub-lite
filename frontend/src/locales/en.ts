@@ -97,7 +97,13 @@ export default {
     exporterConsole: 'Console',
     exporterOtlp: 'OTOTLP (OpenTelemetry Protocol)',
     endpoint: 'Endpoint',
-    sampleRate: 'Sample Rate'
+    sampleRate: 'Sample Rate',
+    timeUnits: {
+      seconds: 'Seconds',
+      minutes: 'Minutes',
+      hours: 'Hours',
+      days: 'Days'
+    }
   },
   dashboard: {
     title: 'Dashboard',

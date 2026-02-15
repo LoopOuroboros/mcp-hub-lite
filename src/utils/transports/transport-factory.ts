@@ -5,21 +5,21 @@ import { ServerTransportConfig } from './transport.interface.js';
 import type { ServerConfig } from '@config/config.schema.js';
 
 /**
- * 传输工厂 - 根据服务器配置创建相应的传输客户端
+ * Transport Factory - creates appropriate transport client based on server configuration
  */
 export class TransportFactory {
   /**
-   * 创建传输客户端
-   * @param server 服务器配置，包含基础配置和实例配置
-   * @returns 传输客户端实例
-   * @throws Error 如果服务器类型不支持或配置无效
+   * Create transport client
+   * @param server Server configuration, including base configuration and instance configuration
+   * @returns Transport client instance
+   * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
     server: ServerConfig & { name: string }
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
-    // 使用类型断言确保 TypeScript 能够正确推断类型
+    // Use type assertion to ensure TypeScript can correctly infer types
     const config = transportConfig as ServerTransportConfig;
 
     switch (config.type) {
@@ -50,7 +50,7 @@ export class TransportFactory {
         );
 
       case 'streamable-http':
-      case 'http': // 兼容 http 类型，视为 streamable-http
+      case 'http': // Compatibility with http type, treat as streamable-http
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
@@ -64,15 +64,15 @@ export class TransportFactory {
   }
 
   /**
-   * 构建系统环境变量
-   * 为 stdio 传输添加必要的系统环境变量
+   * Build system environment variables
+   * Add necessary system environment variables for stdio transport
    */
   private static buildSystemEnv(): Record<string, string> {
     return {};
   }
 
   /**
-   * 验证并转换服务器配置为传输配置
+   * Validate and convert server configuration to transport configuration
    */
   private static validateAndConvertConfig(
     server: ServerConfig & { name: string }
@@ -85,8 +85,8 @@ export class TransportFactory {
         command: server.command || '',
         args: server.args,
         env: {
-          ...this.buildSystemEnv(), // 系统环境变量
-          ...(server.env || {}) // 用户自定义的环境变量（可覆盖系统默认值）
+          ...this.buildSystemEnv(), // System environment variables
+          ...(server.env || {}) // User-defined environment variables (can override system defaults)
         },
         cwd: process.cwd(),
         stderr: 'pipe'
@@ -101,13 +101,13 @@ export class TransportFactory {
       };
     } else if (type === 'streamable-http' || type === 'http') {
       return {
-        type: 'streamable-http', // 统一转换为 streamable-http
+        type: 'streamable-http', // Unified conversion to streamable-http
         url: server.url || '',
         headers: server.env,
         timeout: server.timeout || 30000
       };
     } else {
-      // 默认返回 stdio 类型，避免返回 never 类型
+      // Default to stdio type to avoid returning never type
       return {
         type: 'stdio',
         command: '',

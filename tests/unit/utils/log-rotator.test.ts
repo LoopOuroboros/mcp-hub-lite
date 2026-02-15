@@ -54,18 +54,18 @@ describe('LogRotator', () => {
   let originalConfig: ReturnType<typeof configManager.getConfig>;
 
   beforeEach(() => {
-    // 创建临时日志目录
+    // Create temporary log directory
     tempLogDir = path.join(os.tmpdir(), `log-rotator-test-${Date.now()}`);
     fs.mkdirSync(tempLogDir, { recursive: true });
 
-    // 设置默认配置
+    // Set default configuration
     originalConfig = createTestConfig();
 
     vi.mocked(configManager.getConfig).mockReturnValue(originalConfig);
   });
 
   afterEach(() => {
-    // 清理临时目录
+    // Clean up temporary directory
     if (fs.existsSync(tempLogDir)) {
       fs.rmSync(tempLogDir, { recursive: true, force: true });
     }

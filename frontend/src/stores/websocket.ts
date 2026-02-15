@@ -1,6 +1,6 @@
 /**
- * WebSocket 状态管理 Store
- * 管理与后端的 WebSocket 连接和事件处理
+ * WebSocket state management store
+ * Manages WebSocket connections and event handling with the backend
  */
 
 import { defineStore } from 'pinia';
@@ -13,9 +13,9 @@ import { useToolCallsStore } from '@stores/tool-calls';
 import { useSystemStore } from '@stores/system';
 import { useClientStore } from '@stores/client';
 
-// 从共享类型导入 WebSocket 事件类型常量
+// Import WebSocket event type constants from shared types
 import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
-// 从共享类型导入具体的 WebSocket 事件类型
+// Import specific WebSocket event types from shared types
 import type {
   ConfigurationUpdatedEvent,
   ClientConnectedEvent,
@@ -37,7 +37,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   const serverStore = useServerStore();
 
   /**
-   * 获取服务器的历史日志
+   * Fetch historical logs from the server
    */
   function fetchLogs(serverId: string, limit: number = 100, since?: number): void {
     if (wsClient.value) {
@@ -51,7 +51,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function connect(): void {
-    // 构建 WebSocket URL
+    // Build WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const url = `${protocol}//${host}/ws`;
@@ -63,11 +63,11 @@ export const useWebSocketStore = defineStore('websocket', () => {
         handleServerMessage(message);
       },
       () => {
-        // 连接成功
+        // Connection successful
         connected.value = true;
         console.log('WebSocket connected');
 
-        // 订阅服务器状态和日志事件
+        // Subscribe to server status and log events
         ws.send({
           type: 'subscribe',
           eventTypes: [
@@ -90,12 +90,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
         });
       },
       () => {
-        // 连接关闭
+        // Connection closed
         connected.value = false;
         console.log('WebSocket disconnected');
       },
       (error: Event) => {
-        // 连接错误
+        // Connection error
         console.error('WebSocket error:', error);
       }
     );
@@ -163,7 +163,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
         handleClientDisconnected(message);
         break;
       case WEB_SOCKET_EVENT_TYPES.PONG:
-        // 心跳响应，忽略
+        // Heartbeat response, ignore
         break;
       default:
         console.warn('Unknown WebSocket message type:', (message as { type: string }).type);
@@ -198,11 +198,11 @@ export const useWebSocketStore = defineStore('websocket', () => {
     const { serverId, logs } = message.data;
     const server = serverStore.servers.find((s) => s.id === serverId);
     if (server && logs && logs.length > 0) {
-      // 如果是完整日志（大于1条），替换现有日志
+      // If it's a complete log (more than 1 entry), replace existing logs
       if (logs.length > 1) {
         server.logs = logs;
       } else {
-        // 增量日志，追加到现有日志
+        // Incremental log, append to existing logs
         const logEntry = logs[0];
         if (logEntry && logEntry.timestamp) {
           server.logs.push({
@@ -213,7 +213,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
         }
       }
 
-      // 限制日志条数，防止内存泄漏
+      // Limit log entries to prevent memory leaks
       const maxLogs = 1000;
       if (server.logs.length > maxLogs) {
         server.logs.splice(0, server.logs.length - maxLogs);
@@ -244,7 +244,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     serverStore.fetchServers();
   }
 
-  // 服务器更新事件发射器
+  // Server update event emitter
 
   function handleServerUpdated(message: ServerUpdatedEvent): void {
     console.log('Server updated:', message.data);
@@ -271,12 +271,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
     return validStatuses.includes(status as ServerStatus) ? (status as ServerStatus) : 'starting';
   }
 
-  // 组件挂载时连接
+  // Connect when component is mounted
   onMounted(() => {
     connect();
   });
 
-  // 组件卸载前断开连接
+  // Disconnect before component is unmounted
   onBeforeUnmount(() => {
     disconnect();
   });

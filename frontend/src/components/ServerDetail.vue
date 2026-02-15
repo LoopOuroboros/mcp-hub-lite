@@ -507,7 +507,7 @@ watch(
     } else if (tab === 'resources') {
       await store.fetchResources(server.value.id);
     } else if (tab === 'logs') {
-      store.fetchLogs(server.value.id); // 不再是异步方法
+      store.fetchLogs(server.value.id); // No longer an async method
     }
   },
   { immediate: true }

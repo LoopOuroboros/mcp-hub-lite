@@ -2,7 +2,7 @@ import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '../typ
 import type { Tool } from './tool.model';
 import type { Resource } from './resource.model';
 
-// 服务器配置接口
+// Server configuration interface
 export interface ServerConfig {
   command?: string;
   args?: string[];
@@ -16,21 +16,21 @@ export interface ServerConfig {
   description?: string;
 }
 
-// 服务器实例配置接口
+// Server instance configuration interface
 export interface ServerInstanceConfig {
   id: string;
   timestamp: number;
   hash: string;
 }
 
-// 日志条目接口
+// Log entry interface
 export interface LogEntry {
   timestamp: number;
   level: LogLevel;
   message: string;
 }
 
-// 服务器状态信息接口
+// Server status information interface
 export interface StatusInfo {
   id: string;
   status: {
@@ -46,7 +46,7 @@ export interface StatusInfo {
   };
 }
 
-// 统一的服务器模型接口
+// Unified server model interface
 export interface Server {
   id: string;
   name: string;

@@ -12,7 +12,7 @@ export interface MCPError {
   };
 }
 
-// JSON-RPC 2.0 响应接口
+// JSON-RPC 2.0 response interface
 interface JsonRpcResponse {
   jsonrpc: string;
   id?: string | number | null;
@@ -20,7 +20,7 @@ interface JsonRpcResponse {
   error?: unknown;
 }
 
-// 辅助函数：判断是否为CMDError
+// Helper function: check if it's a CMDError
 function isCMDError(error: unknown): error is CMDError {
   return (
     typeof error === 'object' &&
@@ -33,24 +33,24 @@ function isCMDError(error: unknown): error is CMDError {
   );
 }
 
-// MCP Hub Lite的MCP协议错误码映射 (符合MCP标准)
+// MCP Hub Lite's MCP protocol error code mapping (compliant with MCP standard)
 export const MCPHubLiteErrorMap = {
-  // 将网关内部错误映射到标准MCP错误码
-  6001: -32001, // 网关内部错误 -> 服务不可达
-  6002: -32002, // 连接超时 -> 请求超时
-  6003: -32801, // 工具未找到 -> MCP工具未找到
-  6004: -32802, // 工具执行失败 -> MCP执行失败
-  6005: -32803 // 初始化失败 -> MCP初始化失败
+  // Map gateway internal errors to standard MCP error codes
+  6001: -32001, // Gateway internal error -> Service unavailable
+  6002: -32002, // Connection timeout -> Request timeout
+  6003: -32801, // Tool not found -> MCP tool not found
+  6004: -32802, // Tool execution failed -> MCP execution failed
+  6005: -32803 // Initialization failed -> MCP initialization failed
 } as const;
 
-// MCP错误响应处理器
+// MCP error response handler
 export class MCPErrorHandler {
-  // 将内部错误转换为标准MCP错误
+  // Convert internal errors to standard MCP errors
   static toMCPError(error: Error | CMDError): MCPError {
     if (error instanceof Error) {
-      // 通用错误映射到标准MCP错误
+      // Generic error mapping to standard MCP error
       return {
-        code: -32001, // 默认为服务不可达
+        code: -32001, // Default to service unavailable
         message: error.message,
         data: {
           originalError: error.message,
@@ -61,11 +61,11 @@ export class MCPErrorHandler {
             stack: error.stack,
             name: error.name
           },
-          suggestedActions: ['检查服务器状态', '重试请求']
+          suggestedActions: ['Check server status', 'Retry request']
         }
       };
     } else if (isCMDError(error)) {
-      // 将CMD错误映射到MCP错误
+      // Map CMD errors to MCP errors
       const mcpCode = this.mapCMDToMCPErrorCode(error.code);
       return {
         code: mcpCode,
@@ -73,84 +73,84 @@ export class MCPErrorHandler {
         data: error.data,
         'x-mcp': {
           details: error.error?.context,
-          suggestedActions: ['参考错误详情', '重试或联系管理员']
+          suggestedActions: ['Refer to error details', 'Retry or contact administrator']
         }
       };
     }
 
-    // 默认MCP错误
+    // Default MCP error
     return {
       code: -32001,
-      message: '未知错误',
+      message: 'Unknown error',
       'x-mcp': {
-        suggestedActions: ['重试请求']
+        suggestedActions: ['Retry request']
       }
     };
   }
 
-  // CMD错误码到MCP错误码的映射
+  // Mapping from CMD error codes to MCP error codes
   private static mapCMDToMCPErrorCode(cmdCode: number): number {
-    // 系统错误映射
+    // System error mapping
     if (cmdCode >= 1000 && cmdCode <= 1999) {
-      return -32001; // 服务不可达
+      return -32001; // Service unavailable
     }
-    // 安全错误映射
+    // Security error mapping
     if (cmdCode >= 2000 && cmdCode <= 2999) {
-      return -32806; // 认证失败 或 -32807 授权失败
+      return -32806; // Authentication failed or -32807 Authorization failed
     }
-    // 业务错误映射
+    // Business error mapping
     if (cmdCode >= 3000 && cmdCode <= 3999) {
-      return -32602; // 无效参数 (通常用于业务验证错误)
+      return -32602; // Invalid parameter (typically used for business validation errors)
     }
-    // MCP协议错误，直接使用标准码
+    // MCP protocol errors, use standard codes directly
     if (cmdCode >= 5000 && cmdCode <= 5999) {
-      // 如果是标准MCP错误码，直接返回
+      // If it's a standard MCP error code, return directly
       if (cmdCode >= 5800 && cmdCode <= 5815) {
-        // 对应-328xx范围
+        // Corresponds to -328xx range
         return -(32900 - (cmdCode - 5800));
       }
-      return -32001; // 默认
+      return -32001; // Default
     }
 
-    // 网关特定错误码映射
+    // Gateway-specific error code mapping
     if (cmdCode >= 6000 && cmdCode <= 6999) {
       switch (cmdCode) {
         case 6001:
-          return -32001; // 服务不可达
+          return -32001; // Service unavailable
         case 6002:
-          return -32002; // 请求超时
+          return -32002; // Request timeout
         case 6003:
-          return -32801; // 工具未找到
+          return -32801; // Tool not found
         case 6004:
-          return -32802; // 执行失败
+          return -32802; // Execution failed
         default:
           return -32001;
       }
     }
 
-    return -32001; // 默认MCP错误码
+    return -32001; // Default MCP error code
   }
 }
 
-// MCP请求错误处理中间件
+// MCP request error handling middleware
 export class MCPErrorsMiddleware {
-  // 处理来自后端MCP服务器的错误响应
+  // Handle error responses from backend MCP servers
   static handleBackendMCPErrors(response: unknown): unknown {
     if (typeof response === 'object' && response !== null && 'error' in response) {
       const rpcResponse = response as JsonRpcResponse;
-      // 如果已经是标准MCP错误格式，直接返回
+      // If it's already in standard MCP error format, return directly
       if (this.isStandardMCPError(rpcResponse.error)) {
         return response;
       }
 
-      // 确保 error 是 Error 或 CMDError 类型
+      // Ensure error is of type Error or CMDError
       let errorToConvert: Error | CMDError;
       if (rpcResponse.error instanceof Error) {
         errorToConvert = rpcResponse.error;
       } else if (isCMDError(rpcResponse.error)) {
         errorToConvert = rpcResponse.error;
       } else {
-        // 如果都不是，创建一个通用错误
+        // If neither, create a generic error
         errorToConvert = new Error(
           typeof rpcResponse.error === 'object' && rpcResponse.error !== null
             ? (rpcResponse.error as { message?: string }).message || 'Unknown error'
@@ -158,7 +158,7 @@ export class MCPErrorsMiddleware {
         );
       }
 
-      // 否则将非标准错误转换为标准格式
+      // Otherwise convert non-standard errors to standard format
       return {
         jsonrpc: '2.0',
         error: MCPErrorHandler.toMCPError(errorToConvert),

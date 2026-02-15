@@ -1,6 +1,6 @@
 /**
- * 工具调用状态管理 Store
- * 管理工具调用的进度、结果和错误
+ * Tool call status management store
+ * Manages tool call progress, results, and errors
  */
 
 import { defineStore } from 'pinia';
@@ -32,17 +32,17 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
     Array.from(calls.value.values()).filter((c) => c.status === 'running')
   );
 
-  // 添加或更新调用
+  // Add or update call
   function updateCall(call: ToolCall) {
     calls.value.set(call.requestId, call);
   }
 
-  // 获取调用
+  // Get call
   function getCall(requestId: string): ToolCall | undefined {
     return calls.value.get(requestId);
   }
 
-  // 完成调用
+  // Complete call
   function completeCall(requestId: string, result: unknown, error?: string) {
     const call = calls.value.get(requestId);
     if (call) {
@@ -53,7 +53,7 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
     }
   }
 
-  // 处理工具调用开始事件
+  // Handle tool call started event
   function handleToolCallStarted(data: ToolCallStartedEvent['data']) {
     updateCall({
       requestId: data.requestId,
@@ -67,12 +67,12 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
     });
   }
 
-  // 处理工具调用完成事件
+  // Handle tool call completed event
   function handleToolCallCompleted(data: ToolCallCompletedEvent['data']) {
     completeCall(data.requestId, data.result);
   }
 
-  // 处理工具调用错误事件
+  // Handle tool call error event
   function handleToolCallError(data: ToolCallErrorEvent['data']) {
     completeCall(data.requestId, undefined, data.error);
   }

@@ -6,8 +6,8 @@ import { logger } from '@utils/logger.js';
 import { EventSource } from 'eventsource';
 
 /**
- * SSE (Server-Sent Events) 传输客户端
- * 用于连接支持 SSE 的 MCP 服务器
+ * SSE (Server-Sent Events) transport client
+ * Used to connect to MCP servers supporting SSE
  */
 export class SseTransport implements Transport {
   private eventSource: EventSource | null = null;

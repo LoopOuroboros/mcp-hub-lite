@@ -98,7 +98,7 @@ describe('SearchScorer', () => {
         serverName: 'mysql-server'
       };
 
-      // 模拟只匹配名称、只匹配描述的情况
+      // Simulate cases where only name matches, only description matches
       const nameMatch = scorer.scoreTool(tool, 'MySQL');
       const descMatch = scorer.scoreTool(tool, 'database');
 

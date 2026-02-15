@@ -1,7 +1,7 @@
 import type { ServerStatus, ServerTransport } from '@shared-types/common.types';
 import type { ServerConfig as SharedServerConfig } from '@shared-models/server.model';
 
-// 后端服务器配置接口，扩展共享配置
+// Backend server configuration interface, extending shared configuration
 export interface ServerConfig extends Omit<SharedServerConfig, 'type'> {
   id: string;
   name: string;
@@ -11,7 +11,7 @@ export interface ServerConfig extends Omit<SharedServerConfig, 'type'> {
   enabled: boolean;
 }
 
-// 服务器状态接口
+// Server state interface
 export interface ServerState {
   status: ServerStatus;
   lastCheck: number;
@@ -19,5 +19,5 @@ export interface ServerState {
   pid?: number;
 }
 
-// 后端服务器模型接口，扩展共享服务器模型
+// Backend server model interface, extending shared server model
 export interface Server extends ServerConfig, ServerState {}

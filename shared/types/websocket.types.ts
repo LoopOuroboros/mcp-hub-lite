@@ -1,13 +1,13 @@
 /**
- * WebSocket 事件类型定义
- * 前后端共享的 WebSocket 协议类型定义
+ * WebSocket event type definitions
+ * Shared WebSocket protocol type definitions between frontend and backend
  */
 
 import type { Tool } from '@shared-models/tool.model';
 import type { Resource } from '@shared-models/resource.model';
 import type { LogLevel } from '@shared-types/common.types';
 
-// WebSocket 事件类型常量
+// WebSocket event type constants
 export const WEB_SOCKET_EVENT_TYPES = {
   SERVER_STATUS: 'server-status',
   LOG: 'log',
@@ -27,14 +27,14 @@ export const WEB_SOCKET_EVENT_TYPES = {
   PONG: 'pong'
 } as const;
 
-// 有效事件类型数组
+// Valid event type array
 export const VALID_WS_EVENT_TYPES = Object.values(WEB_SOCKET_EVENT_TYPES);
 
-// 导出类型定义
+// Export type definitions
 export type WebSocketEventType = (typeof VALID_WS_EVENT_TYPES)[number];
 
 // ============================================================================
-// 客户端到服务器的消息类型
+// Client to server message types
 // ============================================================================
 
 export interface SubscribeMessage {
@@ -55,14 +55,14 @@ export interface PingMessage {
 export interface FetchLogsMessage {
   type: 'fetch-logs';
   serverId: string;
-  limit?: number; // 可选：返回最新的 N 条日志
-  since?: number; // 可选：返回指定时间后的日志
+  limit?: number; // Optional: return the latest N log entries
+  since?: number; // Optional: return logs after the specified timestamp
 }
 
 export type ClientMessage = SubscribeMessage | UnsubscribeMessage | PingMessage | FetchLogsMessage;
 
 // ============================================================================
-// 服务器到客户端的消息类型
+// Server to client message types
 // ============================================================================
 
 export interface ServerStatusEvent {

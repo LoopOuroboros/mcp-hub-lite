@@ -15,7 +15,7 @@ let tempTestConfigPath: string;
  * Set up test environment before all tests
  */
 beforeAll(() => {
-  // Create a unique temp directory for this test run (符合用户要求的格式)
+  // Create a unique temp directory for this test run (matching user's required format)
   const timestamp = Date.now();
   tempTestConfigDir = path.join(os.tmpdir(), `mcp-hub-lite-test-${timestamp}`);
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 
-// 模拟 MCP SDK Client
+// Mock MCP SDK Client
 const mockConnect = vi.fn();
 const mockClose = vi.fn();
 const mockListTools = vi.fn();
@@ -18,7 +18,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-// 模拟传输工厂
+// Mock transport factory
 vi.mock('@utils/transports/transport-factory.js', () => {
   return {
     TransportFactory: {
@@ -38,10 +38,10 @@ describe('Gateway Fault Tolerance', () => {
   let mockServerInstance: ServerInstanceConfig;
 
   beforeEach(async () => {
-    // 清除所有模拟
+    // Clear all mocks
     vi.clearAllMocks();
 
-    // 添加测试服务器
+    // Add test server
     await hubManager.addServer('test-server', {
       command: 'node',
       args: [],
@@ -51,14 +51,14 @@ describe('Gateway Fault Tolerance', () => {
       allowedTools: []
     });
 
-    // 添加服务器实例
+    // Add server instance
     mockServerInstance = await hubManager.addServerInstance('test-server', {});
   });
 
   it('should handle connection failure gracefully', async () => {
     mockConnect.mockRejectedValueOnce(new Error('Connection failed'));
 
-    // 直接使用hubManager.getServerById获取完整的服务器配置
+    // Directly use hubManager.getServerById to get complete server configuration
     const serverInfo = hubManager.getServerById(mockServerInstance.id);
     const success = await mcpConnectionManager.connect({
       ...serverInfo!.config,
@@ -75,7 +75,7 @@ describe('Gateway Fault Tolerance', () => {
     mockConnect.mockResolvedValueOnce(undefined);
     mockListTools.mockRejectedValueOnce(new Error('List tools failed'));
 
-    // 直接使用hubManager.getServerById获取完整的服务器配置
+    // Directly use hubManager.getServerById to get complete server configuration
     const serverInfo = hubManager.getServerById(mockServerInstance.id);
     const success = await mcpConnectionManager.connect({
       ...serverInfo!.config,
@@ -89,7 +89,7 @@ describe('Gateway Fault Tolerance', () => {
   });
 
   it('should not affect other servers when one fails', async () => {
-    // 添加第二个服务器
+    // Add second server
     await hubManager.addServer('working-server', {
       command: 'node',
       args: [],
@@ -100,21 +100,21 @@ describe('Gateway Fault Tolerance', () => {
     });
     const workingInstance = await hubManager.addServerInstance('working-server', {});
 
-    // 模拟第一个服务器失败，第二个成功
+    // Simulate first server failure, second server success
     mockConnect
       .mockImplementationOnce(() => Promise.reject(new Error('First server failed')))
       .mockImplementationOnce(() => Promise.resolve());
 
     mockListTools.mockImplementationOnce(() => Promise.resolve({ tools: [] }));
 
-    // 连接第一个服务器（应该失败）
+    // Connect first server (should fail)
     const serverInfo1 = hubManager.getServerById(mockServerInstance.id);
     await mcpConnectionManager.connect({
       ...serverInfo1!.config,
       ...serverInfo1!.instance
     });
 
-    // 连接第二个服务器（应该成功）
+    // Connect second server (should succeed)
     const serverInfo2 = hubManager.getServerById(workingInstance.id);
     const success2 = await mcpConnectionManager.connect({
       ...serverInfo2!.config,

@@ -32,12 +32,12 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
       const portCheck = await checkPort(port);
       if (portCheck.inUse) {
         if (portCheck.isSelfProject) {
-          // 本项目已在运行
+          // This project is already running
           logger.error(`MCP Hub Lite is already running on port ${port} (PID: ${portCheck.pid})`);
           logger.error(`Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.`);
           process.exit(1);
         } else {
-          // 其他程序占用端口
+          // Port is occupied by another application
           logger.error(`Port ${port} is already in use by another application:`);
           logger.error(`  Process: ${portCheck.processName} (PID: ${portCheck.pid})`);
           if (portCheck.commandLine) {

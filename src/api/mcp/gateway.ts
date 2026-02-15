@@ -26,7 +26,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
 } {
   const headers = request.headers;
 
-  // 完全使用原 clientId 生成逻辑作为 sessionId
+  // Fully use the original clientId generation logic as sessionId
   // Priority 1: Session ID from Query (Standard MCP SSE)
   let sessionId = (request.query as { sessionId?: string })?.sessionId;
 
@@ -73,23 +73,23 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
       sessionId = baseId;
       logger.debug(`Extracted sessionId from initialize params: ${sessionId}`);
 
-      // 保存客户端版本和协议版本信息
+      // Save client version and protocol version information
       clientVersion = version;
       protocolVersion = request.body.params.protocolVersion;
-      // 直接设置 clientName，因为我们从 initialize 请求中获取了更准确的信息
+      // Set clientName directly since we get more accurate information from the initialize request
       clientName = name;
     } else if (
       request.body.method === 'notifications/initialized' ||
       request.body.method === 'tools/list'
     ) {
-      // 对于 notifications/initialized 和 tools/list 请求，我们需要找到已存在的会话
-      // 因为这些请求通常是在 initialize 之后立即发送的
+      // For notifications/initialized and tools/list requests, we need to find existing sessions
+      // Because these requests are typically sent immediately after initialize
       if (existingSessionStates.length > 0) {
-        // 如果有持久化的会话，优先使用（这说明是重启后恢复）
+        // If there are persisted sessions, prioritize using them (this indicates recovery after restart)
         logger.debug(
           `Found ${existingSessionStates.length} persisted session states, will try to match`
         );
-        // 首先查找是否有与当前 clientName 匹配的会话
+        // First, look for sessions matching the current clientName
         if (clientName) {
           const matchedSession = existingSessionStates.find(
             (state) => state.clientName === clientName
@@ -101,7 +101,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
         }
 
         if (!sessionId && clients.length > 0) {
-          // 没有找到匹配的持久化会话，使用最新活动会话
+          // No matching persisted session found, use the latest active session
           const latestClient = clients.reduce((latest, current) => {
             return current.timestamp > latest.timestamp ? current : latest;
           });
@@ -112,7 +112,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
         }
 
         if (!sessionId && existingSessionStates.length > 0) {
-          // 最后尝试使用最近访问的持久化会话
+          // Finally, try using the most recently accessed persisted session
           const sortedSessions = [...existingSessionStates].sort(
             (a, b) => b.lastAccessedAt - a.lastAccessedAt
           );
@@ -138,7 +138,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
     if (clientName) {
       const existingClient = clients.find((c) => c.clientName === clientName);
       if (existingClient) {
-        sessionId = existingClient.sessionId; // 使用现有的 sessionId
+        sessionId = existingClient.sessionId; // Use existing sessionId
         logger.debug(`Found existing sessionId for ${clientName}: ${sessionId}`);
       }
     }
@@ -147,7 +147,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
   // Priority 4.5: Try to find from persisted session states (when clientTracker has no clients but sessions are persisted)
   if (!sessionId && existingSessionStates.length > 0) {
     logger.debug(`ClientTracker has no clients, using persisted session states`);
-    // 首先尝试找匹配 clientName 的
+    // First, try to find matching clientName
     if (clientName) {
       const matchedSession = existingSessionStates.find((state) => state.clientName === clientName);
       if (matchedSession) {
@@ -157,7 +157,7 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
     }
 
     if (!sessionId) {
-      // 使用最近访问的
+      // Use the most recently accessed
       const sortedSessions = [...existingSessionStates].sort(
         (a, b) => b.lastAccessedAt - a.lastAccessedAt
       );
@@ -204,7 +204,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
   ) => {
     const { sessionId, clientContext } = extractSessionContext(request);
 
-    // 更新客户端追踪信息
+    // Update client tracking information
     clientTrackerService.updateClient(clientContext);
 
     let logMsg = `MCP Gateway ${request.method} ${request.url} [Session: ${sessionId}]`;
@@ -225,7 +225,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       request.headers['accept'] = 'application/json, text/event-stream';
     }
 
-    // 在开发模式下，包装 reply.raw 以捕获响应内容
+    // In development mode, wrap reply.raw to capture response content
     const wrapReplyForDebug = () => {
       const originalWrite = reply.raw.write.bind(reply.raw);
       const originalEnd = reply.raw.end.bind(reply.raw);
@@ -235,7 +235,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         subModule: 'Communication'
       });
 
-      // 包装 write 方法
+      // Wrap write method
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       reply.raw.write = function (chunk: any, encoding?: any, callback?: any) {
         try {
@@ -245,11 +245,11 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           } else if (chunk instanceof Buffer) {
             chunkStr = chunk.toString(encoding || 'utf8');
           } else if (chunk instanceof Uint8Array) {
-            // 尝试将 Uint8Array 转换为字符串（用于SSE事件流）
+            // Try to convert Uint8Array to string (for SSE event streams)
             try {
               chunkStr = new TextDecoder('utf-8').decode(chunk);
             } catch {
-              // 如果无法解码为文本，提供二进制摘要
+              // If unable to decode as text, provide binary summary
               chunkStr = `[Binary data: ${chunk.length} bytes]`;
             }
           } else if (typeof chunk === 'object') {
@@ -266,7 +266,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         return originalWrite(chunk, encoding, callback);
       };
 
-      // 包装 end 方法
+      // Wrap end method
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       reply.raw.end = function (chunk?: any, encoding?: any, callback?: any) {
         try {
@@ -277,11 +277,11 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
             } else if (chunk instanceof Buffer) {
               chunkStr = chunk.toString(encoding || 'utf8');
             } else if (chunk instanceof Uint8Array) {
-              // 尝试将 Uint8Array 转换为字符串（用于SSE事件流）
+              // Try to convert Uint8Array to string (for SSE event streams)
               try {
                 chunkStr = new TextDecoder('utf-8').decode(chunk);
               } catch {
-                // 如果无法解码为文本，提供二进制摘要
+                // If unable to decode as text, provide binary summary
                 chunkStr = `[Binary data: ${chunk.length} bytes]`;
               }
             } else if (typeof chunk === 'object') {
@@ -292,13 +292,13 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
             responseBuffer += chunkStr;
           }
 
-          // 记录响应内容，对 tools/list 响应进行简略化处理
+          // Log response content, simplify tools/list responses
           let logResponse = responseBuffer;
           try {
             if (isToolsListResponse(responseBuffer)) {
               logResponse = simplifyToolsListResponse(responseBuffer);
             } else {
-              // 处理 SSE 格式响应 (event: message 后面跟着 data: JSON)
+              // Handle SSE format responses (event: message followed by data: JSON)
               if (responseBuffer.includes('event: message') && responseBuffer.includes('data:')) {
                 const dataMatch = responseBuffer.match(/data: ([^\n]+)/);
                 if (dataMatch) {
@@ -314,13 +314,13 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
                   logResponse = responseBuffer;
                 }
               } else {
-                // 尝试格式化其他 JSON 响应，提高可读性
+                // Try to format other JSON responses to improve readability
                 const parsed = JSON.parse(responseBuffer);
                 logResponse = JSON.stringify(parsed, null, 2);
               }
             }
           } catch {
-            // 如果不是有效的 JSON，则原样输出，截断过长内容
+            // If not valid JSON, output as-is and truncate long content
             logResponse =
               responseBuffer.length > 500
                 ? responseBuffer.substring(0, 500) + '...'
@@ -337,22 +337,22 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         return originalEnd(chunk, encoding, callback);
       };
 
-      // 同时包装 writeHead 方法，以捕获错误响应的头部信息
+      // Also wrap writeHead method to capture error response headers
       const originalWriteHead = reply.raw.writeHead.bind(reply.raw);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       reply.raw.writeHead = function (statusCode: number, ...args: any[]) {
         try {
-          // 如果是错误响应，记录状态码和头部
+          // If it's an error response, log status code and headers
           if (statusCode >= 400) {
             let statusMessage: string | undefined;
             let headers: Record<string, unknown> | undefined;
 
-            // 处理 Node.js writeHead 的多种参数形式
+            // Handle multiple parameter forms of Node.js writeHead
             if (args.length === 1) {
               // writeHead(statusCode, headers)
               headers = args[0] as Record<string, unknown>;
             } else if (args.length === 2) {
-              // writeHead(statusCode, statusMessage, headers) 或 writeHead(statusCode, headers)
+              // writeHead(statusCode, statusMessage, headers) or writeHead(statusCode, headers)
               if (typeof args[0] === 'string') {
                 statusMessage = args[0];
                 headers = args[1] as Record<string, unknown>;
@@ -388,9 +388,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     const startTime = Date.now();
 
     try {
-      // 判断是否需要 initialize 请求
-      // 只有明确的 initialize 请求才需要 SDK 处理初始化
-      // 对于其他所有请求（tools/list 等），都跳过初始化检查
+      // Determine if initialize request is needed
+      // Only explicit initialize requests require SDK initialization handling
+      // For all other requests (tools/list, etc.), skip initialization checks
       const isInitializeRequest = request.body?.method === 'initialize';
       const hasRestoredState = !!mcpSessionManager.getSessionState(sessionId);
       const requireInitialize = isInitializeRequest;

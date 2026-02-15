@@ -36,7 +36,7 @@ export class McpSessionManager {
   private sessionStates: Map<string, SessionState> = new Map();
   private dirtySessions: Set<string> = new Set();
   private sessionsPath: string;
-  private flushTimeout: NodeJS.Timeout | null = null; // 替换为一次性延迟
+  private flushTimeout: NodeJS.Timeout | null = null; // Replace with one-time delay
   private isInitialized = false;
 
   private get SESSION_TIMEOUT(): number {
@@ -48,7 +48,7 @@ export class McpSessionManager {
     const configPath =
       process.env.MCP_HUB_CONFIG_PATH ||
       path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
-    const mcpHubDir = path.dirname(path.dirname(configPath)); // 获取 ~/.mcp-hub-lite 目录
+    const mcpHubDir = path.dirname(path.dirname(configPath)); // Get ~/.mcp-hub-lite directory
     this.sessionsPath = path.join(mcpHubDir, 'sessions.json');
 
     logger.info(`Using sessions file: ${this.sessionsPath}`, { subModule: 'SessionManager' });
@@ -94,7 +94,7 @@ export class McpSessionManager {
       logger.debug(`Session marked as dirty: ${sessionId}`, { subModule: 'Session' });
     }
 
-    // 设置一次性延迟刷新，避免频繁写入（5秒延迟，批量处理）
+    // Set one-time delayed flush to avoid frequent writes (5-second delay, batch processing)
     if (!this.flushTimeout) {
       this.flushTimeout = setTimeout(() => {
         this.flushDirtySessions();
@@ -443,8 +443,8 @@ export class McpSessionManager {
       });
     }
 
-    // 对于恢复的会话或明确要求跳过初始化的情况，手动设置 initialized 标志
-    // 这样可以允许直接发送 tools/list 等请求而不需要先 initialize
+    // For restored sessions or when explicitly requested to skip initialization, manually set the initialized flag
+    // This allows sending requests like tools/list directly without needing to initialize first
     const shouldManuallyInitialize = !requireInitialize || !!restoredState;
     if (process.env.SESSION_DEBUG) {
       logger.debug(
@@ -454,7 +454,7 @@ export class McpSessionManager {
     }
 
     if (shouldManuallyInitialize) {
-      // 定义传输结构类型
+      // Define transport structure type
       interface WebStandardTransport {
         sessionId?: string;
         _initialized?: boolean;
@@ -485,7 +485,7 @@ export class McpSessionManager {
       }
     }
 
-    // 通信调试日志：始终设置，通过 logger.debug 控制输出级别
+    // Communication debug logs: always set, controlled by logger.debug output level
     transport.onmessage = (message) => {
       try {
         const messageStr = JSON.stringify(message);
@@ -495,21 +495,21 @@ export class McpSessionManager {
       }
     };
 
-    // 包装send方法以记录响应
+    // Wrap send method to log responses
     const originalSend = transport.send;
     transport.send = async (message, options) => {
       try {
-        // 记录响应消息，对 tools/list 响应进行简略化处理
+        // Log response messages, simplify tools/list responses
         let logMessage = JSON.stringify(message);
         if (isToolsListResponse(logMessage)) {
           logMessage = simplifyToolsListResponse(logMessage);
         } else {
           try {
-            // 尝试格式化其他 JSON 响应，提高可读性
+            // Try to format other JSON responses to improve readability
             const parsed = JSON.parse(logMessage);
             logMessage = JSON.stringify(parsed, null, 2);
           } catch {
-            // 如果不是有效的 JSON，则原样输出，截断过长内容
+            // If not valid JSON, output as-is and truncate long content
             logMessage =
               logMessage.length > 500 ? logMessage.substring(0, 500) + '...' : logMessage;
           }
@@ -521,18 +521,18 @@ export class McpSessionManager {
         });
       }
 
-      // 调用原始send方法
+      // Call original send method
       return await originalSend.call(transport, message, options);
     };
 
     const server = gateway.createConnectionServer();
 
-    // 确保服务器完全连接后再返回会话
+    // Ensure server is fully connected before returning session
     await server.connect(transport);
 
-    // 注：StreamableHTTPServerTransport 的 onsessioninitialized 回调会在
-    // 第一个实际请求（GET /mcp）到达时才触发，而不是在 connect() 时。
-    // 因此我们不需要等待该事件 - 传输已准备好接收请求。
+    // Note: StreamableHTTPServerTransport's onsessioninitialized callback is triggered
+    // when the first actual request (GET /mcp) arrives, not during connect().
+    // Therefore, we don't need to wait for this event - the transport is ready to receive requests.
     if (process.env.SESSION_DEBUG) {
       logger.debug(`StreamableHTTPServerTransport ready for session: ${sessionId}`, {
         subModule: 'Session'

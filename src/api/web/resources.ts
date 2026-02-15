@@ -32,10 +32,10 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
           };
         }
 
-        // 找到服务器 ID
+        // Find server ID
         const serverId = mcpConnectionManager.getServerIdByName(name);
         if (!serverId) {
-          // 尝试直接使用 name 作为 ID (虽然不太可能，但为了健壮性)
+          // Try using name directly as ID (unlikely but for robustness)
           if (mcpConnectionManager.getStatus(name)) {
             const result = await mcpConnectionManager.readResource(name, uri);
             return result;

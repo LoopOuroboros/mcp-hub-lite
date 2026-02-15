@@ -32,15 +32,15 @@ import type {
   FindToolsParams
 } from '@models/system-tools.constants.js';
 
-// 请求选项接口
+// Request options interface
 export interface RequestOptions {
-  sessionId?: string; // 会话 ID（用于选择特定实例）
-  tags?: Record<string, string>; // 标签（后续支持）
-  // 未来可能添加的选项
-  // clientId?: string;  // 客户端 ID（用于选择专属实例）
+  sessionId?: string; // Session ID (for selecting specific instance)
+  tags?: Record<string, string>; // Tags (for future support)
+  // Future options that may be added
+  // clientId?: string;  // Client ID (for selecting dedicated instance)
 }
 
-// 根据服务器名称和请求选项选择最佳实例
+// Select the best instance based on server name and request options
 function selectBestInstance(
   serverName: string,
   requestOptions?: RequestOptions
@@ -51,20 +51,20 @@ function selectBestInstance(
       instance: ServerInstanceConfig & Record<string, unknown>;
     }
   | undefined {
-  // 获取服务器的所有实例
+  // Get all instances of the server
   const instances = hubManager.getServerInstanceByName(serverName);
 
   if (instances.length === 0) {
     return undefined;
   }
 
-  // 获取服务器配置
+  // Get server configuration
   const serverConfig = hubManager.getServerByName(serverName);
   if (!serverConfig) {
     return undefined;
   }
 
-  // 如果只有一个实例，直接返回
+  // If there's only one instance, return it directly
   if (instances.length === 1) {
     return {
       name: serverName,
@@ -73,29 +73,29 @@ function selectBestInstance(
     };
   }
 
-  // 多实例选择逻辑（未来扩展）
-  // 目前简化实现：返回第一个实例
-  // 未来可扩展支持：
-  // - 根据 sessionId 选择特定实例
-  // - 根据 tags 匹配选择最优实例
-  // - 根据客户端 ID 选择专属实例
-  // - 根据负载情况选择实例
+  // Multi-instance selection logic (for future extension)
+  // Currently simplified implementation: return the first instance
+  // Future extensions could support:
+  // - Selecting specific instance based on sessionId
+  // - Selecting optimal instance based on tags matching
+  // - Selecting dedicated instance based on client ID
+  // - Selecting instance based on load conditions
 
-  // 目前虽然 requestOptions 未被使用，但保留以便未来扩展
+  // Although requestOptions is not currently used, it's kept for future extension
   if (requestOptions?.sessionId) {
-    // 未来可以根据 sessionId 选择特定实例
-    // 目前暂时返回第一个实例
+    // In the future, specific instance can be selected based on sessionId
+    // Currently return the first instance temporarily
   }
 
   if (requestOptions?.tags) {
-    // 未来可以根据 tags 匹配选择最优实例
-    // 目前暂时返回第一个实例
+    // In the future, optimal instance can be selected based on tags matching
+    // Currently return the first instance temporarily
   }
 
   return {
     name: serverName,
     config: serverConfig,
-    instance: instances[0] // 后续扩展为智能选择逻辑
+    instance: instances[0] // Will be extended to intelligent selection logic later
   };
 }
 
@@ -375,13 +375,13 @@ export class HubToolsService {
     serverName: string;
     tools: Tool[];
   }> {
-    // 处理 MCP Hub Lite 服务器（返回系统工具列表）
+    // Handle MCP Hub Lite server (return system tools list)
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
-      // 使用与 tools/list 相同的逻辑生成工具列表
+      // Generate tool list using the same logic as tools/list
       const toolMap = new Map<string, { serverId: string; realToolName: string }>();
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
 
-      // 转换为 Tool 格式
+      // Convert to Tool format
       const tools: Tool[] = gatewayTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
@@ -402,10 +402,10 @@ export class HubToolsService {
       throw new Error(`Server not found: ${serverName}`);
     }
 
-    // 获取实例的 ID
+    // Get instance ID
     const serverId = serverInfo.instance.id;
 
-    // 从连接管理器获取工具列表
+    // Get tool list from connection manager
     const tools = mcpConnectionManager.getTools(serverId);
 
     return {
@@ -631,7 +631,7 @@ export class HubToolsService {
     toolArgs: Record<string, unknown>,
     requestOptions?: RequestOptions
   ): Promise<unknown> {
-    // 处理 MCP Hub Lite 服务器（系统工具调用）
+    // Handle MCP Hub Lite server (system tool call)
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
     }
@@ -651,7 +651,7 @@ export class HubToolsService {
     const serverId = serverInfo.instance.id;
     const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // 发布工具调用开始事件
+    // Publish tool call started event
     eventBus.publish(EventTypes.TOOL_CALL_STARTED, {
       requestId,
       serverId,
@@ -664,7 +664,7 @@ export class HubToolsService {
     try {
       const result = await mcpConnectionManager.callTool(serverId, toolName, toolArgs);
 
-      // 发布工具调用完成事件
+      // Publish tool call completed event
       eventBus.publish(EventTypes.TOOL_CALL_COMPLETED, {
         requestId,
         serverId,
@@ -679,7 +679,7 @@ export class HubToolsService {
       });
       return result;
     } catch (error) {
-      // 发布工具调用错误事件
+      // Publish tool call error event
       eventBus.publish(EventTypes.TOOL_CALL_ERROR, {
         requestId,
         serverId,
@@ -858,9 +858,7 @@ export class HubToolsService {
    * @param uri Resource URI to read (e.g., hub://servers/server-name)
    * @returns Resource content as JSON string or object
    */
-  async readResource(
-    uri: string
-  ): Promise<
+  async readResource(uri: string): Promise<
     | {
         name: string;
         status: ServerStatus;

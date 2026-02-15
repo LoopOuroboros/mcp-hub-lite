@@ -1,6 +1,6 @@
 /**
- * 端口占用检查工具
- * 检查端口是否被占用，并尝试识别占用进程
+ * Port occupancy checker utility
+ * Checks if a port is in use and attempts to identify the occupying process
  */
 
 import { exec } from 'child_process';
@@ -18,7 +18,7 @@ export interface PortCheckResult {
 }
 
 /**
- * 检查端口是否被占用
+ * Check if port is in use
  */
 export async function checkPort(port: number): Promise<PortCheckResult> {
   try {
@@ -30,24 +30,24 @@ export async function checkPort(port: number): Promise<PortCheckResult> {
       return await checkPortUnix(port);
     }
   } catch {
-    // 检查失败时返回未占用（安全默认值）
+    // Return not in use on check failure (safe default)
     return { inUse: false };
   }
 }
 
 /**
- * Windows平台端口检查
+ * Windows platform port check
  */
 async function checkPortWindows(port: number): Promise<PortCheckResult> {
   try {
-    // 使用netstat查找占用端口的进程
+    // Use netstat to find the process occupying the port
     const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
 
     if (!stdout.trim()) {
       return { inUse: false };
     }
 
-    // 解析netstat输出，提取PID
+    // Parse netstat output to extract PID
     const lines = stdout.trim().split('\n');
     for (const line of lines) {
       const parts = line.trim().split(/\s+/);
@@ -55,12 +55,12 @@ async function checkPortWindows(port: number): Promise<PortCheckResult> {
       const state = parts[3];
       const pid = parseInt(parts[4], 10);
 
-      // 检查是否是LISTENING状态，且是目标端口
+      // Check if it's in LISTENING state and is the target port
       if (state === 'LISTENING' && localAddress.endsWith(`:${port}`)) {
-        // 获取进程详细信息
+        // Get process details
         const processInfo = await getProcessInfoWindows(pid);
 
-        // 检查是否是本项目的进程
+        // Check if it's the current project's process
         const isSelfProject = await isSelfProjectProcess(pid, processInfo.commandLine);
 
         return {
@@ -80,11 +80,11 @@ async function checkPortWindows(port: number): Promise<PortCheckResult> {
 }
 
 /**
- * Unix平台端口检查 (Linux, macOS)
+ * Unix platform port check (Linux, macOS)
  */
 async function checkPortUnix(port: number): Promise<PortCheckResult> {
   try {
-    // 使用lsof查找占用端口的进程
+    // Use lsof to find the process occupying the port
     const { stdout } = await execAsync(`lsof -i :${port} -sTCP:LISTEN -t`);
 
     if (!stdout.trim()) {
@@ -93,10 +93,10 @@ async function checkPortUnix(port: number): Promise<PortCheckResult> {
 
     const pid = parseInt(stdout.trim().split('\n')[0], 10);
 
-    // 获取进程详细信息
+    // Get process details
     const processInfo = await getProcessInfoUnix(pid);
 
-    // 检查是否是本项目的进程
+    // Check if it's the current project's process
     const isSelfProject = await isSelfProjectProcess(pid, processInfo.commandLine);
 
     return {
@@ -112,13 +112,13 @@ async function checkPortUnix(port: number): Promise<PortCheckResult> {
 }
 
 /**
- * 获取Windows进程信息
+ * Get Windows process information
  */
 async function getProcessInfoWindows(
   pid: number
 ): Promise<{ processName: string; commandLine: string }> {
   try {
-    // 使用wmic获取进程详细信息
+    // Use wmic to get process details
     const { stdout } = await execAsync(
       `wmic process where ProcessId=${pid} get Name,CommandLine /format:list`
     );
@@ -142,13 +142,13 @@ async function getProcessInfoWindows(
 }
 
 /**
- * 获取Unix进程信息
+ * Get Unix process information
  */
 async function getProcessInfoUnix(
   pid: number
 ): Promise<{ processName: string; commandLine: string }> {
   try {
-    // 使用ps获取进程详细信息
+    // Use ps to get process details
     const { stdout } = await execAsync(`ps -p ${pid} -o comm=,args=`);
 
     const parts = stdout.trim().split(/\s+/);
@@ -162,24 +162,24 @@ async function getProcessInfoUnix(
 }
 
 /**
- * 判断是否是本项目启动的进程
+ * Determine if it's a process started by the current project
  */
 async function isSelfProjectProcess(pid: number, commandLine: string): Promise<boolean> {
-  // 检查1: 检查PID文件中记录的PID是否匹配
+  // Check 1: Check if the PID recorded in the PID file matches
   const savedPid = PidManager.getPid();
   if (savedPid === pid) {
     return true;
   }
 
-  // 检查2: 检查命令行是否包含项目特征
+  // Check 2: Check if the command line contains project signatures
   if (!commandLine) {
     return false;
   }
 
   const projectSignatures = [
-    'mcp-hub-lite', // 项目名称
-    'dist/server/src/index.js', // 编译后的入口文件
-    'src/index.ts' // 源代码入口文件
+    'mcp-hub-lite', // Project name
+    'dist/server/src/index.js', // Compiled entry file
+    'src/index.ts' // Source code entry file
   ];
 
   return projectSignatures.some((signature) => commandLine.includes(signature));

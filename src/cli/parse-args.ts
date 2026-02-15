@@ -1,6 +1,6 @@
 /**
- * CLI参数解析工具
- * 提供参数验证和解析函数
+ * CLI argument parsing utility
+ * Provides parameter validation and parsing functions
  */
 
 import type { LogLevel } from '@shared-types/common.types.js';
@@ -14,7 +14,7 @@ export interface CliOptions {
 }
 
 /**
- * 解析并验证端口号
+ * Parse and validate port number
  */
 export function parsePort(value: string): number {
   const port = parseInt(value, 10);
@@ -25,10 +25,10 @@ export function parsePort(value: string): number {
 }
 
 /**
- * 解析并验证主机名
+ * Parse and validate hostname
  */
 export function parseHost(value: string): string {
-  // 简单验证主机名格式
+  // Simple hostname format validation
   if (!value || value.trim().length === 0) {
     throw new Error('Host cannot be empty');
   }
@@ -36,7 +36,7 @@ export function parseHost(value: string): string {
 }
 
 /**
- * 验证配置文件路径
+ * Validate configuration file path
  */
 export function validateConfigPath(path: string): string {
   if (!path.endsWith('.json')) {
@@ -46,7 +46,7 @@ export function validateConfigPath(path: string): string {
 }
 
 /**
- * 验证日志级别
+ * Validate log level
  */
 export function validateLogLevel(level: string): LogLevel {
   const validLevels: LogLevel[] = ['error', 'warn', 'info', 'debug'];
@@ -58,7 +58,7 @@ export function validateLogLevel(level: string): LogLevel {
 }
 
 /**
- * 合并CLI选项与默认值
+ * Merge CLI options with default values
  */
 export function mergeOptions(options: Partial<CliOptions>, defaults: CliOptions): CliOptions {
   return {

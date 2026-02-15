@@ -206,7 +206,7 @@
                 </el-form-item>
 
                 <div class="space-y-4">
-                  <!-- 最大并发连接数 -->
+                  <!-- Maximum concurrent connections -->
                   <div class="flex items-center gap-4">
                     <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.maxConcurrentConnections')
@@ -219,7 +219,7 @@
                     />
                   </div>
 
-                  <!-- 最大连接数 -->
+                  <!-- Maximum connections -->
                   <div class="flex items-center gap-4">
                     <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.maxConnections')
@@ -232,7 +232,7 @@
                     />
                   </div>
 
-                  <!-- 连接超时 -->
+                  <!-- Connection timeout -->
                   <div class="flex items-center gap-4">
                     <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.connectionTimeout')
@@ -245,15 +245,15 @@
                         class="w-32"
                       />
                       <el-select v-model="connectionTimeoutUnit" class="w-24">
-                        <el-option label="秒" value="seconds" />
-                        <el-option label="分钟" value="minutes" />
-                        <el-option label="小时" value="hours" />
-                        <el-option label="天" value="days" />
+                        <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                        <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                        <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
+                        <el-option :label="$t('settings.timeUnits.days')" value="days" />
                       </el-select>
                     </div>
                   </div>
 
-                  <!-- 空闲连接超时 -->
+                  <!-- Idle connection timeout -->
                   <div class="flex items-center gap-4">
                     <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.idleConnectionTimeout')
@@ -266,15 +266,15 @@
                         class="w-32"
                       />
                       <el-select v-model="idleConnectionTimeoutUnit" class="w-24">
-                        <el-option label="秒" value="seconds" />
-                        <el-option label="分钟" value="minutes" />
-                        <el-option label="小时" value="hours" />
-                        <el-option label="天" value="days" />
+                        <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                        <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                        <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
+                        <el-option :label="$t('settings.timeUnits.days')" value="days" />
                       </el-select>
                     </div>
                   </div>
 
-                  <!-- 会话超时 -->
+                  <!-- Session timeout -->
                   <div class="flex items-center gap-4">
                     <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.sessionTimeout')
@@ -287,10 +287,10 @@
                         class="w-32"
                       />
                       <el-select v-model="sessionTimeoutUnit" class="w-24">
-                        <el-option label="秒" value="seconds" />
-                        <el-option label="分钟" value="minutes" />
-                        <el-option label="小时" value="hours" />
-                        <el-option label="天" value="days" />
+                        <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                        <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                        <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
+                        <el-option :label="$t('settings.timeUnits.days')" value="days" />
                       </el-select>
                     </div>
                   </div>
@@ -327,7 +327,7 @@ const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
 const activeTab = ref('system');
 
-// 单位转换系数
+// Unit conversion factors
 type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
 const unitFactors: Record<TimeUnit, number> = {
   seconds: 1,
@@ -336,10 +336,10 @@ const unitFactors: Record<TimeUnit, number> = {
   days: 86400
 };
 
-// 单位优先级（从大到小）
+// Unit priority (from largest to smallest)
 const unitPriority: TimeUnit[] = ['days', 'hours', 'minutes', 'seconds'];
 
-// 根据秒数自动选择最合适的单位
+// Automatically select the most appropriate unit based on seconds
 const getOptimalUnit = (seconds: number): TimeUnit => {
   for (const unit of unitPriority) {
     const factor = unitFactors[unit];
@@ -362,13 +362,13 @@ const maxAgeDays = computed({
   }
 });
 
-// 连接超时
+// Connection timeout
 const connectionTimeoutUnit = ref<TimeUnit>('seconds');
 const connectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.connectionTimeout || 30000;
     const seconds = ms / 1000;
-    // 自动选择最合适的单位
+    // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
     return seconds / unitFactors[optimalUnit];
   },
@@ -380,13 +380,13 @@ const connectionTimeoutValue = computed({
   }
 });
 
-// 空闲连接超时
+// Idle connection timeout
 const idleConnectionTimeoutUnit = ref<TimeUnit>('seconds');
 const idleConnectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.idleConnectionTimeout || 300000;
     const seconds = ms / 1000;
-    // 自动选择最合适的单位
+    // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
     return seconds / unitFactors[optimalUnit];
   },
@@ -398,13 +398,13 @@ const idleConnectionTimeoutValue = computed({
   }
 });
 
-// 会话超时
+// Session timeout
 const sessionTimeoutUnit = ref<TimeUnit>('seconds');
 const sessionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.sessionTimeout || 30 * 60 * 1000;
     const seconds = ms / 1000;
-    // 自动选择最合适的单位
+    // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
     return seconds / unitFactors[optimalUnit];
   },
@@ -415,7 +415,7 @@ const sessionTimeoutValue = computed({
   }
 });
 
-// 在 config 变化时更新单位选择
+// Update unit selection when config changes
 watch(
   () => config.value?.security?.connectionTimeout,
   (ms) => {
@@ -446,7 +446,7 @@ watch(
   }
 );
 
-// 单位切换时自动转换值
+// Automatically convert values when unit changes
 watch(connectionTimeoutUnit, (newUnit, oldUnit) => {
   if (oldUnit && newUnit !== oldUnit) {
     const factor = unitFactors[newUnit] / unitFactors[oldUnit];

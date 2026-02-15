@@ -12,13 +12,13 @@ import {
   FindToolsParams
 } from '@models/system-tools.constants.js';
 
-// 请求选项接口
+// Request options interface
 interface RequestOptions {
-  sessionId?: string; // 会话 ID（用于选择特定实例）
-  tags?: Record<string, string>; // 标签（后续支持）
+  sessionId?: string; // Session ID (used to select specific instance)
+  tags?: Record<string, string>; // Tags (future support)
 }
 
-// 系统工具参数的联合类型
+// Union type for system tool parameters
 type SystemToolArgs =
   | ListServersParams
   | FindServersParams
@@ -47,7 +47,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       const { toolName } = request.params;
       const { toolArgs = {} } = request.body;
 
-      // 通过 callSystemTool 方法统一处理系统工具调用，确保日志记录
+      // Handle system tool calls uniformly through callSystemTool method to ensure logging
       return await hubToolsService.callSystemTool(
         toolName as SystemToolName,
         toolArgs as SystemToolArgs

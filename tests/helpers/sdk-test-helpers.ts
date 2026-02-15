@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServerRequest } from '@modelcontextprotocol/sdk/types.js';
 
 /**
- * 创建模拟的 MCP 服务器用于测试
+ * Create a mock MCP server for testing
  */
 export class MockMcpServer {
   private server: McpServer;
@@ -28,7 +28,7 @@ export class MockMcpServer {
   }
 
   private setupHandlers() {
-    // 为每个工具注册处理器
+    // Register handler for each tool
     if (this.config.tools) {
       for (const tool of this.config.tools) {
         const schema = {
@@ -74,7 +74,7 @@ export class MockMcpServer {
     }
   }
 
-  // 获取用于连接的配置
+  // Get connection configuration
   getConnectConfig() {
     return {
       command: 'node',
@@ -83,22 +83,22 @@ export class MockMcpServer {
     };
   }
 
-  // 生成可执行的服务器脚本
+  // Generate executable server script
   private getServerScript(): string {
-    // 返回一个内联的 MCP 服务器脚本
-    // 使用 SDK 的 StdioServerTransport
+    // Return an inline MCP server script
+    // Using SDK's StdioServerTransport
     return `
-      // 内联服务器代码...
+      // Inline server code...
     `;
   }
 }
 
 /**
- * 使用内存传输的测试服务器
- * 更高效，无需启动子进程
+ * In-memory test server using memory transport
+ * More efficient, no need to spawn child processes
  */
 export class InMemoryMcpServer {
   constructor() {
-    // 目前未实现内存传输
+    // Memory transport not implemented yet
   }
 }

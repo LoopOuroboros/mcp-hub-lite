@@ -3,7 +3,7 @@ import { SearchCoreService } from '@services/search/search-core.service.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import type { MockInstance } from 'vitest';
 
-// 创建模拟工具数据
+// Create mock tool data
 const mockTools: Tool[] = [
   {
     name: 'MySQL Query',
@@ -29,7 +29,7 @@ describe('SearchCoreService', () => {
   beforeEach(() => {
     searchService = new SearchCoreService();
 
-    // 模拟 mcpConnectionManager.getAllTools()
+    // Mock mcpConnectionManager.getAllTools()
     mockGetAllTools = vi
       .spyOn(
         searchService as unknown as { getToolsWithCache: () => Promise<Tool[]> },
@@ -84,7 +84,7 @@ describe('SearchCoreService', () => {
 
   describe('search performance', () => {
     it('should handle large tool lists efficiently', async () => {
-      // 创建包含200个工具的模拟数据
+      // Create mock data with 200 tools
       const largeMockTools: Tool[] = [];
       for (let i = 1; i <= 200; i++) {
         largeMockTools.push({

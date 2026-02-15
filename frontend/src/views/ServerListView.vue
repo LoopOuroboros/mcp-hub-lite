@@ -201,13 +201,13 @@ const addModalMode = ref<'form' | 'json'>('form');
 
 async function handleSave() {
   try {
-    // 获取当前服务器配置
+    // Get current server configuration
     const serversConfig = store.servers.map((server) => ({
       name: server.name,
       config: server.config
     }));
 
-    // 调用保存配置的API
+    // Call save configuration API
     await systemStore.updateConfig({
       servers: serversConfig.reduce(
         (acc, curr) => {

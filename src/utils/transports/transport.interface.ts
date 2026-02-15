@@ -1,5 +1,5 @@
 /**
- * STDIO 传输配置
+ * STDIO transport configuration
  */
 export interface StdioTransportConfig {
   type: 'stdio';
@@ -11,7 +11,7 @@ export interface StdioTransportConfig {
 }
 
 /**
- * SSE 传输配置
+ * SSE transport configuration
  */
 export interface SseTransportConfig {
   type: 'sse';
@@ -22,7 +22,7 @@ export interface SseTransportConfig {
 }
 
 /**
- * Streamable HTTP 传输配置
+ * Streamable HTTP transport configuration
  */
 export interface StreamableHttpTransportConfig {
   type: 'streamable-http' | 'http';
@@ -32,7 +32,7 @@ export interface StreamableHttpTransportConfig {
 }
 
 /**
- * 通用服务器配置
+ * Generic server configuration
  */
 export type ServerTransportConfig =
   | StdioTransportConfig

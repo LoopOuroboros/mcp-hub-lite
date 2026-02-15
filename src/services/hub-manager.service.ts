@@ -16,25 +16,25 @@ export class HubManagerService {
   }
 
   /**
-   * 批量添加服务器配置（不自动启动，用于优化批量操作性能）
+   * Batch add server configurations (without auto-start, for optimizing batch operation performance)
    */
   async addServersWithoutAutoStart(
     servers: Array<{ name: string; config: Partial<ServerConfig> }>
   ): Promise<void> {
     await this.configManager.addServers(servers);
-    // 为所有新增的服务器发布 SERVER_ADDED 事件
+    // Publish SERVER_ADDED event for all newly added servers
     for (const { name } of servers) {
       const serverConfig = this.getServerByName(name);
       if (serverConfig) {
         eventBus.publish(EventTypes.SERVER_ADDED, { name, config: serverConfig });
       }
     }
-    // 保存配置（只保存一次）
-    await this.configManager['saveConfig'](); // 调用私有方法
+    // Save configuration (only once)
+    await this.configManager['saveConfig'](); // Call private method
   }
 
   /**
-   * 批量创建服务器实例（不自动连接）
+   * Batch create server instances (without auto-connect)
    */
   async addServerInstancesWithoutConnect(serverNames: string[]): Promise<void> {
     for (const name of serverNames) {
@@ -46,7 +46,7 @@ export class HubManagerService {
   }
 
   /**
-   * 并发启动多个服务器实例（使用 Promise.all 提高效率）
+   * Concurrently start multiple server instances (using Promise.all for efficiency)
    */
   async connectServerInstances(serverNames: string[]): Promise<void> {
     const connectPromises = serverNames.map(async (name) => {
@@ -63,7 +63,7 @@ export class HubManagerService {
       }
     });
 
-    // 使用 Promise.all 并发执行
+    // Execute concurrently using Promise.all
     await Promise.all(connectPromises);
   }
 
@@ -74,7 +74,7 @@ export class HubManagerService {
   getServerById(
     id: string
   ): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
-    // 遍历所有服务器和实例，查找匹配的 id
+    // Iterate through all servers and instances to find matching id
     const serverInstances = this.configManager.getServerInstances();
     for (const [serverName, instances] of Object.entries(serverInstances)) {
       const instance = instances.find((inst) => inst.id === id);
@@ -108,7 +108,7 @@ export class HubManagerService {
     const newServer = await this.configManager.addServer(name, config);
     logger.info(`Server added: [${name}]`);
 
-    // 发布服务器添加事件
+    // Publish server added event
     eventBus.publish(EventTypes.SERVER_ADDED, { name, config: newServer });
 
     return newServer;
@@ -121,7 +121,7 @@ export class HubManagerService {
     const newInstance = await this.configManager.addServerInstance(name, instance);
     logger.info(`Server instance added for server: [${name}]`);
 
-    // 如果服务器配置启用，则尝试连接
+    // If server config is enabled, attempt to connect
     const server = this.getServerByName(name);
     if (server && server.enabled !== false) {
       try {
@@ -170,7 +170,7 @@ export class HubManagerService {
       return false;
     }
 
-    // 断开该服务器所有实例的连接
+    // Disconnect all instances of this server
     const instances = this.getServerInstanceByName(name);
     for (const instance of instances) {
       await mcpConnectionManager.disconnect(instance.id!).catch(() => {});
@@ -188,7 +188,7 @@ export class HubManagerService {
     const instances = this.getServerInstanceByName(name);
     if (index >= 0 && index < instances.length) {
       const instance = instances[index];
-      // 断开该实例的连接
+      // Disconnect this instance
       await mcpConnectionManager.disconnect(instance.id!).catch(() => {});
     }
 

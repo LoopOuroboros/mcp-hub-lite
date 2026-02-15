@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { http } from '@utils/http';
 
-// 深度合并函数
+// Deep merge function
 function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   const result = { ...target } as Record<string, unknown>;
   for (const key in source) {
@@ -98,7 +98,7 @@ export const useSystemStore = defineStore('system', () => {
     try {
       const data = await http.get<SystemConfig>('/web/config');
 
-      // 使用深度合并替代手动合并
+      // Use deep merge instead of manual merging
       config.value = deepMerge(config.value, data);
       return config.value;
     } catch (e: unknown) {
@@ -116,7 +116,7 @@ export const useSystemStore = defineStore('system', () => {
     try {
       await http.put('/web/config', updates);
 
-      // 使用深度合并更新本地状态
+      // Use deep merge to update local state
       config.value = deepMerge(config.value, updates);
     } catch (e: unknown) {
       const errorObj = e as Error;

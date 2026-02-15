@@ -16,7 +16,7 @@ export const listCommand = new Command('list')
         console.table(
           servers.map((server) => ({
             Name: server.name,
-            // 现在需要显示服务器实例信息
+            // Now need to display server instance information
             Instances: server.instances?.length || 0,
             Type: server.config.type,
             Enabled: server.config.enabled

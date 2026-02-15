@@ -3,7 +3,7 @@ import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { simpleSearchService } from '@services/simple-search.service.js';
 
-// 模拟 MCP SDK Client
+// Mock MCP SDK Client
 const mockConnect = vi.fn();
 const mockClose = vi.fn();
 const mockListTools = vi.fn();
@@ -19,7 +19,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   };
 });
 
-// 模拟传输工厂
+// Mock transport factory
 vi.mock('@utils/transports/transport-factory.js', () => {
   return {
     TransportFactory: {
@@ -38,10 +38,10 @@ describe('MCP Connection Integration', () => {
   let serverId: string;
 
   beforeEach(async () => {
-    // 清除所有模拟
+    // Clear all mocks
     vi.clearAllMocks();
 
-    // 添加测试服务器
+    // Add test server
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
@@ -51,7 +51,7 @@ describe('MCP Connection Integration', () => {
       allowedTools: []
     });
 
-    // 添加服务器实例
+    // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
   });
@@ -92,7 +92,7 @@ describe('MCP Connection Integration', () => {
   });
 
   it('should support concurrent connections', async () => {
-    // 添加第二个服务器
+    // Add second server
     const server2Name = 'test-mcp-server-2';
     await hubManager.addServer(server2Name, {
       command: 'node',
@@ -136,7 +136,7 @@ describe('MCP Connection Integration', () => {
   });
 
   it('should integrate with search service', async () => {
-    // 设置模拟工具数据
+    // Set up mock tool data
     mockConnect.mockResolvedValue(undefined);
     mockListTools.mockResolvedValue({
       tools: [

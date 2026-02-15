@@ -17,11 +17,11 @@ export interface LogQueryOptions {
 
 export class LogStorageService {
   private serverLogs = new Map<string, LogEntry[]>();
-  private maxLogsPerServer = 1000; // 可配置的最大日志条数
+  private maxLogsPerServer = 1000; // Configurable maximum number of log entries
   private logListeners = new Map<string, Array<(log: LogEntry) => void>>();
 
   /**
-   * 为服务器添加日志
+   * Add log for server
    */
   append(serverId: string, level: LogLevel, message: string): LogEntry {
     const logEntry: LogEntry = {
@@ -37,15 +37,15 @@ export class LogStorageService {
     const logs = this.serverLogs.get(serverId)!;
     logs.push(logEntry);
 
-    // 限制日志条数，防止内存泄漏
+    // Limit log entries to prevent memory leaks
     if (logs.length > this.maxLogsPerServer) {
       logs.splice(0, logs.length - this.maxLogsPerServer);
     }
 
-    // 通知监听者
+    // Notify listeners
     this.notifyListeners(serverId, logEntry);
 
-    // 发布日志事件
+    // Publish log event
     eventBus.publish(EventTypes.LOG_ENTRY, {
       serverId,
       logs: [logEntry]
@@ -55,23 +55,23 @@ export class LogStorageService {
   }
 
   /**
-   * 获取服务器的日志
+   * Get logs for server
    */
   getLogs(serverId: string, options?: LogQueryOptions): LogEntry[] {
     let logs = this.serverLogs.get(serverId) || [];
 
-    // 按级别过滤
+    // Filter by level
     if (options?.level) {
       logs = logs.filter((log) => log.level === options.level);
     }
 
-    // 按时间过滤
+    // Filter by time
     if (options?.since != null) {
       const since = options.since as number;
       logs = logs.filter((log) => log.timestamp >= since);
     }
 
-    // 分页
+    // Pagination
     const offset = options?.offset || 0;
     const limit = options?.limit || logs.length;
 
@@ -79,25 +79,25 @@ export class LogStorageService {
   }
 
   /**
-   * 清除服务器的所有日志
+   * Clear all logs for server
    */
   clearLogs(serverId: string): void {
     this.serverLogs.set(serverId, []);
   }
 
   /**
-   * 获取服务器的日志条数
+   * Get log count for server
    */
   getLogCount(serverId: string): number {
     return this.serverLogs.get(serverId)?.length || 0;
   }
 
   /**
-   * 设置每个服务器的最大日志条数
+   * Set maximum number of log entries per server
    */
   setMaxLogsPerServer(max: number): void {
     this.maxLogsPerServer = max;
-    // 修剪所有服务器的日志
+    // Trim logs for all servers
     for (const [serverId, logs] of this.serverLogs.entries()) {
       if (logs.length > max) {
         this.serverLogs.set(serverId, logs.slice(-max));
@@ -106,7 +106,7 @@ export class LogStorageService {
   }
 
   /**
-   * 添加日志监听器
+   * Add log listener
    */
   addLogListener(serverId: string, listener: (log: LogEntry) => void): void {
     if (!this.logListeners.has(serverId)) {
@@ -116,7 +116,7 @@ export class LogStorageService {
   }
 
   /**
-   * 移除日志监听器
+   * Remove log listener
    */
   removeLogListener(serverId: string, listener: (log: LogEntry) => void): void {
     const listeners = this.logListeners.get(serverId);
@@ -129,7 +129,7 @@ export class LogStorageService {
   }
 
   /**
-   * 通知监听器
+   * Notify listeners
    */
   private notifyListeners(serverId: string, log: LogEntry): void {
     const listeners = this.logListeners.get(serverId);
@@ -147,7 +147,7 @@ export class LogStorageService {
   }
 
   /**
-   * 获取所有有日志的服务器ID
+   * Get all server IDs with logs
    */
   getServersWithLogs(): string[] {
     return Array.from(this.serverLogs.keys());
