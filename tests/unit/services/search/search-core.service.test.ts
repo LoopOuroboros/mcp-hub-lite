@@ -30,9 +30,12 @@ describe('SearchCoreService', () => {
     searchService = new SearchCoreService();
 
     // 模拟 mcpConnectionManager.getAllTools()
-    mockGetAllTools = vi.spyOn(
-      searchService as unknown as { getToolsWithCache: () => Promise<Tool[]> }, 'getToolsWithCache'
-    ).mockImplementation(async () => mockTools);
+    mockGetAllTools = vi
+      .spyOn(
+        searchService as unknown as { getToolsWithCache: () => Promise<Tool[]> },
+        'getToolsWithCache'
+      )
+      .mockImplementation(async () => mockTools);
   });
 
   describe('search()', () => {
@@ -41,7 +44,7 @@ describe('SearchCoreService', () => {
 
       expect(results).toBeInstanceOf(Array);
       expect(results.length).toBe(3);
-      expect(results.every(r => r.score === 1)).toBe(true);
+      expect(results.every((r) => r.score === 1)).toBe(true);
     });
 
     it('should search tools by exact name match', async () => {
@@ -57,10 +60,8 @@ describe('SearchCoreService', () => {
 
       expect(results).toBeInstanceOf(Array);
       expect(results.length).toBe(2);
-      expect(results.every(r => r.tool.name.includes('Query'))).toBe(true);
+      expect(results.every((r) => r.tool.name.includes('Query'))).toBe(true);
     });
-
-
 
     it('should respect limit and offset parameters', async () => {
       const results = await searchService.search('', {

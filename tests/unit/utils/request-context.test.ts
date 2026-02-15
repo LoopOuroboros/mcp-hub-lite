@@ -70,13 +70,13 @@ describe('Request Context', () => {
 
     const operation1 = requestContext.run(context1, async () => {
       // 模拟异步操作
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       result1 = getClientCwd();
     });
 
     const operation2 = requestContext.run(context2, async () => {
       // 模拟异步操作
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
       result2 = getClientCwd();
     });
 

@@ -80,7 +80,9 @@ export class WebSocketHandler {
           this.handleFetchLogs(message);
           break;
         default:
-          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, { subModule: 'WebSocket' });
+          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, {
+            subModule: 'WebSocket'
+          });
       }
     } catch (error) {
       logger.error(`Failed to parse WebSocket message: ${error}`, { subModule: 'WebSocket' });
@@ -110,7 +112,7 @@ export class WebSocketHandler {
    * 处理订阅事件
    */
   private handleSubscribe(message: SubscribeMessage): void {
-    message.eventTypes.forEach(eventType => {
+    message.eventTypes.forEach((eventType) => {
       // 将 WebSocket 事件类型映射到内部事件类型
       const internalEventType = Object.entries(eventTypeMap).find(
         ([, wsType]) => wsType === eventType
@@ -132,14 +134,17 @@ export class WebSocketHandler {
       }
     });
 
-    logger.info(`Subscribed to events: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`, { subModule: 'WebSocket' });
+    logger.info(
+      `Subscribed to events: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`,
+      { subModule: 'WebSocket' }
+    );
   }
 
   /**
    * 处理取消订阅事件
    */
   private handleUnsubscribe(message: UnsubscribeMessage): void {
-    message.eventTypes.forEach(eventType => {
+    message.eventTypes.forEach((eventType) => {
       // 将 WebSocket 事件类型映射到内部事件类型
       const internalEventType = Object.entries(eventTypeMap).find(
         ([, wsType]) => wsType === eventType
@@ -154,7 +159,10 @@ export class WebSocketHandler {
       }
     });
 
-    logger.info(`Remaining subscriptions: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`, { subModule: 'WebSocket' });
+    logger.info(
+      `Remaining subscriptions: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`,
+      { subModule: 'WebSocket' }
+    );
   }
 
   /**
@@ -165,7 +173,7 @@ export class WebSocketHandler {
     this.stopHeartbeat();
 
     // 取消所有订阅
-    this.subscriptions.forEach(unsubscribe => {
+    this.subscriptions.forEach((unsubscribe) => {
       unsubscribe();
     });
     this.subscriptions.clear();

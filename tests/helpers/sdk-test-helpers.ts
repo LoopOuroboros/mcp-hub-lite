@@ -45,7 +45,11 @@ export class MockMcpServer {
         this.server.server.setRequestHandler(schema, async (request: ServerRequest) => {
           // Safely extract arguments from request params
           let args: unknown = undefined;
-          if (request.params && typeof request.params === 'object' && 'arguments' in request.params) {
+          if (
+            request.params &&
+            typeof request.params === 'object' &&
+            'arguments' in request.params
+          ) {
             args = (request.params as { arguments?: unknown }).arguments;
           }
           const result = await tool.handler(args);
@@ -57,10 +61,12 @@ export class MockMcpServer {
             };
           } else {
             return {
-              content: [{
-                type: 'text',
-                text: String(result)
-              }]
+              content: [
+                {
+                  type: 'text',
+                  text: String(result)
+                }
+              ]
             };
           }
         });

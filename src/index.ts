@@ -11,10 +11,7 @@ import { LogRotator } from '@utils/log-rotator.js';
 
 const program = new Command();
 
-program
-  .name('mcp-hub-lite')
-  .description('MCP Hub Lite CLI')
-  .version('0.0.1');
+program.name('mcp-hub-lite').description('MCP Hub Lite CLI').version('0.0.1');
 
 program
   .command('start')
@@ -63,7 +60,9 @@ program
             clearInterval(checkPid);
             const pid = PidManager.getPid();
             console.log(`✓ Server started successfully (PID: ${pid})`);
-            console.log(`\nAccess the web UI at: http://${options.host || 'localhost'}:${options.port || 7788}`);
+            console.log(
+              `\nAccess the web UI at: http://${options.host || 'localhost'}:${options.port || 7788}`
+            );
             resolve();
             return;
           }
@@ -125,18 +124,18 @@ program
     const config = configManager.getConfig();
     const url = `http://${config.system.host}:${config.system.port}/web/servers`;
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const servers = await response.json();
-        console.table(servers);
-        process.exit(0);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const servers = await response.json();
+      console.table(servers);
+      process.exit(0);
     } catch (error) {
-        console.error('Failed to list servers:', (error as Error).message);
-        console.error('Is the server running?');
-        process.exit(1);
+      console.error('Failed to list servers:', (error as Error).message);
+      console.error('Is the server running?');
+      process.exit(1);
     }
   });
 
@@ -165,20 +164,24 @@ program
     console.log(`${colors.cyan}Process ID:${colors.reset} ${isRunning ? pid : 'Not running'}`);
     console.log(`${colors.cyan}Port:${colors.reset} ${config.system.port}`);
     console.log(`${colors.cyan}Host:${colors.reset} ${config.system.host}`);
-    console.log(`${colors.cyan}Status:${colors.reset} ${isRunning ? `${colors.green}Running${colors.reset}` : `${colors.red}Stopped${colors.reset}`}`);
+    console.log(
+      `${colors.cyan}Status:${colors.reset} ${isRunning ? `${colors.green}Running${colors.reset}` : `${colors.red}Stopped${colors.reset}`}`
+    );
     console.log('');
 
     // Display MCP connection example
     console.log(`${colors.bold}MCP Integration:${colors.reset}`);
     console.log('================');
-    console.log(`${colors.yellow}Endpoint:${colors.reset} http://${config.system.host}:${config.system.port}/mcp`);
+    console.log(
+      `${colors.yellow}Endpoint:${colors.reset} http://${config.system.host}:${config.system.port}/mcp`
+    );
     console.log(`${colors.yellow}Transport:${colors.reset} HTTP-Stream`);
     console.log('');
     const mcpClientConfig = {
-      "mcpServers": {
-        "mcp-hub-lite": {
-          "type": "http",
-          "url": `http://${config.system.host}:${config.system.port}/mcp`
+      mcpServers: {
+        'mcp-hub-lite': {
+          type: 'http',
+          url: `http://${config.system.host}:${config.system.port}/mcp`
         }
       }
     };
@@ -193,7 +196,10 @@ program
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
-        const servers = await response.json() as Array<{ name: string; config: Record<string, unknown> }>;
+        const servers = (await response.json()) as Array<{
+          name: string;
+          config: Record<string, unknown>;
+        }>;
 
         if (servers.length > 0) {
           console.log(`${colors.bold}Managed MCP Servers:${colors.reset}`);
@@ -249,18 +255,19 @@ program
     // 1. Stop
     const pid = PidManager.getPid();
     if (pid) {
-        try {
-            console.log(`Stopping server (PID: ${pid})...`);
-            process.kill(pid, 'SIGTERM');
-            // Simple wait loop
-            let tries = 0;
-            while (PidManager.isRunning() && tries < 10) {
-                await new Promise(r => setTimeout(r, 500));
-                tries++;
-            }
-        } catch (error) {
-             if ((error as NodeJS.ErrnoException).code !== 'ESRCH') console.error('Error stopping:', (error as Error).message);
+      try {
+        console.log(`Stopping server (PID: ${pid})...`);
+        process.kill(pid, 'SIGTERM');
+        // Simple wait loop
+        let tries = 0;
+        while (PidManager.isRunning() && tries < 10) {
+          await new Promise((r) => setTimeout(r, 500));
+          tries++;
         }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH')
+          console.error('Error stopping:', (error as Error).message);
+      }
     }
 
     // 2. Start
@@ -274,18 +281,18 @@ program
     const childArgs = isNode ? [process.argv[1], ...args] : [...args];
 
     try {
-        const child = spawn(process.argv[0], childArgs, {
-            detached: false,
-            stdio: 'inherit',
-            cwd: process.cwd() // Ensure we run in same directory
-        });
+      const child = spawn(process.argv[0], childArgs, {
+        detached: false,
+        stdio: 'inherit',
+        cwd: process.cwd() // Ensure we run in same directory
+      });
 
-        child.on('close', (code) => {
-           process.exit(code || 0);
-        });
+      child.on('close', (code) => {
+        process.exit(code || 0);
+      });
     } catch (e) {
-        console.error('Failed to restart server:', (e as Error).message);
-        process.exit(1);
+      console.error('Failed to restart server:', (e as Error).message);
+      process.exit(1);
     }
   });
 
@@ -297,7 +304,8 @@ program
     const url = `http://${config.system.host}:${config.system.port}`;
     console.log(`Opening Web UI at ${url}...`);
     const { exec } = await import('child_process');
-    const start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
+    const start =
+      process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open';
     exec(`${start} ${url}`, (error) => {
       if (error) {
         console.error('Failed to open browser:', error.message);
@@ -309,19 +317,18 @@ program
     });
   });
 
-
 // Handle default execution (if no args provided, maybe just show help or start?)
-// For now, if no args, we default to help. 
-// But existing behavior was "start server". 
+// For now, if no args, we default to help.
+// But existing behavior was "start server".
 // To keep backward compatibility or easy usage:
 if (process.argv.length === 2) {
-    // No args provided. We can default to start?
-    // Usually CLI tools show help.
-    // But since this IS the server binary, maybe defaulting to start is better if it's meant to be run as `npm start`.
-    // Let's check package.json scripts. "start": "npm start" -> "node dist/index.js".
-    // If I change it to require "start" subcommand, `npm start` will fail unless I update package.json.
-    // I should update package.json script to "mcp-hub-lite start" or handle default.
-    // I'll update package.json script later. For now, let's make it show help.
+  // No args provided. We can default to start?
+  // Usually CLI tools show help.
+  // But since this IS the server binary, maybe defaulting to start is better if it's meant to be run as `npm start`.
+  // Let's check package.json scripts. "start": "npm start" -> "node dist/index.js".
+  // If I change it to require "start" subcommand, `npm start` will fail unless I update package.json.
+  // I should update package.json script to "mcp-hub-lite start" or handle default.
+  // I'll update package.json script later. For now, let's make it show help.
 }
 
 program.parse();

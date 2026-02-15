@@ -20,6 +20,7 @@ stores/
 **职责**: 管理 MCP 服务器的状态和操作
 
 **State**:
+
 ```typescript
 {
   servers: Server[]              // 服务器列表
@@ -30,10 +31,12 @@ stores/
 ```
 
 **Computed**:
+
 - `selectedServer` - 当前选中的服务器
 - `stats` - 统计信息（总数、运行数、错误数）
 
 **Actions**:
+
 - `fetchServers()` - 获取所有服务器
 - `addServer(serverData)` - 添加新服务器
 - `updateServer(id, serverData)` - 更新服务器
@@ -49,44 +52,47 @@ stores/
 ## 数据模型
 
 ### Server Config
+
 ```typescript
 export interface ServerConfig {
-  transport: 'stdio' | 'sse' | 'streamable-http'
-  command?: string
-  args?: string[]
-  url?: string
-  env?: Record<string, string>
-  timeout?: number
-  enabled?: boolean
+  transport: 'stdio' | 'sse' | 'streamable-http';
+  command?: string;
+  args?: string[];
+  url?: string;
+  env?: Record<string, string>;
+  timeout?: number;
+  enabled?: boolean;
 }
 ```
 
 ### Log Entry
+
 ```typescript
 export interface LogEntry {
-  timestamp: number
-  level: 'debug' | 'info' | 'warn' | 'error'
-  message: string
+  timestamp: number;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
 }
 ```
 
 ### Server
+
 ```typescript
 export interface Server {
-  id: string
-  name: string
-  status: 'running' | 'stopped' | 'error'
-  type: 'local' | 'remote'
-  config: ServerConfig
-  logs: LogEntry[]
-  uptime?: string
-  startTime?: number
-  pid?: number
-  tools?: any[]
-  resources?: any[]
-  toolsCount?: number
-  resourcesCount?: number
-  version?: string
+  id: string;
+  name: string;
+  status: 'running' | 'stopped' | 'error';
+  type: 'local' | 'remote';
+  config: ServerConfig;
+  logs: LogEntry[];
+  uptime?: string;
+  startTime?: number;
+  pid?: number;
+  tools?: any[];
+  resources?: any[];
+  toolsCount?: number;
+  resourcesCount?: number;
+  version?: string;
 }
 ```
 
@@ -105,12 +111,14 @@ stores/
 **状态**: 已实现 Server Store 基础测试
 
 **已实现测试**:
+
 - Store 初始化测试（空服务器数组、加载状态、错误状态）
 - 计算属性测试（stats 统计信息、选中服务器）
 - Action 功能测试（fetchServers、addServer、updateServerStatus）
 - 错误处理测试（网络错误处理）
 
 **建议测试**:
+
 - 完整的 Action 测试覆盖（startServer、stopServer、deleteServer 等）
 - WebSocket 相关功能测试
 - 复杂场景的集成测试
@@ -127,11 +135,12 @@ A: 使用 `useServerStore()` 获取 store 实例。
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-|---------|------|
+| 文件路径           | 描述           |
+| ------------------ | -------------- |
 | `stores/server.ts` | 服务器状态管理 |
 
 ## 变更记录 (Changelog)
 
 ### 2026-01-19
+
 - 初始化 Stores 模块文档

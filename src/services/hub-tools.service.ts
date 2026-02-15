@@ -34,18 +34,23 @@ import type {
 
 // 请求选项接口
 export interface RequestOptions {
-  sessionId?: string;  // 会话 ID（用于选择特定实例）
-  tags?: Record<string, string>;  // 标签（后续支持）
+  sessionId?: string; // 会话 ID（用于选择特定实例）
+  tags?: Record<string, string>; // 标签（后续支持）
   // 未来可能添加的选项
   // clientId?: string;  // 客户端 ID（用于选择专属实例）
 }
 
 // 根据服务器名称和请求选项选择最佳实例
-function selectBestInstance(serverName: string, requestOptions?: RequestOptions): {
-  name: string;
-  config: ServerConfig;
-  instance: ServerInstanceConfig & Record<string, unknown>;
-} | undefined {
+function selectBestInstance(
+  serverName: string,
+  requestOptions?: RequestOptions
+):
+  | {
+      name: string;
+      config: ServerConfig;
+      instance: ServerInstanceConfig & Record<string, unknown>;
+    }
+  | undefined {
   // 获取服务器的所有实例
   const instances = hubManager.getServerInstanceByName(serverName);
 
@@ -90,7 +95,7 @@ function selectBestInstance(serverName: string, requestOptions?: RequestOptions)
   return {
     name: serverName,
     config: serverConfig,
-    instance: instances[0]  // 后续扩展为智能选择逻辑
+    instance: instances[0] // 后续扩展为智能选择逻辑
   };
 }
 
@@ -153,7 +158,11 @@ export class HubToolsService {
               type: 'object',
               properties: {
                 pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                searchIn: {
+                  type: 'string',
+                  enum: ['name', 'description', 'both'],
+                  default: 'both'
+                },
                 caseSensitive: { type: 'boolean', default: false }
               },
               required: ['pattern']
@@ -203,7 +212,11 @@ export class HubToolsService {
               properties: {
                 serverName: { type: 'string', description: 'Name of the MCP server' },
                 pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                searchIn: {
+                  type: 'string',
+                  enum: ['name', 'description', 'both'],
+                  default: 'both'
+                },
                 caseSensitive: { type: 'boolean', default: false },
                 requestOptions: {
                   type: 'object',
@@ -289,7 +302,11 @@ export class HubToolsService {
               type: 'object',
               properties: {
                 pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: { type: 'string', enum: ['name', 'description', 'both'], default: 'both' },
+                searchIn: {
+                  type: 'string',
+                  enum: ['name', 'description', 'both'],
+                  default: 'both'
+                },
                 caseSensitive: { type: 'boolean', default: false }
               },
               required: ['pattern']
@@ -318,7 +335,7 @@ export class HubToolsService {
    */
   async listServers(): Promise<string[]> {
     const servers = hubManager.getAllServers();
-    return servers.filter(hasValidId).map(server => server.name);
+    return servers.filter(hasValidId).map((server) => server.name);
   }
 
   /**
@@ -337,11 +354,13 @@ export class HubToolsService {
     const validServers = allServers.filter(hasValidId);
     const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
-    return validServers.filter(server => {
-      const matchName = searchIn !== 'description' && regex.test(server.name);
-      const matchDescription = searchIn !== 'name' && server.name && regex.test(server.name); // Using name as fallback if no description
-      return matchName || matchDescription;
-    }).map(server => server.name);
+    return validServers
+      .filter((server) => {
+        const matchName = searchIn !== 'description' && regex.test(server.name);
+        const matchDescription = searchIn !== 'name' && server.name && regex.test(server.name); // Using name as fallback if no description
+        return matchName || matchDescription;
+      })
+      .map((server) => server.name);
   }
 
   /**
@@ -349,7 +368,10 @@ export class HubToolsService {
    * @param serverName Name of the MCP server to list tools from
    * @returns List of tools from the specified server
    */
-  async listAllToolsInServer(serverName: string, requestOptions?: RequestOptions): Promise<{
+  async listAllToolsInServer(
+    serverName: string,
+    requestOptions?: RequestOptions
+  ): Promise<{
     serverName: string;
     tools: Tool[];
   }> {
@@ -360,7 +382,7 @@ export class HubToolsService {
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
 
       // 转换为 Tool 格式
-      const tools: Tool[] = gatewayTools.map(tool => ({
+      const tools: Tool[] = gatewayTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -420,9 +442,10 @@ export class HubToolsService {
     const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
     const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
-    const matchingTools = tools.filter(tool => {
+    const matchingTools = tools.filter((tool) => {
       const matchName = searchIn !== 'description' && regex.test(tool.name);
-      const matchDescription = searchIn !== 'name' && tool.description && regex.test(tool.description);
+      const matchDescription =
+        searchIn !== 'name' && tool.description && regex.test(tool.description);
       return matchName || matchDescription;
     });
 
@@ -439,7 +462,11 @@ export class HubToolsService {
    * @param requestOptions Request options for instance selection
    * @returns Complete tool schema
    */
-  async getTool(serverName: string, toolName: string, requestOptions?: RequestOptions): Promise<Tool | undefined> {
+  async getTool(
+    serverName: string,
+    toolName: string,
+    requestOptions?: RequestOptions
+  ): Promise<Tool | undefined> {
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
     if (!serverInfo) {
@@ -447,7 +474,7 @@ export class HubToolsService {
     }
 
     const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
-    return tools.find(tool => tool.name === toolName);
+    return tools.find((tool) => tool.name === toolName);
   }
 
   /**
@@ -458,25 +485,41 @@ export class HubToolsService {
    */
   async callSystemTool<T extends SystemToolName>(
     toolName: T,
-    toolArgs: T extends typeof LIST_SERVERS_TOOL ? ListServersParams :
-              T extends typeof FIND_SERVERS_TOOL ? FindServersParams :
-              T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? ListAllToolsInServerParams :
-              T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? FindToolsInServerParams :
-              T extends typeof GET_TOOL_TOOL ? GetToolParams :
-              T extends typeof CALL_TOOL_TOOL ? CallToolParams :
-              T extends typeof FIND_TOOLS_TOOL ? FindToolsParams :
-              never
+    toolArgs: T extends typeof LIST_SERVERS_TOOL
+      ? ListServersParams
+      : T extends typeof FIND_SERVERS_TOOL
+        ? FindServersParams
+        : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
+          ? ListAllToolsInServerParams
+          : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
+            ? FindToolsInServerParams
+            : T extends typeof GET_TOOL_TOOL
+              ? GetToolParams
+              : T extends typeof CALL_TOOL_TOOL
+                ? CallToolParams
+                : T extends typeof FIND_TOOLS_TOOL
+                  ? FindToolsParams
+                  : never
   ): Promise<
-    T extends typeof LIST_SERVERS_TOOL ? ServerConfig[] :
-    T extends typeof FIND_SERVERS_TOOL ? ServerConfig[] :
-    T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? Tool[] :
-    T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? Tool[] :
-    T extends typeof GET_TOOL_TOOL ? Tool | undefined :
-    T extends typeof CALL_TOOL_TOOL ? unknown :
-    T extends typeof FIND_TOOLS_TOOL ? Tool[] :
-    never
+    T extends typeof LIST_SERVERS_TOOL
+      ? ServerConfig[]
+      : T extends typeof FIND_SERVERS_TOOL
+        ? ServerConfig[]
+        : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
+          ? Tool[]
+          : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
+            ? Tool[]
+            : T extends typeof GET_TOOL_TOOL
+              ? Tool | undefined
+              : T extends typeof CALL_TOOL_TOOL
+                ? unknown
+                : T extends typeof FIND_TOOLS_TOOL
+                  ? Tool[]
+                  : never
   > {
-    logger.info(`System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`, { subModule: 'HUB-TOOLS' });
+    logger.info(`System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`, {
+      subModule: 'HUB-TOOLS'
+    });
 
     try {
       let result;
@@ -495,7 +538,10 @@ export class HubToolsService {
         }
         case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
           const listAllToolsArgs = toolArgs as ListAllToolsInServerParams;
-          result = await this.listAllToolsInServer(listAllToolsArgs.serverName, listAllToolsArgs.requestOptions);
+          result = await this.listAllToolsInServer(
+            listAllToolsArgs.serverName,
+            listAllToolsArgs.requestOptions
+          );
           break;
         }
         case FIND_TOOLS_IN_SERVER_TOOL: {
@@ -511,7 +557,11 @@ export class HubToolsService {
         }
         case GET_TOOL_TOOL: {
           const getToolArgs = toolArgs as GetToolParams;
-          result = await this.getTool(getToolArgs.serverName, getToolArgs.toolName, getToolArgs.requestOptions);
+          result = await this.getTool(
+            getToolArgs.serverName,
+            getToolArgs.toolName,
+            getToolArgs.requestOptions
+          );
           break;
         }
         case CALL_TOOL_TOOL: {
@@ -543,16 +593,27 @@ export class HubToolsService {
 
       logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
       // Type assertion based on toolName to match the expected return type
-      return result as T extends typeof LIST_SERVERS_TOOL ? ServerConfig[] :
-        T extends typeof FIND_SERVERS_TOOL ? ServerConfig[] :
-        T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL ? Tool[] :
-        T extends typeof FIND_TOOLS_IN_SERVER_TOOL ? Tool[] :
-        T extends typeof GET_TOOL_TOOL ? Tool | undefined :
-        T extends typeof CALL_TOOL_TOOL ? unknown :
-        T extends typeof FIND_TOOLS_TOOL ? Tool[] :
-        never;
+      return result as T extends typeof LIST_SERVERS_TOOL
+        ? ServerConfig[]
+        : T extends typeof FIND_SERVERS_TOOL
+          ? ServerConfig[]
+          : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
+            ? Tool[]
+            : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
+              ? Tool[]
+              : T extends typeof GET_TOOL_TOOL
+                ? Tool | undefined
+                : T extends typeof CALL_TOOL_TOOL
+                  ? unknown
+                  : T extends typeof FIND_TOOLS_TOOL
+                    ? Tool[]
+                    : never;
     } catch (error) {
-      logger.error(`System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, { subModule: 'HUB-TOOLS' });
+      logger.error(
+        `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+        error,
+        { subModule: 'HUB-TOOLS' }
+      );
       throw error;
     }
   }
@@ -564,13 +625,21 @@ export class HubToolsService {
    * @param toolArgs Arguments to pass to the tool
    * @returns Result of the tool call
    */
-  async callTool(serverName: string, toolName: string, toolArgs: Record<string, unknown>, requestOptions?: RequestOptions): Promise<unknown> {
+  async callTool(
+    serverName: string,
+    toolName: string,
+    toolArgs: Record<string, unknown>,
+    requestOptions?: RequestOptions
+  ): Promise<unknown> {
     // 处理 MCP Hub Lite 服务器（系统工具调用）
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
     }
 
-    logger.info(`Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`, { subModule: 'HUB-TOOLS' });
+    logger.info(
+      `Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`,
+      { subModule: 'HUB-TOOLS' }
+    );
 
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
@@ -605,7 +674,9 @@ export class HubToolsService {
         result
       });
 
-      logger.info(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, { subModule: 'HUB-TOOLS' });
+      logger.info(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, {
+        subModule: 'HUB-TOOLS'
+      });
       return result;
     } catch (error) {
       // 发布工具调用错误事件
@@ -619,7 +690,11 @@ export class HubToolsService {
         stack: error instanceof Error ? error.stack : undefined
       });
 
-      logger.error(`Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, { subModule: 'HUB-TOOLS' });
+      logger.error(
+        `Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+        error,
+        { subModule: 'HUB-TOOLS' }
+      );
       throw error;
     }
   }
@@ -628,14 +703,19 @@ export class HubToolsService {
    * List all available tools from all connected servers including system tools
    * @returns All tools grouped by server name
    */
-  async listAllTools(): Promise<Record<string, {
-    tools: Tool[];
-  }>> {
+  async listAllTools(): Promise<
+    Record<
+      string,
+      {
+        tools: Tool[];
+      }
+    >
+  > {
     const servers = hubManager.getAllServers();
     const allTools: Record<string, { tools: Tool[] }> = {};
 
     // Add system tools under mcp-hub-lite server
-    const systemTools = this.getSystemTools().map(tool => ({
+    const systemTools = this.getSystemTools().map((tool) => ({
       ...tool,
       description: `[System] ${tool.description}`,
       serverName: MCP_HUB_LITE_SERVER
@@ -674,18 +754,24 @@ export class HubToolsService {
     pattern: string,
     searchIn: 'name' | 'description' | 'both' = 'both',
     caseSensitive: boolean = false
-  ): Promise<Record<string, {
-    tools: Tool[];
-  }>> {
+  ): Promise<
+    Record<
+      string,
+      {
+        tools: Tool[];
+      }
+    >
+  > {
     const allTools = await this.listAllTools();
     const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
     const matchingTools: Record<string, { tools: Tool[] }> = {};
 
     for (const [serverName, serverData] of Object.entries(allTools)) {
-      const filteredTools = serverData.tools.filter(tool => {
+      const filteredTools = serverData.tools.filter((tool) => {
         const matchName = searchIn !== 'description' && regex.test(tool.name);
-        const matchDescription = searchIn !== 'name' && tool.description && regex.test(tool.description);
+        const matchDescription =
+          searchIn !== 'name' && tool.description && regex.test(tool.description);
         return matchName || matchDescription;
       });
 
@@ -772,7 +858,23 @@ export class HubToolsService {
    * @param uri Resource URI to read (e.g., hub://servers/server-name)
    * @returns Resource content as JSON string or object
    */
-  async readResource(uri: string): Promise<{ name: string; status: ServerStatus; toolsCount: number; resourcesCount: number; tags: Record<string, string>; lastHeartbeat: number; uptime: number; type: ServerTransport; enabled: boolean } | Tool[] | Resource[]> {
+  async readResource(
+    uri: string
+  ): Promise<
+    | {
+        name: string;
+        status: ServerStatus;
+        toolsCount: number;
+        resourcesCount: number;
+        tags: Record<string, string>;
+        lastHeartbeat: number;
+        uptime: number;
+        type: ServerTransport;
+        enabled: boolean;
+      }
+    | Tool[]
+    | Resource[]
+  > {
     // Validate URI format
     if (!uri.startsWith('hub://')) {
       throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
@@ -823,7 +925,6 @@ export class HubToolsService {
       throw new Error(`Unknown resource type: ${resourceType}`);
     }
   }
-
 }
 
 export const hubToolsService = new HubToolsService();

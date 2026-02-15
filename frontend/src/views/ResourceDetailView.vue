@@ -1,5 +1,7 @@
 <template>
-  <div class="resource-detail py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden">
+  <div
+    class="resource-detail py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden"
+  >
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 shrink-0">
       <div class="flex items-center gap-4">
@@ -14,7 +16,9 @@
 
     <div v-loading="loading" class="flex-1 flex flex-col gap-6 overflow-hidden">
       <!-- Meta Info Card -->
-      <div class="bg-white dark:bg-[#1e1e1e] rounded-lg shadow p-6 shrink-0 border border-gray-200 dark:border-gray-700">
+      <div
+        class="bg-white dark:bg-[#1e1e1e] rounded-lg shadow p-6 shrink-0 border border-gray-200 dark:border-gray-700"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">URI</div>
@@ -32,8 +36,12 @@
       </div>
 
       <!-- Content Preview Card -->
-      <div class="bg-white dark:bg-[#1e1e1e] rounded-lg shadow flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-[#2d2d2d]">
+      <div
+        class="bg-white dark:bg-[#1e1e1e] rounded-lg shadow flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700"
+      >
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-[#2d2d2d]"
+        >
           <div class="font-medium">Content Preview</div>
           <div class="flex gap-2">
             <el-radio-group v-model="viewMode" size="small">
@@ -55,30 +63,41 @@
           </div>
 
           <!-- Error State -->
-          <div v-else-if="error" class="h-full flex flex-col items-center justify-center text-red-500">
+          <div
+            v-else-if="error"
+            class="h-full flex flex-col items-center justify-center text-red-500"
+          >
             <el-icon class="text-4xl mb-2"><Warning /></el-icon>
             <div>{{ error }}</div>
           </div>
 
           <!-- Content Display -->
           <div v-else class="h-full">
-             <!-- Preview Mode -->
-             <div v-if="viewMode === 'preview'" class="h-full">
-                <div v-if="isImage" class="h-full flex items-center justify-center">
-                   <img :src="imageSrc" class="max-w-full max-h-full object-contain rounded shadow-lg" />
-                </div>
-                <!--
+            <!-- Preview Mode -->
+            <div v-if="viewMode === 'preview'" class="h-full">
+              <div v-if="isImage" class="h-full flex items-center justify-center">
+                <img
+                  :src="imageSrc"
+                  class="max-w-full max-h-full object-contain rounded shadow-lg"
+                />
+              </div>
+              <!--
                 <div v-else-if="isMarkdown" class="prose dark:prose-invert max-w-none bg-white dark:bg-[#1e1e1e] p-8 rounded shadow-sm min-h-full" v-html="renderedMarkdown"></div>
                 -->
-                <div v-else class="bg-white dark:bg-[#1e1e1e] p-4 rounded shadow-sm h-full overflow-auto font-mono text-sm whitespace-pre-wrap">
-                   {{ contentText }}
-                </div>
-             </div>
+              <div
+                v-else
+                class="bg-white dark:bg-[#1e1e1e] p-4 rounded shadow-sm h-full overflow-auto font-mono text-sm whitespace-pre-wrap"
+              >
+                {{ contentText }}
+              </div>
+            </div>
 
-             <!-- Source Mode -->
-             <div v-else class="h-full">
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg h-full overflow-auto font-mono text-sm"><code>{{ contentText }}</code></pre>
-             </div>
+            <!-- Source Mode -->
+            <div v-else class="h-full">
+              <pre
+                class="bg-gray-900 text-gray-100 p-4 rounded-lg h-full overflow-auto font-mono text-sm"
+              ><code>{{ contentText }}</code></pre>
+            </div>
           </div>
         </div>
       </div>
@@ -87,49 +106,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, View, Document, Download, Warning } from '@element-plus/icons-vue'
-import { useServerStore } from '@stores/server'
+import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ArrowLeft, View, Document, Download, Warning } from '@element-plus/icons-vue';
+import { useServerStore } from '@stores/server';
 
-const route = useRoute()
-const router = useRouter()
-const store = useServerStore()
+const route = useRoute();
+const router = useRouter();
+const store = useServerStore();
 
-const serverName = computed(() => route.params.name as string)
-const resourceUri = computed(() => route.query.uri as string)
-const resourceName = computed(() => route.query.name as string || 'Unknown Resource')
-const resourceMimeType = computed(() => route.query.mimeType as string || 'application/octet-stream')
+const serverName = computed(() => route.params.name as string);
+const resourceUri = computed(() => route.query.uri as string);
+const resourceName = computed(() => (route.query.name as string) || 'Unknown Resource');
+const resourceMimeType = computed(
+  () => (route.query.mimeType as string) || 'application/octet-stream'
+);
 
-const loading = ref(false)
-const error = ref<string | null>(null)
-const content = ref<unknown>(null)
-const viewMode = ref('preview')
+const loading = ref(false);
+const error = ref<string | null>(null);
+const content = ref<unknown>(null);
+const viewMode = ref('preview');
 
-const isImage = computed(() => resourceMimeType.value.startsWith('image/'))
+const isImage = computed(() => resourceMimeType.value.startsWith('image/'));
 // const isMarkdown = computed(() => resourceMimeType.value === 'text/markdown' || resourceName.value.endsWith('.md'))
 
 const contentText = computed(() => {
-  if (!content.value) return ''
+  if (!content.value) return '';
   const contentVal = content.value as Record<string, unknown> | null;
-  if (contentVal && typeof contentVal === 'object' && 'text' in contentVal && typeof contentVal.text === 'string') {
-    return contentVal.text
+  if (
+    contentVal &&
+    typeof contentVal === 'object' &&
+    'text' in contentVal &&
+    typeof contentVal.text === 'string'
+  ) {
+    return contentVal.text;
   }
   if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal) {
-    return '[Binary Data]' // Should handle base64 if needed
+    return '[Binary Data]'; // Should handle base64 if needed
   }
-  return ''
-})
+  return '';
+});
 
 const imageSrc = computed(() => {
-  if (!isImage.value || !content.value) return ''
+  if (!isImage.value || !content.value) return '';
   const contentVal = content.value as Record<string, unknown> | null;
-  if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal && typeof contentVal.blob === 'string') {
-    return `data:${resourceMimeType.value};base64,${contentVal.blob}`
+  if (
+    contentVal &&
+    typeof contentVal === 'object' &&
+    'blob' in contentVal &&
+    typeof contentVal.blob === 'string'
+  ) {
+    return `data:${resourceMimeType.value};base64,${contentVal.blob}`;
   }
   // Fallback if we somehow got text for an image (unlikely but possible with some MCP servers)
-  return ''
-})
+  return '';
+});
 
 /*
 const renderedMarkdown = computed(() => {
@@ -143,51 +174,56 @@ const renderedMarkdown = computed(() => {
 */
 
 function navigateBack() {
-  router.back()
+  router.back();
 }
 
 async function loadContent() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
-    content.value = await store.readResource(serverName.value, resourceUri.value)
+    content.value = await store.readResource(serverName.value, resourceUri.value);
   } catch (e) {
-    error.value = (e as Error).message || 'Failed to load resource content'
+    error.value = (e as Error).message || 'Failed to load resource content';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function downloadResource() {
-  const element = document.createElement('a')
-  const file = new Blob([contentText.value], {type: resourceMimeType.value})
+  const element = document.createElement('a');
+  const file = new Blob([contentText.value], { type: resourceMimeType.value });
 
   const contentVal = content.value as Record<string, unknown> | null;
-  if (contentVal && typeof contentVal === 'object' && 'blob' in contentVal && typeof contentVal.blob === 'string') {
-      // Handle binary download
-      const byteCharacters = atob(contentVal.blob);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], {type: resourceMimeType.value});
-      element.href = URL.createObjectURL(blob);
+  if (
+    contentVal &&
+    typeof contentVal === 'object' &&
+    'blob' in contentVal &&
+    typeof contentVal.blob === 'string'
+  ) {
+    // Handle binary download
+    const byteCharacters = atob(contentVal.blob);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: resourceMimeType.value });
+    element.href = URL.createObjectURL(blob);
   } else {
-      element.href = URL.createObjectURL(file)
+    element.href = URL.createObjectURL(file);
   }
-  
-  element.download = resourceName.value
-  document.body.appendChild(element)
-  element.click()
-  document.body.removeChild(element)
+
+  element.download = resourceName.value;
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
 }
 
 onMounted(() => {
   if (resourceUri.value) {
-    loadContent()
+    loadContent();
   }
-})
+});
 </script>
 
 <style scoped>

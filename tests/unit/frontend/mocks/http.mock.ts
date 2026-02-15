@@ -4,4 +4,4 @@ export const http = {
   post: vi.fn(),
   put: vi.fn(),
   delete: vi.fn()
-}
+};

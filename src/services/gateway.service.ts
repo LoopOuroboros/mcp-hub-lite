@@ -1,16 +1,22 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
-import { mcpConnectionManager } from "./mcp-connection-manager.js";
-import { hubManager } from "./hub-manager.service.js";
-import { logger, withSpan, createMcpSpanOptions } from "@utils/index.js";
-import { z } from "zod";
-import { searchCoreService } from "./search/search-core.service.js";
-import { SearchOptions } from "./search/types.js";
-import { hubToolsService } from "./hub-tools.service.js";
-import { getClientCwd, getClientContext } from "@utils/request-context.js";
-import { clientTrackerService } from "./client-tracker.service.js";
-import type { JsonSchema } from "@shared-models/tool.model.js";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  McpError
+} from '@modelcontextprotocol/sdk/types.js';
+import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { hubManager } from './hub-manager.service.js';
+import { logger, withSpan, createMcpSpanOptions } from '@utils/index.js';
+import { z } from 'zod';
+import { searchCoreService } from './search/search-core.service.js';
+import { SearchOptions } from './search/types.js';
+import { hubToolsService } from './hub-tools.service.js';
+import { getClientCwd, getClientContext } from '@utils/request-context.js';
+import { clientTrackerService } from './client-tracker.service.js';
+import type { JsonSchema } from '@shared-models/tool.model.js';
 import {
   SYSTEM_TOOL_NAMES,
   SystemToolName,
@@ -28,7 +34,7 @@ import {
   type GetToolParams,
   type CallToolParams,
   type FindToolsParams
-} from "@models/system-tools.constants.js";
+} from '@models/system-tools.constants.js';
 
 export class GatewayService {
   private server: McpServer;
@@ -40,13 +46,13 @@ export class GatewayService {
     this.server = new McpServer(
       {
         name: MCP_HUB_LITE_SERVER,
-        version: "1.0.0",
+        version: '1.0.0'
       },
       {
         capabilities: {
           tools: {},
-          resources: {},  // 添加资源能力支持
-        },
+          resources: {} // 添加资源能力支持
+        }
       }
     );
 
@@ -54,25 +60,35 @@ export class GatewayService {
     this.registerHandlers(this.server, this.toolMap);
   }
 
-
-  private registerHandlers(server: McpServer, toolMap: Map<string, { serverId: string; realToolName: string }>) {
+  private registerHandlers(
+    server: McpServer,
+    toolMap: Map<string, { serverId: string; realToolName: string }>
+  ) {
     // MCP standard initialize handler
     const InitializeRequestSchema = z.object({
       method: z.literal('initialize'),
-      params: z.object({
-        clientInfo: z.object({
-          name: z.string(),
-          version: z.string(),
-          mcpVersion: z.string().optional()
-        }).optional(),
-        capabilities: z.object({
-          tools: z.object({
-            list: z.boolean().optional(),
-            execute: z.boolean().optional()
-          }).optional(),
-          experimental: z.record(z.string(), z.any()).optional()
-        }).optional()
-      }).optional(),
+      params: z
+        .object({
+          clientInfo: z
+            .object({
+              name: z.string(),
+              version: z.string(),
+              mcpVersion: z.string().optional()
+            })
+            .optional(),
+          capabilities: z
+            .object({
+              tools: z
+                .object({
+                  list: z.boolean().optional(),
+                  execute: z.boolean().optional()
+                })
+                .optional(),
+              experimental: z.record(z.string(), z.any()).optional()
+            })
+            .optional()
+        })
+        .optional(),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
     });
@@ -83,20 +99,20 @@ export class GatewayService {
       if (context && request.params?.clientInfo) {
         const { name, version } = request.params.clientInfo;
         logger.info(`Initialized client: ${name} v${version} (ID: ${context.sessionId})`);
-        
+
         // Update client info in tracker
         clientTrackerService.updateClient({
-            ...context,
-            clientName: name
+          ...context,
+          clientName: name
         });
       }
 
       return {
-        protocolVersion: "2024-11-05",
+        protocolVersion: '2024-11-05',
         serverInfo: {
           name: MCP_HUB_LITE_SERVER,
-          version: "1.0.0",
-          mcpVersion: "2024-11-05"
+          version: '1.0.0',
+          mcpVersion: '2024-11-05'
         },
         capabilities: {
           tools: {
@@ -121,21 +137,25 @@ export class GatewayService {
     });
 
     server.server.setRequestHandler(PingRequestSchema, async () => {
-      return { pong: true };  // 符合 MCP 规范的响应格式
+      return { pong: true }; // 符合 MCP 规范的响应格式
     });
 
     // Define search tool schema
     const SearchToolsRequestSchema = z.object({
       method: z.literal('tools/search'),
-      params: z.object({
-        search: z.string().optional(),
-        filters: z.object({
-          serverName: z.string().optional(),
-          tags: z.record(z.string(), z.string()).optional()
-        }).optional(),
-        limit: z.number().int().positive().optional().default(50),
-        offset: z.number().int().nonnegative().optional().default(0)
-      }).optional(),
+      params: z
+        .object({
+          search: z.string().optional(),
+          filters: z
+            .object({
+              serverName: z.string().optional(),
+              tags: z.record(z.string(), z.string()).optional()
+            })
+            .optional(),
+          limit: z.number().int().positive().optional().default(50),
+          offset: z.number().int().nonnegative().optional().default(0)
+        })
+        .optional(),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
     });
@@ -167,7 +187,7 @@ export class GatewayService {
         const results = await searchCoreService.search(search, searchOptions);
 
         return {
-          results: results.map(r => ({
+          results: results.map((r) => ({
             tool: r.tool,
             score: r.score
           })),
@@ -225,10 +245,12 @@ export class GatewayService {
       method: z.literal(LIST_ALL_TOOLS_IN_SERVER_TOOL),
       params: z.object({
         serverName: z.string(),
-        requestOptions: z.object({
-          sessionId: z.string().optional(),
-          tags: z.record(z.string(), z.string()).optional()
-        }).optional()
+        requestOptions: z
+          .object({
+            sessionId: z.string().optional(),
+            tags: z.record(z.string(), z.string()).optional()
+          })
+          .optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -258,10 +280,12 @@ export class GatewayService {
         pattern: z.string(),
         searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
         caseSensitive: z.boolean().optional().default(false),
-        requestOptions: z.object({
-          sessionId: z.string().optional(),
-          tags: z.record(z.string(), z.string()).optional()
-        }).optional()
+        requestOptions: z
+          .object({
+            sessionId: z.string().optional(),
+            tags: z.record(z.string(), z.string()).optional()
+          })
+          .optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -270,7 +294,13 @@ export class GatewayService {
     server.server.setRequestHandler(FindToolsInServerRequestSchema, async (request) => {
       try {
         const { serverName, pattern, searchIn, caseSensitive, requestOptions } = request.params;
-        const result = await hubToolsService.findToolsInServer(serverName, pattern, searchIn, caseSensitive, requestOptions);
+        const result = await hubToolsService.findToolsInServer(
+          serverName,
+          pattern,
+          searchIn,
+          caseSensitive,
+          requestOptions
+        );
         return result;
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -289,10 +319,12 @@ export class GatewayService {
       params: z.object({
         serverName: z.string(),
         toolName: z.string(),
-        requestOptions: z.object({
-          sessionId: z.string().optional(),
-          tags: z.record(z.string(), z.string()).optional()
-        }).optional()
+        requestOptions: z
+          .object({
+            sessionId: z.string().optional(),
+            tags: z.record(z.string(), z.string()).optional()
+          })
+          .optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -327,10 +359,12 @@ export class GatewayService {
         serverName: z.string(),
         toolName: z.string(),
         toolArgs: z.record(z.string(), z.unknown()),
-        requestOptions: z.object({
-          sessionId: z.string().optional(),
-          tags: z.record(z.string(), z.string()).optional()
-        }).optional()
+        requestOptions: z
+          .object({
+            sessionId: z.string().optional(),
+            tags: z.record(z.string(), z.string()).optional()
+          })
+          .optional()
       }),
       id: z.union([z.string(), z.number()]),
       jsonrpc: z.literal('2.0')
@@ -343,11 +377,16 @@ export class GatewayService {
         // Inject CWD if available and not present in args
         const cwd = getClientCwd();
         if (cwd && !toolArgs.cwd) {
-            toolArgs.cwd = cwd;
-            logger.debug(`Injected CWD into direct tool call: ${cwd}`);
+          toolArgs.cwd = cwd;
+          logger.debug(`Injected CWD into direct tool call: ${cwd}`);
         }
 
-        const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
+        const result = await hubToolsService.callTool(
+          serverName,
+          toolName,
+          toolArgs,
+          requestOptions
+        );
         // Wrap the result in a valid CallToolResult structure
         if (typeof result === 'object' && result !== null) {
           return {
@@ -356,10 +395,12 @@ export class GatewayService {
           };
         } else {
           return {
-            content: [{
-              type: 'text',
-              text: String(result)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: String(result)
+              }
+            ]
           };
         }
       } catch (error: unknown) {
@@ -428,7 +469,7 @@ export class GatewayService {
         return {
           contents: [
             {
-              type: "text",
+              type: 'text',
               text: typeof content === 'string' ? content : JSON.stringify(content, null, 2)
             }
           ]
@@ -458,12 +499,20 @@ export class GatewayService {
       const toolArgs: Record<string, unknown> = request.params.arguments || {};
 
       // Log incoming tool request with full context
-      logger.info(`Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
-      logger.debug(`Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`, { subModule: 'GATEWAY' });
+      logger.info(
+        `Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`,
+        { subModule: 'GATEWAY' }
+      );
+      logger.debug(
+        `Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`,
+        { subModule: 'GATEWAY' }
+      );
 
       // Handle system tools
       if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-        logger.info(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
+        logger.info(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, {
+          subModule: 'GATEWAY'
+        });
         try {
           let result;
           switch (toolName) {
@@ -517,10 +566,12 @@ export class GatewayService {
               // Inject CWD for nested call-tool
               const cwd = getClientCwd();
               if (cwd && callToolArgs.toolArgs && !callToolArgs.toolArgs.cwd) {
-                  // 使用类型断言确保我们可以安全地添加 cwd 属性
-                  const toolArgsWithCwd = callToolArgs.toolArgs as Record<string, unknown> & { cwd?: string };
-                  toolArgsWithCwd.cwd = cwd;
-                  logger.debug(`Injected CWD into nested tool call: ${cwd}`);
+                // 使用类型断言确保我们可以安全地添加 cwd 属性
+                const toolArgsWithCwd = callToolArgs.toolArgs as Record<string, unknown> & {
+                  cwd?: string;
+                };
+                toolArgsWithCwd.cwd = cwd;
+                logger.debug(`Injected CWD into nested tool call: ${cwd}`);
               }
               result = await hubToolsService.callTool(
                 serverName,
@@ -544,36 +595,51 @@ export class GatewayService {
           logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'GATEWAY' });
 
           // Check if result is already in Mcp content format (especially for call-tool)
-          if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
-             return result;
+          if (
+            result &&
+            typeof result === 'object' &&
+            'content' in result &&
+            Array.isArray(result.content)
+          ) {
+            return result;
           }
 
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: JSON.stringify(result, null, 2)
               }
             ]
           };
         } catch (error: unknown) {
           if (error instanceof Error) {
-            logger.error(`System tool FAILED: ${toolName}, error=${error.message}`, error, { subModule: 'GATEWAY' });
-            throw new McpError(-32802, error.message || "System Tool Error");
+            logger.error(`System tool FAILED: ${toolName}, error=${error.message}`, error, {
+              subModule: 'GATEWAY'
+            });
+            throw new McpError(-32802, error.message || 'System Tool Error');
           } else {
-            logger.error(`System tool FAILED: ${toolName}, error=${String(error)}`, error, { subModule: 'GATEWAY' });
-            throw new McpError(-32802, String(error) || "System Tool Error");
+            logger.error(`System tool FAILED: ${toolName}, error=${String(error)}`, error, {
+              subModule: 'GATEWAY'
+            });
+            throw new McpError(-32802, String(error) || 'System Tool Error');
           }
         }
       }
 
       const target = toolMap.get(toolName);
 
-      logger.debug(`Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`, { subModule: 'GATEWAY' });
+      logger.debug(
+        `Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`,
+        { subModule: 'GATEWAY' }
+      );
 
       if (!target) {
-          logger.error(`Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`, { subModule: 'GATEWAY' });
-          throw new McpError(-32801, `Tool ${toolName} not found`);
+        logger.error(
+          `Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`,
+          { subModule: 'GATEWAY' }
+        );
+        throw new McpError(-32801, `Tool ${toolName} not found`);
       }
 
       const startTime = Date.now();
@@ -581,15 +647,25 @@ export class GatewayService {
         // Inject CWD if available and not present in args
         const cwd = getClientCwd();
         if (cwd && !toolArgs.cwd) {
-            toolArgs.cwd = cwd;
-            logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, { subModule: toolName });
+          toolArgs.cwd = cwd;
+          logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, { subModule: toolName });
         }
-        logger.info(`Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`, { subModule: 'GATEWAY' });
+        logger.info(
+          `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`,
+          { subModule: 'GATEWAY' }
+        );
 
-        const result = await mcpConnectionManager.callTool(target.serverId, target.realToolName, toolArgs);
+        const result = await mcpConnectionManager.callTool(
+          target.serverId,
+          target.realToolName,
+          toolArgs
+        );
 
         const duration = Date.now() - startTime;
-        logger.info(`Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`, { subModule: 'GATEWAY' });
+        logger.info(
+          `Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${this.formatToolResponse(result)}`,
+          { subModule: 'GATEWAY' }
+        );
 
         // Wrap the result in a valid CallToolResult structure
         if (typeof result === 'object' && result !== null) {
@@ -599,35 +675,45 @@ export class GatewayService {
           };
         } else {
           return {
-            content: [{
-              type: 'text',
-              text: String(result)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: String(result)
+              }
+            ]
           };
         }
       } catch (error: unknown) {
-         const duration = Date.now() - startTime;
-         if (error instanceof Error) {
-           logger.error(`Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`, { subModule: 'GATEWAY' });
+        const duration = Date.now() - startTime;
+        if (error instanceof Error) {
+          logger.error(
+            `Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`,
+            { subModule: 'GATEWAY' }
+          );
 
-           if (error.stack) {
-             logger.debug(`Error stack for ${target.realToolName}:`, error.stack, { subModule: 'GATEWAY' });
-           }
+          if (error.stack) {
+            logger.debug(`Error stack for ${target.realToolName}:`, error.stack, {
+              subModule: 'GATEWAY'
+            });
+          }
 
-           if (error instanceof McpError) {
-               throw error;
-           }
+          if (error instanceof McpError) {
+            throw error;
+          }
 
-           // Map internal errors to standard MCP error codes
-           if (error.message?.includes('not connected')) {
-               throw new McpError(-32001, `Server not reachable: ${error.message}`);
-           }
+          // Map internal errors to standard MCP error codes
+          if (error.message?.includes('not connected')) {
+            throw new McpError(-32001, `Server not reachable: ${error.message}`);
+          }
 
-           throw new McpError(-32802, error.message || "Internal Gateway Error");
-         } else {
-           logger.error(`Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`, { subModule: 'GATEWAY' });
-           throw new McpError(-32802, String(error) || "Internal Gateway Error");
-         }
+          throw new McpError(-32802, error.message || 'Internal Gateway Error');
+        } else {
+          logger.error(
+            `Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`,
+            { subModule: 'GATEWAY' }
+          );
+          throw new McpError(-32802, String(error) || 'Internal Gateway Error');
+        }
       }
     });
   }
@@ -637,7 +723,9 @@ export class GatewayService {
    * This function is used by both tools/list MCP request handler and
    * hub-tools.service listAllToolsInServer method for mcp-hub-lite server
    */
-  public generateGatewayToolsList(toolMap: Map<string, { serverId: string; realToolName: string }>): Array<{
+  public generateGatewayToolsList(
+    toolMap: Map<string, { serverId: string; realToolName: string }>
+  ): Array<{
     name: string;
     description: string;
     inputSchema?: JsonSchema;
@@ -673,7 +761,10 @@ export class GatewayService {
       for (const tool of tools) {
         const serverConfig = hubManager.getServerById(serverId);
         if (serverConfig) {
-          if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+          if (
+            serverConfig.config.allowedTools &&
+            !serverConfig.config.allowedTools.includes(tool.name)
+          ) {
             continue;
           }
         }
@@ -692,7 +783,10 @@ export class GatewayService {
       }
 
       for (const tool of tools) {
-        if (serverConfig.config.allowedTools && !serverConfig.config.allowedTools.includes(tool.name)) {
+        if (
+          serverConfig.config.allowedTools &&
+          !serverConfig.config.allowedTools.includes(tool.name)
+        ) {
           continue;
         }
 
@@ -704,47 +798,47 @@ export class GatewayService {
 
         // If tool name is not unique or conflicts with system tool, append server hash
         if (!isUnique || isSystemConflict) {
-            // 从 serverConfig 中获取实例的 hash，使用 serverId 的前4位作为默认值
-            const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
-            gatewayToolName = `${tool.name}_${hash}`;
+          // 从 serverConfig 中获取实例的 hash，使用 serverId 的前4位作为默认值
+          const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+          gatewayToolName = `${tool.name}_${hash}`;
         }
 
         // Ensure name doesn't exceed 60 chars
         if (gatewayToolName.length > 60) {
-            // 使用 serverId 的前4位作为默认 hash
-            const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
-            // Reserve space for hash and separator
-            const maxToolNameLen = 60 - hash.length - 1;
-            const truncatedToolName = tool.name.substring(0, maxToolNameLen);
-            gatewayToolName = `${truncatedToolName}_${hash}`;
+          // 使用 serverId 的前4位作为默认 hash
+          const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+          // Reserve space for hash and separator
+          const maxToolNameLen = 60 - hash.length - 1;
+          const truncatedToolName = tool.name.substring(0, maxToolNameLen);
+          gatewayToolName = `${truncatedToolName}_${hash}`;
         }
 
         // Final uniqueness check (in case of hash collision or previous renaming conflict)
         let finalName = gatewayToolName;
         let counter = 1;
         while (usedNames.has(finalName)) {
-            const suffix = `_${counter}`;
-            if (gatewayToolName.length + suffix.length > 60) {
-                const availableLen = 60 - suffix.length;
-                finalName = gatewayToolName.substring(0, availableLen) + suffix;
-            } else {
-                finalName = gatewayToolName + suffix;
-            }
-            counter++;
+          const suffix = `_${counter}`;
+          if (gatewayToolName.length + suffix.length > 60) {
+            const availableLen = 60 - suffix.length;
+            finalName = gatewayToolName.substring(0, availableLen) + suffix;
+          } else {
+            finalName = gatewayToolName + suffix;
+          }
+          counter++;
         }
         gatewayToolName = finalName;
 
         usedNames.add(gatewayToolName);
 
         toolMap.set(gatewayToolName, {
-            serverId: serverId,
-            realToolName: tool.name
+          serverId: serverId,
+          realToolName: tool.name
         });
 
         gatewayTools.push({
-            name: gatewayToolName,
-            description: `[From ${serverName}] ${tool.description || ''}`,
-            inputSchema: tool.inputSchema
+          name: gatewayToolName,
+          description: `[From ${serverName}] ${tool.description || ''}`,
+          inputSchema: tool.inputSchema
         });
       }
     }
@@ -780,7 +874,9 @@ export class GatewayService {
       }
       return formatted;
     } catch (error) {
-      return '[Error formatting args: ' + (error instanceof Error ? error.message : String(error)) + ']';
+      return (
+        '[Error formatting args: ' + (error instanceof Error ? error.message : String(error)) + ']'
+      );
     }
   }
 
@@ -796,22 +892,25 @@ export class GatewayService {
       }
       return formatted;
     } catch (error) {
-      return '[Error formatting response: ' + (error instanceof Error ? error.message : String(error)) + ']';
+      return (
+        '[Error formatting response: ' +
+        (error instanceof Error ? error.message : String(error)) +
+        ']'
+      );
     }
   }
-
 
   public createConnectionServer(): McpServer {
     const server = new McpServer(
       {
         name: MCP_HUB_LITE_SERVER,
-        version: "1.0.0",
+        version: '1.0.0'
       },
       {
         capabilities: {
           tools: {},
-          resources: {},  // 添加资源能力支持
-        },
+          resources: {} // 添加资源能力支持
+        }
       }
     );
 
@@ -830,7 +929,7 @@ export class GatewayService {
       async () => {
         this.transport = new StdioServerTransport();
         await this.server.connect(this.transport);
-        logger.info("MCP Gateway started on stdio");
+        logger.info('MCP Gateway started on stdio');
       }
     );
   }

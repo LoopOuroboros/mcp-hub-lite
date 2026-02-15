@@ -62,7 +62,7 @@ export async function listServers() {
   const servers = hubManager.getAllServers();
   const serverInstances = hubManager.getServerInstances();
 
-  return servers.map(server => ({
+  return servers.map((server) => ({
     ...server,
     instances: serverInstances[server.name] || []
   }));

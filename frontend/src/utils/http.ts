@@ -30,7 +30,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   try {
     const response = await fetch(url, {
       ...options,
-      headers,
+      headers
     });
 
     const data = await response.json().catch(() => ({}));
@@ -55,12 +55,12 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
 export const http = {
   get: <T>(url: string, headers?: HeadersInit) => request<T>(url, { method: 'GET', headers }),
-  
+
   post: <T>(url: string, body: unknown, headers?: HeadersInit) =>
     request<T>(url, { method: 'POST', body: JSON.stringify(body), headers }),
 
   put: <T>(url: string, body: unknown, headers?: HeadersInit) =>
     request<T>(url, { method: 'PUT', body: JSON.stringify(body), headers }),
-  
-  delete: <T>(url: string, headers?: HeadersInit) => request<T>(url, { method: 'DELETE', headers }),
+
+  delete: <T>(url: string, headers?: HeadersInit) => request<T>(url, { method: 'DELETE', headers })
 };

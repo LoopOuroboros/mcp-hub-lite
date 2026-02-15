@@ -5,7 +5,7 @@ export interface MCPError {
   code: number;
   message: string;
   data?: unknown;
-  "x-mcp"?: {
+  'x-mcp'?: {
     details?: Record<string, unknown>;
     suggestedActions?: string[];
     moreInfoUrl?: string;
@@ -22,23 +22,25 @@ interface JsonRpcResponse {
 
 // 辅助函数：判断是否为CMDError
 function isCMDError(error: unknown): error is CMDError {
-  return typeof error === 'object' &&
-         error !== null &&
-         'code' in error &&
-         'message' in error &&
-         'data' in error &&
-         typeof (error as { code: unknown }).code === 'number' &&
-         typeof (error as { message: unknown }).message === 'string';
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'data' in error &&
+    typeof (error as { code: unknown }).code === 'number' &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
 }
 
 // MCP Hub Lite的MCP协议错误码映射 (符合MCP标准)
 export const MCPHubLiteErrorMap = {
   // 将网关内部错误映射到标准MCP错误码
-  6001: -32001,  // 网关内部错误 -> 服务不可达
-  6002: -32002,  // 连接超时 -> 请求超时
-  6003: -32801,  // 工具未找到 -> MCP工具未找到
-  6004: -32802,  // 工具执行失败 -> MCP执行失败
-  6005: -32803,  // 初始化失败 -> MCP初始化失败
+  6001: -32001, // 网关内部错误 -> 服务不可达
+  6002: -32002, // 连接超时 -> 请求超时
+  6003: -32801, // 工具未找到 -> MCP工具未找到
+  6004: -32802, // 工具执行失败 -> MCP执行失败
+  6005: -32803 // 初始化失败 -> MCP初始化失败
 } as const;
 
 // MCP错误响应处理器
@@ -48,18 +50,18 @@ export class MCPErrorHandler {
     if (error instanceof Error) {
       // 通用错误映射到标准MCP错误
       return {
-        code: -32001,  // 默认为服务不可达
+        code: -32001, // 默认为服务不可达
         message: error.message,
         data: {
           originalError: error.message,
           timestamp: new Date().toISOString()
         },
-        "x-mcp": {
+        'x-mcp': {
           details: {
             stack: error.stack,
             name: error.name
           },
-          suggestedActions: ["检查服务器状态", "重试请求"]
+          suggestedActions: ['检查服务器状态', '重试请求']
         }
       };
     } else if (isCMDError(error)) {
@@ -69,9 +71,9 @@ export class MCPErrorHandler {
         code: mcpCode,
         message: error.message,
         data: error.data,
-        "x-mcp": {
+        'x-mcp': {
           details: error.error?.context,
-          suggestedActions: ["参考错误详情", "重试或联系管理员"]
+          suggestedActions: ['参考错误详情', '重试或联系管理员']
         }
       };
     }
@@ -79,9 +81,9 @@ export class MCPErrorHandler {
     // 默认MCP错误
     return {
       code: -32001,
-      message: "未知错误",
-      "x-mcp": {
-        suggestedActions: ["重试请求"]
+      message: '未知错误',
+      'x-mcp': {
+        suggestedActions: ['重试请求']
       }
     };
   }
@@ -112,12 +114,17 @@ export class MCPErrorHandler {
 
     // 网关特定错误码映射
     if (cmdCode >= 6000 && cmdCode <= 6999) {
-      switch(cmdCode) {
-        case 6001: return -32001; // 服务不可达
-        case 6002: return -32002; // 请求超时
-        case 6003: return -32801; // 工具未找到
-        case 6004: return -32802; // 执行失败
-        default: return -32001;
+      switch (cmdCode) {
+        case 6001:
+          return -32001; // 服务不可达
+        case 6002:
+          return -32002; // 请求超时
+        case 6003:
+          return -32801; // 工具未找到
+        case 6004:
+          return -32802; // 执行失败
+        default:
+          return -32001;
       }
     }
 
@@ -144,14 +151,16 @@ export class MCPErrorsMiddleware {
         errorToConvert = rpcResponse.error;
       } else {
         // 如果都不是，创建一个通用错误
-        errorToConvert = new Error(typeof rpcResponse.error === 'object' && rpcResponse.error !== null
-          ? (rpcResponse.error as { message?: string }).message || 'Unknown error'
-          : String(rpcResponse.error));
+        errorToConvert = new Error(
+          typeof rpcResponse.error === 'object' && rpcResponse.error !== null
+            ? (rpcResponse.error as { message?: string }).message || 'Unknown error'
+            : String(rpcResponse.error)
+        );
       }
 
       // 否则将非标准错误转换为标准格式
       return {
-        jsonrpc: "2.0",
+        jsonrpc: '2.0',
         error: MCPErrorHandler.toMCPError(errorToConvert),
         id: rpcResponse.id
       };
@@ -161,12 +170,14 @@ export class MCPErrorsMiddleware {
   }
 
   private static isStandardMCPError(error: unknown): error is MCPError {
-    return typeof error === 'object' &&
-           error !== null &&
-           'code' in error &&
-           'message' in error &&
-           typeof (error as { code: unknown }).code === 'number' &&
-           typeof (error as { message: unknown }).message === 'string' &&
-           ('data' in error ? error.data !== undefined : true);
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      'message' in error &&
+      typeof (error as { code: unknown }).code === 'number' &&
+      typeof (error as { message: unknown }).message === 'string' &&
+      ('data' in error ? error.data !== undefined : true)
+    );
   }
 }

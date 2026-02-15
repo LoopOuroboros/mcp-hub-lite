@@ -157,7 +157,11 @@ describe('HubToolsService', () => {
         {
           name: 'writeFile',
           description: 'Write file contents',
-          inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] },
+          inputSchema: {
+            type: 'object',
+            properties: { path: { type: 'string' }, content: { type: 'string' } },
+            required: ['path', 'content']
+          },
           serverName: 'Test Server'
         }
       ];
@@ -249,17 +253,20 @@ describe('HubToolsService', () => {
           {
             name: 'readFile',
             description: 'Read file contents',
-            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
+            inputSchema: { type: 'object', properties: {}, required: [] },
+            serverName: 'Test Server'
           },
           {
             name: 'writeFile',
             description: 'Write file contents',
-            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
+            inputSchema: { type: 'object', properties: {}, required: [] },
+            serverName: 'Test Server'
           },
           {
             name: 'listFiles',
             description: 'List files in directory',
-            inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
+            inputSchema: { type: 'object', properties: {}, required: [] },
+            serverName: 'Test Server'
           }
         ]
       });
@@ -273,12 +280,14 @@ describe('HubToolsService', () => {
         {
           name: 'unmatchedTool',
           description: 'This should not match',
-          inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Test Server'
         },
         {
           name: 'anotherUnmatchedTool',
           description: 'This should also not match',
-          inputSchema: { type: 'object', properties: {}, required: [] }, serverName: 'Test Server'
+          inputSchema: { type: 'object', properties: {}, required: [] },
+          serverName: 'Test Server'
         }
       ];
 
@@ -449,7 +458,10 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockServerInstances: Record<string, Array<{ id: string; timestamp: number; hash: string }>> = {
+      const mockServerInstances: Record<
+        string,
+        Array<{ id: string; timestamp: number; hash: string }>
+      > = {
         'Server 1': [{ id: '1', timestamp: Date.now(), hash: 'hash1' }],
         'Server 2': [{ id: '2', timestamp: Date.now(), hash: 'hash2' }]
       };
@@ -470,10 +482,12 @@ describe('HubToolsService', () => {
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
-      vi.mocked(hubManager.getServerInstanceByName)
-        .mockImplementation((name: string) => mockServerInstances[name]);
-      vi.mocked(hubManager.getServerByName)
-        .mockImplementation((name: string) => mockServers.find(s => s.name === name)?.config);
+      vi.mocked(hubManager.getServerInstanceByName).mockImplementation(
+        (name: string) => mockServerInstances[name]
+      );
+      vi.mocked(hubManager.getServerByName).mockImplementation(
+        (name: string) => mockServers.find((s) => s.name === name)?.config
+      );
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
@@ -484,7 +498,7 @@ describe('HubToolsService', () => {
       expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
 
       // Assert system tools
-      const systemToolNames = allTools['mcp-hub-lite'].tools.map(t => t.name);
+      const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
       expect(systemToolNames).toContain('find_servers');
       expect(systemToolNames).toContain('list_all_tools_in_server');
@@ -555,12 +569,23 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockInstance = {
+        id: '1',
+        timestamp: Date.now(),
+        hash: 'hash1',
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        uptime: 1000
+      };
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([{ name: 'testTool', description: 'Test tool', serverName: 'test-server' }]);
-      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([
+        { name: 'testTool', description: 'Test tool', serverName: 'test-server' }
+      ]);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
+        { uri: 'test://resource', name: 'Test Resource' }
+      ]);
 
       // Act
       const resources = await hubToolsService.listResources();
@@ -594,8 +619,12 @@ describe('HubToolsService', () => {
   describe('readResource', () => {
     it('should throw error for invalid URI format', async () => {
       // Act & Assert
-      await expect(hubToolsService.readResource('invalid-uri')).rejects.toThrow('Invalid Hub resource URI');
-      await expect(hubToolsService.readResource('hub://invalid')).rejects.toThrow('Invalid Hub resource URI format');
+      await expect(hubToolsService.readResource('invalid-uri')).rejects.toThrow(
+        'Invalid Hub resource URI'
+      );
+      await expect(hubToolsService.readResource('hub://invalid')).rejects.toThrow(
+        'Invalid Hub resource URI format'
+      );
     });
 
     it('should throw error for non-existent server', async () => {
@@ -603,13 +632,22 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([]);
 
       // Act & Assert
-      await expect(hubToolsService.readResource('hub://servers/NonExistent')).rejects.toThrow('Server not found or not connected');
+      await expect(hubToolsService.readResource('hub://servers/NonExistent')).rejects.toThrow(
+        'Server not found or not connected'
+      );
     });
 
     it('should return server metadata for server URI', async () => {
       // Arrange
       const serverName = 'Test Server';
-      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockInstance = {
+        id: '1',
+        timestamp: Date.now(),
+        hash: 'hash1',
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        uptime: 1000
+      };
       const mockConfig = {
         type: 'stdio' as const,
         command: 'test-command',
@@ -622,8 +660,12 @@ describe('HubToolsService', () => {
 
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([{ name: 'testTool', serverName: 'test-server' }]);
-      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([{ uri: 'test://resource', name: 'Test Resource' }]);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([
+        { name: 'testTool', serverName: 'test-server' }
+      ]);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
+        { uri: 'test://resource', name: 'Test Resource' }
+      ]);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}`);
@@ -645,7 +687,14 @@ describe('HubToolsService', () => {
     it('should return tools list for tools URI', async () => {
       // Arrange
       const serverName = 'Test Server';
-      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockInstance = {
+        id: '1',
+        timestamp: Date.now(),
+        hash: 'hash1',
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        uptime: 1000
+      };
       const mockTools = [{ name: 'testTool', description: 'Test tool', serverName: 'test-server' }];
 
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
@@ -661,7 +710,14 @@ describe('HubToolsService', () => {
     it('should return resources list for resources URI', async () => {
       // Arrange
       const serverName = 'Test Server';
-      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockInstance = {
+        id: '1',
+        timestamp: Date.now(),
+        hash: 'hash1',
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        uptime: 1000
+      };
       const mockResources = [{ uri: 'test://resource', name: 'Test Resource' }];
 
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
@@ -677,12 +733,21 @@ describe('HubToolsService', () => {
     it('should throw error for unknown resource type', async () => {
       // Arrange
       const serverName = 'Test Server';
-      const mockInstance = { id: '1', timestamp: Date.now(), hash: 'hash1', status: 'online', lastHeartbeat: Date.now(), uptime: 1000 };
+      const mockInstance = {
+        id: '1',
+        timestamp: Date.now(),
+        hash: 'hash1',
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        uptime: 1000
+      };
 
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
 
       // Act & Assert
-      await expect(hubToolsService.readResource(`hub://servers/${serverName}/unknown`)).rejects.toThrow('Unknown resource type');
+      await expect(
+        hubToolsService.readResource(`hub://servers/${serverName}/unknown`)
+      ).rejects.toThrow('Unknown resource type');
     });
   });
 });

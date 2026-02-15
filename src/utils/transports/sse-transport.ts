@@ -60,7 +60,9 @@ export class SseTransport implements Transport {
         if (!this.isClosing) {
           this.reconnectAttempts++;
           if (this.reconnectAttempts <= this.maxReconnectAttempts) {
-            logger.info(`Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            logger.info(
+              `Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+            );
             setTimeout(() => {
               this.restart();
             }, this.reconnectInterval);
@@ -107,8 +109,8 @@ export class SseTransport implements Transport {
     // This is a limitation of SSE protocol
     const error = new Error(
       'SSE transport does not support sending messages. ' +
-      'SSE is a unidirectional protocol (server-to-client only). ' +
-      'For bidirectional MCP communication, use stdio or HTTP transports instead.'
+        'SSE is a unidirectional protocol (server-to-client only). ' +
+        'For bidirectional MCP communication, use stdio or HTTP transports instead.'
     );
 
     // Type-safe way to access message properties

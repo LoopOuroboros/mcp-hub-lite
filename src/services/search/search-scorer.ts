@@ -9,12 +9,14 @@ export class SearchScorer {
     const descScore = this.scoreField(tool.description || '', lowerQuery, 3);
 
     // 确保名称完全匹配的得分是最高的
-    if (nameScore === 120) { // 10 * 12 = 120 表示名称精确匹配
+    if (nameScore === 120) {
+      // 10 * 12 = 120 表示名称精确匹配
       return nameScore;
     }
 
     // 如果没有名称完全匹配，确保名称前缀匹配的得分高于其他组合得分
-    if (nameScore === 60) { // 5 * 12 = 60 表示名称前缀匹配
+    if (nameScore === 60) {
+      // 5 * 12 = 60 表示名称前缀匹配
       // 限制描述的得分，确保不超过名称前缀匹配的得分
       const additionalScore = Math.min(descScore, 55);
       return nameScore + additionalScore;
@@ -41,5 +43,4 @@ export class SearchScorer {
 
     return 0;
   }
-
 }

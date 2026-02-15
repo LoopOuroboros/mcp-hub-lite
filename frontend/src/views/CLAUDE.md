@@ -23,6 +23,7 @@ views/
 **职责**: 根路由容器，根据选择状态渲染仪表板或服务器详情
 
 **功能**:
+
 - 检测是否选择了服务器
 - 动态渲染 `Dashboard` 或 `ServerDetail` 组件
 
@@ -31,6 +32,7 @@ views/
 **职责**: 服务器仪表板视图（已被 HomeView 替代，此组件现在作为 HomeView 的内部渲染目标）
 
 **功能**:
+
 - 切换仪表板和服务器详情视图
 
 ### ToolsView (`ToolsView.vue`)
@@ -38,12 +40,14 @@ views/
 **职责**: 工具浏览和搜索页面
 
 **主要功能**:
+
 - 系统工具展示（list-servers、find-servers 等）
 - 聚合工具展示（按服务器分组）
 - 工具搜索
 - 工具调用对话框
 
 **组件结构**:
+
 ```
 ToolsView
 ├── SystemTools Section
@@ -56,6 +60,7 @@ ToolsView
 ```
 
 **状态管理**:
+
 ```typescript
 {
   searchQuery: string              // 搜索关键词
@@ -68,6 +73,7 @@ ToolsView
 ```
 
 **依赖**:
+
 - `useServerStore` - 获取服务器状态
 - `/web/hub-tools/system` - 获取系统工具列表
 - `/web/search` - 搜索工具
@@ -79,22 +85,24 @@ ToolsView
 **职责**: 系统设置页面
 
 **主要功能**:
+
 - 日志配置（级别、轮转、压缩）
 - 安全配置（允许的网络、连接限制）
 
 **配置项**:
 
-| 配置项 | 类型 | 默认值 | 描述 |
-|---------|------|---------|------|
-| `logging.level` | string | 'info' | 日志级别 |
-| `logging.rotationAge` | string | '7d' | 日志最大保留时间 |
-| `security.allowedNetworks` | string[] | [] | 允许的网络 CIDR |
-| `security.maxConcurrentConnections` | number | 50 | 最大并发连接数 |
-| `security.maxConnections` | number | 50 | 最大连接数 |
-| `security.connectionTimeout` | number | 30000 | 连接超时 (ms) |
-| `security.idleConnectionTimeout` | number | 300000 | 空闲连接超时 (ms) |
+| 配置项                              | 类型     | 默认值 | 描述              |
+| ----------------------------------- | -------- | ------ | ----------------- |
+| `logging.level`                     | string   | 'info' | 日志级别          |
+| `logging.rotationAge`               | string   | '7d'   | 日志最大保留时间  |
+| `security.allowedNetworks`          | string[] | []     | 允许的网络 CIDR   |
+| `security.maxConcurrentConnections` | number   | 50     | 最大并发连接数    |
+| `security.maxConnections`           | number   | 50     | 最大连接数        |
+| `security.connectionTimeout`        | number   | 30000  | 连接超时 (ms)     |
+| `security.idleConnectionTimeout`    | number   | 300000 | 空闲连接超时 (ms) |
 
 **依赖**:
+
 - `/web/config` - 配置 API
 - Element Plus 组件
 
@@ -113,7 +121,7 @@ const routes = [
       { path: 'settings', name: 'settings', component: SettingsView }
     ]
   }
-]
+];
 ```
 
 ## 依赖关系
@@ -142,6 +150,7 @@ views/
 **状态**: 待添加
 
 **建议测试**:
+
 - 组件渲染测试
 - 搜索功能测试
 - 工具调用测试
@@ -159,16 +168,17 @@ A: 使用 `useI18n()` 钩子获取 `t` 函数，然后在模板中使用 `$t('ke
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-|---------|------|
-| `views/HomeView.vue` | 主页视图 |
-| `views/ServerDashboard.vue` | 服务器仪表板 |
-| `views/ToolsView.vue` | 工具浏览和搜索页面 |
-| `views/SettingsView.vue` | 设置页面 |
+| 文件路径                    | 描述               |
+| --------------------------- | ------------------ |
+| `views/HomeView.vue`        | 主页视图           |
+| `views/ServerDashboard.vue` | 服务器仪表板       |
+| `views/ToolsView.vue`       | 工具浏览和搜索页面 |
+| `views/SettingsView.vue`    | 设置页面           |
 
 `../router/index.ts` | 路由配置 |
 
 ## 变更记录 (Changelog)
 
 ### 2026-01-20
+
 - 初始化 Views 模块文档

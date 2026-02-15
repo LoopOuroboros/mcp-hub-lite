@@ -33,7 +33,11 @@ describe('GatewayService Logging Helpers', () => {
 
   test('formatToolArgs should handle formatting errors gracefully', () => {
     // Create an object with custom toJSON that throws
-    const args = { get bad() { throw new Error('test error'); } };
+    const args = {
+      get bad() {
+        throw new Error('test error');
+      }
+    };
     // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolArgs(args);
     expect(result).toContain('[Error formatting args:');

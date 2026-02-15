@@ -122,7 +122,9 @@ describe('Server Runner', () => {
       expect(buildApp).toHaveBeenCalled();
       expect(mockApp.listen).toHaveBeenCalledWith({ port: 3000, host: 'localhost' });
       expect(PidManager.writePid).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('MCP Hub Lite Server running at http://localhost:3000');
+      expect(logger.info).toHaveBeenCalledWith(
+        'MCP Hub Lite Server running at http://localhost:3000'
+      );
     });
 
     it('should start server in stdio mode successfully', async () => {
@@ -215,15 +217,19 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as (code?: number | string | null) => never);
 
       // Execute and expect error
-      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
-        .rejects
-        .toThrow('process.exit called');
+      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' })).rejects.toThrow(
+        'process.exit called'
+      );
 
       // Verify
-      expect(logger.error).toHaveBeenCalledWith('MCP Hub Lite is already running on port 3000 (PID: 1234)');
+      expect(logger.error).toHaveBeenCalledWith(
+        'MCP Hub Lite is already running on port 3000 (PID: 1234)'
+      );
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       // Restore
@@ -276,15 +282,19 @@ describe('Server Runner', () => {
       });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as (code?: number | string | null) => never);
 
       // Execute and expect error
-      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
-        .rejects
-        .toThrow('process.exit called');
+      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' })).rejects.toThrow(
+        'process.exit called'
+      );
 
       // Verify
-      expect(logger.error).toHaveBeenCalledWith('Port 3000 is already in use by another application:');
+      expect(logger.error).toHaveBeenCalledWith(
+        'Port 3000 is already in use by another application:'
+      );
       expect(logger.error).toHaveBeenCalledWith('  Process: other-app (PID: 5678)');
       expect(logger.error).toHaveBeenCalledWith('  Command: node other-app.js');
       expect(exitSpy).toHaveBeenCalledWith(1);
@@ -334,7 +344,7 @@ describe('Server Runner', () => {
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
-      const mockServers: Array<{name: string; config: ServerConfig}> = [
+      const mockServers: Array<{ name: string; config: ServerConfig }> = [
         {
           name: 'enabled-server',
           config: {
@@ -428,7 +438,9 @@ describe('Server Runner', () => {
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as (code?: number | string | null) => never);
+      const exitSpy = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((() => {}) as (code?: number | string | null) => never);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -437,7 +449,7 @@ describe('Server Runner', () => {
       process.emit('SIGTERM');
 
       // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Verify
       expect(mcpConnectionManager.disconnectAll).toHaveBeenCalled();
@@ -493,7 +505,9 @@ describe('Server Runner', () => {
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as (code?: number | string | null) => never);
+      const exitSpy = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((() => {}) as (code?: number | string | null) => never);
 
       // Start server
       await runServer({ stdio: false, port: 3000, host: 'localhost' });
@@ -502,7 +516,7 @@ describe('Server Runner', () => {
       process.emit('SIGINT');
 
       // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Verify
       expect(mcpConnectionManager.disconnectAll).toHaveBeenCalled();
@@ -552,12 +566,14 @@ describe('Server Runner', () => {
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 
       // Spy on process.exit
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => { throw new Error('process.exit called'); }) as (code?: number | string | null) => never);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as (code?: number | string | null) => never);
 
       // Execute and expect error
-      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' }))
-        .rejects
-        .toThrow('process.exit called');
+      await expect(runServer({ stdio: false, port: 3000, host: 'localhost' })).rejects.toThrow(
+        'process.exit called'
+      );
 
       // Verify
       expect(logger.error).toHaveBeenCalledWith('Failed to start server:', expect.any(Error));

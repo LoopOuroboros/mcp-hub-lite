@@ -7,13 +7,13 @@ import { gateway } from '@services/gateway.service.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPort } from '@utils/port-checker.js';
 
-export async function runServer(options: { stdio?: boolean, port?: number, host?: string } = {}) {
+export async function runServer(options: { stdio?: boolean; port?: number; host?: string } = {}) {
   try {
     const isStdio = options.stdio || false;
 
     if (isStdio) {
-        logger.setUseStderr(true);
-        logger.info('Starting in MCP Gateway mode (stdio)...');
+      logger.setUseStderr(true);
+      logger.info('Starting in MCP Gateway mode (stdio)...');
     }
 
     const config = configManager.getConfig();
@@ -61,7 +61,7 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
           try {
             const newInstance = await configManager.addServerInstance(serverName, {});
             // Connect the new instance
-            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch(err => {
+            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch((err) => {
               logger.error(`Failed to auto-connect to ${serverName}:`, err);
             });
           } catch (err) {
@@ -69,8 +69,8 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
           }
         } else {
           // Connect existing instances
-          existingInstances.forEach(instance => {
-            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
+          existingInstances.forEach((instance) => {
+            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch((err) => {
               logger.error(`Failed to auto-connect to ${serverName}:`, err);
             });
           });
@@ -84,7 +84,7 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
       try {
         await mcpConnectionManager.disconnectAll();
         if (!isStdio && app) {
-            await app.close();
+          await app.close();
         }
         // Shutdown OpenTelemetry gracefully
         await telemetryManager.shutdown();
@@ -101,14 +101,14 @@ export async function runServer(options: { stdio?: boolean, port?: number, host?
     process.on('SIGINT', () => shutdown('SIGINT'));
 
     if (isStdio) {
-        await gateway.start();
-        // Write PID after gateway starts successfully
-        PidManager.writePid();
+      await gateway.start();
+      // Write PID after gateway starts successfully
+      PidManager.writePid();
     } else {
-        await app!.listen({ port, host });
-        logger.info(`MCP Hub Lite Server running at http://${host}:${port}`);
-        // Write PID after server starts successfully
-        PidManager.writePid();
+      await app!.listen({ port, host });
+      logger.info(`MCP Hub Lite Server running at http://${host}:${port}`);
+      // Write PID after server starts successfully
+      PidManager.writePid();
     }
   } catch (err) {
     logger.error('Failed to start server:', err);

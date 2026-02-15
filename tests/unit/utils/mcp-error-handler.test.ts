@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { MCPErrorHandler, MCPError, MCPHubLiteErrorMap, MCPErrorsMiddleware } from '@utils/mcp-error-handler.js';
+import {
+  MCPErrorHandler,
+  MCPError,
+  MCPHubLiteErrorMap,
+  MCPErrorsMiddleware
+} from '@utils/mcp-error-handler.js';
 import { CMDError } from '@models/types.js';
 
 describe('MCPErrorHandler', () => {
@@ -25,7 +30,7 @@ describe('MCPErrorHandler', () => {
           stack: 'Error: Test error\n    at test (test.js:1:1)',
           name: 'TestError'
         },
-        suggestedActions: ["检查服务器状态", "重试请求"]
+        suggestedActions: ['检查服务器状态', '重试请求']
       });
     });
 
@@ -50,7 +55,7 @@ describe('MCPErrorHandler', () => {
       expect(mcpError.data).toBeNull();
       expect(mcpError['x-mcp']).toMatchObject({
         details: { serverId: 'server-1' },
-        suggestedActions: ["参考错误详情", "重试或联系管理员"]
+        suggestedActions: ['参考错误详情', '重试或联系管理员']
       });
     });
 
@@ -66,7 +71,7 @@ describe('MCPErrorHandler', () => {
       });
 
       expect(mcpError['x-mcp']).toMatchObject({
-        suggestedActions: ["重试请求"]
+        suggestedActions: ['重试请求']
       });
     });
   });
@@ -123,7 +128,11 @@ describe('MCPErrorHandler', () => {
         error: new Error('Backend error')
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as {
+        jsonrpc: string;
+        id: string;
+        error: MCPError;
+      };
 
       expect(result.jsonrpc).toBe('2.0');
       expect(result.id).toBe('test-id');
@@ -145,7 +154,11 @@ describe('MCPErrorHandler', () => {
         error: standardMCPError
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as {
+        jsonrpc: string;
+        id: string;
+        error: MCPError;
+      };
 
       expect(result).toBe(response); // should be the same object
     });
@@ -157,7 +170,11 @@ describe('MCPErrorHandler', () => {
         result: { success: true }
       };
 
-      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as { jsonrpc: string; id: string; error: MCPError };
+      const result = MCPErrorsMiddleware.handleBackendMCPErrors(response) as {
+        jsonrpc: string;
+        id: string;
+        error: MCPError;
+      };
 
       expect(result).toBe(response); // should be the same object
     });
@@ -170,7 +187,9 @@ describe('MCPErrorHandler', () => {
         message: 'Tool not found'
       };
 
-      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](standardError);
+      const isStandard = (
+        MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean }
+      )['isStandardMCPError'](standardError);
       expect(isStandard).toBe(true);
     });
 
@@ -180,7 +199,9 @@ describe('MCPErrorHandler', () => {
         message: 'Invalid error'
       };
 
-      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](nonStandardError);
+      const isStandard = (
+        MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean }
+      )['isStandardMCPError'](nonStandardError);
       expect(isStandard).toBe(false);
     });
 
@@ -190,7 +211,9 @@ describe('MCPErrorHandler', () => {
         // missing message
       };
 
-      const isStandard = (MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean })['isStandardMCPError'](invalidError);
+      const isStandard = (
+        MCPErrorsMiddleware as unknown as { isStandardMCPError: (error: unknown) => boolean }
+      )['isStandardMCPError'](invalidError);
       expect(isStandard).toBe(false);
     });
   });

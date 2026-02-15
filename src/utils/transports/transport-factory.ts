@@ -14,7 +14,9 @@ export class TransportFactory {
    * @returns 传输客户端实例
    * @throws Error 如果服务器类型不支持或配置无效
    */
-  static createTransport(server: ServerConfig & { name: string }): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
+  static createTransport(
+    server: ServerConfig & { name: string }
+  ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
     // 使用类型断言确保 TypeScript 能够正确推断类型
@@ -25,13 +27,16 @@ export class TransportFactory {
         if (!config.command) {
           throw new Error('STDIO transport requires a command');
         }
-        return new StdioTransport({
-          command: config.command,
-          args: config.args,
-          env: config.env,
-          cwd: process.cwd(),
-          stderr: 'pipe'
-        }, server.name);
+        return new StdioTransport(
+          {
+            command: config.command,
+            args: config.args,
+            env: config.env,
+            cwd: process.cwd(),
+            stderr: 'pipe'
+          },
+          server.name
+        );
 
       case 'sse':
         if (!config.url) {
@@ -45,18 +50,16 @@ export class TransportFactory {
         );
 
       case 'streamable-http':
-      case 'http':  // 兼容 http 类型，视为 streamable-http
+      case 'http': // 兼容 http 类型，视为 streamable-http
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
-        return new StreamableHttpTransport(
-          config.url,
-          config.headers,
-          config.timeout
-        );
+        return new StreamableHttpTransport(config.url, config.headers, config.timeout);
 
       default:
-        throw new Error(`Unsupported transport type: ${(config as ServerTransportConfig).type || 'undefined'}`);
+        throw new Error(
+          `Unsupported transport type: ${(config as ServerTransportConfig).type || 'undefined'}`
+        );
     }
   }
 
@@ -65,14 +68,15 @@ export class TransportFactory {
    * 为 stdio 传输添加必要的系统环境变量
    */
   private static buildSystemEnv(): Record<string, string> {
-    return {
-    };
+    return {};
   }
 
   /**
    * 验证并转换服务器配置为传输配置
    */
-  private static validateAndConvertConfig(server: ServerConfig & { name: string }): ServerTransportConfig {
+  private static validateAndConvertConfig(
+    server: ServerConfig & { name: string }
+  ): ServerTransportConfig {
     const type = server.type || 'stdio';
 
     if (type === 'stdio') {

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
-import { useServerStore } from '@frontend/stores/server'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { useServerStore } from '@frontend/stores/server';
 
 // Mock the http module at the top level
 vi.mock('@frontend/utils/http', () => ({
@@ -10,147 +10,154 @@ vi.mock('@frontend/utils/http', () => ({
     put: vi.fn(),
     delete: vi.fn()
   }
-}))
+}));
 
 describe('Server Store', () => {
   beforeEach(() => {
     // Create a new pinia instance for each test
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = createPinia();
+    setActivePinia(pinia);
 
     // Clear all mocks
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   afterEach(() => {
     // Clean up
-  })
+  });
 
   it('should initialize with empty servers array', () => {
-    const store = useServerStore()
-    expect(store.servers).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
+    const store = useServerStore();
+    expect(store.servers).toEqual([]);
+    expect(store.loading).toBe(false);
+    expect(store.error).toBeNull();
+  });
 
   it('should have correct stats when no servers', () => {
-    const store = useServerStore()
-    expect(store.stats.total).toBe(0)
-    expect(store.stats.running).toBe(0)
-    expect(store.stats.errors).toBe(0)
-  })
+    const store = useServerStore();
+    expect(store.stats.total).toBe(0);
+    expect(store.stats.running).toBe(0);
+    expect(store.stats.errors).toBe(0);
+  });
 
   it('should select server correctly', () => {
-    const store = useServerStore()
-    store.selectServer('test-id')
-    expect(store.selectedServerId).toBe('test-id')
-  })
+    const store = useServerStore();
+    store.selectServer('test-id');
+    expect(store.selectedServerId).toBe('test-id');
+  });
 
   it('should fetch servers successfully', async () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
     // Mock the HTTP responses
-    const mockServers = [{ name: 'test-server', config: { type: 'stdio' as const } }]
-    const mockInstances = { 'test-server': [{ id: 'instance-1', timestamp: 1234567890, hash: 'abc123' }] }
-    const mockStatuses = [{ id: 'instance-1', status: { connected: true, toolsCount: 2, resourcesCount: 1 } }]
+    const mockServers = [{ name: 'test-server', config: { type: 'stdio' as const } }];
+    const mockInstances = {
+      'test-server': [{ id: 'instance-1', timestamp: 1234567890, hash: 'abc123' }]
+    };
+    const mockStatuses = [
+      { id: 'instance-1', status: { connected: true, toolsCount: 2, resourcesCount: 1 } }
+    ];
 
     // Import the actual http module to access its methods
-    const { http } = await import('@frontend/utils/http')
+    const { http } = await import('@frontend/utils/http');
 
     // Mock the implementations
     vi.mocked(http.get).mockImplementation((url: string) => {
-      if (url === '/web/servers') return Promise.resolve(mockServers)
-      if (url === '/web/server-instances') return Promise.resolve(mockInstances)
-      if (url === '/web/mcp/status') return Promise.resolve(mockStatuses)
-      return Promise.reject(new Error('Unknown URL'))
-    })
+      if (url === '/web/servers') return Promise.resolve(mockServers);
+      if (url === '/web/server-instances') return Promise.resolve(mockInstances);
+      if (url === '/web/mcp/status') return Promise.resolve(mockStatuses);
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
-    await store.fetchServers()
+    await store.fetchServers();
 
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.servers.length).toBe(1)
-    expect(store.servers[0].name).toBe('test-server')
-    expect(store.servers[0].status).toBe('online')
-  })
+    expect(store.loading).toBe(false);
+    expect(store.error).toBeNull();
+    expect(store.servers.length).toBe(1);
+    expect(store.servers[0].name).toBe('test-server');
+    expect(store.servers[0].status).toBe('online');
+  });
 
   it('should handle fetch servers error', async () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
-    const { http } = await import('@frontend/utils/http')
-    vi.mocked(http.get).mockImplementation(() => Promise.reject(new Error('Network error')))
+    const { http } = await import('@frontend/utils/http');
+    vi.mocked(http.get).mockImplementation(() => Promise.reject(new Error('Network error')));
 
-    await store.fetchServers()
+    await store.fetchServers();
 
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe('Network error')
-  })
+    expect(store.loading).toBe(false);
+    expect(store.error).toBe('Network error');
+  });
 
   it('should add server successfully', async () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
-    const { http } = await import('@frontend/utils/http')
+    const { http } = await import('@frontend/utils/http');
 
     // Mock the HTTP responses
     vi.mocked(http.post).mockImplementation((url: string) => {
       if (url === '/web/servers') {
-        return Promise.resolve({ name: 'new-server', config: { type: 'stdio' as const } })
+        return Promise.resolve({ name: 'new-server', config: { type: 'stdio' as const } });
       }
-      return Promise.reject(new Error('Unknown URL'))
-    })
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
     vi.mocked(http.get).mockImplementation((url: string) => {
-      if (url === '/web/servers') return Promise.resolve([{ name: 'new-server', config: { type: 'stdio' as const } }])
-      if (url === '/web/server-instances') return Promise.resolve({})
-      if (url === '/web/mcp/status') return Promise.resolve([])
-      return Promise.reject(new Error('Unknown URL'))
-    })
+      if (url === '/web/servers')
+        return Promise.resolve([{ name: 'new-server', config: { type: 'stdio' as const } }]);
+      if (url === '/web/server-instances') return Promise.resolve({});
+      if (url === '/web/mcp/status') return Promise.resolve([]);
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
-    await store.addServer({ name: 'new-server', config: { type: 'stdio' } })
+    await store.addServer({ name: 'new-server', config: { type: 'stdio' } });
 
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
+    expect(store.loading).toBe(false);
+    expect(store.error).toBeNull();
     expect(http.post).toHaveBeenCalledWith('/web/servers', {
       name: 'new-server',
       config: { type: 'stdio' }
-    })
-  })
+    });
+  });
 
   it('should handle add server error', async () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
-    const { http } = await import('@frontend/utils/http')
-    vi.mocked(http.post).mockImplementation(() => Promise.reject(new Error('Server error')))
+    const { http } = await import('@frontend/utils/http');
+    vi.mocked(http.post).mockImplementation(() => Promise.reject(new Error('Server error')));
 
-    await expect(store.addServer({ name: 'test', config: { type: 'stdio' } }))
-      .rejects
-      .toThrow('Server error')
+    await expect(store.addServer({ name: 'test', config: { type: 'stdio' } })).rejects.toThrow(
+      'Server error'
+    );
 
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe('Server error')
-  })
+    expect(store.loading).toBe(false);
+    expect(store.error).toBe('Server error');
+  });
 
   it('should update server status correctly', () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
     // Add a mock server
-    store.servers = [{
-      id: 'test-id',
-      name: 'test-server',
-      status: 'offline',
-      type: 'local',
-      config: { type: 'stdio' },
-      instance: { id: 'test-id', timestamp: 1234567890, hash: 'abc123' },
-      logs: []
-    }]
+    store.servers = [
+      {
+        id: 'test-id',
+        name: 'test-server',
+        status: 'offline',
+        type: 'local',
+        config: { type: 'stdio' },
+        instance: { id: 'test-id', timestamp: 1234567890, hash: 'abc123' },
+        logs: []
+      }
+    ];
 
-    store.updateServerStatus('test-id', 'online')
+    store.updateServerStatus('test-id', 'online');
 
-    expect(store.servers[0].status).toBe('online')
-  })
+    expect(store.servers[0].status).toBe('online');
+  });
 
   it('should compute stats correctly with mixed server statuses', () => {
-    const store = useServerStore()
+    const store = useServerStore();
 
     store.servers = [
       {
@@ -180,10 +187,10 @@ describe('Server Store', () => {
         instance: { id: 'server-3', timestamp: 1234567890, hash: 'ghi789' },
         logs: []
       }
-    ]
+    ];
 
-    expect(store.stats.total).toBe(3)
-    expect(store.stats.running).toBe(1)
-    expect(store.stats.errors).toBe(1)
-  })
-})
+    expect(store.stats.total).toBe(3);
+    expect(store.stats.running).toBe(1);
+    expect(store.stats.errors).toBe(1);
+  });
+});

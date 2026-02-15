@@ -1,10 +1,12 @@
 <template>
   <el-config-provider :locale="elLocale">
     <!-- Root container handling theme bg/text - HOT RELOAD TEST -->
-    <div :class="[
-      'app-container h-screen w-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300',
-      theme === 'dark' ? 'dark' : ''
-    ]">
+    <div
+      :class="[
+        'app-container h-screen w-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300',
+        theme === 'dark' ? 'dark' : ''
+      ]"
+    >
       <Header />
       <div class="flex-1 flex overflow-hidden relative">
         <router-view />
@@ -14,50 +16,56 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import en from 'element-plus/es/locale/lang/en'
-import Header from './components/HeaderView.vue'
-import { useTheme, type Theme } from './composables/useTheme'
-import { useSystemStore } from './stores/system'
-import { useWebSocketStore } from './stores/websocket'
+import { computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
+import en from 'element-plus/es/locale/lang/en';
+import Header from './components/HeaderView.vue';
+import { useTheme, type Theme } from './composables/useTheme';
+import { useSystemStore } from './stores/system';
+import { useWebSocketStore } from './stores/websocket';
 
-const { locale } = useI18n()
-const { theme, setTheme } = useTheme()
-const systemStore = useSystemStore()
-useWebSocketStore()
+const { locale } = useI18n();
+const { theme, setTheme } = useTheme();
+const systemStore = useSystemStore();
+useWebSocketStore();
 
 const elLocale = computed(() => {
-  return locale.value === 'zh' ? zhCn : en
-})
+  return locale.value === 'zh' ? zhCn : en;
+});
 
 onMounted(async () => {
-  await systemStore.fetchConfig()
+  await systemStore.fetchConfig();
 
   // Apply initial config
   if (systemStore.config.system.language) {
-    locale.value = systemStore.config.system.language
+    locale.value = systemStore.config.system.language;
   }
   if (systemStore.config.system.theme) {
     const themeValue = systemStore.config.system.theme as Theme;
-    setTheme(themeValue)
+    setTheme(themeValue);
   }
-})
+});
 
 // Watch for store changes to sync global state
-watch(() => systemStore.config.system.theme, (newTheme) => {
-  if (newTheme && newTheme !== theme.value) {
-    const themeValue = newTheme as Theme;
-    setTheme(themeValue)
+watch(
+  () => systemStore.config.system.theme,
+  (newTheme) => {
+    if (newTheme && newTheme !== theme.value) {
+      const themeValue = newTheme as Theme;
+      setTheme(themeValue);
+    }
   }
-})
+);
 
-watch(() => systemStore.config.system.language, (newLang) => {
-  if (newLang && newLang !== locale.value) {
-    locale.value = newLang
+watch(
+  () => systemStore.config.system.language,
+  (newLang) => {
+    if (newLang && newLang !== locale.value) {
+      locale.value = newLang;
+    }
   }
-})
+);
 </script>
 
 <style>

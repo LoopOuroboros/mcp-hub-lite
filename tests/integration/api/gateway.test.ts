@@ -45,7 +45,7 @@ vi.mock('@utils/logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn(),
+    debug: vi.fn()
   }
 }));
 
@@ -62,7 +62,7 @@ vi.mock('@services/mcp-connection-manager.js', () => ({
 vi.mock('@services/hub-manager.service.js', () => ({
   hubManager: {
     getServerById: mocks.getServerById,
-    getAllServers: vi.fn().mockReturnValue([{ id: 'server1', name: 'Test Server' }]),
+    getAllServers: vi.fn().mockReturnValue([{ id: 'server1', name: 'Test Server' }])
   }
 }));
 
@@ -76,7 +76,7 @@ vi.mock('@services/hub-tools.service.js', () => ({
     findTools: mocks.findTools,
     listServers: mocks.listServers,
     findServers: mocks.findServers,
-    getSystemTools: mocks.getSystemTools,
+    getSystemTools: mocks.getSystemTools
   }
 }));
 
@@ -126,7 +126,6 @@ interface McpCallToolResponse {
 }
 
 type McpHandler<T = unknown> = (request: McpRequest) => Promise<T>;
-
 
 describe('GatewayService', () => {
   beforeEach(() => {
@@ -256,15 +255,43 @@ describe('GatewayService', () => {
     const mockTools: MockTool[] = [];
     vi.mocked(mocks.getAllTools).mockReturnValue(mockTools);
     vi.mocked(mocks.getSystemTools).mockReturnValue([
-        { name: 'list_servers', description: 'List all servers', inputSchema: {} },
-        { name: 'find_servers', description: 'Find servers matching a pattern', inputSchema: {} },
-        { name: 'list_all_tools_in_server', description: 'List all tools from a specific server', inputSchema: {} },
-        { name: 'find_tools_in_server', description: 'Find tools matching a pattern in a specific server', inputSchema: {} },
-        { name: 'get_tool', description: 'Get complete schema for a specific tool from a specific server', inputSchema: {} },
-        { name: 'call_tool', description: 'Call a specific tool from a specific server', inputSchema: {} },
-        { name: 'find_tools', description: 'Find tools matching a pattern across all connected servers', inputSchema: {} },
-        { name: 'list_resources', description: 'List all Hub resources (servers, tools, and resources metadata)', inputSchema: {} },
-        { name: 'read_resource', description: 'Read content from a specific Hub resource URI', inputSchema: {} }
+      { name: 'list_servers', description: 'List all servers', inputSchema: {} },
+      { name: 'find_servers', description: 'Find servers matching a pattern', inputSchema: {} },
+      {
+        name: 'list_all_tools_in_server',
+        description: 'List all tools from a specific server',
+        inputSchema: {}
+      },
+      {
+        name: 'find_tools_in_server',
+        description: 'Find tools matching a pattern in a specific server',
+        inputSchema: {}
+      },
+      {
+        name: 'get_tool',
+        description: 'Get complete schema for a specific tool from a specific server',
+        inputSchema: {}
+      },
+      {
+        name: 'call_tool',
+        description: 'Call a specific tool from a specific server',
+        inputSchema: {}
+      },
+      {
+        name: 'find_tools',
+        description: 'Find tools matching a pattern across all connected servers',
+        inputSchema: {}
+      },
+      {
+        name: 'list_resources',
+        description: 'List all Hub resources (servers, tools, and resources metadata)',
+        inputSchema: {}
+      },
+      {
+        name: 'read_resource',
+        description: 'Read content from a specific Hub resource URI',
+        inputSchema: {}
+      }
     ]);
 
     // Clear toolCache to ensure only system tools are returned
@@ -372,7 +399,7 @@ describe('GatewayService', () => {
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(['Test Server'], null, 2)
             }
           ]

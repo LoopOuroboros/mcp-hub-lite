@@ -50,13 +50,13 @@ class ClientTrackerService {
         // Convert file:// uri to path if possible, or just use URI
         const root = roots[0];
         if (root.uri.startsWith('file://')) {
-             try {
-                 client.cwd = fileURLToPath(root.uri);
-             } catch {
-                 client.cwd = root.uri;
-             }
-        } else {
+          try {
+            client.cwd = fileURLToPath(root.uri);
+          } catch {
             client.cwd = root.uri;
+          }
+        } else {
+          client.cwd = root.uri;
         }
         logger.debug(`Inferred CWD for session ${sessionId} from roots: ${client.cwd}`);
       }

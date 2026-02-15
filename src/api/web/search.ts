@@ -13,7 +13,7 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
       q: string;
       limit?: number;
       offset?: number;
-    }
+    };
   }>('/web/search', async (request) => {
     const { q, limit, offset } = request.query;
 
@@ -40,7 +40,7 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
         query: q,
         filters: options.filters,
         processingTime: 0, // To be implemented: measure processing time
-        cached: false     // To be implemented: check cache status
+        cached: false // To be implemented: check cache status
       }
     };
   });

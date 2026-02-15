@@ -22,7 +22,7 @@ export class EventBusService {
   publish(eventType: string, data: EventData): void {
     const listeners = this.listeners.get(eventType);
     if (listeners) {
-      listeners.forEach(listener => {
+      listeners.forEach((listener) => {
         try {
           listener(data);
         } catch (error) {
@@ -122,7 +122,7 @@ export const EventTypes = {
 
   // 客户端相关事件
   CLIENT_CONNECTED: 'client-connected',
-  CLIENT_DISCONNECTED: 'client-disconnected',
+  CLIENT_DISCONNECTED: 'client-disconnected'
 } as const;
 
 // 创建全局事件总线实例

@@ -34,7 +34,7 @@ export default {
   },
   resources: {
     title: 'MCP Resource Gateway',
-    searchPlaceholder: "Search all resources...",
+    searchPlaceholder: 'Search all resources...',
     noResources: 'No resources found. Connect some servers to get started.',
     read: 'Read',
     serverTag: 'Server',
@@ -225,4 +225,4 @@ export default {
     instance: 'Instance',
     selectInstance: 'Select an instance'
   }
-}
+};

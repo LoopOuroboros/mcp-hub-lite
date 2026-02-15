@@ -1,5 +1,5 @@
 <template>
-  <div 
+  <div
     class="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer"
     @click="$emit('call')"
   >
@@ -12,7 +12,10 @@
         >
           {{ tagName }}
         </span>
-        <span class="font-bold text-gray-900 dark:text-gray-100 font-mono text-base break-all" :title="title">
+        <span
+          class="font-bold text-gray-900 dark:text-gray-100 font-mono text-base break-all"
+          :title="title"
+        >
           {{ title }}
         </span>
       </div>
@@ -25,13 +28,13 @@
 
 <script setup lang="ts">
 defineProps<{
-  title: string
-  description?: string
-  tagName?: string
-  tagClass?: string
-}>()
+  title: string;
+  description?: string;
+  tagName?: string;
+  tagClass?: string;
+}>();
 
 defineEmits<{
-  (e: 'call'): void
-}>()
+  (e: 'call'): void;
+}>();
 </script>

@@ -183,7 +183,7 @@ describe('Logger', () => {
           writableLength: 0,
           writableObjectMode: false,
           writableCorked: 0,
-          destroyed: false,
+          destroyed: false
           // 添加其他必要的属性...
         } as unknown as WriteStream;
       });
@@ -269,23 +269,31 @@ describe('Logger', () => {
     logger = new Logger();
 
     // 测试彩色日志消息
-    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage('info', 'test message', {
-      pid: 123,
-      serverName: 'test-server',
-      traceId: '1234567890abcdef1234567890abcdef',
-      spanId: 'abcdef1234567890'
-    });
+    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage(
+      'info',
+      'test message',
+      {
+        pid: 123,
+        serverName: 'test-server',
+        traceId: '1234567890abcdef1234567890abcdef',
+        spanId: 'abcdef1234567890'
+      }
+    );
 
     expect(coloredMessage).toContain('[TID:1234567890abcdef1234567890abcdef]');
     expect(coloredMessage).toContain('[SID:abcdef1234567890]');
 
     // 测试纯文本日志消息
-    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage('info', 'test message', {
-      pid: 123,
-      serverName: 'test-server',
-      traceId: '1234567890abcdef1234567890abcdef',
-      spanId: 'abcdef1234567890'
-    });
+    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage(
+      'info',
+      'test message',
+      {
+        pid: 123,
+        serverName: 'test-server',
+        traceId: '1234567890abcdef1234567890abcdef',
+        spanId: 'abcdef1234567890'
+      }
+    );
 
     expect(plainMessage).toContain('[TID:1234567890abcdef1234567890abcdef]');
     expect(plainMessage).toContain('[SID:abcdef1234567890]');
@@ -295,19 +303,27 @@ describe('Logger', () => {
     logger = new Logger();
 
     // 测试彩色日志消息
-    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage('info', 'test message', {
-      pid: 123,
-      serverName: 'test-server'
-    });
+    const coloredMessage = (logger as unknown as LoggerWithPrivateMethods).createColoredLogMessage(
+      'info',
+      'test message',
+      {
+        pid: 123,
+        serverName: 'test-server'
+      }
+    );
 
     expect(coloredMessage).not.toContain('traceId');
     expect(coloredMessage).not.toContain('spanId');
 
     // 测试纯文本日志消息
-    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage('info', 'test message', {
-      pid: 123,
-      serverName: 'test-server'
-    });
+    const plainMessage = (logger as unknown as LoggerWithPrivateMethods).createLogMessage(
+      'info',
+      'test message',
+      {
+        pid: 123,
+        serverName: 'test-server'
+      }
+    );
 
     expect(plainMessage).not.toContain('traceId');
     expect(plainMessage).not.toContain('spanId');
@@ -324,7 +340,9 @@ describe('Logger', () => {
       spanId: 'abcdef1234567890'
     });
 
-    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]')
+    );
     expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
 
     // 恢复console方法
@@ -370,7 +388,9 @@ describe('Logger', () => {
       spanId: 'abcdef1234567890'
     });
 
-    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]')
+    );
     expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
 
     // 恢复console方法

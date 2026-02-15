@@ -13,7 +13,9 @@ vi.mock('@config/config-manager.js', () => ({
 }));
 
 // Helper function to create a complete system config with custom logging rotation
-function createTestConfig(rotationConfig: Partial<{rotationAge: string}> = {}): ReturnType<typeof configManager.getConfig> {
+function createTestConfig(
+  rotationConfig: Partial<{ rotationAge: string }> = {}
+): ReturnType<typeof configManager.getConfig> {
   return {
     version: '1.0.0',
     system: {
@@ -23,7 +25,7 @@ function createTestConfig(rotationConfig: Partial<{rotationAge: string}> = {}): 
       theme: 'system' as const,
       logging: {
         level: 'info' as const,
-        rotationAge: rotationConfig.rotationAge ?? '7d',
+        rotationAge: rotationConfig.rotationAge ?? '7d'
       }
     },
     security: {
@@ -87,7 +89,7 @@ describe('LogRotator', () => {
     expect(fs.existsSync(newDir)).toBe(true);
   });
 
-  it('should get current log file path with today\'s date', () => {
+  it("should get current log file path with today's date", () => {
     logRotator = new LogRotator(tempLogDir);
     const currentPath = logRotator.getCurrentLogFilePath();
 
@@ -152,7 +154,6 @@ describe('LogRotator', () => {
     const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(7); // default
   });
-
 
   it('should extract date from filename correctly', () => {
     logRotator = new LogRotator(tempLogDir);
@@ -222,7 +223,6 @@ describe('LogRotator', () => {
     expect(fs.existsSync(oldFilePath)).toBe(false);
     expect(fs.existsSync(recentFilePath)).toBe(true);
   });
-
 
   it('should handle rotation errors gracefully', () => {
     // Mock fs.readdirSync to throw an error

@@ -3,49 +3,53 @@
  * 管理工具调用的进度、结果和错误
  */
 
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { ToolCallStartedEvent, ToolCallCompletedEvent, ToolCallErrorEvent } from '@shared-types/websocket.types'
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import type {
+  ToolCallStartedEvent,
+  ToolCallCompletedEvent,
+  ToolCallErrorEvent
+} from '@shared-types/websocket.types';
 
 export interface ToolCall {
-  requestId: string
-  serverId: string
-  serverName: string
-  toolName: string
-  startTime: number
-  endTime?: number
-  status: 'running' | 'completed' | 'error'
-  args?: Record<string, unknown>
-  result?: unknown
-  error?: string
-  progress?: number // 0-100
+  requestId: string;
+  serverId: string;
+  serverName: string;
+  toolName: string;
+  startTime: number;
+  endTime?: number;
+  status: 'running' | 'completed' | 'error';
+  args?: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+  progress?: number; // 0-100
 }
 
 export const useToolCallsStore = defineStore('toolCalls', () => {
-  const calls = ref<Map<string, ToolCall>>(new Map())
+  const calls = ref<Map<string, ToolCall>>(new Map());
 
   const runningCalls = computed(() =>
-    Array.from(calls.value.values()).filter(c => c.status === 'running')
-  )
+    Array.from(calls.value.values()).filter((c) => c.status === 'running')
+  );
 
   // 添加或更新调用
   function updateCall(call: ToolCall) {
-    calls.value.set(call.requestId, call)
+    calls.value.set(call.requestId, call);
   }
 
   // 获取调用
   function getCall(requestId: string): ToolCall | undefined {
-    return calls.value.get(requestId)
+    return calls.value.get(requestId);
   }
 
   // 完成调用
   function completeCall(requestId: string, result: unknown, error?: string) {
-    const call = calls.value.get(requestId)
+    const call = calls.value.get(requestId);
     if (call) {
-      call.status = error ? 'error' : 'completed'
-      call.endTime = Date.now()
-      call.result = error ? undefined : result
-      call.error = error
+      call.status = error ? 'error' : 'completed';
+      call.endTime = Date.now();
+      call.result = error ? undefined : result;
+      call.error = error;
     }
   }
 
@@ -60,17 +64,17 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
       status: 'running',
       args: data.args,
       progress: 0
-    })
+    });
   }
 
   // 处理工具调用完成事件
   function handleToolCallCompleted(data: ToolCallCompletedEvent['data']) {
-    completeCall(data.requestId, data.result)
+    completeCall(data.requestId, data.result);
   }
 
   // 处理工具调用错误事件
   function handleToolCallError(data: ToolCallErrorEvent['data']) {
-    completeCall(data.requestId, undefined, data.error)
+    completeCall(data.requestId, undefined, data.error);
   }
 
   return {
@@ -82,5 +86,5 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
     handleToolCallStarted,
     handleToolCallCompleted,
     handleToolCallError
-  }
-})
+  };
+});

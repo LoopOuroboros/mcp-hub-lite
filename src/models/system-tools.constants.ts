@@ -93,7 +93,7 @@ export const SYSTEM_TOOL_NAMES = [
  * Type definition for system tool names
  * Provides type safety when working with system tool names
  */
-export type SystemToolName = typeof SYSTEM_TOOL_NAMES[number];
+export type SystemToolName = (typeof SYSTEM_TOOL_NAMES)[number];
 
 // Individual gateway server name constant
 /**

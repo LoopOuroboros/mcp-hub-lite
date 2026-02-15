@@ -32,14 +32,14 @@ export async function buildApp() {
 
   // Simple CORS for dev
   fastify.addHook('onRequest', (request, reply, done) => {
-      reply.header("Access-Control-Allow-Origin", "*");
-      reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      reply.header("Access-Control-Allow-Headers", "Content-Type");
-      if (request.method === 'OPTIONS') {
-          reply.send();
-          return;
-      }
-      done();
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type');
+    if (request.method === 'OPTIONS') {
+      reply.send();
+      return;
+    }
+    done();
   });
 
   // Register API routes first (before static files)
@@ -60,15 +60,17 @@ export async function buildApp() {
   const clientPath = path.join(__dirname, '../../client');
   fastify.register(fastifyStatic, {
     root: clientPath,
-    prefix: '/', // Serve at root
+    prefix: '/' // Serve at root
   });
 
   // Fallback route for SPA (redirect all non-API routes to index.html)
   fastify.setNotFoundHandler((request, reply) => {
     // Check if this is an API request
-    if (request.url.startsWith('/api') ||
-        request.url.startsWith('/web') ||
-        request.url.startsWith('/mcp')) {
+    if (
+      request.url.startsWith('/api') ||
+      request.url.startsWith('/web') ||
+      request.url.startsWith('/mcp')
+    ) {
       reply.code(404).send({
         message: `Route ${request.method}:${request.url} not found`,
         error: 'Not Found',

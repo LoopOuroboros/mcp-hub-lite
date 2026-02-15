@@ -1,4 +1,9 @@
-import { ConfigManager, configManager, ServerConfig, ServerInstanceConfig } from '@config/config-manager.js';
+import {
+  ConfigManager,
+  configManager,
+  ServerConfig,
+  ServerInstanceConfig
+} from '@config/config-manager.js';
 import { logger } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
@@ -13,7 +18,9 @@ export class HubManagerService {
   /**
    * 批量添加服务器配置（不自动启动，用于优化批量操作性能）
    */
-  async addServersWithoutAutoStart(servers: Array<{ name: string; config: Partial<ServerConfig> }>): Promise<void> {
+  async addServersWithoutAutoStart(
+    servers: Array<{ name: string; config: Partial<ServerConfig> }>
+  ): Promise<void> {
     await this.configManager.addServers(servers);
     // 为所有新增的服务器发布 SERVER_ADDED 事件
     for (const { name } of servers) {
@@ -64,11 +71,13 @@ export class HubManagerService {
     return this.configManager.getServers();
   }
 
-  getServerById(id: string): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
+  getServerById(
+    id: string
+  ): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
     // 遍历所有服务器和实例，查找匹配的 id
     const serverInstances = this.configManager.getServerInstances();
     for (const [serverName, instances] of Object.entries(serverInstances)) {
-      const instance = instances.find(inst => inst.id === id);
+      const instance = instances.find((inst) => inst.id === id);
       if (instance) {
         const serverConfig = this.configManager.getServerByName(serverName);
         if (serverConfig) {
@@ -105,7 +114,10 @@ export class HubManagerService {
     return newServer;
   }
 
-  async addServerInstance(name: string, instance: Partial<ServerInstanceConfig>): Promise<ServerInstanceConfig> {
+  async addServerInstance(
+    name: string,
+    instance: Partial<ServerInstanceConfig>
+  ): Promise<ServerInstanceConfig> {
     const newInstance = await this.configManager.addServerInstance(name, instance);
     logger.info(`Server instance added for server: [${name}]`);
 
@@ -141,7 +153,11 @@ export class HubManagerService {
     return updatedServer;
   }
 
-  async updateServerInstance(name: string, index: number, updates: Partial<ServerInstanceConfig>): Promise<void> {
+  async updateServerInstance(
+    name: string,
+    index: number,
+    updates: Partial<ServerInstanceConfig>
+  ): Promise<void> {
     await this.configManager.updateServerInstance(name, index, updates);
     logger.info(`Server instance updated for server: [${name}] at index: ${index}`);
 

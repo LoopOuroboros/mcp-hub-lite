@@ -34,7 +34,7 @@ export default {
   },
   resources: {
     title: 'MCP 资源网关',
-    searchPlaceholder: "搜索所有资源...",
+    searchPlaceholder: '搜索所有资源...',
     noResources: '未找到资源。请连接一些服务器以开始使用。',
     read: '读取',
     serverTag: '服务器',
@@ -226,4 +226,4 @@ export default {
     instance: '实例',
     selectInstance: '选择一个实例'
   }
-}
+};

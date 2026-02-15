@@ -1,9 +1,13 @@
 <template>
-  <div class="tools-view py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300">
+  <div
+    class="tools-view py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300"
+  >
     <!-- Header -->
     <div class="mb-6 shrink-0">
-      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">{{ $t('tools.title') }}</h2>
-      
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        {{ $t('tools.title') }}
+      </h2>
+
       <!-- Search Bar -->
       <div class="relative">
         <el-input
@@ -23,14 +27,16 @@
 
     <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
-      
       <!-- System Tools Section -->
       <section>
-        <div 
+        <div
           class="flex items-center gap-2 mb-4 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
           @click="collapsedSystemTools = !collapsedSystemTools"
         >
-          <el-icon class="transition-transform duration-200" :class="{ '-rotate-90': collapsedSystemTools }">
+          <el-icon
+            class="transition-transform duration-200"
+            :class="{ '-rotate-90': collapsedSystemTools }"
+          >
             <ArrowDown />
           </el-icon>
           <el-icon class="text-gray-900 dark:text-white" :size="20"><Setting /></el-icon>
@@ -39,9 +45,9 @@
             <span class="text-sm font-normal text-gray-500 ml-2">({{ systemTools.length }})</span>
           </h3>
         </div>
-        
+
         <!-- System Tools Grid -->
-        <div 
+        <div
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 transition-all duration-300"
           v-show="!collapsedSystemTools"
         >
@@ -63,7 +69,9 @@
           <el-icon class="text-gray-900 dark:text-white" :size="20"><Connection /></el-icon>
           <h3 class="text-lg font-bold text-gray-900 dark:text-white">
             {{ $t('tools.aggregatedTools') }}
-            <span class="text-sm font-normal text-gray-500 ml-2">({{ groupedTools.reduce((acc, group) => acc + group.tools.length, 0) }})</span>
+            <span class="text-sm font-normal text-gray-500 ml-2"
+              >({{ groupedTools.reduce((acc, group) => acc + group.tools.length, 0) }})</span
+            >
           </h3>
         </div>
 
@@ -78,23 +86,28 @@
         <div v-else class="space-y-6">
           <div v-for="group in groupedTools" :key="group.serverName" class="space-y-3">
             <!-- Server Header -->
-            <div 
+            <div
               class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 px-1 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               @click="toggleServer(group.serverName)"
             >
-              <el-icon class="transition-transform duration-200" :class="{ '-rotate-90': collapsedServers.has(group.serverName) }">
+              <el-icon
+                class="transition-transform duration-200"
+                :class="{ '-rotate-90': collapsedServers.has(group.serverName) }"
+              >
                 <ArrowDown />
               </el-icon>
               <span>{{ group.serverName }}</span>
-              <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{{ group.tools.length }}</span>
+              <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{{
+                group.tools.length
+              }}</span>
             </div>
 
             <!-- Collapsible Tools Grid -->
-        <div 
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300"
-          v-show="!collapsedServers.has(group.serverName)"
-        >
-          <ToolCard
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300"
+              v-show="!collapsedServers.has(group.serverName)"
+            >
+              <ToolCard
                 v-for="tool in group.tools"
                 :key="tool.tool.name"
                 :title="tool.tool.name"
@@ -105,9 +118,8 @@
           </div>
         </div>
       </section>
-
     </div>
-    
+
     <ToolCallDialog
       v-if="selectedTool"
       v-model="showCallDialog"
@@ -120,52 +132,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus/icons-vue'
-import { http } from '@utils/http'
-import { useServerStore } from '@stores/server'
-import { useI18n } from 'vue-i18n'
-import type { Tool } from '@shared-models/tool.model'
-import ToolCallDialog from '@components/ToolCallDialog.vue'
-import ToolCard from '@components/ToolCard.vue'
+import { ref, onMounted, computed } from 'vue';
+import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus/icons-vue';
+import { http } from '@utils/http';
+import { useServerStore } from '@stores/server';
+import { useI18n } from 'vue-i18n';
+import type { Tool } from '@shared-models/tool.model';
+import ToolCallDialog from '@components/ToolCallDialog.vue';
+import ToolCard from '@components/ToolCard.vue';
 
-const { t } = useI18n()
+const { t } = useI18n();
 
 export interface SearchResult {
-  tool: Tool
-  score: number
+  tool: Tool;
+  score: number;
 }
 
-const searchQuery = ref('')
-const loading = ref(false)
-const searchResults = ref<SearchResult[]>([])
-const store = useServerStore()
+const searchQuery = ref('');
+const loading = ref(false);
+const searchResults = ref<SearchResult[]>([]);
+const store = useServerStore();
 
-const systemTools = ref<Tool[]>([])
-const showCallDialog = ref(false)
-const selectedTool = ref<Tool | null>(null)
-const collapsedServers = ref(new Set<string>())
-const collapsedSystemTools = ref(false)
+const systemTools = ref<Tool[]>([]);
+const showCallDialog = ref(false);
+const selectedTool = ref<Tool | null>(null);
+const collapsedServers = ref(new Set<string>());
+const collapsedSystemTools = ref(false);
 
 function toggleServer(serverName: string) {
   if (collapsedServers.value.has(serverName)) {
-    collapsedServers.value.delete(serverName)
+    collapsedServers.value.delete(serverName);
   } else {
-    collapsedServers.value.add(serverName)
+    collapsedServers.value.add(serverName);
   }
 }
 
 async function fetchSystemTools() {
   try {
-    const tools = await http.get<{ name: string; description: string }[]>('/web/hub-tools/system')
+    const tools = await http.get<{ name: string; description: string }[]>('/web/hub-tools/system');
     // 将系统工具转换为完整的 Tool 对象
-    systemTools.value = tools.map(tool => ({
-      ...tool,
-      serverName: 'system',
-      inputSchema: undefined
-    })).sort((a, b) => a.name.localeCompare(b.name))
+    systemTools.value = tools
+      .map((tool) => ({
+        ...tool,
+        serverName: 'system',
+        inputSchema: undefined
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
-    console.error('Failed to fetch system tools:', error)
+    console.error('Failed to fetch system tools:', error);
   }
 }
 
@@ -174,37 +188,41 @@ function openCallDialog(tool: Tool) {
   selectedTool.value = {
     ...tool,
     serverName: tool.serverName // 工具对象本身已经包含 serverName 属性
-  }
-  showCallDialog.value = true
+  };
+  showCallDialog.value = true;
 }
 
 async function fetchTools() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await http.get<{ results: SearchResult[] }>(`/web/search?q=${encodeURIComponent(searchQuery.value)}`)
-    searchResults.value = res.results || []
+    const res = await http.get<{ results: SearchResult[] }>(
+      `/web/search?q=${encodeURIComponent(searchQuery.value)}`
+    );
+    searchResults.value = res.results || [];
   } catch (error) {
-    console.error('Failed to fetch tools:', error)
+    console.error('Failed to fetch tools:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function handleSearch() {
   // Debounce could be added here
-  fetchTools()
+  fetchTools();
 }
 
 // Group tools by Server Name
 const groupedTools = computed(() => {
-  const groups: Record<string, SearchResult[]> = {}
+  const groups: Record<string, SearchResult[]> = {};
 
-  searchResults.value.forEach(result => {
+  searchResults.value.forEach((result) => {
     // 直接使用 tool.serverName 进行分组（后端已处理 allowedTools 过滤）
-    const server = store.servers.find(s => s.name === result.tool.serverName);
+    const server = store.servers.find((s) => s.name === result.tool.serverName);
 
     const statusText = server?.status === 'online' ? t('tools.online') : t('tools.offline');
-    const serverName = result.tool.serverName ? `${result.tool.serverName} (${statusText})` : 'Unknown';
+    const serverName = result.tool.serverName
+      ? `${result.tool.serverName} (${statusText})`
+      : 'Unknown';
 
     if (!groups[serverName]) {
       groups[serverName] = [];
@@ -218,16 +236,16 @@ const groupedTools = computed(() => {
       tools: tools.sort((a, b) => a.tool.name.localeCompare(b.tool.name))
     }))
     .sort((a, b) => a.serverName.localeCompare(b.serverName));
-})
+});
 
 onMounted(() => {
-  fetchSystemTools()
-  fetchTools()
+  fetchSystemTools();
+  fetchTools();
   // Ensure servers are loaded to resolve names
   if (store.servers.length === 0) {
-    store.fetchServers()
+    store.fetchServers();
   }
-})
+});
 </script>
 
 <style scoped>

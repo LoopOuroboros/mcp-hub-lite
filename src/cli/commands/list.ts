@@ -13,13 +13,15 @@ export const listCommand = new Command('list')
       } else {
         // Table format
         console.log('MCP Servers:');
-        console.table(servers.map(server => ({
-          Name: server.name,
-          // 现在需要显示服务器实例信息
-          Instances: server.instances?.length || 0,
-          Type: server.config.type,
-          Enabled: server.config.enabled
-        })));
+        console.table(
+          servers.map((server) => ({
+            Name: server.name,
+            // 现在需要显示服务器实例信息
+            Instances: server.instances?.length || 0,
+            Type: server.config.type,
+            Enabled: server.config.enabled
+          }))
+        );
       }
     } catch (error) {
       console.error('Failed to list servers:', error);

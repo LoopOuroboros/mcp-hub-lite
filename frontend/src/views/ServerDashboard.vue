@@ -6,9 +6,9 @@
 </template>
 
 <script setup lang="ts">
-import { useServerStore } from '@stores/server'
-import Dashboard from '@components/DashboardView.vue'
-import ServerDetail from '@components/ServerDetail.vue'
+import { useServerStore } from '@stores/server';
+import Dashboard from '@components/DashboardView.vue';
+import ServerDetail from '@components/ServerDetail.vue';
 
-const store = useServerStore()
+const store = useServerStore();
 </script>

@@ -39,8 +39,8 @@ class McpConnectionManager {
       const serverName = data as string;
       // 根据服务器名称找到所有实例并断开连接
       const serverInstances = hubManager.getServerInstanceByName(serverName);
-      serverInstances.forEach(instance => {
-        this.disconnect(instance.id!).catch(err => {
+      serverInstances.forEach((instance) => {
+        this.disconnect(instance.id!).catch((err) => {
           logger.warn(`Failed to disconnect deleted server instance ${instance.id}:`, err);
         });
       });
@@ -56,7 +56,9 @@ class McpConnectionManager {
         'mcp.server.name': 'unknown' // Will be updated with actual name after serverInfo is retrieved
       }),
       async () => {
-        let serverInfo: { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined;
+        let serverInfo:
+          | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
+          | undefined;
         try {
           logger.info(`Connecting to server [${server.id || 'unknown'}]...`);
 
@@ -83,7 +85,12 @@ class McpConnectionManager {
             throw new Error('STDIO server requires a valid command');
           }
 
-          if ((server.type === 'sse' || server.type === 'streamable-http' || server.type === 'http') && (!server.url || server.url.trim() === '')) {
+          if (
+            (server.type === 'sse' ||
+              server.type === 'streamable-http' ||
+              server.type === 'http') &&
+            (!server.url || server.url.trim() === '')
+          ) {
             const displayType = server.type === 'http' ? 'streamable-http' : server.type;
             throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
           }
@@ -128,12 +135,15 @@ class McpConnectionManager {
             };
           }
 
-          const client = new Client({
-            name: MCP_HUB_LITE_SERVER,
-            version: "1.0.0"
-          }, {
-            capabilities: {}
-          });
+          const client = new Client(
+            {
+              name: MCP_HUB_LITE_SERVER,
+              version: '1.0.0'
+            },
+            {
+              capabilities: {}
+            }
+          );
 
           await client.connect(transport);
 
@@ -154,7 +164,7 @@ class McpConnectionManager {
           // 更新服务器实例信息（合并 pid 和 startTime）
           const serverName = serverInfo.name;
           const instances = hubManager.getServerInstanceByName(serverName);
-          const instanceIndex = instances.findIndex(inst => inst.id === server.id);
+          const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
           if (instanceIndex !== -1) {
             hubManager.updateServerInstance(serverName, instanceIndex, {
               pid: pid,
@@ -210,7 +220,10 @@ class McpConnectionManager {
 
           return true;
         } catch (error) {
-          logger.error(`Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`, error);
+          logger.error(
+            `Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`,
+            error
+          );
           const serverId = server.id || 'unknown';
           this.serverStatus.set(serverId, {
             connected: false,
@@ -358,7 +371,7 @@ class McpConnectionManager {
           break;
         }
       }
-      const tools: Tool[] = result.tools.map(t => ({
+      const tools: Tool[] = result.tools.map((t) => ({
         name: t.name,
         description: t.description,
         inputSchema: t.inputSchema as JsonSchema,
@@ -416,7 +429,7 @@ class McpConnectionManager {
       }
 
       const result = await client.listResources();
-      const resources: Resource[] = result.resources.map(r => ({
+      const resources: Resource[] = result.resources.map((r) => ({
         name: r.name,
         uri: r.uri,
         mimeType: r.mimeType,
@@ -432,13 +445,21 @@ class McpConnectionManager {
         status.lastCheck = Date.now();
       }
 
-      logger.info(`Refreshed resources for server [${serverId}]: ${resources.length} resources found`);
+      logger.info(
+        `Refreshed resources for server [${serverId}]: ${resources.length} resources found`
+      );
       return resources;
     } catch (error: unknown) {
       // Check if error is "Method not found" (MCP error -32601), which means server doesn't implement resources
       if (error && typeof error === 'object' && 'code' in error && error.code === -32601) {
         logger.info(`Server [${serverId}] does not support resources functionality`);
-      } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.includes('Method not found')) {
+      } else if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof error.message === 'string' &&
+        error.message.includes('Method not found')
+      ) {
         logger.info(`Server [${serverId}] does not support resources functionality`);
       } else {
         logger.warn(`Failed to list resources for server [${serverId}]:`, error);
@@ -495,7 +516,11 @@ class McpConnectionManager {
     return this.clients.get(serverId);
   }
 
-  public async callToolByName(name: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  public async callToolByName(
+    name: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
       throw new Error(`Server ${name} not connected or not found`);
@@ -530,7 +555,7 @@ class McpConnectionManager {
 
   public getTool(serverName: string, toolName: string): Tool | undefined {
     const tools = this.serverNameToolCache.get(serverName);
-    return tools?.find(t => t.name === toolName);
+    return tools?.find((t) => t.name === toolName);
   }
 
   public getAllResources(): Record<string, Resource[]> {
@@ -556,7 +581,11 @@ class McpConnectionManager {
     return result;
   }
 
-  public async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  public async callTool(
+    serverId: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     // Use trace helper to wrap the tool call
     return withSpan<unknown>(
       'mcp.tool.call',

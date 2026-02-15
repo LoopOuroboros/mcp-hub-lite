@@ -53,7 +53,9 @@ describe('ConfigManager', () => {
           fs.rmSync(tempConfigDir, { recursive: true, force: true });
           break;
         } catch (error) {
-          console.warn(`Failed to clean up test temp directory (retries left: ${retries - 1}): ${error}`);
+          console.warn(
+            `Failed to clean up test temp directory (retries left: ${retries - 1}): ${error}`
+          );
           retries--;
           if (retries > 0) {
             // 等待一段时间后重试
@@ -97,7 +99,7 @@ describe('ConfigManager', () => {
             level: 'debug' as const,
             rotation: {
               enabled: true,
-              maxAge: '30d',
+              maxAge: '30d'
             }
           }
         },
@@ -152,7 +154,6 @@ describe('ConfigManager', () => {
       expect(config.version).toBe('1.0.0');
       expect(config.system.host).toBe('localhost');
     });
-
   });
 
   describe('Configuration Saving', () => {
@@ -211,7 +212,9 @@ describe('ConfigManager', () => {
             fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
             break;
           } catch (error) {
-            console.warn(`Failed to remove existing directory (retries left: ${retries - 1}): ${error}`);
+            console.warn(
+              `Failed to remove existing directory (retries left: ${retries - 1}): ${error}`
+            );
             retries--;
             if (retries > 0) {
               Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
@@ -247,7 +250,9 @@ describe('ConfigManager', () => {
             fs.rmSync(path.dirname(nonExistentPath), { recursive: true, force: true });
             break;
           } catch (error) {
-            console.warn(`Failed to clean up test directory (retries left: ${retries - 1}): ${error}`);
+            console.warn(
+              `Failed to clean up test directory (retries left: ${retries - 1}): ${error}`
+            );
             retries--;
             if (retries > 0) {
               Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
@@ -314,8 +319,7 @@ describe('ConfigManager', () => {
         type: 'invalid-type' as unknown as ServerConfig['type'] // 无效的类型
       };
 
-      await expect(configManager.addServer('test-server', invalidServerConfig))
-        .rejects.toThrow();
+      await expect(configManager.addServer('test-server', invalidServerConfig)).rejects.toThrow();
     });
 
     it('should get server by name', () => {
@@ -441,8 +445,9 @@ describe('ConfigManager', () => {
         timestamp: 'invalid-timestamp' as unknown as number // 应该是数字
       } as ServerInstanceConfig;
 
-      await expect(configManager.addServerInstance('test-server', invalidInstance))
-        .rejects.toThrow();
+      await expect(
+        configManager.addServerInstance('test-server', invalidInstance)
+      ).rejects.toThrow();
     });
 
     it('should get server instances by name', () => {
@@ -691,7 +696,10 @@ describe('ConfigManager', () => {
   describe('Edge Cases and Error Handling', () => {
     it('should handle constructor with temp config path', () => {
       // 使用临时目录创建配置文件路径
-      const tempDir = path.join(os.tmpdir(), `mcp-hub-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+      const tempDir = path.join(
+        os.tmpdir(),
+        `mcp-hub-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+      );
       fs.mkdirSync(tempDir, { recursive: true });
       const testTempConfigPath = path.join(tempDir, '.mcp-hub.json');
 
@@ -711,7 +719,9 @@ describe('ConfigManager', () => {
           fs.rmSync(tempDir, { recursive: true, force: true });
           break;
         } catch (error) {
-          console.warn(`Failed to clean up temp directory (retries left: ${retries - 1}): ${error}`);
+          console.warn(
+            `Failed to clean up temp directory (retries left: ${retries - 1}): ${error}`
+          );
           retries--;
           if (retries > 0) {
             Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
@@ -730,6 +740,5 @@ describe('ConfigManager', () => {
       expect(config.version).toBe('1.0.0');
       expect(config.system.host).toBe('localhost');
     });
-
   });
 });

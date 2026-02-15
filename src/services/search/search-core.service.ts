@@ -40,7 +40,7 @@ export class SearchCoreService {
     let results: SearchResult[] = [];
 
     if (!query.trim()) {
-      results = filteredTools.map(tool => ({
+      results = filteredTools.map((tool) => ({
         tool,
         score: 1
       }));
@@ -70,7 +70,7 @@ export class SearchCoreService {
     const tools = mcpConnectionManager.getAllToolsByServerName();
 
     // 基于服务器名称获取配置并应用 allowedTools 过滤
-    const filteredTools = tools.filter(tool => {
+    const filteredTools = tools.filter((tool) => {
       const serverConfig = hubManager.getServerByName(tool.serverName);
       if (!serverConfig) return true;
 

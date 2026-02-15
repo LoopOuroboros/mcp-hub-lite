@@ -43,7 +43,6 @@ export class LogRotator {
     return 7; // default to 7 days
   }
 
-
   /**
    * Get the current log file path based on today's date
    */
@@ -62,8 +61,8 @@ export class LogRotator {
   public rotateLogs(): void {
     try {
       const files = fs.readdirSync(this.logDir);
-      const logFiles = files.filter(file =>
-        file.startsWith(`${this.logBaseName}.`) && file.endsWith('.log')
+      const logFiles = files.filter(
+        (file) => file.startsWith(`${this.logBaseName}.`) && file.endsWith('.log')
       );
 
       const now = new Date();
@@ -90,15 +89,15 @@ export class LogRotator {
     try {
       const files = fs.readdirSync(this.logDir);
       const logFiles = files
-        .filter(file => file.startsWith(`${this.logBaseName}.`) && file.endsWith('.log'))
-        .map(file => ({
+        .filter((file) => file.startsWith(`${this.logBaseName}.`) && file.endsWith('.log'))
+        .map((file) => ({
           name: file,
           path: path.join(this.logDir, file),
           date: this.extractDateFromFilename(file)
         }))
-        .filter(item => item.date !== null)
+        .filter((item) => item.date !== null)
         .sort((a, b) => (b.date as Date).getTime() - (a.date as Date).getTime())
-        .map(item => item.path);
+        .map((item) => item.path);
 
       return logFiles;
     } catch (error) {

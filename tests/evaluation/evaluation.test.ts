@@ -57,53 +57,80 @@ describe('MCP Evaluation Tests', () => {
 
   it('should have independent and complex questions', () => {
     const content = fs.readFileSync(evaluationFile, 'utf-8');
-    const questions = (content.match(/<question>([\s\S]*?)<\/question>/g) || []).map(match =>
+    const questions = (content.match(/<question>([\s\S]*?)<\/question>/g) || []).map((match) =>
       match.replace(/<\/?question>/g, '').trim()
     );
 
     // Check if questions contain keywords that require multiple tool calls
     const complexQuestionIndicators = [
-      'List', 'Count', 'Find', 'Get', 'Distributed', 'Calculate', 'Group', 'Total number', 'Average', 'Filter'
+      'List',
+      'Count',
+      'Find',
+      'Get',
+      'Distributed',
+      'Calculate',
+      'Group',
+      'Total number',
+      'Average',
+      'Filter'
     ];
 
     questions.forEach((question, index) => {
-      const hasComplexIndicator = complexQuestionIndicators.some(indicator =>
+      const hasComplexIndicator = complexQuestionIndicators.some((indicator) =>
         question.includes(indicator)
       );
 
-      expect(hasComplexIndicator, `Question ${index + 1} does not appear to be complex enough: "${question}"`).toBe(true);
+      expect(
+        hasComplexIndicator,
+        `Question ${index + 1} does not appear to be complex enough: "${question}"`
+      ).toBe(true);
     });
   });
 
   it('should have read-only operations', () => {
     const content = fs.readFileSync(evaluationFile, 'utf-8');
-    const answers = (content.match(/<answer>([\s\S]*?)<\/answer>/g) || []).map(match =>
+    const answers = (content.match(/<answer>([\s\S]*?)<\/answer>/g) || []).map((match) =>
       match.replace(/<\/?answer>/g, '').trim()
     );
 
     // Check if answers contain keywords for destructive operations
     const destructiveIndicators = [
-      'Create', 'Delete', 'Update', 'Modify', 'Add', 'Remove', 'Execute', 'Run'
+      'Create',
+      'Delete',
+      'Update',
+      'Modify',
+      'Add',
+      'Remove',
+      'Execute',
+      'Run'
     ];
 
     answers.forEach((answer, index) => {
-      const hasDestructiveIndicator = destructiveIndicators.some(indicator =>
+      const hasDestructiveIndicator = destructiveIndicators.some((indicator) =>
         answer.includes(indicator)
       );
 
-      expect(hasDestructiveIndicator, `Answer ${index + 1} may contain destructive operations: "${answer}"`).toBe(false);
+      expect(
+        hasDestructiveIndicator,
+        `Answer ${index + 1} may contain destructive operations: "${answer}"`
+      ).toBe(false);
     });
   });
 
   it('should reference valid tools', () => {
     const validTools = [
-      'list-servers', 'find-servers', 'list-all-tools-in-server',
-      'find-tools-in-server', 'get-tool', 'call-tool', 'find-tools'
+      'list-servers',
+      'find-servers',
+      'list-all-tools-in-server',
+      'find-tools-in-server',
+      'get-tool',
+      'call-tool',
+      'find-tools'
     ];
 
     const content = fs.readFileSync(evaluationFile, 'utf-8');
 
-    validTools.forEach(tool => {
+    validTools.forEach((tool) => {
       expect(content).toContain(tool);
     });
   });

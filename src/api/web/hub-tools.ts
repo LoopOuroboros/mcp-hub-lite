@@ -14,8 +14,8 @@ import {
 
 // 请求选项接口
 interface RequestOptions {
-  sessionId?: string;  // 会话 ID（用于选择特定实例）
-  tags?: Record<string, string>;  // 标签（后续支持）
+  sessionId?: string; // 会话 ID（用于选择特定实例）
+  tags?: Record<string, string>; // 标签（后续支持）
 }
 
 // 系统工具参数的联合类型
@@ -41,14 +41,17 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   // POST /web/hub-tools/system/:toolName/call - Call a system tool
   fastify.post<{
     Params: { toolName: string };
-    Body: { toolArgs: Record<string, unknown> }
+    Body: { toolArgs: Record<string, unknown> };
   }>('/web/hub-tools/system/:toolName/call', async (request, reply) => {
     try {
       const { toolName } = request.params;
       const { toolArgs = {} } = request.body;
 
       // 通过 callSystemTool 方法统一处理系统工具调用，确保日志记录
-      return await hubToolsService.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
+      return await hubToolsService.callSystemTool(
+        toolName as SystemToolName,
+        toolArgs as SystemToolArgs
+      );
     } catch (error) {
       if (error instanceof Error && error.message.includes('System tool')) {
         return reply.code(404).send({
@@ -75,13 +78,9 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       pattern: string;
       searchIn?: 'name' | 'description' | 'both';
       caseSensitive?: string;
-    }
+    };
   }>('/web/hub-tools/servers/find', async (request) => {
-    const {
-      pattern,
-      searchIn = 'both',
-      caseSensitive = 'false'
-    } = request.query;
+    const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
 
     const servers = await hubToolsService.findServers(
       pattern,
@@ -95,7 +94,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   // GET /web/hub-tools/servers/:serverName/tools - List all tools in a specific server
   fastify.get<{
     Params: { serverName: string };
-    Querystring: { sessionId?: string; tags?: string }
+    Querystring: { sessionId?: string; tags?: string };
   }>('/web/hub-tools/servers/:serverName/tools', async (request, reply) => {
     try {
       const { serverName } = request.params;
@@ -125,7 +124,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       caseSensitive?: string;
       sessionId?: string;
       tags?: string;
-    }
+    };
   }>('/web/hub-tools/servers/:serverName/tools/find', async (request, reply) => {
     try {
       const { serverName } = request.params;
@@ -168,7 +167,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   // GET /web/hub-tools/servers/:serverName/tools/:toolName - Get specific tool details
   fastify.get<{
     Params: { serverName: string; toolName: string };
-    Querystring: { sessionId?: string; tags?: string }
+    Querystring: { sessionId?: string; tags?: string };
   }>('/web/hub-tools/servers/:serverName/tools/:toolName', async (request, reply) => {
     try {
       const { serverName, toolName } = request.params;
@@ -206,15 +205,17 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   // POST /web/hub-tools/servers/:serverName/tools/:toolName/call - Call a specific tool
   const CallToolBodySchema = z.object({
     toolArgs: z.record(z.string(), z.any()),
-    requestOptions: z.object({
-      sessionId: z.string().optional(),
-      tags: z.record(z.string(), z.string()).optional()
-    }).optional()
+    requestOptions: z
+      .object({
+        sessionId: z.string().optional(),
+        tags: z.record(z.string(), z.string()).optional()
+      })
+      .optional()
   });
 
   fastify.post<{
     Params: { serverName: string; toolName: string };
-    Body: { toolArgs: Record<string, unknown>; requestOptions?: RequestOptions }
+    Body: { toolArgs: Record<string, unknown>; requestOptions?: RequestOptions };
   }>('/web/hub-tools/servers/:serverName/tools/:toolName/call', async (request, reply) => {
     try {
       const { serverName, toolName } = request.params;
@@ -248,13 +249,9 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       pattern: string;
       searchIn?: 'name' | 'description' | 'both';
       caseSensitive?: string;
-    }
+    };
   }>('/web/hub-tools/tools/find', async (request) => {
-    const {
-      pattern,
-      searchIn = 'both',
-      caseSensitive = 'false'
-    } = request.query;
+    const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
 
     const tools = await hubToolsService.findTools(
       pattern,

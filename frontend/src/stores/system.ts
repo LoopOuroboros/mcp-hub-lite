@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { http } from '@utils/http'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { http } from '@utils/http';
 
 // 深度合并函数
 function deepMerge<T extends object>(target: T, source: Partial<T>): T {
-  const result = { ...target } as Record<string, unknown>
+  const result = { ...target } as Record<string, unknown>;
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
-      const targetValue = target[key as keyof T]
-      const sourceValue = source[key as keyof T]
+      const targetValue = target[key as keyof T];
+      const sourceValue = source[key as keyof T];
 
       if (
         typeof targetValue === 'object' &&
@@ -21,43 +21,43 @@ function deepMerge<T extends object>(target: T, source: Partial<T>): T {
         result[key] = deepMerge(
           targetValue as Record<string, unknown>,
           sourceValue as Record<string, unknown>
-        )
+        );
       } else {
-        result[key] = sourceValue
+        result[key] = sourceValue;
       }
     }
   }
-  return result as T
+  return result as T;
 }
 
 export interface SystemConfig {
   system: {
-    host: string
-    port: number
-    language: string
-    theme: string
+    host: string;
+    port: number;
+    language: string;
+    theme: string;
     logging: {
-      level: string
-      rotationAge: string
-    }
-  }
+      level: string;
+      rotationAge: string;
+    };
+  };
   security: {
-    allowedNetworks: string[]
-    maxConcurrentConnections: number
-    connectionTimeout: number
-    idleConnectionTimeout: number
-    sessionTimeout: number
-    maxConnections: number
-  }
+    allowedNetworks: string[];
+    maxConcurrentConnections: number;
+    connectionTimeout: number;
+    idleConnectionTimeout: number;
+    sessionTimeout: number;
+    maxConnections: number;
+  };
   observability: {
     tracing: {
-      enabled: boolean
-      exporter: 'console' | 'otlp'
-      endpoint: string
-      sampleRate: number
-    }
-  }
-  [key: string]: unknown
+      enabled: boolean;
+      exporter: 'console' | 'otlp';
+      endpoint: string;
+      sampleRate: number;
+    };
+  };
+  [key: string]: unknown;
 }
 
 export const useSystemStore = defineStore('system', () => {
@@ -88,43 +88,42 @@ export const useSystemStore = defineStore('system', () => {
         sampleRate: 1.0
       }
     }
-  })
+  });
 
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const loading = ref(false);
+  const error = ref<string | null>(null);
 
   async function fetchConfig() {
-    loading.value = true
+    loading.value = true;
     try {
-      const data = await http.get<SystemConfig>('/web/config')
+      const data = await http.get<SystemConfig>('/web/config');
 
       // 使用深度合并替代手动合并
-      config.value = deepMerge(config.value, data)
-      return config.value
+      config.value = deepMerge(config.value, data);
+      return config.value;
     } catch (e: unknown) {
       const errorObj = e as Error;
-      error.value = errorObj.message || 'Failed to fetch config'
-      console.error('Fetch config error:', e)
-      throw e
+      error.value = errorObj.message || 'Failed to fetch config';
+      console.error('Fetch config error:', e);
+      throw e;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function updateConfig(updates: Partial<SystemConfig>) {
-    loading.value = true
+    loading.value = true;
     try {
-      await http.put('/web/config', updates)
+      await http.put('/web/config', updates);
 
       // 使用深度合并更新本地状态
-      config.value = deepMerge(config.value, updates)
-
+      config.value = deepMerge(config.value, updates);
     } catch (e: unknown) {
       const errorObj = e as Error;
-      error.value = errorObj.message || 'Failed to update config'
-      throw e
+      error.value = errorObj.message || 'Failed to update config';
+      throw e;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
@@ -134,5 +133,5 @@ export const useSystemStore = defineStore('system', () => {
     error,
     fetchConfig,
     updateConfig
-  }
-})
+  };
+});

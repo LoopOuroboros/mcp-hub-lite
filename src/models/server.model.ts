@@ -21,4 +21,3 @@ export interface ServerState {
 
 // 后端服务器模型接口，扩展共享服务器模型
 export interface Server extends ServerConfig, ServerState {}
-

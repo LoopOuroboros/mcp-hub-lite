@@ -101,8 +101,9 @@ describe('Gateway Fault Tolerance', () => {
     const workingInstance = await hubManager.addServerInstance('working-server', {});
 
     // 模拟第一个服务器失败，第二个成功
-    mockConnect.mockImplementationOnce(() => Promise.reject(new Error('First server failed')))
-                .mockImplementationOnce(() => Promise.resolve());
+    mockConnect
+      .mockImplementationOnce(() => Promise.reject(new Error('First server failed')))
+      .mockImplementationOnce(() => Promise.resolve());
 
     mockListTools.mockImplementationOnce(() => Promise.resolve({ tools: [] }));
 

@@ -37,7 +37,12 @@ export async function withSpan<T>(
 
       logger.debug = (message: string, ...args: unknown[]) => {
         // 如果第一个参数是LogOptions，合并trace上下文
-        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        if (
+          args.length > 0 &&
+          typeof args[0] === 'object' &&
+          args[0] !== null &&
+          !Array.isArray(args[0])
+        ) {
           const firstArg = args[0] as Record<string, unknown>;
           if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
@@ -50,7 +55,12 @@ export async function withSpan<T>(
       };
 
       logger.info = (message: string, ...args: unknown[]) => {
-        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        if (
+          args.length > 0 &&
+          typeof args[0] === 'object' &&
+          args[0] !== null &&
+          !Array.isArray(args[0])
+        ) {
           const firstArg = args[0] as Record<string, unknown>;
           if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
@@ -62,7 +72,12 @@ export async function withSpan<T>(
       };
 
       logger.warn = (message: string, ...args: unknown[]) => {
-        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        if (
+          args.length > 0 &&
+          typeof args[0] === 'object' &&
+          args[0] !== null &&
+          !Array.isArray(args[0])
+        ) {
           const firstArg = args[0] as Record<string, unknown>;
           if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
@@ -74,7 +89,12 @@ export async function withSpan<T>(
       };
 
       logger.error = (message: string, ...args: unknown[]) => {
-        if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+        if (
+          args.length > 0 &&
+          typeof args[0] === 'object' &&
+          args[0] !== null &&
+          !Array.isArray(args[0])
+        ) {
           const firstArg = args[0] as Record<string, unknown>;
           if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
@@ -85,7 +105,12 @@ export async function withSpan<T>(
         originalError(message, logContext, ...args);
       };
 
-      logger.serverLog = (level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>) => {
+      logger.serverLog = (
+        level: LogLevel,
+        serverName: string,
+        message: string,
+        context?: Omit<LogContext, 'serverName'>
+      ) => {
         const serverContext: Omit<LogContext, 'serverName'> = {
           ...context,
           traceId: span.spanContext().traceId,
@@ -156,7 +181,12 @@ export function withSpanSync<T>(
     };
 
     logger.debug = (message: string, ...args: unknown[]) => {
-      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+      if (
+        args.length > 0 &&
+        typeof args[0] === 'object' &&
+        args[0] !== null &&
+        !Array.isArray(args[0])
+      ) {
         const firstArg = args[0] as Record<string, unknown>;
         if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
@@ -168,7 +198,12 @@ export function withSpanSync<T>(
     };
 
     logger.info = (message: string, ...args: unknown[]) => {
-      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+      if (
+        args.length > 0 &&
+        typeof args[0] === 'object' &&
+        args[0] !== null &&
+        !Array.isArray(args[0])
+      ) {
         const firstArg = args[0] as Record<string, unknown>;
         if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
@@ -180,7 +215,12 @@ export function withSpanSync<T>(
     };
 
     logger.warn = (message: string, ...args: unknown[]) => {
-      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+      if (
+        args.length > 0 &&
+        typeof args[0] === 'object' &&
+        args[0] !== null &&
+        !Array.isArray(args[0])
+      ) {
         const firstArg = args[0] as Record<string, unknown>;
         if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
@@ -192,7 +232,12 @@ export function withSpanSync<T>(
     };
 
     logger.error = (message: string, ...args: unknown[]) => {
-      if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+      if (
+        args.length > 0 &&
+        typeof args[0] === 'object' &&
+        args[0] !== null &&
+        !Array.isArray(args[0])
+      ) {
         const firstArg = args[0] as Record<string, unknown>;
         if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
@@ -203,7 +248,12 @@ export function withSpanSync<T>(
       originalError(message, logContext, ...args);
     };
 
-    logger.serverLog = (level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>) => {
+    logger.serverLog = (
+      level: LogLevel,
+      serverName: string,
+      message: string,
+      context?: Omit<LogContext, 'serverName'>
+    ) => {
       const serverContext: Omit<LogContext, 'serverName'> = {
         ...context,
         traceId: span.spanContext().traceId,

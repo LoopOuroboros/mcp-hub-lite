@@ -114,11 +114,11 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       hash: serverInfo.instance.hash
     });
 
-    const result = await mcpConnectionManager.callTool(
-      serverId,
-      'calculator',
-      { a: 5, b: 3, operation: 'add' }
-    ) as { result: number };
+    const result = (await mcpConnectionManager.callTool(serverId, 'calculator', {
+      a: 5,
+      b: 3,
+      operation: 'add'
+    })) as { result: number };
 
     expect(result).toHaveProperty('result');
     expect(result.result).toBe(8);
@@ -144,7 +144,11 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     });
 
     await expect(
-      mcpConnectionManager.callTool(serverId, 'calculator', { a: 'invalid', b: 3, operation: 'add' })
+      mcpConnectionManager.callTool(serverId, 'calculator', {
+        a: 'invalid',
+        b: 3,
+        operation: 'add'
+      })
     ).rejects.toThrow();
   });
 
@@ -167,9 +171,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       hash: serverInfo.instance.hash
     });
 
-    await expect(
-      mcpConnectionManager.callTool(serverId, 'unknown_tool', {})
-    ).rejects.toThrow();
+    await expect(mcpConnectionManager.callTool(serverId, 'unknown_tool', {})).rejects.toThrow();
   });
 
   it('should support multiple concurrent tool calls', async () => {
@@ -192,8 +194,13 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     });
 
     const [result1, result2] = await Promise.all([
-      mcpConnectionManager.callTool(serverId, 'get_weather', { location: 'New York' }) as Promise<{ temperature: number; condition: string }>,
-      mcpConnectionManager.callTool(serverId, 'search_news', { query: 'technology' }) as Promise<{ articles: string[] }>
+      mcpConnectionManager.callTool(serverId, 'get_weather', { location: 'New York' }) as Promise<{
+        temperature: number;
+        condition: string;
+      }>,
+      mcpConnectionManager.callTool(serverId, 'search_news', { query: 'technology' }) as Promise<{
+        articles: string[];
+      }>
     ]);
 
     expect(result1).toHaveProperty('temperature');

@@ -58,7 +58,7 @@ export class Logger {
   }
 
   public setUseStderr(use: boolean) {
-      this.useStderr = use;
+    this.useStderr = use;
   }
 
   private shouldLog(messageLevel: LogLevel): boolean {
@@ -80,11 +80,16 @@ export class Logger {
   // ANSI 颜色代码
   private getColorCodeForLevel(level: LogLevel): string {
     switch (level) {
-      case 'debug': return '\x1b[36m'; // 青色
-      case 'info': return '\x1b[32m';  // 绿色
-      case 'warn': return '\x1b[33m';  // 黄色
-      case 'error': return '\x1b[31m'; // 红色
-      default: return '\x1b[0m';
+      case 'debug':
+        return '\x1b[36m'; // 青色
+      case 'info':
+        return '\x1b[32m'; // 绿色
+      case 'warn':
+        return '\x1b[33m'; // 黄色
+      case 'error':
+        return '\x1b[31m'; // 红色
+      default:
+        return '\x1b[0m';
     }
   }
 
@@ -94,10 +99,14 @@ export class Logger {
 
   private formatLogLevel(level: LogLevel): string {
     switch (level) {
-      case 'debug': return 'DBG';
-      case 'info': return 'INF';
-      case 'warn': return 'WRN';
-      case 'error': return 'ERR';
+      case 'debug':
+        return 'DBG';
+      case 'info':
+        return 'INF';
+      case 'warn':
+        return 'WRN';
+      case 'error':
+        return 'ERR';
       default:
         // 这个分支在TypeScript中实际上不会到达，因为LogLevel是联合类型
         // 但为了编译通过，我们返回一个默认值
@@ -230,16 +239,18 @@ export class Logger {
     // 处理多个参数
     let fullMessage = message;
     if (args.length > 0) {
-      const formattedArgs = args.map(arg => this.formatError(arg)).join(' ');
+      const formattedArgs = args.map((arg) => this.formatError(arg)).join(' ');
       fullMessage = `${message} ${formattedArgs}`;
     }
 
     // 将 LogOptions 转换为 LogContext
-    const context: LogContext | undefined = options ? {
-      subModule: options.subModule,
-      traceId: options.traceId,
-      spanId: options.spanId
-    } : undefined;
+    const context: LogContext | undefined = options
+      ? {
+          subModule: options.subModule,
+          traceId: options.traceId,
+          spanId: options.spanId
+        }
+      : undefined;
 
     const coloredLogMsg = this.createColoredLogMessage(level, fullMessage, context);
     const plainLogMsg = this.createLogMessage(level, fullMessage, context);
@@ -291,7 +302,12 @@ export class Logger {
   }
 
   private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
-    if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+    if (
+      args.length > 0 &&
+      typeof args[0] === 'object' &&
+      args[0] !== null &&
+      !Array.isArray(args[0])
+    ) {
       const firstArg = args[0] as Record<string, unknown>;
       if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
         return [args[0] as LogOptions, args.slice(1)];
@@ -305,7 +321,12 @@ export class Logger {
   }
 
   // 专门用于MCP Server日志的方法
-  serverLog(level: LogLevel, serverName: string, message: string, context?: Omit<LogContext, 'serverName'>): void {
+  serverLog(
+    level: LogLevel,
+    serverName: string,
+    message: string,
+    context?: Omit<LogContext, 'serverName'>
+  ): void {
     if (this.shouldLog(level)) {
       const logContext: LogContext = {
         ...context,
@@ -383,9 +404,11 @@ export function isToolsListResponse(data: string): boolean {
             return true;
           }
           // 匹配 initialize 响应格式: {"result":{"capabilities":{"tools": {...}} } }
-          if ('capabilities' in result &&
-              typeof result.capabilities === 'object' &&
-              result.capabilities !== null) {
+          if (
+            'capabilities' in result &&
+            typeof result.capabilities === 'object' &&
+            result.capabilities !== null
+          ) {
             const capabilities = result.capabilities as Record<string, unknown>;
             if ('tools' in capabilities || 'resources' in capabilities) {
               return true;
@@ -436,23 +459,31 @@ export function simplifyToolsListResponse(data: string): string {
             return `Returned ${resourcesCount} resources`;
           }
           // 处理 initialize 响应中的工具/资源信息
-          if ('capabilities' in result &&
-              typeof result.capabilities === 'object' &&
-              result.capabilities !== null) {
+          if (
+            'capabilities' in result &&
+            typeof result.capabilities === 'object' &&
+            result.capabilities !== null
+          ) {
             const capabilities = result.capabilities as Record<string, unknown>;
             let toolsCount = 0;
             let resourcesCount = 0;
 
-            if ('tools' in capabilities &&
-                typeof capabilities.tools === 'object' &&
-                capabilities.tools !== null) {
+            if (
+              'tools' in capabilities &&
+              typeof capabilities.tools === 'object' &&
+              capabilities.tools !== null
+            ) {
               toolsCount = Object.keys(capabilities.tools as Record<string, unknown>).length;
             }
 
-            if ('resources' in capabilities &&
-                typeof capabilities.resources === 'object' &&
-                capabilities.resources !== null) {
-              resourcesCount = Object.keys(capabilities.resources as Record<string, unknown>).length;
+            if (
+              'resources' in capabilities &&
+              typeof capabilities.resources === 'object' &&
+              capabilities.resources !== null
+            ) {
+              resourcesCount = Object.keys(
+                capabilities.resources as Record<string, unknown>
+              ).length;
             }
 
             if (toolsCount > 0 && resourcesCount > 0) {
@@ -474,7 +505,11 @@ export function simplifyToolsListResponse(data: string): string {
   return data.length > 200 ? data.substring(0, 200) + '...' : data;
 }
 
-export function logWithColor(coloredMessage: string, plainMessage: string, context?: LogContext): void {
+export function logWithColor(
+  coloredMessage: string,
+  plainMessage: string,
+  context?: LogContext
+): void {
   // 使用新的颜色格式
   const coloredLogMsg = logger['createColoredLogMessage']('info', coloredMessage, context);
   console.info(coloredLogMsg);

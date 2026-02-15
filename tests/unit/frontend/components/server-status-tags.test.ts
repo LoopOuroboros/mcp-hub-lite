@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import ServerStatusTags from '@frontend/components/ServerStatusTags.vue'
-import i18n from '@frontend/i18n/index'
+import { describe, test, expect } from 'vitest';
+import { mount } from '@vue/test-utils';
+import ServerStatusTags from '@frontend/components/ServerStatusTags.vue';
+import i18n from '@frontend/i18n/index';
 
 describe('ServerStatusTags', () => {
   const mockServer = {
@@ -16,7 +16,7 @@ describe('ServerStatusTags', () => {
       args: ['--port', '3000']
     },
     startTime: Date.now() - 1000 * 60 * 5 // 5 minutes ago
-  }
+  };
 
   test('renders server status tags correctly', () => {
     const wrapper = mount(ServerStatusTags, {
@@ -27,21 +27,21 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
+    });
 
     // Check status badge
-    expect(wrapper.text()).toContain('running')
+    expect(wrapper.text()).toContain('running');
 
     // Check transport info
-    expect(wrapper.text()).toContain('stdio')
-    expect(wrapper.text()).toContain('npm run start')
+    expect(wrapper.text()).toContain('stdio');
+    expect(wrapper.text()).toContain('npm run start');
 
     // Check version
-    expect(wrapper.text()).toContain('1.0.0')
+    expect(wrapper.text()).toContain('1.0.0');
 
     // Should not contain uptime when includeUptime is false
-    expect(wrapper.text()).not.toContain('uptime')
-  })
+    expect(wrapper.text()).not.toContain('uptime');
+  });
 
   test('includes uptime when includeUptime is true', () => {
     const wrapper = mount(ServerStatusTags, {
@@ -53,14 +53,14 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
+    });
 
     // Should contain uptime
-    expect(wrapper.text()).toContain('00:05:00')
-  })
+    expect(wrapper.text()).toContain('00:05:00');
+  });
 
   test('handles different server statuses', () => {
-    const statuses = ['running', 'stopped', 'error', 'starting'] as const
+    const statuses = ['running', 'stopped', 'error', 'starting'] as const;
 
     for (const status of statuses) {
       const wrapper = mount(ServerStatusTags, {
@@ -74,12 +74,12 @@ describe('ServerStatusTags', () => {
         global: {
           plugins: [i18n]
         }
-      })
+      });
 
       const statusText = `serverDetail.status.${status}`;
-      expect(wrapper.text()).toContain(statusText)
+      expect(wrapper.text()).toContain(statusText);
     }
-  })
+  });
 
   test('handles different transport types', () => {
     // Test stdio
@@ -91,9 +91,9 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
-    expect(stdioWrapper.text()).toContain('stdio')
-    expect(stdioWrapper.text()).toContain('npm run start')
+    });
+    expect(stdioWrapper.text()).toContain('stdio');
+    expect(stdioWrapper.text()).toContain('npm run start');
 
     // Test sse
     const sseServer = {
@@ -102,7 +102,7 @@ describe('ServerStatusTags', () => {
         type: 'sse' as const,
         url: 'http://localhost:8080/mcp'
       }
-    }
+    };
     const sseWrapper = mount(ServerStatusTags, {
       props: {
         server: sseServer,
@@ -111,9 +111,9 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
-    expect(sseWrapper.text()).toContain('sse')
-    expect(sseWrapper.text()).toContain('http://localhost:8080/mcp')
+    });
+    expect(sseWrapper.text()).toContain('sse');
+    expect(sseWrapper.text()).toContain('http://localhost:8080/mcp');
 
     // Test streamable-http
     const httpServer = {
@@ -122,7 +122,7 @@ describe('ServerStatusTags', () => {
         type: 'streamable-http' as const,
         url: 'http://localhost:9000/mcp'
       }
-    }
+    };
     const httpWrapper = mount(ServerStatusTags, {
       props: {
         server: httpServer,
@@ -131,10 +131,10 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
-    expect(httpWrapper.text()).toContain('streamable-http')
-    expect(httpWrapper.text()).not.toContain('http://localhost:9000/mcp') // No URL shown for streamable-http
-  })
+    });
+    expect(httpWrapper.text()).toContain('streamable-http');
+    expect(httpWrapper.text()).not.toContain('http://localhost:9000/mcp'); // No URL shown for streamable-http
+  });
 
   test('handles missing version and PID', () => {
     const serverWithoutVersion = {
@@ -145,7 +145,7 @@ describe('ServerStatusTags', () => {
         type: 'sse' as const,
         url: 'http://localhost:8080/mcp'
       }
-    }
+    };
 
     const wrapper = mount(ServerStatusTags, {
       props: {
@@ -155,9 +155,9 @@ describe('ServerStatusTags', () => {
       global: {
         plugins: [i18n]
       }
-    })
+    });
 
-    expect(wrapper.text()).not.toContain('1.0.0')
-    expect(wrapper.text()).not.toContain('12345')
-  })
-})
+    expect(wrapper.text()).not.toContain('1.0.0');
+    expect(wrapper.text()).not.toContain('12345');
+  });
+});

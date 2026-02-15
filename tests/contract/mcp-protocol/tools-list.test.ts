@@ -109,7 +109,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     expect(tools).toHaveLength(2);
 
     // 验证 calculator 工具
-    const calculator = tools.find(t => t.name === 'calculator');
+    const calculator = tools.find((t) => t.name === 'calculator');
     expect(calculator).toBeDefined();
     expect(calculator?.description).toBe('Perform mathematical calculations');
     expect(calculator?.inputSchema).toMatchObject({

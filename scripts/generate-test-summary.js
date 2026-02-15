@@ -54,29 +54,29 @@ const failedTestDetails = [];
 if (backendResults && backendResults.testResults) {
   const backendTestResults = backendResults.testResults;
   totalFiles += backendTestResults.length;
-  passedFiles += backendTestResults.filter(result => result.status === 'passed').length;
-  failedFiles += backendTestResults.filter(result => result.status === 'failed').length;
+  passedFiles += backendTestResults.filter((result) => result.status === 'passed').length;
+  failedFiles += backendTestResults.filter((result) => result.status === 'failed').length;
 
   let backendTotalTests = 0;
   let backendPassedTests = 0;
   let backendFailedTests = 0;
   let backendMaxEndTime = 0;
 
-  backendTestResults.forEach(file => {
+  backendTestResults.forEach((file) => {
     if (file.endTime > backendMaxEndTime) {
       backendMaxEndTime = file.endTime;
     }
 
     if (file.assertionResults) {
       backendTotalTests += file.assertionResults.length;
-      backendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
-      backendFailedTests += file.assertionResults.filter(test => test.status === 'failed').length;
+      backendPassedTests += file.assertionResults.filter((test) => test.status === 'passed').length;
+      backendFailedTests += file.assertionResults.filter((test) => test.status === 'failed').length;
 
       // 收集失败的测试详情
-      const failedAssertions = file.assertionResults.filter(test => test.status === 'failed');
+      const failedAssertions = file.assertionResults.filter((test) => test.status === 'failed');
       if (failedAssertions.length > 0) {
         failedFileList.push(file.name);
-        failedAssertions.forEach(test => {
+        failedAssertions.forEach((test) => {
           failedTestDetails.push({
             file: file.name,
             test: test.title,
@@ -106,29 +106,33 @@ if (backendResults && backendResults.testResults) {
 if (frontendResults && frontendResults.testResults) {
   const frontendTestResults = frontendResults.testResults;
   totalFiles += frontendTestResults.length;
-  passedFiles += frontendTestResults.filter(result => result.status === 'passed').length;
-  failedFiles += frontendTestResults.filter(result => result.status === 'failed').length;
+  passedFiles += frontendTestResults.filter((result) => result.status === 'passed').length;
+  failedFiles += frontendTestResults.filter((result) => result.status === 'failed').length;
 
   let frontendTotalTests = 0;
   let frontendPassedTests = 0;
   let frontendFailedTests = 0;
   let frontendMaxEndTime = 0;
 
-  frontendTestResults.forEach(file => {
+  frontendTestResults.forEach((file) => {
     if (file.endTime > frontendMaxEndTime) {
       frontendMaxEndTime = file.endTime;
     }
 
     if (file.assertionResults) {
       frontendTotalTests += file.assertionResults.length;
-      frontendPassedTests += file.assertionResults.filter(test => test.status === 'passed').length;
-      frontendFailedTests += file.assertionResults.filter(test => test.status === 'failed').length;
+      frontendPassedTests += file.assertionResults.filter(
+        (test) => test.status === 'passed'
+      ).length;
+      frontendFailedTests += file.assertionResults.filter(
+        (test) => test.status === 'failed'
+      ).length;
 
       // 收集失败的测试详情
-      const failedAssertions = file.assertionResults.filter(test => test.status === 'failed');
+      const failedAssertions = file.assertionResults.filter((test) => test.status === 'failed');
       if (failedAssertions.length > 0) {
         failedFileList.push(file.name);
-        failedAssertions.forEach(test => {
+        failedAssertions.forEach((test) => {
           failedTestDetails.push({
             file: file.name,
             test: test.title,
@@ -144,15 +148,23 @@ if (frontendResults && frontendResults.testResults) {
   failedTests += frontendFailedTests;
 
   // 更新时间信息
-  if (frontendResults.startTime && (!startTime || frontendResults.startTime < startTime.getTime())) {
+  if (
+    frontendResults.startTime &&
+    (!startTime || frontendResults.startTime < startTime.getTime())
+  ) {
     startTime = new Date(frontendResults.startTime);
   }
-  
-  const currentFrontendEndTime = frontendResults.endTime 
-    ? new Date(frontendResults.endTime) 
-    : (frontendMaxEndTime > 0 ? new Date(frontendMaxEndTime) : null);
 
-  if (currentFrontendEndTime && (!endTime || currentFrontendEndTime.getTime() > endTime.getTime())) {
+  const currentFrontendEndTime = frontendResults.endTime
+    ? new Date(frontendResults.endTime)
+    : frontendMaxEndTime > 0
+      ? new Date(frontendMaxEndTime)
+      : null;
+
+  if (
+    currentFrontendEndTime &&
+    (!endTime || currentFrontendEndTime.getTime() > endTime.getTime())
+  ) {
     endTime = currentFrontendEndTime;
   }
 }
@@ -174,7 +186,7 @@ const formatDuration = (ms) => {
     return `${minutes}m ${remainingSeconds}.${String(milliseconds).padStart(3, '0')}s`;
   } else {
     return `${seconds}.${String(milliseconds).padStart(3, '0')}s`;
-  };
+  }
 };
 
 // 格式化日期为 ISO 9075 (YYYY-MM-DD HH:MM:SS) - 使用本地时间
@@ -204,7 +216,7 @@ if (failedFileList.length > 0) {
 `;
   // 去重并添加失败文件
   const uniqueFailedFiles = [...new Set(failedFileList)];
-  uniqueFailedFiles.forEach(file => {
+  uniqueFailedFiles.forEach((file) => {
     summaryContent += `  - ${file}\n`;
   });
 }
@@ -214,11 +226,11 @@ if (failedTestDetails.length > 0) {
   summaryContent += `
  Failed Tests:
 `;
-  failedTestDetails.forEach(test => {
+  failedTestDetails.forEach((test) => {
     summaryContent += `  - ${test.test} (${test.file})\n`;
     // 只显示错误消息的前几行，避免摘要过长
     const errorLines = test.error.split('\n').slice(0, 2);
-    errorLines.forEach(line => {
+    errorLines.forEach((line) => {
       if (line.trim()) {
         summaryContent += `    ${line.trim()}\n`;
       }

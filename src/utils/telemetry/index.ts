@@ -4,29 +4,13 @@ import {
   ConsoleSpanExporter,
   SpanProcessor
 } from '@opentelemetry/sdk-trace-node';
-import {
-  TraceIdRatioBasedSampler
-} from '@opentelemetry/sdk-trace-base';
-import {
-  resourceFromAttributes
-} from '@opentelemetry/resources';
-import {
-  OTLPTraceExporter
-} from '@opentelemetry/exporter-trace-otlp-http';
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION
-} from '@opentelemetry/semantic-conventions';
-import {
-  ATTR_HOST_NAME,
-  ATTR_PROCESS_PID
-} from '@opentelemetry/semantic-conventions/incubating';
-import {
-  registerInstrumentations
-} from '@opentelemetry/instrumentation';
-import {
-  HttpInstrumentation
-} from '@opentelemetry/instrumentation-http';
+import { TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { ATTR_HOST_NAME, ATTR_PROCESS_PID } from '@opentelemetry/semantic-conventions/incubating';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { FastifyOtelInstrumentation } from '@fastify/otel';
 import type { SystemConfig } from '@config/config.schema.js';
 import { logger } from '@utils/logger.js';
@@ -99,7 +83,9 @@ export class TelemetryManager {
   /**
 .   * Create span processor based on exporter configuration
    */
-  private createSpanProcessor(tracingConfig: SystemConfig['observability']['tracing']): SpanProcessor {
+  private createSpanProcessor(
+    tracingConfig: SystemConfig['observability']['tracing']
+  ): SpanProcessor {
     let exporter;
 
     switch (tracingConfig.exporter) {

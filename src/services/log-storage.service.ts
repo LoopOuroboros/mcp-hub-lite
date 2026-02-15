@@ -62,13 +62,13 @@ export class LogStorageService {
 
     // 按级别过滤
     if (options?.level) {
-      logs = logs.filter(log => log.level === options.level);
+      logs = logs.filter((log) => log.level === options.level);
     }
 
     // 按时间过滤
     if (options?.since != null) {
       const since = options.since as number;
-      logs = logs.filter(log => log.timestamp >= since);
+      logs = logs.filter((log) => log.timestamp >= since);
     }
 
     // 分页
@@ -134,11 +134,13 @@ export class LogStorageService {
   private notifyListeners(serverId: string, log: LogEntry): void {
     const listeners = this.logListeners.get(serverId);
     if (listeners) {
-      listeners.forEach(listener => {
+      listeners.forEach((listener) => {
         try {
           listener(log);
         } catch (error) {
-          logger.error(`Error in log listener for server ${serverId}:`, error, { subModule: serverId });
+          logger.error(`Error in log listener for server ${serverId}:`, error, {
+            subModule: serverId
+          });
         }
       });
     }

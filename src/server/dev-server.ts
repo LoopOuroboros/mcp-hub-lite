@@ -34,7 +34,7 @@ async function startDevServer() {
           try {
             const newInstance = await configManager.addServerInstance(serverName, {});
             // Connect the new instance
-            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch(err => {
+            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch((err) => {
               logger.error(`Failed to auto-connect to ${serverName}:`, err);
             });
           } catch (err) {
@@ -42,8 +42,8 @@ async function startDevServer() {
           }
         } else {
           // Connect existing instances
-          existingInstances.forEach(instance => {
-            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch(err => {
+          existingInstances.forEach((instance) => {
+            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch((err) => {
               logger.error(`Failed to auto-connect to ${serverName}:`, err);
             });
           });
@@ -56,11 +56,12 @@ async function startDevServer() {
       port: config.system.port,
       host: config.system.host
     });
-    logger.info(`MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`);
+    logger.info(
+      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`
+    );
 
     // Write PID file after server starts successfully
     PidManager.writePid();
-
   } catch (err) {
     logger.error('Failed to start dev server:', err);
     // Clean up PID file if it exists
@@ -88,15 +89,19 @@ const shutdown = async (signal: string) => {
   process.exit(0);
 };
 
-process.on('SIGTERM', () => shutdown('SIGTERM').catch(err => {
-  logger.error('Shutdown failed:', err);
-  process.exit(1);
-}));
+process.on('SIGTERM', () =>
+  shutdown('SIGTERM').catch((err) => {
+    logger.error('Shutdown failed:', err);
+    process.exit(1);
+  })
+);
 
-process.on('SIGINT', () => shutdown('SIGINT').catch(err => {
-  logger.error('Shutdown failed:', err);
-  process.exit(1);
-}));
+process.on('SIGINT', () =>
+  shutdown('SIGINT').catch((err) => {
+    logger.error('Shutdown failed:', err);
+    process.exit(1);
+  })
+);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {

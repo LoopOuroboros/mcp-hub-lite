@@ -29,12 +29,14 @@ utils/
 **职责**: 结构化日志输出
 
 **日志级别**:
+
 - `debug` - 调试信息
 - `info` - 一般信息
 - `warn` - 警告信息
 - `error` - 错误信息
 
 **使用示例**:
+
 ```typescript
 import { logger } from './utils/logger.js';
 
@@ -48,10 +50,12 @@ logger.debug('Tool called', { toolName, args });
 **职责**: 日志文件轮转管理
 
 **主要方法**:
+
 - `rotateLogs()` - 执行日志轮转
 - `getCurrentLogFilePath()` - 获取当前日志文件路径
 
 **配置参数**:
+
 - `logDir` - 日志目录
 - `logPrefix` - 日志文件前缀
 - `maxAge` - 最大保留时间（如 "7d"）
@@ -61,6 +65,7 @@ logger.debug('Tool called', { toolName, args });
 **职责**: 端口可用性检查
 
 **主要方法**:
+
 - `isPortAvailable(port, host)` - 检查端口是否可用
 - `findAvailablePort(startPort, host)` - 查找可用端口
 
@@ -69,6 +74,7 @@ logger.debug('Tool called', { toolName, args });
 **职责**: MCP 错误处理和转换
 
 **主要方法**:
+
 - `toMCPError(error)` - 将内部错误转换为 MCP 标准错误
 - `mapErrorCode(code)` - 映射错误码到 MCP 标准格式
 
@@ -77,6 +83,7 @@ logger.debug('Tool called', { toolName, args });
 ### Transport Interface (`transports/transport.interface.ts`)
 
 **基础接口**:
+
 ```typescript
 export interface McpTransport {
   connect(): Promise<void>;
@@ -110,6 +117,7 @@ export interface McpTransport {
 **职责**: 根据配置创建对应的 Transport 实例
 
 **支持的传输类型**:
+
 - `stdio` - 标准 I/O 传输
 - `sse` - SSE 传输
 - `streamable-http` - HTTP 流传输
@@ -138,6 +146,7 @@ utils/
 **状态**: 部分实现
 
 **建议测试**:
+
 - logger 功能测试
 - port-checker 功能测试
 - transport 功能测试
@@ -154,19 +163,20 @@ A: 在配置文件中设置 `logging.rotation` 相关参数，或使用环境变
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-|---------|------|
-| `utils/logger.ts` | 日志工具 |
-| `utils/log-rotator.ts` | 日志轮转 |
-| `utils/port-checker.ts` | 端口检查 |
-| `utils/mcp-error-handler.ts` | MCP 错误处理 |
-| `utils/transports/stdio-transport.ts` | 自定义 Stdio 传输 |
-| `utils/transports/transport.interface.ts` | 传输接口 |
-| `utils/transports/transport-factory.ts` | 传输工厂 |
-| `utils/transports/sse-transport.ts` | SSE 传输 |
-| `utils/transports/streamable-http-transport.ts` | HTTP 流传输 |
+| 文件路径                                        | 描述              |
+| ----------------------------------------------- | ----------------- |
+| `utils/logger.ts`                               | 日志工具          |
+| `utils/log-rotator.ts`                          | 日志轮转          |
+| `utils/port-checker.ts`                         | 端口检查          |
+| `utils/mcp-error-handler.ts`                    | MCP 错误处理      |
+| `utils/transports/stdio-transport.ts`           | 自定义 Stdio 传输 |
+| `utils/transports/transport.interface.ts`       | 传输接口          |
+| `utils/transports/transport-factory.ts`         | 传输工厂          |
+| `utils/transports/sse-transport.ts`             | SSE 传输          |
+| `utils/transports/streamable-http-transport.ts` | HTTP 流传输       |
 
 ## 变更记录 (Changelog)
 
 ### 2026-01-19
+
 - 初始化 Utils 模块文档

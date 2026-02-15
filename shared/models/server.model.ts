@@ -2,7 +2,6 @@ import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '../typ
 import type { Tool } from './tool.model';
 import type { Resource } from './resource.model';
 
-
 // 服务器配置接口
 export interface ServerConfig {
   command?: string;

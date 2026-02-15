@@ -24,12 +24,14 @@ integration/
 **被测模块**: `src/api/mcp/gateway.ts`
 
 **测试覆盖**:
+
 - MCP Gateway 初始化流程
 - 工具列表获取
 - 工具调用功能
 - 错误处理
 
 **运行**:
+
 ```bash
 npx vitest tests/integration/api/gateway.test.ts
 ```
@@ -39,11 +41,13 @@ npx vitest tests/integration/api/gateway.test.ts
 **被测模块**: `src/services/gateway.service.ts`
 
 **测试覆盖**:
+
 - 单个服务器故障不影响其他服务器
 - 网关容错机制
 - 错误恢复
 
 **运行**:
+
 ```bash
 npx vitest tests/integration/gateway/fault-tolerance.test.ts
 ```
@@ -53,11 +57,13 @@ npx vitest tests/integration/gateway/fault-tolerance.test.ts
 **被测模块**: `src/services/mcp-connection-manager.ts`
 
 **测试覆盖**:
+
 - MCP 连接建立和断开
 - 多服务器并发连接
 - 连接状态管理
 
 **运行**:
+
 ```bash
 npx vitest tests/integration/gateway/mcp-connection.test.ts
 ```
@@ -102,10 +108,10 @@ integration/
 
 ## 测试覆盖目标
 
-| 模块 | 目标覆盖率 | 当前状态 |
-|-------|-----------|---------|
-| `api/` | 70% | 部分实现 |
-| `services/gateway` | 75% | 部分实现 |
+| 模块               | 目标覆盖率 | 当前状态 |
+| ------------------ | ---------- | -------- |
+| `api/`             | 70%        | 部分实现 |
+| `services/gateway` | 75%        | 部分实现 |
 
 ## 常见问题 (FAQ)
 
@@ -127,16 +133,18 @@ A: 使用 `beforeEach` 和 `afterEach` 钩子设置和清理测试环境。
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-|---------|------|
-| `integration/api/gateway.test.ts` | Gateway API 测试 |
-| `integration/gateway/fault-tolerance.test.ts` | 容错测试 |
-| `integration/gateway/mcp-connection.test.ts` | MCP 连接测试 |
+| 文件路径                                      | 描述             |
+| --------------------------------------------- | ---------------- |
+| `integration/api/gateway.test.ts`             | Gateway API 测试 |
+| `integration/gateway/fault-tolerance.test.ts` | 容错测试         |
+| `integration/gateway/mcp-connection.test.ts`  | MCP 连接测试     |
 
 ## 变更记录 (Changelog)
 
 ### 2026-01-20
+
 - 更新 Integration Tests 模块文档
 
 ### 2026-01-19
+
 - 初始化 Integration Tests 模块文档

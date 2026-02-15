@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HubManagerService } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import { ConfigManager, configManager, type ServerConfig, type ServerInstanceConfig } from '@config/config-manager.js';
+import {
+  ConfigManager,
+  configManager,
+  type ServerConfig,
+  type ServerInstanceConfig
+} from '@config/config-manager.js';
 
 // Mock dependencies
 vi.mock('@config/config-manager.js', () => ({
@@ -16,14 +21,14 @@ vi.mock('@config/config-manager.js', () => ({
     addServerInstance: vi.fn(),
     getServerInstanceByName: vi.fn(),
     updateServerInstance: vi.fn(),
-    removeServerInstance: vi.fn(),
+    removeServerInstance: vi.fn()
   }
 }));
 
 vi.mock('@services/mcp-connection-manager.js', () => ({
   mcpConnectionManager: {
     connect: vi.fn(),
-    disconnect: vi.fn(() => Promise.resolve()),
+    disconnect: vi.fn(() => Promise.resolve())
   }
 }));
 
@@ -31,7 +36,7 @@ vi.mock('@utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
-    warn: vi.fn(),
+    warn: vi.fn()
   }
 }));
 

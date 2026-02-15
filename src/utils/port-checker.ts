@@ -114,14 +114,16 @@ async function checkPortUnix(port: number): Promise<PortCheckResult> {
 /**
  * 获取Windows进程信息
  */
-async function getProcessInfoWindows(pid: number): Promise<{ processName: string; commandLine: string }> {
+async function getProcessInfoWindows(
+  pid: number
+): Promise<{ processName: string; commandLine: string }> {
   try {
     // 使用wmic获取进程详细信息
     const { stdout } = await execAsync(
       `wmic process where ProcessId=${pid} get Name,CommandLine /format:list`
     );
 
-    const lines = stdout.split('\n').filter(line => line.trim());
+    const lines = stdout.split('\n').filter((line) => line.trim());
     let processName = 'Unknown';
     let commandLine = '';
 
@@ -142,7 +144,9 @@ async function getProcessInfoWindows(pid: number): Promise<{ processName: string
 /**
  * 获取Unix进程信息
  */
-async function getProcessInfoUnix(pid: number): Promise<{ processName: string; commandLine: string }> {
+async function getProcessInfoUnix(
+  pid: number
+): Promise<{ processName: string; commandLine: string }> {
   try {
     // 使用ps获取进程详细信息
     const { stdout } = await execAsync(`ps -p ${pid} -o comm=,args=`);
@@ -173,10 +177,10 @@ async function isSelfProjectProcess(pid: number, commandLine: string): Promise<b
   }
 
   const projectSignatures = [
-    'mcp-hub-lite',           // 项目名称
+    'mcp-hub-lite', // 项目名称
     'dist/server/src/index.js', // 编译后的入口文件
-    'src/index.ts'            // 源代码入口文件
+    'src/index.ts' // 源代码入口文件
   ];
 
-  return projectSignatures.some(signature => commandLine.includes(signature));
+  return projectSignatures.some((signature) => commandLine.includes(signature));
 }

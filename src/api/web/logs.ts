@@ -35,56 +35,61 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   );
 
   // GET /web/servers/:id/logs/stream - Get real-time logs stream via SSE
-  fastify.get<{ Params: { id: string } }>('/web/servers/:id/logs/stream', async (request, reply) => {
-    const { id } = request.params;
+  fastify.get<{ Params: { id: string } }>(
+    '/web/servers/:id/logs/stream',
+    async (request, reply) => {
+      const { id } = request.params;
 
-    // Set SSE headers
-    reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Cache-Control'
-    });
+      // Set SSE headers
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
 
-    // Send initial event
-    reply.raw.write(`data: ${JSON.stringify({
-      type: 'connected',
-      timestamp: new Date().toISOString(),
-      message: 'Connected to log stream'
-    })}\n\n`);
+      // Send initial event
+      reply.raw.write(
+        `data: ${JSON.stringify({
+          type: 'connected',
+          timestamp: new Date().toISOString(),
+          message: 'Connected to log stream'
+        })}\n\n`
+      );
 
-    // Handle client disconnect
-    request.raw.on('close', () => {
-      logStorage.removeLogListener(id, listener);
-    });
-
-    // Create log listener
-    const listener = (log: LogEntry) => {
-      try {
-        reply.raw.write(`data: ${JSON.stringify(log)}\n\n`);
-      } catch {
-        // Ignore write errors (e.g. client disconnected)
-      }
-    };
-
-    logStorage.addLogListener(id, listener);
-
-    // Keep connection alive
-    const keepAliveInterval = setInterval(() => {
-      try {
-        reply.raw.write(': ping\n\n');
-      } catch {
-        clearInterval(keepAliveInterval);
+      // Handle client disconnect
+      request.raw.on('close', () => {
         logStorage.removeLogListener(id, listener);
-      }
-    }, 30000);
+      });
 
-    // Return a promise that never resolves to keep the connection alive
-    return new Promise(() => {
-      // Connection will be closed when client disconnects or server shuts down
-    });
-  });
+      // Create log listener
+      const listener = (log: LogEntry) => {
+        try {
+          reply.raw.write(`data: ${JSON.stringify(log)}\n\n`);
+        } catch {
+          // Ignore write errors (e.g. client disconnected)
+        }
+      };
+
+      logStorage.addLogListener(id, listener);
+
+      // Keep connection alive
+      const keepAliveInterval = setInterval(() => {
+        try {
+          reply.raw.write(': ping\n\n');
+        } catch {
+          clearInterval(keepAliveInterval);
+          logStorage.removeLogListener(id, listener);
+        }
+      }, 30000);
+
+      // Return a promise that never resolves to keep the connection alive
+      return new Promise(() => {
+        // Connection will be closed when client disconnects or server shuts down
+      });
+    }
+  );
 
   // DELETE /web/servers/:id/logs - Clear logs for a specific server
   fastify.delete<{ Params: { id: string } }>('/web/servers/:id/logs', async (request) => {
@@ -98,28 +103,25 @@ export async function webLogRoutes(fastify: FastifyInstance) {
   });
 
   // GET /web/logs - Get all logs from all servers
-  fastify.get<{ Querystring: z.infer<typeof logQuerySchema> }>(
-    '/web/logs',
-    async (request) => {
-      const query = logQuerySchema.parse(request.query);
+  fastify.get<{ Querystring: z.infer<typeof logQuerySchema> }>('/web/logs', async (request) => {
+    const query = logQuerySchema.parse(request.query);
 
-      const servers = logStorage.getServersWithLogs();
-      const allLogs = servers.flatMap(serverId =>
-        logStorage.getLogs(serverId, query)
-      ).sort((a, b) => a.timestamp - b.timestamp);
+    const servers = logStorage.getServersWithLogs();
+    const allLogs = servers
+      .flatMap((serverId) => logStorage.getLogs(serverId, query))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
-      // Apply pagination to all logs
-      const offset = query.offset || 0;
-      const limit = query.limit || allLogs.length;
+    // Apply pagination to all logs
+    const offset = query.offset || 0;
+    const limit = query.limit || allLogs.length;
 
-      return {
-        code: 200,
-        message: 'Success',
-        data: allLogs.slice(offset, offset + limit),
-        timestamp: new Date().toISOString()
-      };
-    }
-  );
+    return {
+      code: 200,
+      message: 'Success',
+      data: allLogs.slice(offset, offset + limit),
+      timestamp: new Date().toISOString()
+    };
+  });
 
   // GET /web/servers/:id/logs/count - Get log count for a specific server
   fastify.get<{ Params: { id: string }; Querystring: { level?: string } }>(

@@ -1,14 +1,14 @@
 // Frontend-specific Vitest configuration for Vue 3 + Pinia tests
-import { defineConfig } from 'vitest/config'
-import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'node:url'
-import { resolve } from 'path'
-import { mkdirSync, existsSync } from 'fs'
+import { defineConfig } from 'vitest/config';
+import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
+import { resolve } from 'path';
+import { mkdirSync, existsSync } from 'fs';
 
 // 确保 logs 目录存在
-const logDir = resolve(fileURLToPath(new URL('.', import.meta.url)), 'logs')
+const logDir = resolve(fileURLToPath(new URL('.', import.meta.url)), 'logs');
 if (!existsSync(logDir)) {
-  mkdirSync(logDir, { recursive: true })
+  mkdirSync(logDir, { recursive: true });
 }
 
 export default defineConfig({
@@ -53,4 +53,4 @@ export default defineConfig({
     },
     include: ['tests/unit/frontend/**/*.test.ts']
   }
-})
+});

@@ -32,12 +32,14 @@ contract/
 **被测模块**: `src/api/mcp/gateway.ts`
 
 **测试覆盖**:
+
 - MCP 初始化握手协议
 - 客户端信息交换
 - 服务器能力声明
 - 协议版本协商
 
 **运行**:
+
 ```bash
 npx vitest tests/contract/mcp-protocol/initialize.test.ts
 ```
@@ -47,12 +49,14 @@ npx vitest tests/contract/mcp-protocol/initialize.test.ts
 **被测模块**: `src/api/mcp/gateway.ts`
 
 **测试覆盖**:
+
 - 工具列表 API 的输入输出格式
 - 工具 Schema 验证
 - 分页处理
 - 错误响应格式
 
 **运行**:
+
 ```bash
 npx vitest tests/contract/mcp-protocol/tools-list.test.ts
 ```
@@ -62,12 +66,14 @@ npx vitest tests/contract/mcp-protocol/tools-list.test.ts
 **被测模块**: `src/api/mcp/gateway.ts`
 
 **测试覆盖**:
+
 - 工具调用 API 的参数传递
 - 流式响应处理
 - 错误码标准化
 - 超时处理
 
 **运行**:
+
 ```bash
 npx vitest tests/contract/mcp-protocol/tools-call.test.ts
 ```
@@ -100,18 +106,20 @@ npx vitest --coverage tests/contract/
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-|---------|------|
-| `mcp-protocol/initialize.test.ts` | 初始化协议契约测试 |
+| 文件路径                          | 描述                 |
+| --------------------------------- | -------------------- |
+| `mcp-protocol/initialize.test.ts` | 初始化协议契约测试   |
 | `mcp-protocol/tools-list.test.ts` | 工具列表协议契约测试 |
 | `mcp-protocol/tools-call.test.ts` | 工具调用协议契约测试 |
 
 ## 变更记录 (Changelog)
 
 ### 2026-01-29
+
 - 添加导航面包屑
 - 完善契约测试模块文档
 - 添加每个测试文件的详细说明
 
 ### 2026-01-19
+
 - 初始化契约测试模块文档

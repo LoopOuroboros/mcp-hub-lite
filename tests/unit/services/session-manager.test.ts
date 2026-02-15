@@ -2,7 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { SessionState, SessionStore, SessionStateSchema, SessionStoreSchema, createEmptySessionStore, validateSessionStore } from '@models/session.model.js';
+import {
+  SessionState,
+  SessionStore,
+  SessionStateSchema,
+  SessionStoreSchema,
+  createEmptySessionStore,
+  validateSessionStore
+} from '@models/session.model.js';
 
 // 重置模块缓存
 vi.resetModules();
@@ -141,7 +148,9 @@ describe('Session Persistence', () => {
           fs.rmSync(tempDir, { recursive: true, force: true });
           break;
         } catch (error) {
-          console.warn(`Failed to clean up test temp directory (retries left: ${retries - 1}): ${error}`);
+          console.warn(
+            `Failed to clean up test temp directory (retries left: ${retries - 1}): ${error}`
+          );
           retries--;
           if (retries > 0) {
             Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
@@ -384,12 +393,13 @@ describe('McpSessionManager with Real SDK', () => {
     // 2. 导入真实的 SDK 类型
     // 注意：我们不实际创建 SDK 实例（避免副作用），但验证类型兼容性
     // 验证类型导入路径存在
-    const { McpSessionManager: McpSessionManagerClass } = await import('@services/mcp-session-manager.js');
+    const { McpSessionManager: McpSessionManagerClass } =
+      await import('@services/mcp-session-manager.js');
 
     // 3. 创建测试实例并注入模拟状态
     // 使用类型断言是为了测试目的，访问私有成员
     interface McpSessionManagerTest {
-        sessionStates: Map<string, SessionState>;
+      sessionStates: Map<string, SessionState>;
     }
 
     const manager = new McpSessionManagerClass() as unknown as McpSessionManagerTest;
@@ -400,8 +410,8 @@ describe('McpSessionManager with Real SDK', () => {
     const injectedState = manager.sessionStates.get(testSessionId);
     expect(injectedState).toBeDefined();
     if (injectedState) {
-        expect(injectedState.sessionId).toBe(testSessionId);
-        expect(injectedState.clientName).toBe('claude-code');
+      expect(injectedState.sessionId).toBe(testSessionId);
+      expect(injectedState.clientName).toBe('claude-code');
     }
   });
 
@@ -507,10 +517,10 @@ describe('McpSessionManager with Real SDK', () => {
     // 2. 验证我们的修复逻辑可以安全地访问这些属性
     // 使用类型断言来模拟我们在实际代码中的做法
     interface MockTransport {
-        _webStandardTransport?: {
-            sessionId?: string;
-            _initialized?: boolean;
-        };
+      _webStandardTransport?: {
+        sessionId?: string;
+        _initialized?: boolean;
+      };
     }
 
     const mockTransport = expectedTransportStructure as unknown as MockTransport;

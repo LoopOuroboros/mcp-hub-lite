@@ -7,7 +7,7 @@ export interface StdioTransportConfig {
   args?: string[];
   env?: Record<string, string>;
   cwd?: string;
-  stderr?: "inherit" | "pipe" | "ignore";
+  stderr?: 'inherit' | 'pipe' | 'ignore';
 }
 
 /**
@@ -34,4 +34,7 @@ export interface StreamableHttpTransportConfig {
 /**
  * 通用服务器配置
  */
-export type ServerTransportConfig = StdioTransportConfig | SseTransportConfig | StreamableHttpTransportConfig;
+export type ServerTransportConfig =
+  | StdioTransportConfig
+  | SseTransportConfig
+  | StreamableHttpTransportConfig;

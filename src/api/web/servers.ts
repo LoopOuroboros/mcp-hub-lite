@@ -35,13 +35,16 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   });
 
   // GET /web/server-instances/:name
-  fastify.get<{ Params: { name: string } }>('/web/server-instances/:name', async (request, reply) => {
-    const instances = hubManager.getServerInstanceByName(request.params.name);
-    if (instances.length === 0) {
-      return reply.code(404).send({ error: 'Server instances not found' });
+  fastify.get<{ Params: { name: string } }>(
+    '/web/server-instances/:name',
+    async (request, reply) => {
+      const instances = hubManager.getServerInstanceByName(request.params.name);
+      if (instances.length === 0) {
+        return reply.code(404).send({ error: 'Server instances not found' });
+      }
+      return instances;
     }
-    return instances;
-  });
+  );
 
   // POST /web/servers
   fastify.post('/web/servers', async (request, reply) => {
@@ -74,26 +77,29 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   });
 
   // POST /web/server-instances/:name
-  fastify.post<{ Params: { name: string } }>('/web/server-instances/:name', async (request, reply) => {
-    try {
-      const instanceSchema = ServerInstanceConfigSchema.partial();
-      const body = instanceSchema.parse(request.body);
+  fastify.post<{ Params: { name: string } }>(
+    '/web/server-instances/:name',
+    async (request, reply) => {
+      try {
+        const instanceSchema = ServerInstanceConfigSchema.partial();
+        const body = instanceSchema.parse(request.body);
 
-      // 检查服务器是否存在
-      const server = hubManager.getServerByName(request.params.name);
-      if (!server) {
-        return reply.code(404).send({ error: 'Server not found' });
-      }
+        // 检查服务器是否存在
+        const server = hubManager.getServerByName(request.params.name);
+        if (!server) {
+          return reply.code(404).send({ error: 'Server not found' });
+        }
 
-      const newInstance = await hubManager.addServerInstance(request.params.name, body);
-      return reply.code(201).send(newInstance);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+        const newInstance = await hubManager.addServerInstance(request.params.name, body);
+        return reply.code(201).send(newInstance);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+        }
+        return reply.code(500).send({ error: 'Internal Server Error' });
       }
-      return reply.code(500).send({ error: 'Internal Server Error' });
     }
-  });
+  );
 
   // PUT /web/servers/:name
   fastify.put<{ Params: { name: string } }>('/web/servers/:name', async (request, reply) => {
@@ -117,20 +123,23 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /web/server-instances/:name/:index
-  fastify.put<{ Params: { name: string; index: number } }>('/web/server-instances/:name/:index', async (request, reply) => {
-    try {
-      const partialSchema = ServerInstanceConfigSchema.partial();
-      const body = partialSchema.parse(request.body);
+  fastify.put<{ Params: { name: string; index: number } }>(
+    '/web/server-instances/:name/:index',
+    async (request, reply) => {
+      try {
+        const partialSchema = ServerInstanceConfigSchema.partial();
+        const body = partialSchema.parse(request.body);
 
-      await hubManager.updateServerInstance(request.params.name, request.params.index, body);
-      return reply.code(200).send({ message: 'Server instance updated' });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+        await hubManager.updateServerInstance(request.params.name, request.params.index, body);
+        return reply.code(200).send({ message: 'Server instance updated' });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+        }
+        return reply.code(500).send({ error: 'Internal Server Error' });
       }
-      return reply.code(500).send({ error: 'Internal Server Error' });
     }
-  });
+  );
 
   // DELETE /web/servers/:name
   fastify.delete<{ Params: { name: string } }>('/web/servers/:name', async (request, reply) => {
@@ -142,27 +151,32 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   });
 
   // DELETE /web/server-instances/:name/:index
-  fastify.delete<{ Params: { name: string; index: number } }>('/web/server-instances/:name/:index', async (request, reply) => {
-    try {
-      await hubManager.removeServerInstance(request.params.name, request.params.index);
-      return reply.code(204).send();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+  fastify.delete<{ Params: { name: string; index: number } }>(
+    '/web/server-instances/:name/:index',
+    async (request, reply) => {
+      try {
+        await hubManager.removeServerInstance(request.params.name, request.params.index);
+        return reply.code(204).send();
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: 'Validation failed', details: error.issues });
+        }
+        return reply.code(500).send({ error: 'Internal Server Error' });
       }
-      return reply.code(500).send({ error: 'Internal Server Error' });
     }
-  });
+  );
 
   // POST /web/servers/batch
   fastify.post('/web/servers/batch', async (request, reply) => {
     try {
       // 首先解析基本结构，不严格验证服务器配置，以便我们可以进行预处理
       const batchSchema = z.object({
-        mcpServers: z.array(z.object({
-          name: z.string().min(1).max(100),
-          config: ServerConfigSchema.partial()
-        }))
+        mcpServers: z.array(
+          z.object({
+            name: z.string().min(1).max(100),
+            config: ServerConfigSchema.partial()
+          })
+        )
       });
 
       const body = batchSchema.parse(request.body);
@@ -173,7 +187,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
       };
 
       const existingServers = hubManager.getAllServers();
-      const existingNames = new Set(existingServers.map(server => server.name.toLowerCase()));
+      const existingNames = new Set(existingServers.map((server) => server.name.toLowerCase()));
 
       const serversToAdd = [];
       const serversToConnect = [];
@@ -216,7 +230,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
 
       // 阶段 3: 批量创建服务器实例（不自动连接）
       if (serversToAdd.length > 0) {
-        await hubManager.addServerInstancesWithoutConnect(serversToAdd.map(s => s.name));
+        await hubManager.addServerInstancesWithoutConnect(serversToAdd.map((s) => s.name));
       }
 
       // 阶段 4: 并发启动所有需要连接的服务器实例

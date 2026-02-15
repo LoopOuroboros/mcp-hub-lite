@@ -17,7 +17,7 @@ vi.mock('@services/hub-manager.service.js', () => ({
     updateServer: vi.fn(),
     updateServerInstance: vi.fn(),
     removeServer: vi.fn(),
-    removeServerInstance: vi.fn(),
+    removeServerInstance: vi.fn()
   }
 }));
 
@@ -36,18 +36,20 @@ describe('Server API Routes', () => {
   });
 
   it('GET /api/servers should return all servers', async () => {
-    const mockServers = [{
-      id: '1',
-      name: 'test',
-      config: {
-        type: 'stdio' as const,
-        command: 'test',
-        args: [],
-        enabled: true,
-        allowedTools: [],
-        timeout: 30000
+    const mockServers = [
+      {
+        id: '1',
+        name: 'test',
+        config: {
+          type: 'stdio' as const,
+          command: 'test',
+          args: [],
+          enabled: true,
+          allowedTools: [],
+          timeout: 30000
+        }
       }
-    }];
+    ];
     vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
     const response = await app.inject({
@@ -61,22 +63,22 @@ describe('Server API Routes', () => {
 
   it('POST /api/servers should add a server', async () => {
     const newServer = {
-        name: 'New Server',
-        config: {
-            command: 'node',
-            args: [],
-            env: {},
-            enabled: true
-        }
-    };
-    const createdServer: ServerConfig = {
-        type: 'stdio' as const,
+      name: 'New Server',
+      config: {
         command: 'node',
         args: [],
         env: {},
-        enabled: true,
-        allowedTools: [],
-        timeout: 30000
+        enabled: true
+      }
+    };
+    const createdServer: ServerConfig = {
+      type: 'stdio' as const,
+      command: 'node',
+      args: [],
+      env: {},
+      enabled: true,
+      allowedTools: [],
+      timeout: 30000
     };
 
     vi.mocked(hubManager.addServer).mockReturnValue(Promise.resolve(createdServer));
@@ -89,15 +91,15 @@ describe('Server API Routes', () => {
 
     expect(response.statusCode).toBe(201);
     expect(JSON.parse(response.payload)).toEqual({
-        name: newServer.name,
-        config: createdServer
+      name: newServer.name,
+      config: createdServer
     });
   });
 
   it('POST /api/servers should validate input', async () => {
-    const invalidServer = { 
-        name: '', // Empty name invalid
-        command: 'node'
+    const invalidServer = {
+      name: '', // Empty name invalid
+      command: 'node'
     };
 
     const response = await app.inject({
