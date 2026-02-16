@@ -1,3 +1,17 @@
+<!--
+  DashboardView Component
+
+  Main dashboard component that displays server statistics and recent activity logs.
+  Provides an overview of the MCP Hub Lite system status with real-time updates.
+
+  Features:
+  - Server statistics cards (total, running, errors)
+  - Loading skeleton states during data fetching
+  - Recent activity log with auto-scrolling
+  - Real-time updates via WebSocket store
+  - Responsive design with dark mode support
+  - Custom scrollbar styling for better UX
+-->
 <template>
   <div
     class="dashboard py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full h-full flex flex-col overflow-hidden transition-colors duration-300"
@@ -98,16 +112,29 @@ import { useServerStore } from '@stores/server';
 import { useWebSocketStore } from '@stores/websocket';
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue';
 
+/**
+ * Dashboard component state and logic
+ *
+ * Manages server statistics display and recent activity log rendering
+ * with real-time updates and auto-scrolling functionality.
+ */
+
 const store = useServerStore();
 useWebSocketStore();
 const activityContainer = ref<HTMLElement | null>(null);
 
+/**
+ * Fetches all server logs when component is mounted and servers are available
+ */
 onMounted(() => {
   if (!store.loading && store.servers.length > 0) {
     store.fetchAllLogs();
   }
 });
 
+/**
+ * Watches for loading state changes and fetches logs when servers become available
+ */
 watch(
   () => store.loading,
   (loading) => {
@@ -117,6 +144,17 @@ watch(
   }
 );
 
+/**
+ * Interface defining the structure of activity log items
+ *
+ * @interface ActivityItem
+ * @property {string} serverName - Name of the server that generated the log
+ * @property {string} serverStatus - Current status of the server
+ * @property {string} message - Log message content
+ * @property {string} time - Formatted timestamp string
+ * @property {number} timestamp - Unix timestamp in milliseconds
+ * @property {number} originalIndex - Original index in the server's log array
+ */
 interface ActivityItem {
   serverName: string;
   serverStatus: string;
@@ -126,6 +164,14 @@ interface ActivityItem {
   originalIndex: number;
 }
 
+/**
+ * Computed property that aggregates and sorts all server logs chronologically
+ *
+ * Combines logs from all servers into a single timeline sorted by timestamp (oldest first).
+ * Each log entry is enriched with server information and formatted timestamps.
+ *
+ * @returns {ActivityItem[]} Array of activity items sorted by timestamp
+ */
 const activities = computed(() => {
   const allActivities: ActivityItem[] = [];
 
@@ -146,7 +192,11 @@ const activities = computed(() => {
   return allActivities.sort((a, b) => a.timestamp - b.timestamp);
 });
 
-// Auto-scroll to bottom when activities change
+/**
+ * Auto-scrolls the activity container to the bottom when new activities are added
+ *
+ * Uses Vue's nextTick to ensure DOM updates are complete before scrolling.
+ */
 watch(
   () => activities.value.length,
   () => {
@@ -158,6 +208,12 @@ watch(
   }
 );
 
+/**
+ * Formats a Unix timestamp into a human-readable time string with milliseconds
+ *
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @returns {string} Formatted time string (HH:MM:SS.mmm)
+ */
 function formatTimestamp(timestamp: number) {
   const date = new Date(timestamp);
   const hours = String(date.getHours()).padStart(2, '0');
@@ -167,6 +223,12 @@ function formatTimestamp(timestamp: number) {
   return `${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 
+/**
+ * Returns the appropriate Element Plus icon component based on server status
+ *
+ * @param {string} status - Server status string
+ * @returns {Component} Element Plus icon component
+ */
 function getStatusIcon(status: string) {
   switch (status) {
     case 'running':
@@ -182,6 +244,12 @@ function getStatusIcon(status: string) {
   }
 }
 
+/**
+ * Returns CSS color class based on server status for consistent visual indicators
+ *
+ * @param {string} status - Server status string
+ * @returns {string} Tailwind CSS color class
+ */
 function getStatusColor(status: string) {
   switch (status) {
     case 'running':
@@ -199,6 +267,12 @@ function getStatusColor(status: string) {
 </script>
 
 <style scoped>
+/**
+ * Custom scrollbar styling for the activity container
+ *
+ * Provides consistent scrollbar appearance across light and dark themes
+ * with appropriate colors for each theme.
+ */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

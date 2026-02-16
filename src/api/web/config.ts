@@ -1,6 +1,20 @@
 /**
- * Configuration Management API
- * Provides GET/PUT/import/export interfaces for configuration
+ * Configuration Management API Routes
+ *
+ * This module provides comprehensive configuration management endpoints for the MCP Hub Lite system.
+ * It handles reading, updating, importing, exporting, and batch operations for system configuration.
+ *
+ * The configuration includes server definitions, system settings, and other runtime parameters
+ * that control the behavior of the MCP Hub Lite service.
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register configuration management routes
+ * await configRoutes(app);
+ * ```
  */
 
 import { FastifyInstance } from 'fastify';

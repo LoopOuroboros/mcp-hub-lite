@@ -25,6 +25,28 @@ import { webSocketRoutes } from '@api/ws/events.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Creates and configures a Fastify application instance for the MCP Hub Lite service.
+ *
+ * This function sets up the complete HTTP server with all necessary routes, middleware,
+ * and static file serving capabilities. It configures CORS headers for development,
+ * registers all API routes (MCP gateway, web APIs, and WebSocket endpoints), and serves
+ * the frontend SPA from the client directory.
+ *
+ * The application follows a layered architecture:
+ * - API routes are registered first to ensure proper routing precedence
+ * - Static file serving is configured for the built frontend assets
+ * - SPA fallback handling redirects non-API routes to index.html for client-side routing
+ *
+ * @returns {Promise&lt;import('fastify').FastifyInstance&gt;} A configured Fastify instance ready to listen for requests
+ * @throws {Error} If Fastify fails to initialize or register plugins
+ *
+ * @example
+ * ```typescript
+ * const app = await buildApp();
+ * await app.listen({ port: 3000, host: '0.0.0.0' });
+ * ```
+ */
 export async function buildApp() {
   const fastify = Fastify({
     logger: false // We use our own logger

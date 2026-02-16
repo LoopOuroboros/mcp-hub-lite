@@ -14,6 +14,55 @@ logger.enableDevLog();
 
 let app: FastifyInstance | null = null;
 
+/**
+ * Starts the MCP Hub Lite development server with enhanced debugging capabilities.
+ *
+ * This function initializes and starts a development-focused Fastify server instance
+ * with the following features:
+ * - Debug-level logging enabled for detailed development insights
+ * - Development log file output for persistent debugging information
+ * - Automatic connection to all enabled MCP servers configured in the system
+ * - OpenTelemetry tracing initialization for observability
+ * - PID file management for process tracking
+ * - Graceful shutdown handling for SIGTERM and SIGINT signals
+ *
+ * The development server differs from the production server by:
+ * - Using debug log level instead of info/warn
+ * - Enabling development-specific logging to file
+ * - Automatically connecting to all enabled servers on startup
+ * - Providing enhanced error reporting for development debugging
+ *
+ * Usage:
+ * - Called automatically when running `npm run dev` or `npm run dev:server`
+ * - Should only be used in development environments, not production
+ * - Handles its own process lifecycle including graceful shutdown
+ *
+ * Error Handling:
+ * - Catches and logs any startup errors with full stack traces
+ * - Cleans up PID file on startup failure
+ * - Exits process with code 1 on fatal errors
+ * - Provides graceful shutdown on termination signals
+ *
+ * @async
+ * @returns {Promise<void>} Resolves when server starts successfully and begins listening.
+ *                          Never resolves if server fails to start (process exits with code 1).
+ * @throws {Error} If server fails to initialize or start due to configuration errors,
+ *                 port conflicts, invalid server configurations, or other startup issues.
+ *                 Note: Errors are caught internally and cause process.exit(1), so the promise
+ *                 typically does not reject but rather the process terminates.
+ *
+ * @example
+ * ```typescript
+ * // Typically called automatically at module level
+ * startDevServer();
+ * ```
+ *
+ * @see {@link buildApp} - Creates the Fastify application instance
+ * @see {@link configManager} - Manages server configuration and MCP server instances
+ * @see {@link mcpConnectionManager} - Handles MCP server connections and communication
+ * @see {@link telemetryManager} - Manages OpenTelemetry tracing and observability
+ * @see {@link PidManager} - Handles PID file creation and cleanup
+ */
 async function startDevServer() {
   try {
     app = await buildApp();
@@ -70,6 +119,27 @@ async function startDevServer() {
   }
 }
 
+/**
+ * Handles graceful shutdown of the development server when receiving termination signals.
+ *
+ * This function performs a clean shutdown sequence to ensure:
+ * - All MCP server connections are properly disconnected
+ * - The Fastify HTTP server is closed gracefully
+ * - OpenTelemetry tracing resources are properly shut down
+ * - PID file is removed to prevent stale process detection
+ * - All resources are cleaned up before process exit
+ *
+ * It handles both SIGTERM (termination request) and SIGINT (interrupt/CTRL+C) signals,
+ * providing consistent shutdown behavior regardless of how the process is terminated.
+ *
+ * Error Handling:
+ * - Catches and logs any errors during shutdown process
+ * - Ensures PID file is always removed even if shutdown fails
+ * - Exits with code 0 on successful shutdown, or after logging errors
+ *
+ * @param signal - The termination signal that triggered shutdown ('SIGTERM' or 'SIGINT')
+ * @returns {Promise<void>} Resolves when shutdown sequence completes successfully
+ */
 // Handle graceful shutdown for better restart experience
 const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully...`);

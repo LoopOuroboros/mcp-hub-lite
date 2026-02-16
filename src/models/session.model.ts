@@ -39,7 +39,29 @@ export function createEmptySessionStore(): SessionStore {
 }
 
 /**
- * Validate and normalize session store data
+ * Validates and normalizes session store data using Zod schema validation.
+ *
+ * This function takes raw session store data (typically parsed from JSON) and validates it
+ * against the SessionStoreSchema. If validation succeeds, it returns the validated and
+ * normalized data. If validation fails, it returns an empty session store with default values.
+ *
+ * The function uses safeParse to prevent exceptions during validation, making it safe to use
+ * with untrusted or potentially corrupted data sources like persisted JSON files.
+ *
+ * @param {unknown} data - Raw session store data to validate (typically from JSON.parse)
+ * @returns {SessionStore} Validated session store data, or an empty store if validation fails
+ *
+ * @example
+ * ```typescript
+ * // Validate data from a JSON file
+ * const rawData = JSON.parse(fs.readFileSync('sessions.json', 'utf-8'));
+ * const validatedStore = validateSessionStore(rawData);
+ *
+ * // Use the validated store
+ * Object.keys(validatedStore.sessions).forEach(sessionId => {
+ *   console.log(`Session: ${sessionId}`);
+ * });
+ * ```
  */
 export function validateSessionStore(data: unknown): SessionStore {
   const result = SessionStoreSchema.safeParse(data);

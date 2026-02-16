@@ -15,6 +15,33 @@ export type LogOptions = Omit<LogContext, 'pid' | 'serverName'>;
 // PID formatting configuration
 const PID_WIDTH = 8;
 
+/**
+ * Advanced structured logger with color support, file output, and context-aware logging.
+ *
+ * This logger provides comprehensive logging capabilities with the following features:
+ * - ANSI color-coded console output with different colors for each log level
+ * - Structured context information including PID, server name, trace ID, span ID
+ * - File output with plain text formatting (no colors) for log analysis
+ * - Development mode with automatic log file creation and clearing
+ * - Context-aware logging with subModule, traceId, and spanId support
+ * - Error formatting with stack trace truncation to prevent overly verbose logs
+ * - MCP server-specific logging with serverName context
+ *
+ * The logger supports four log levels: debug, info, warn, and error, with configurable
+ * minimum log level threshold.
+ *
+ * @example
+ * ```typescript
+ * // Basic usage
+ * logger.info('Server started', { port: 7788 });
+ *
+ * // With context
+ * logger.error('Connection failed', { error: err.message, serverName: 'my-server' });
+ *
+ * // Development mode
+ * logger.enableDevLog();
+ * ```
+ */
 export class Logger {
   private level: LogLevel = 'info';
   private useStderr: boolean = false;
@@ -29,6 +56,24 @@ export class Logger {
     }
   }
 
+  /**
+   * Enables development logging mode with file output and enhanced debugging.
+   *
+   * This method configures the logger to:
+   * - Write all log output to a file in the logs/ directory
+   * - Enable communication debug logging (MCP_COMM_DEBUG)
+   * - Enable session debug logging (SESSION_DEBUG)
+   * - Clear the log file on startup to avoid interference from stale logs
+   *
+   * The log file is created at logs/dev-server.log and will contain plain text
+   * formatted logs without ANSI color codes for easier analysis.
+   *
+   * @example
+   * ```typescript
+   * const logger = new Logger();
+   * logger.enableDevLog(); // Logs will be written to logs/dev-server.log
+   * ```
+   */
   public enableDevLog() {
     if (this.logFileStream) return;
 
@@ -280,21 +325,102 @@ export class Logger {
     }
   }
 
+  /**
+   * Logs a debug message with optional context and additional arguments.
+   *
+   * Debug messages are only output when the logger's level is set to 'debug'.
+   * This method supports structured logging with context options and multiple
+   * arguments that will be formatted appropriately.
+   *
+   * @param {string} message - The primary log message
+   * @param {...unknown[]} args - Additional arguments to include in the log
+   * @param {LogOptions} [args[0]] - Optional logging context (subModule, traceId, spanId)
+   *
+   * @example
+   * ```typescript
+   * // Basic debug message
+   * logger.debug('Processing request');
+   *
+   * // With context
+   * logger.debug('Tool called', { subModule: 'Gateway', traceId: 'abc123' }, toolName, args);
+   * ```
+   */
   debug(message: string, ...args: unknown[]): void {
     const [options, ...restArgs] = this.extractOptionsAndArgs(args);
     this.log('debug', message, restArgs, options);
   }
 
+  /**
+   * Logs an informational message with optional context and additional arguments.
+   *
+   * Info messages are output when the logger's level is 'info', 'warn', or 'error'.
+   * This method supports structured logging with context options and multiple
+   * arguments that will be formatted appropriately.
+   *
+   * @param {string} message - The primary log message
+   * @param {...unknown[]} args - Additional arguments to include in the log
+   * @param {LogOptions} [args[0]] - Optional logging context (subModule, traceId, spanId)
+   *
+   * @example
+   * ```typescript
+   * // Basic info message
+   * logger.info('Server started successfully');
+   *
+   * // With context and additional data
+   * logger.info('Request processed', { subModule: 'API' }, { duration: 150, statusCode: 200 });
+   * ```
+   */
   info(message: string, ...args: unknown[]): void {
     const [options, ...restArgs] = this.extractOptionsAndArgs(args);
     this.log('info', message, restArgs, options);
   }
 
+  /**
+   * Logs a warning message with optional context and additional arguments.
+   *
+   * Warning messages are output when the logger's level is 'warn' or 'error'.
+   * This method supports structured logging with context options and multiple
+   * arguments that will be formatted appropriately.
+   *
+   * @param {string} message - The primary log message
+   * @param {...unknown[]} args - Additional arguments to include in the log
+   * @param {LogOptions} [args[0]] - Optional logging context (subModule, traceId, spanId)
+   *
+   * @example
+   * ```typescript
+   * // Basic warning message
+   * logger.warn('Deprecated API usage detected');
+   *
+   * // With context and error details
+   * logger.warn('Connection timeout', { subModule: 'Network' }, { server: 'api.example.com', timeout: 5000 });
+   * ```
+   */
   warn(message: string, ...args: unknown[]): void {
     const [options, ...restArgs] = this.extractOptionsAndArgs(args);
     this.log('warn', message, restArgs, options);
   }
 
+  /**
+   * Logs an error message with optional context and additional arguments.
+   *
+   * Error messages are always output regardless of the logger's level setting.
+   * This method supports structured logging with context options and multiple
+   * arguments that will be formatted appropriately, including proper error
+   * object formatting with stack traces.
+   *
+   * @param {string} message - The primary log message
+   * @param {...unknown[]} args - Additional arguments to include in the log
+   * @param {LogOptions} [args[0]] - Optional logging context (subModule, traceId, spanId)
+   *
+   * @example
+   * ```typescript
+   * // Basic error message
+   * logger.error('Database connection failed');
+   *
+   * // With error object and context
+   * logger.error('Request processing failed', { subModule: 'API' }, error, { requestId: '123' });
+   * ```
+   */
   error(message: string, ...args: unknown[]): void {
     const [options, ...restArgs] = this.extractOptionsAndArgs(args);
     this.log('error', message, restArgs, options);
@@ -504,6 +630,26 @@ export function simplifyToolsListResponse(data: string): string {
   return data.length > 200 ? data.substring(0, 200) + '...' : data;
 }
 
+/**
+ * Log a message with color formatting for console and plain text for file output.
+ *
+ * This function provides a convenient way to log messages that appear with
+ * ANSI color codes in the console but are written as plain text to log files.
+ * It uses the logger's internal formatting methods to ensure consistent output.
+ *
+ * @param coloredMessage - The message to display in the console with color formatting
+ * @param plainMessage - The message to write to log files in plain text format
+ * @param context - Optional logging context including PID, server name, trace ID, etc.
+ *
+ * @example
+ * ```typescript
+ * logWithColor(
+ *   '\x1b[32m[SUCCESS]\x1b[0m Server started',
+ *   '[SUCCESS] Server started',
+ *   { serverName: 'mcp-hub', pid: process.pid }
+ * );
+ * ```
+ */
 export function logWithColor(
   coloredMessage: string,
   plainMessage: string,

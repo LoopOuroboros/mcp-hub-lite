@@ -5,10 +5,30 @@ import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { logger } from '@utils/logger.js';
 
 /**
- * Web API routes for MCP connection status
- * All endpoints under /web/mcp
- * HOT RELOAD TEST - This file should trigger restart when modified
- * Last modified: 2026-01-13 for hot reload testing
+ * MCP Connection Status API Routes
+ *
+ * Provides real-time monitoring and management endpoints for MCP (Model Context Protocol) server connections.
+ * This module enables administrators to check the health of connected servers, manage connection states,
+ * and retrieve server capabilities including available tools and resources.
+ *
+ * The status API provides comprehensive information about each connected MCP server including:
+ * - Connection status (connected/disconnected)
+ * - Server performance metrics
+ * - Available tools and resources count
+ * - Process information (PID, start time)
+ * - Error conditions and recovery status
+ *
+ * Additionally, it provides active connection management capabilities to connect/disconnect
+ * servers programmatically, making it suitable for automated infrastructure management.
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register MCP status routes
+ * await webMcpStatusRoutes(app);
+ * ```
  */
 export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   // GET /web/mcp/status - Get status of all MCP servers

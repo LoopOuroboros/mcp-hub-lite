@@ -5,8 +5,31 @@ import type { LogEntry } from '@shared-models/server.model.js';
 import type { LogLevel } from '@shared-types/common.types.js';
 
 /**
- * Web API routes for server logs
- * All endpoints under /web/logs
+ * Server Logs API Routes
+ *
+ * Provides comprehensive logging endpoints for monitoring and debugging MCP server operations.
+ * This module enables real-time log streaming, historical log retrieval, and log management
+ * across all connected MCP servers.
+ *
+ * The logging system supports multiple log levels (debug, info, warn, error), pagination,
+ * filtering by timestamp, and real-time Server-Sent Events (SSE) streaming for live monitoring.
+ * Logs are stored per-server and can be retrieved individually or aggregated across all servers.
+ *
+ * Key features include:
+ * - Per-server log retrieval with filtering and pagination
+ * - Real-time log streaming via SSE
+ * - Log count statistics
+ * - Cross-server log aggregation
+ * - Log clearing and maintenance operations
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register log routes
+ * await webLogRoutes(app);
+ * ```
  */
 export async function webLogRoutes(fastify: FastifyInstance) {
   // Query string schema for logs endpoints

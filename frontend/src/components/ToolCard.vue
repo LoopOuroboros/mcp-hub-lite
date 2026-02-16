@@ -1,3 +1,16 @@
+<!--
+  ToolCard Component
+
+  A clickable card component that displays tool information with optional server tag.
+  Used in tool lists to provide a visual representation of available tools.
+
+  Features:
+  - Displays tool title and description
+  - Optional server name tag with customizable styling
+  - Hover effects and cursor pointer for clickability
+  - Emits 'call' event when clicked
+  - Responsive design with proper text truncation
+-->
 <template>
   <div
     class="bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer"
@@ -27,6 +40,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Props for the ToolCard component
+ *
+ * @interface ToolCardProps
+ * @property {string} title - The tool name/title to display
+ * @property {string} [description] - Optional tool description
+ * @property {string} [tagName] - Optional server name tag to display
+ * @property {string} [tagClass] - Optional CSS classes for customizing tag appearance
+ */
 defineProps<{
   title: string;
   description?: string;
@@ -34,6 +56,12 @@ defineProps<{
   tagClass?: string;
 }>();
 
+/**
+ * Emits events from the ToolCard component
+ *
+ * @interface ToolCardEmits
+ * @event call - Emitted when the tool card is clicked, indicating the user wants to call this tool
+ */
 defineEmits<{
   (e: 'call'): void;
 }>();

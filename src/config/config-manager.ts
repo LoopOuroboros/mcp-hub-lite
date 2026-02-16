@@ -27,6 +27,47 @@ export {
   ObservabilityConfigSchema
 };
 
+/**
+ * Configuration Manager for MCP Hub Lite system.
+ *
+ * This class provides comprehensive configuration management capabilities including:
+ * - Loading and parsing configuration from JSON files
+ * - Runtime configuration updates with validation
+ * - Server and server instance lifecycle management
+ * - Automatic configuration persistence to disk
+ * - Type conversion and compatibility handling (e.g., 'http' to 'streamable-http')
+ * - Configuration change logging and tracking
+ *
+ * The ConfigManager supports multiple configuration sources with the following priority:
+ * 1. Environment variable `MCP_HUB_CONFIG_PATH`
+ * 2. Current directory `.mcp-hub.json`
+ * 3. `config/.mcp-hub.json`
+ * 4. `~/.mcp-hub.json`
+ *
+ * It implements a singleton pattern for production use but creates new instances
+ * for testing to ensure test isolation.
+ *
+ * @example
+ * ```typescript
+ * // Get the config manager instance
+ * const configManager = getConfigManager();
+ *
+ * // Get all servers
+ * const servers = configManager.getServers();
+ *
+ * // Add a new server
+ * await configManager.addServer('my-server', {
+ *   type: 'stdio',
+ *   command: 'npx my-mcp-server',
+ *   enabled: true
+ * });
+ *
+ * // Update system configuration
+ * await configManager.updateConfig({
+ *   system: { port: 8080, host: '0.0.0.0' }
+ * });
+ * ```
+ */
 export class ConfigManager {
   private configPath: string;
   private config!: SystemConfig;
@@ -74,6 +115,21 @@ export class ConfigManager {
     return config;
   }
 
+  /**
+   * Loads configuration from the configured file path.
+   *
+   * This private method handles the complete configuration loading process:
+   * - Checks if the config file exists at the specified path
+   * - Reads and parses the JSON configuration
+   * - Performs type conversion for compatibility (e.g., 'http' to 'streamable-http')
+   * - Validates the configuration using Zod schema
+   * - Handles validation failures gracefully by falling back to default configuration
+   * - Initializes server instances array for each configured server
+   *
+   * If the config file doesn't exist or fails to load, a default configuration is used.
+   *
+   * @private
+   */
   private loadConfig(): void {
     try {
       if (fs.existsSync(this.configPath)) {
@@ -126,6 +182,15 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Saves the current configuration to disk.
+   *
+   * This private method writes the current configuration to the configured file path,
+   * creating the directory structure if it doesn't exist. Errors during the save
+   * operation are silently ignored to prevent crashes during normal operation.
+   *
+   * @private
+   */
   // The ONE function logic - direct write
   private saveConfig(): void {
     try {
@@ -139,10 +204,42 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Retrieves the current system configuration.
+   *
+   * Returns a deep copy of the current configuration to prevent external modification
+   * of the internal configuration state.
+   *
+   * @returns {SystemConfig} A deep copy of the current system configuration
+   *
+   * @example
+   * ```typescript
+   * const config = configManager.getConfig();
+   * console.log(`Server running on ${config.system.host}:${config.system.port}`);
+   * ```
+   */
   public getConfig(): SystemConfig {
     return { ...this.config };
   }
 
+  /**
+   * Retrieves all configured servers with their configurations.
+   *
+   * Returns an array of server objects containing the server name and configuration.
+   * Optionally sorts the servers by name in alphabetical order.
+   *
+   * @param {boolean} sortByName - Whether to sort servers by name (default: false)
+   * @returns {Array<{ name: string; config: ServerConfig }>} Array of server objects with name and config
+   *
+   * @example
+   * ```typescript
+   * // Get all servers unsorted
+   * const servers = configManager.getServers();
+   *
+   * // Get all servers sorted by name
+   * const sortedServers = configManager.getServers(true);
+   * ```
+   */
   public getServers(sortByName: boolean = false): Array<{ name: string; config: ServerConfig }> {
     let servers = Object.entries(this.config.servers || {}).map(([name, config]) => ({
       name,
@@ -154,18 +251,90 @@ export class ConfigManager {
     return servers;
   }
 
+  /**
+   * Retrieves a server configuration by name.
+   *
+   * Returns the server configuration if it exists, or undefined if no server
+   * with the given name is configured.
+   *
+   * @param {string} name - The name of the server to retrieve
+   * @returns {ServerConfig | undefined} The server configuration or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const server = configManager.getServerByName('my-mcp-server');
+   * if (server) {
+   *   console.log(`Server type: ${server.type}`);
+   * }
+   * ```
+   */
   public getServerByName(name: string): ServerConfig | undefined {
     return this.config.servers?.[name];
   }
 
+  /**
+   * Retrieves all server instances grouped by server name.
+   *
+   * Returns a record where keys are server names and values are arrays of server instances
+   * for that server. Each server can have multiple instances running simultaneously.
+   *
+   * @returns {Record<string, ServerInstanceConfig[]>} Server instances grouped by server name
+   *
+   * @example
+   * ```typescript
+   * const instances = configManager.getServerInstances();
+   * const myServerInstances = instances['my-mcp-server'] || [];
+   * console.log(`Running ${myServerInstances.length} instances of my-mcp-server`);
+   * ```
+   */
   public getServerInstances(): Record<string, ServerInstanceConfig[]> {
     return { ...this.serverInstances };
   }
 
+  /**
+   * Retrieves all server instances for a specific server by name.
+   *
+   * Returns an array of server instances for the given server name. If no instances
+   * exist for the server, returns an empty array.
+   *
+   * @param {string} name - The name of the server to retrieve instances for
+   * @returns {ServerInstanceConfig[]} Array of server instances, or empty array if none exist
+   *
+   * @example
+   * ```typescript
+   * const instances = configManager.getServerInstanceByName('my-mcp-server');
+   * console.log(`Found ${instances.length} instances`);
+   * ```
+   */
   public getServerInstanceByName(name: string): ServerInstanceConfig[] {
     return this.serverInstances[name] || [];
   }
 
+  /**
+   * Retrieves server information by its unique instance ID.
+   *
+   * This method searches through all configured servers and their instances to find
+   * a server instance that matches the provided ID. It returns complete information
+   * including the server name, configuration, and instance details.
+   *
+   * The method iterates through all server instances across all configured servers,
+   * making it useful for scenarios where you have an instance ID but need to determine
+   * which server it belongs to and retrieve its full configuration.
+   *
+   * @param {string} id - The unique instance ID to search for
+   * @returns {{ name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined}
+   *          Complete server information including name, configuration, and instance details,
+   *          or undefined if no matching instance is found
+   *
+   * @example
+   * ```typescript
+   * const serverInfo = configManager.getServerById('my-server-12345-abcde');
+   * if (serverInfo) {
+   *   console.log(`Found server: ${serverInfo.name}`);
+   *   console.log(`Instance ID: ${serverInfo.instance.id}`);
+   * }
+   * ```
+   */
   public getServerById(
     id: string
   ): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
@@ -178,6 +347,40 @@ export class ConfigManager {
     return undefined;
   }
 
+  /**
+   * Adds multiple server configurations to the system in a single operation.
+   *
+   * This method validates and adds an array of server configurations, performing type conversion
+   * for compatibility (e.g., 'http' to 'streamable-http'), validating each configuration using
+   * Zod schema validation, and persisting all changes to disk. Server names must be unique,
+   * and existing servers with the same name will be overwritten.
+   *
+   * The method ensures that server configurations are sorted alphabetically by name after
+   * the addition is complete.
+   *
+   * @param {Array<{ name: string; config: Partial<ServerConfig> }>} servers - Array of server objects containing name and partial configuration
+   * @returns {Promise<void>} Resolves when all servers have been added and configuration is persisted
+   * @throws {ZodError} If any server configuration fails validation
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await configManager.addServers([
+   *     {
+   *       name: 'file-server',
+   *       config: { type: 'stdio', command: 'npx file-mcp-server', enabled: true }
+   *     },
+   *     {
+   *       name: 'git-server',
+   *       config: { type: 'stdio', command: 'npx git-mcp-server', enabled: true }
+   *     }
+   *   ]);
+   *   console.log('Multiple servers added successfully');
+   * } catch (error) {
+   *   console.error('Failed to add servers:', error);
+   * }
+   * ```
+   */
   public async addServers(
     servers: Array<{ name: string; config: Partial<ServerConfig> }>
   ): Promise<void> {
@@ -194,6 +397,36 @@ export class ConfigManager {
     this.saveConfig();
   }
 
+  /**
+   * Adds a new server configuration to the system.
+   *
+   * This method validates the provided server configuration using Zod schema validation,
+   * performs type conversion (e.g., 'http' to 'streamable-http' for compatibility),
+   * persists the configuration to disk, and initializes server instances array.
+   *
+   * The server name must be unique. If a server with the same name already exists,
+   * it will be overwritten.
+   *
+   * @param {string} name - The unique name for the server
+   * @param {Partial<ServerConfig>} config - The server configuration (partial, will be validated and completed with defaults)
+   * @returns {Promise<ServerConfig>} The validated and complete server configuration
+   * @throws {ZodError} If the configuration fails validation
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const serverConfig = await configManager.addServer('my-mcp-server', {
+   *     type: 'stdio',
+   *     command: 'npx my-mcp-server',
+   *     enabled: true,
+   *     timeout: 30000
+   *   });
+   *   console.log(`Server added successfully: ${serverConfig.type}`);
+   * } catch (error) {
+   *   console.error('Failed to add server:', error);
+   * }
+   * ```
+   */
   public async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
     // Unified type conversion: convert http to streamable-http
     const convertedConfig = this.convertHttpToStreamableHttp(config);
@@ -208,6 +441,34 @@ export class ConfigManager {
     return validated;
   }
 
+  /**
+   * Adds a new server instance for the specified server.
+   *
+   * This method creates a new server instance with a unique ID and timestamp,
+   * validates the configuration using Zod schema validation, and adds it to
+   * the server instances array for the given server name.
+   *
+   * If no instance ID is provided, one will be automatically generated using
+   * the format: `{serverName}-{timestamp}-{randomString}`.
+   *
+   * @param {string} name - The name of the server to add an instance for
+   * @param {Partial<ServerInstanceConfig>} instance - The server instance configuration (partial, will be validated)
+   * @returns {Promise<ServerInstanceConfig>} The validated and complete server instance configuration
+   * @throws {ZodError} If the instance configuration fails validation
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const instance = await configManager.addServerInstance('my-mcp-server', {
+   *     cwd: '/path/to/project',
+   *     env: { NODE_ENV: 'production' }
+   *   });
+   *   console.log(`Instance created with ID: ${instance.id}`);
+   * } catch (error) {
+   *   console.error('Failed to add server instance:', error);
+   * }
+   * ```
+   */
   public async addServerInstance(
     name: string,
     instance: Partial<ServerInstanceConfig>
@@ -227,6 +488,29 @@ export class ConfigManager {
     return validated;
   }
 
+  /**
+   * Updates an existing server configuration with the provided changes.
+   *
+   * This method performs a partial update of the server configuration, merging the
+   * provided updates with the existing configuration. It includes type conversion
+   * for compatibility (e.g., 'http' to 'streamable-http') and automatically
+   * persists the changes to disk.
+   *
+   * If the server with the given name does not exist, this method does nothing.
+   *
+   * @param {string} name - The name of the server to update
+   * @param {Partial<ServerConfig>} updates - The partial configuration updates to apply
+   * @returns {Promise<void>} Resolves when the update is complete
+   *
+   * @example
+   * ```typescript
+   * await configManager.updateServer('my-mcp-server', {
+   *   enabled: false,
+   *   timeout: 60000
+   * });
+   * console.log('Server configuration updated');
+   * ```
+   */
   public async updateServer(name: string, updates: Partial<ServerConfig>): Promise<void> {
     if (this.config.servers[name]) {
       // Unified type conversion: convert http to streamable-http
@@ -240,6 +524,28 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Updates an existing server instance configuration with the provided changes.
+   *
+   * This method performs a partial update of the server instance configuration at the
+   * specified index, merging the provided updates with the existing configuration.
+   *
+   * If the server or instance at the given index does not exist, this method does nothing.
+   *
+   * @param {string} name - The name of the server containing the instance to update
+   * @param {number} index - The index of the instance to update in the instances array
+   * @param {Partial<ServerInstanceConfig>} updates - The partial configuration updates to apply
+   * @returns {Promise<void>} Resolves when the update is complete
+   *
+   * @example
+   * ```typescript
+   * await configManager.updateServerInstance('my-mcp-server', 0, {
+   *   cwd: '/new/project/path',
+   *   env: { NODE_ENV: 'development' }
+   * });
+   * console.log('Server instance updated');
+   * ```
+   */
   public async updateServerInstance(
     name: string,
     index: number,
@@ -250,6 +556,22 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Removes a server configuration and all its instances from the system.
+   *
+   * This method deletes both the server configuration and all associated server instances
+   * from memory and persists the changes to disk. If the server does not exist,
+   * this method does nothing.
+   *
+   * @param {string} name - The name of the server to remove
+   * @returns {Promise<void>} Resolves when the removal is complete
+   *
+   * @example
+   * ```typescript
+   * await configManager.removeServer('my-mcp-server');
+   * console.log('Server removed successfully');
+   * ```
+   */
   public async removeServer(name: string): Promise<void> {
     if (this.config.servers[name]) {
       delete this.config.servers[name];
@@ -262,6 +584,25 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Removes a specific server instance from the system.
+   *
+   * This method removes the server instance at the specified index from the instances array.
+   * If the instances array becomes empty after removal, the entire server instance entry
+   * is deleted from the server instances record.
+   *
+   * If the server or instance at the given index does not exist, this method does nothing.
+   *
+   * @param {string} name - The name of the server containing the instance to remove
+   * @param {number} index - The index of the instance to remove from the instances array
+   * @returns {Promise<void>} Resolves when the removal is complete
+   *
+   * @example
+   * ```typescript
+   * await configManager.removeServerInstance('my-mcp-server', 0);
+   * console.log('Server instance removed');
+   * ```
+   */
   public async removeServerInstance(name: string, index: number): Promise<void> {
     if (this.serverInstances[name]) {
       this.serverInstances[name].splice(index, 1);
@@ -269,6 +610,35 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Updates the entire system configuration with the provided partial configuration.
+   *
+   * This method performs a deep merge of the provided partial configuration with the
+   * existing system configuration, validates the result using Zod schema validation,
+   * logs all configuration changes for audit purposes, and persists the updated
+   * configuration to disk.
+   *
+   * The method includes comprehensive change logging that tracks all modifications
+   * at the field level, making it easy to understand what configuration values
+   * have changed during the update operation.
+   *
+   * @param {Partial<SystemConfig>} newConfig - Partial system configuration containing updates
+   * @returns {Promise<void>} Resolves when the configuration has been updated and persisted
+   * @throws {ZodError} If the merged configuration fails validation
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await configManager.updateConfig({
+   *     system: { port: 8080, host: '0.0.0.0' },
+   *     security: { sessionTimeout: 3600000 }
+   *   });
+   *   console.log('System configuration updated successfully');
+   * } catch (error) {
+   *   console.error('Failed to update configuration:', error);
+   * }
+   * ```
+   */
   public async updateConfig(newConfig: Partial<SystemConfig>): Promise<void> {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
     // Unified type conversion: convert http to streamable-http
@@ -316,6 +686,26 @@ export class ConfigManager {
     }
   }
 
+  /**
+   * Synchronizes the in-memory configuration with the on-disk configuration file.
+   *
+   * This method reloads the configuration from the configured file path, effectively
+   * discarding any in-memory changes and reverting to the persisted state. It is
+   * useful for scenarios where external processes may have modified the configuration
+   * file and those changes need to be reflected in the running application.
+   *
+   * The method calls the private `loadConfig()` method which handles the complete
+   * configuration loading and validation process.
+   *
+   * @returns {Promise<void>} Resolves when the configuration has been successfully synchronized
+   *
+   * @example
+   * ```typescript
+   * // External process modified the config file, sync to get latest changes
+   * await configManager.syncConfig();
+   * console.log('Configuration synchronized with disk');
+   * ```
+   */
   public async syncConfig(): Promise<void> {
     this.loadConfig();
   }

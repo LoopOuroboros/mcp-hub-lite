@@ -29,8 +29,31 @@ type SystemToolArgs =
   | FindToolsParams;
 
 /**
- * Web API routes for MCP Hub tools operations
- * Endpoints under /web/hub-tools
+ * MCP Hub Tools API Routes
+ *
+ * Provides a comprehensive set of endpoints for discovering, inspecting, and invoking tools across
+ * all connected MCP (Model Context Protocol) servers. This module serves as the central hub for
+ * tool management and execution within the MCP Hub Lite system.
+ *
+ * The API supports both system-level tools (built into MCP Hub Lite) and server-specific tools
+ * from connected MCP servers. It enables powerful search capabilities, detailed tool inspection,
+ * and secure tool invocation with proper parameter validation.
+ *
+ * Key features include:
+ * - System tool discovery and execution
+ * - Cross-server tool listing and searching
+ * - Server-specific tool management
+ * - Tool schema inspection and validation
+ * - Secure tool invocation with session context
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register hub tools routes
+ * await webHubToolsRoutes(app);
+ * ```
  */
 export async function webHubToolsRoutes(fastify: FastifyInstance) {
   // GET /web/hub-tools/system - List system tools

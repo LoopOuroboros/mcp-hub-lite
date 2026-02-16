@@ -36,7 +36,27 @@ export async function checkPort(port: number): Promise<PortCheckResult> {
 }
 
 /**
- * Windows platform port check
+ * Checks if a specific port is in use on Windows platform.
+ *
+ * This function uses the Windows `netstat` command to identify processes that are
+ * listening on the specified port. It parses the netstat output to extract the
+ * process ID (PID) and then retrieves detailed process information using WMIC.
+ *
+ * The function specifically looks for connections in the "LISTENING" state and
+ * matches the local address to ensure it's the exact port being checked.
+ *
+ * @param port - The port number to check for occupancy (e.g., 7788)
+ * @returns {Promise<PortCheckResult>} A promise that resolves to a PortCheckResult object
+ *          containing information about whether the port is in use, the PID of the
+ *          occupying process, process name, command line, and whether it's the current project
+ *
+ * @example
+ * ```typescript
+ * const result = await checkPortWindows(7788);
+ * if (result.inUse) {
+ *   console.log(`Port 7788 is used by PID ${result.pid} (${result.processName})`);
+ * }
+ * ```
  */
 async function checkPortWindows(port: number): Promise<PortCheckResult> {
   try {
@@ -80,7 +100,27 @@ async function checkPortWindows(port: number): Promise<PortCheckResult> {
 }
 
 /**
- * Unix platform port check (Linux, macOS)
+ * Checks if a specific port is in use on Unix platforms (Linux, macOS).
+ *
+ * This function uses the `lsof` (list open files) command to identify processes that are
+ * listening on the specified port. It filters for TCP connections in LISTEN state and
+ * extracts the process ID (PID) from the output.
+ *
+ * After identifying the PID, it retrieves detailed process information using the `ps` command
+ * to get the process name and full command line arguments.
+ *
+ * @param port - The port number to check for occupancy (e.g., 7788)
+ * @returns {Promise<PortCheckResult>} A promise that resolves to a PortCheckResult object
+ *          containing information about whether the port is in use, the PID of the
+ *          occupying process, process name, command line, and whether it's the current project
+ *
+ * @example
+ * ```typescript
+ * const result = await checkPortUnix(7788);
+ * if (result.inUse) {
+ *   console.log(`Port 7788 is used by PID ${result.pid} (${result.processName})`);
+ * }
+ * ```
  */
 async function checkPortUnix(port: number): Promise<PortCheckResult> {
   try {
@@ -112,7 +152,23 @@ async function checkPortUnix(port: number): Promise<PortCheckResult> {
 }
 
 /**
- * Get Windows process information
+ * Retrieves detailed process information for a given PID on Windows.
+ *
+ * This function uses the Windows Management Instrumentation Command-line (WMIC) tool
+ * to query process details including the process name and full command line arguments.
+ * It parses the WMIC output to extract the relevant information and handles potential
+ * errors gracefully by returning default values.
+ *
+ * @param pid - The process ID to query for information
+ * @returns {Promise<{ processName: string; commandLine: string }>} A promise that resolves to an object
+ *          containing the process name and command line arguments, or default values if the query fails
+ *
+ * @example
+ * ```typescript
+ * const info = await getProcessInfoWindows(12345);
+ * console.log(`Process: ${info.processName}`);
+ * console.log(`Command: ${info.commandLine}`);
+ * ```
  */
 async function getProcessInfoWindows(
   pid: number
@@ -142,7 +198,23 @@ async function getProcessInfoWindows(
 }
 
 /**
- * Get Unix process information
+ * Retrieves detailed process information for a given PID on Unix platforms (Linux, macOS).
+ *
+ * This function uses the `ps` (process status) command to query process details including
+ * the process name (comm) and full command line arguments (args). It parses the ps output
+ * to extract the relevant information and handles potential errors gracefully by returning
+ * default values.
+ *
+ * @param pid - The process ID to query for information
+ * @returns {Promise<{ processName: string; commandLine: string }>} A promise that resolves to an object
+ *          containing the process name and command line arguments, or default values if the query fails
+ *
+ * @example
+ * ```typescript
+ * const info = await getProcessInfoUnix(12345);
+ * console.log(`Process: ${info.processName}`);
+ * console.log(`Command: ${info.commandLine}`);
+ * ```
  */
 async function getProcessInfoUnix(
   pid: number
@@ -162,7 +234,26 @@ async function getProcessInfoUnix(
 }
 
 /**
- * Determine if it's a process started by the current project
+ * Determines whether a given process belongs to the current MCP Hub Lite project.
+ *
+ * This function performs two checks to identify if a process is part of the current project:
+ * 1. **PID File Check**: Compares the provided PID with the PID stored in the project's PID file
+ * 2. **Command Line Signature Check**: Searches for project-specific signatures in the command line
+ *
+ * The function uses a list of project signatures including the project name 'mcp-hub-lite',
+ * the compiled entry file path 'dist/server/src/index.js', and the source entry file 'src/index.ts'.
+ *
+ * @param pid - The process ID to check
+ * @param commandLine - The full command line used to start the process
+ * @returns {Promise<boolean>} A promise that resolves to true if the process belongs to the current project, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const isSelf = await isSelfProjectProcess(12345, 'node dist/server/src/index.js');
+ * if (isSelf) {
+ *   console.log('This is our project process');
+ * }
+ * ```
  */
 async function isSelfProjectProcess(pid: number, commandLine: string): Promise<boolean> {
   // Check 1: Check if the PID recorded in the PID file matches

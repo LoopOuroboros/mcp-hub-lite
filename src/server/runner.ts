@@ -7,6 +7,59 @@ import { gateway } from '@services/gateway.service.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPort } from '@utils/port-checker.js';
 
+/**
+ * Starts the MCP Hub Lite server in either HTTP mode or stdio MCP gateway mode.
+ *
+ * This function is the main entry point for running the MCP Hub Lite server in production.
+ * It handles two distinct operational modes:
+ *
+ * 1. **HTTP Server Mode** (default): Runs a full Fastify HTTP server with REST API,
+ *    WebSocket support, and web interface on the specified host and port.
+ *
+ * 2. **Stdio MCP Gateway Mode**: Runs as an MCP (Model Context Protocol) gateway
+ *    that communicates via stdin/stdout streams, suitable for integration with
+ *    MCP-compatible clients like IDEs or AI assistants.
+ *
+ * The function performs the following key operations:
+ * - Initializes OpenTelemetry tracing for observability
+ * - Validates and checks port availability (HTTP mode only)
+ * - Automatically connects to all enabled MCP servers from configuration
+ * - Sets up graceful shutdown handlers for SIGTERM and SIGINT signals
+ * - Manages PID file creation and cleanup for process tracking
+ * - Handles both successful startup and error scenarios with appropriate logging
+ *
+ * @param options - Configuration options for server startup
+ * @param options.stdio - When true, runs in stdio MCP gateway mode instead of HTTP server mode
+ * @param options.port - Override the configured port number (HTTP mode only)
+ * @param options.host - Override the configured host address (HTTP mode only)
+ *
+ * @returns Promise that resolves when the server is successfully started,
+ *          or rejects with an error if startup fails
+ *
+ * @throws {Error} If server startup fails due to port conflicts, configuration errors,
+ *                 or other critical issues. The process will exit with code 1 in such cases.
+ *
+ * @example
+ * // Start in default HTTP mode
+ * await runServer();
+ *
+ * @example
+ * // Start in stdio MCP gateway mode
+ * await runServer({ stdio: true });
+ *
+ * @example
+ * // Start HTTP server on custom port and host
+ * await runServer({ port: 8080, host: '0.0.0.0' });
+ *
+ * @remarks
+ * - In HTTP mode, the function will check if the specified port is already in use
+ *   and provide detailed error messages for port conflicts
+ * - In stdio mode, port checking is skipped as no network ports are used
+ * - The function automatically connects to all enabled servers configured in .mcp-hub.json
+ * - Graceful shutdown ensures proper cleanup of connections, OpenTelemetry resources,
+ *   and PID files when receiving termination signals
+ * - This function is typically called from the CLI entry point (`src/index.ts`)
+ */
 export async function runServer(options: { stdio?: boolean; port?: number; host?: string } = {}) {
   try {
     const isStdio = options.stdio || false;

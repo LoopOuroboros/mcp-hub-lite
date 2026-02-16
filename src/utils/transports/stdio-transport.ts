@@ -42,6 +42,23 @@ export interface StdioServerParameters {
   cwd?: string;
 }
 
+/**
+ * A transport implementation for communicating with MCP (Model Context Protocol) servers
+ * via standard input/output streams. This transport spawns a child process and establishes
+ * bidirectional communication using stdin/stdout for JSON-RPC message exchange.
+ *
+ * The StdioTransport handles:
+ * - Cross-platform process spawning (including Windows batch file compatibility)
+ * - JSON-RPC message parsing and serialization
+ * - Proper process lifecycle management with graceful shutdown
+ * - Error handling and logging
+ * - Separate handling of stdout (for JSON-RPC) and stderr (for logging)
+ *
+ * This transport is primarily used for local MCP servers that communicate through
+ * standard I/O streams, such as those launched via npx, npm, or other package managers.
+ *
+ * @implements {Transport}
+ */
 export class StdioTransport implements Transport {
   private _process?: ChildProcess;
   private _readBuffer = new ReadBuffer();
@@ -49,6 +66,11 @@ export class StdioTransport implements Transport {
   private _serverParams: StdioServerParameters;
   private _serverName?: string;
 
+  /**
+   * Gets the process ID of the spawned child process.
+   *
+   * @returns {number | undefined} The PID of the child process, or undefined if not started
+   */
   public get pid(): number | undefined {
     return this._process?.pid;
   }
@@ -59,6 +81,12 @@ export class StdioTransport implements Transport {
   public onstdout?: (data: string) => void;
   public onstderr?: (data: string) => void;
 
+  /**
+   * Creates a new StdioTransport instance.
+   *
+   * @param {StdioServerParameters} server - Configuration parameters for the child process
+   * @param {string} [serverName] - Optional name for the server used in logging
+   */
   constructor(server: StdioServerParameters, serverName?: string) {
     this._serverParams = server;
     this._serverName = serverName;
@@ -67,6 +95,18 @@ export class StdioTransport implements Transport {
     }
   }
 
+  /**
+   * Starts the transport by spawning the child process and establishing communication channels.
+   *
+   * This method handles platform-specific considerations:
+   * - On Windows, it automatically wraps batch commands (like npx, npm, etc.) with cmd.exe /c
+   * - Sets up proper stdio configuration based on the server parameters
+   * - Configures event listeners for process lifecycle events
+   * - Establishes data flow for stdout and stderr handling
+   *
+   * @returns {Promise<void>} Resolves when the child process is successfully spawned
+   * @throws {Error} If the transport is already started
+   */
   async start(): Promise<void> {
     if (this._process) {
       throw new Error('StdioTransport already started!');
@@ -175,10 +215,30 @@ export class StdioTransport implements Transport {
     });
   }
 
+  /**
+   * Gets the stderr stream for the child process.
+   *
+   * Returns a PassThrough stream if stderr is configured as 'pipe', otherwise returns
+   * the actual stderr stream from the child process, or null if no stderr is available.
+   *
+   * @returns {PassThrough | NodeJS.ReadableStream | null} The stderr stream or null
+   */
   get stderr() {
     return this._stderrStream ?? this._process?.stderr ?? null;
   }
 
+  /**
+   * Processes the internal read buffer to extract and dispatch JSON-RPC messages.
+   *
+   * This method continuously reads complete JSON-RPC messages from the buffer
+   * and dispatches them to the onmessage callback. It handles partial messages
+   * by leaving incomplete data in the buffer for future processing.
+   *
+   * The method uses a while loop to process all available complete messages
+   * in a single call, ensuring efficient message handling without blocking.
+   *
+   * @private
+   */
   processReadBuffer() {
     while (true) {
       try {
@@ -193,6 +253,20 @@ export class StdioTransport implements Transport {
     }
   }
 
+  /**
+   * Closes the transport by gracefully terminating the child process.
+   *
+   * This method implements a graceful shutdown sequence:
+   * 1. Sends SIGTERM to allow the child process to clean up
+   * 2. Waits up to 5 seconds for graceful termination
+   * 3. Forces termination with SIGKILL if the process doesn't exit
+   * 4. Cleans up internal state and resolves the promise
+   *
+   * The method ensures proper cleanup of the read buffer and handles
+   * any errors that occur during the shutdown process.
+   *
+   * @returns {Promise<void>} Resolves when the transport is fully closed
+   */
   async close(): Promise<void> {
     if (this._process) {
       return new Promise((resolve) => {
@@ -235,6 +309,17 @@ export class StdioTransport implements Transport {
     this._readBuffer.clear();
   }
 
+  /**
+   * Sends a JSON-RPC message to the child process via stdin.
+   *
+   * This method serializes the message to JSON, appends a newline character,
+   * and writes it to the child process's stdin stream. It validates that
+   * the transport is connected before attempting to send the message.
+   *
+   * @param {JSONRPCMessage} message - The JSON-RPC message to send
+   * @returns {Promise<void>} Resolves when the message is written to stdin
+   * @throws {Error} If the transport is not connected (no active child process)
+   */
   async send(message: JSONRPCMessage): Promise<void> {
     if (!this._process?.stdin) {
       throw new Error('Not connected');

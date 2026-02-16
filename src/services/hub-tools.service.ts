@@ -32,7 +32,27 @@ import type {
   FindToolsParams
 } from '@models/system-tools.constants.js';
 
-// Request options interface
+/**
+ * Configuration options for server instance selection in multi-instance scenarios.
+ *
+ * This interface defines request options that can be used to select specific server instances
+ * when multiple instances of the same MCP server are available. The current implementation
+ * uses the first available instance, but the interface is designed to support future
+ * extensions for intelligent instance selection based on various criteria.
+ *
+ * @interface RequestOptions
+ * @property {string} [sessionId] - Session identifier for selecting instance associated with specific session
+ * @property {Record<string, string>} [tags] - Key-value tags for matching against server instance tags
+ *
+ * @example
+ * ```typescript
+ * // Select instance based on session
+ * const options: RequestOptions = { sessionId: 'session-123' };
+ *
+ * // Select instance based on tags
+ * const options: RequestOptions = { tags: { environment: 'production' } };
+ * ```
+ */
 export interface RequestOptions {
   sessionId?: string; // Session ID (for selecting specific instance)
   tags?: Record<string, string>; // Tags (for future support)
@@ -40,7 +60,47 @@ export interface RequestOptions {
   // clientId?: string;  // Client ID (for selecting dedicated instance)
 }
 
-// Select the best instance based on server name and request options
+/**
+ * Selects the best server instance based on server name and request options.
+ *
+ * This function resolves a server name to its configuration and instance details,
+ * handling both single and multiple instance scenarios. Currently, it returns
+ * the first instance for multi-instance servers, but the architecture supports
+ * future extensions for intelligent instance selection based on session ID,
+ * tags, client ID, or load conditions.
+ *
+ * The function performs the following steps:
+ * 1. Retrieves all instances of the specified server name
+ * 2. Returns undefined if no instances are found
+ * 3. Gets the server configuration from the hub manager
+ * 4. For single-instance servers, returns the instance directly
+ * 5. For multi-instance servers, currently returns the first instance (with future extension support)
+ *
+ * Future extensions planned include:
+ * - Session-aware instance selection based on sessionId
+ * - Tag-based instance selection for matching specific requirements
+ * - Load-balancing across multiple instances
+ * - Client-specific instance assignment
+ *
+ * @param {string} serverName - Name of the server to select an instance for
+ * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+ * @returns {{ name: string; config: ServerConfig; instance: ServerInstanceConfig & Record<string, unknown> } | undefined}
+ * Server information with configuration and instance details, or undefined if not found
+ *
+ * @example
+ * ```typescript
+ * const serverInfo = selectBestInstance('my-mcp-server');
+ * if (serverInfo) {
+ *   console.log(`Selected instance: ${serverInfo.instance.id}`);
+ * }
+ *
+ * // With request options (future extension)
+ * const serverInfoWithOptions = selectBestInstance('my-mcp-server', {
+ *   sessionId: 'session-123',
+ *   tags: { environment: 'production' }
+ * });
+ * ```
+ */
 function selectBestInstance(
   serverName: string,
   requestOptions?: RequestOptions
@@ -99,7 +159,24 @@ function selectBestInstance(
   };
 }
 
-// Type guard for servers with valid name and config
+/**
+ * Type guard to validate that a server object has valid name and configuration.
+ *
+ * This function checks if the provided object is a valid server with both a non-empty
+ * name string and a configuration object, ensuring type safety for server operations.
+ *
+ * @param {unknown} server - Object to validate as a server
+ * @returns {boolean} True if the object is a valid server with name and config
+ *
+ * @example
+ * ```typescript
+ * const server = { name: 'my-server', config: { type: 'stdio' } };
+ * if (hasValidId(server)) {
+ *   // TypeScript knows server is properly typed
+ *   console.log(server.name);
+ * }
+ * ```
+ */
 function hasValidId(server: unknown): server is { name: string; config: ServerConfig } {
   if (typeof server !== 'object' || server === null) {
     return false;
@@ -108,13 +185,84 @@ function hasValidId(server: unknown): server is { name: string; config: ServerCo
   return typeof s.name === 'string' && s.name.length > 0 && typeof s.config === 'object';
 }
 
+/**
+ * Central service for managing system tools and MCP server interactions in the MCP Hub Lite gateway.
+ *
+ * The HubToolsService provides a unified interface for discovering, managing, and interacting with
+ * all connected MCP (Model Context Protocol) servers. It serves as the primary orchestration layer
+ * between client applications and the underlying MCP infrastructure, offering both system-level
+ * management capabilities and direct tool execution functionality.
+ *
+ * ## Core Responsibilities
+ *
+ * - **System Tool Management**: Exposes a standardized set of system tools for server discovery and management
+ * - **Tool Discovery**: Enables searching and listing tools across all connected MCP servers
+ * - **Tool Execution**: Provides safe, monitored execution of tools with comprehensive event tracking
+ * - **Resource Management**: Dynamically generates and serves virtual resources representing server state
+ * - **Instance Selection**: Handles intelligent server instance selection for multi-instance scenarios
+ * - **Error Handling**: Implements consistent error handling and logging across all operations
+ *
+ * ## System Tools Provided
+ *
+ * The service exposes the following system tools through the `getSystemTools()` method:
+ * - `list-servers`: Retrieve all connected server names
+ * - `find-servers`: Search servers by pattern matching
+ * - `list-all-tools-in-server`: List all tools from a specific server
+ * - `find-tools-in-server`: Search tools within a specific server
+ * - `get-tool`: Retrieve complete schema for a specific tool
+ * - `call-tool`: Execute a tool on a specific server
+ * - `find-tools`: Search tools across all connected servers
+ *
+ * ## Architecture Integration
+ *
+ * This service integrates tightly with other core components:
+ * - **HubManagerService**: For server configuration and instance management
+ * - **McpConnectionManager**: For actual tool execution and connection management
+ * - **EventBusService**: For publishing tool call events and system notifications
+ * - **GatewayService**: For system tool routing and aggregation
+ *
+ * All operations include comprehensive logging, error handling, and event publishing
+ * to support observability, debugging, and monitoring of the MCP Hub Lite system.
+ *
+ * @example
+ * ```typescript
+ * const hubTools = new HubToolsService();
+ *
+ * // List all connected servers
+ * const servers = await hubTools.listServers();
+ *
+ * // Call a tool on a specific server
+ * const result = await hubTools.callTool('file-system-server', 'list-files', { directory: '/home' });
+ *
+ * // Search for tools across all servers
+ * const matchingTools = await hubTools.findTools('search');
+ * ```
+ */
 export class HubToolsService {
   /**
-   * Get list of system tools provided by this service
-   */
-  /**
-   * Get system tools configuration based on SYSTEM_TOOL_NAMES constant
-   * This ensures consistency with the system tool names defined in constants
+   * Retrieves the complete list of system tools provided by this service.
+   *
+   * This method generates system tool configurations based on the SYSTEM_TOOL_NAMES constant,
+   * ensuring consistency with the defined system tool names. Each tool includes its name,
+   * description, input schema, and annotations for proper client-side rendering and behavior.
+   *
+   * The method implements all standard system tools:
+   * - list-servers: List all connected servers
+   * - find-servers: Find servers matching a pattern
+   * - list-all-tools-in-server: List tools from a specific server
+   * - find-tools-in-server: Find tools in a specific server
+   * - get-tool: Get complete tool schema
+   * - call-tool: Call a specific tool from a specific server
+   * - find-tools: Find tools across all servers
+   *
+   * @returns {Array<{ name: string; description: string; inputSchema: JsonSchema; annotations?: ToolAnnotations }>}
+   * Array of system tool configurations
+   *
+   * @example
+   * ```typescript
+   * const systemTools = hubToolsService.getSystemTools();
+   * console.log(`Available system tools: ${systemTools.length}`);
+   * ```
    */
   getSystemTools() {
     const systemTools: Array<{
@@ -330,8 +478,19 @@ export class HubToolsService {
   }
 
   /**
-   * List all connected servers
-   * @returns Array of server names only
+   * Lists all connected MCP servers by name.
+   *
+   * This method retrieves all configured servers from the hub manager, filters out
+   * invalid entries using the hasValidId type guard, and returns an array of server names.
+   * It provides a simple way to discover available servers in the system.
+   *
+   * @returns {Promise<string[]>} Array of connected server names
+   *
+   * @example
+   * ```typescript
+   * const servers = await hubToolsService.listServers();
+   * console.log(`Connected servers: ${servers.join(', ')}`);
+   * ```
    */
   async listServers(): Promise<string[]> {
     const servers = hubManager.getAllServers();
@@ -339,11 +498,25 @@ export class HubToolsService {
   }
 
   /**
-   * Find servers matching a pattern
-   * @param pattern Regex pattern to search for in server names and descriptions
-   * @param searchIn Where to search: 'name', 'description', or 'both' (default: 'both')
-   * @param caseSensitive Whether the search should be case-sensitive (default: false)
-   * @returns Array of matching server names only
+   * Finds servers matching a specified regex pattern.
+   *
+   * This method searches through all configured servers using the provided regex pattern,
+   * supporting flexible search options including case sensitivity and search scope
+   * (name, description, or both). It returns an array of matching server names.
+   *
+   * @param {string} pattern - Regex pattern to search for in server names and descriptions
+   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
+   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
+   * @returns {Promise<string[]>} Array of matching server names
+   *
+   * @example
+   * ```typescript
+   * // Find servers with 'api' in their name (case-insensitive)
+   * const apiServers = await hubToolsService.findServers('api');
+   *
+   * // Find servers with exact case match
+   * const exactMatch = await hubToolsService.findServers('^MyServer$', 'name', true);
+   * ```
    */
   async findServers(
     pattern: string,
@@ -364,9 +537,23 @@ export class HubToolsService {
   }
 
   /**
-   * List all tools from a specific server
-   * @param serverName Name of the MCP server to list tools from
-   * @returns List of tools from the specified server
+   * Lists all tools available from a specific MCP server.
+   *
+   * This method retrieves all tools from the specified server, handling both regular
+   * MCP servers and the special MCP Hub Lite server (which returns system tools).
+   * It uses the selectBestInstance function to resolve server names to instances
+   * and leverages the MCP connection manager for tool retrieval.
+   *
+   * @param {string} serverName - Name of the MCP server to list tools from
+   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and tools array
+   * @throws {Error} If the specified server is not found or not connected
+   *
+   * @example
+   * ```typescript
+   * const result = await hubToolsService.listAllToolsInServer('my-mcp-server');
+   * console.log(`Server ${result.serverName} has ${result.tools.length} tools`);
+   * ```
    */
   async listAllToolsInServer(
     serverName: string,
@@ -415,13 +602,26 @@ export class HubToolsService {
   }
 
   /**
-   * Find tools matching a pattern in a specific server
-   * @param serverName Name of the MCP server to search tools in
-   * @param pattern Regex pattern to search for in tool names and descriptions
-   * @param searchIn Where to search: 'name', 'description', or 'both' (default: 'both')
-   * @param caseSensitive Whether the search should be case-sensitive (default: false)
-   * @param requestOptions Request options for instance selection
-   * @returns List of matching tools in the specified server
+   * Finds tools matching a pattern within a specific MCP server.
+   *
+   * This method searches through all tools available from the specified server using
+   * the provided regex pattern, supporting flexible search options including case
+   * sensitivity and search scope (name, description, or both). It returns matching
+   * tools grouped by server name.
+   *
+   * @param {string} serverName - Name of the MCP server to search tools in
+   * @param {string} pattern - Regex pattern to search for in tool names and descriptions
+   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
+   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
+   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and matching tools
+   * @throws {Error} If the specified server is not found or not connected
+   *
+   * @example
+   * ```typescript
+   * const result = await hubToolsService.findToolsInServer('my-mcp-server', 'list');
+   * console.log(`Found ${result.tools.length} tools matching 'list'`);
+   * ```
    */
   async findToolsInServer(
     serverName: string,
@@ -456,11 +656,25 @@ export class HubToolsService {
   }
 
   /**
-   * Get complete schema for a specific tool from a specific server, including inputSchema
-   * @param serverName Name of the MCP server containing the tool
-   * @param toolName Exact name of the tool to retrieve
-   * @param requestOptions Request options for instance selection
-   * @returns Complete tool schema
+   * Retrieves the complete schema for a specific tool from a specific server.
+   *
+   * This method returns the full tool definition including name, description, input schema,
+   * and any annotations. It's useful for clients that need detailed information about
+   * a tool's capabilities and expected parameters before execution.
+   *
+   * @param {string} serverName - Name of the MCP server containing the tool
+   * @param {string} toolName - Exact name of the tool to retrieve
+   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @returns {Promise<Tool | undefined>} Complete tool schema or undefined if not found
+   * @throws {Error} If the specified server is not found or not connected
+   *
+   * @example
+   * ```typescript
+   * const tool = await hubToolsService.getTool('my-mcp-server', 'list-files');
+   * if (tool) {
+   *   console.log('Tool input schema:', tool.inputSchema);
+   * }
+   * ```
    */
   async getTool(
     serverName: string,
@@ -478,10 +692,36 @@ export class HubToolsService {
   }
 
   /**
-   * Call a specific system tool directly
-   * @param toolName Name of the system tool to call
-   * @param toolArgs Arguments to pass to the tool
-   * @returns Result of the system tool call
+   * Calls a specific system tool directly with type-safe conditional return types.
+   *
+   * This method provides a unified entry point for all system tool calls, using TypeScript's
+   * conditional types to ensure type safety based on the tool name. It handles logging,
+   * error handling, and delegates to the appropriate internal methods based on the tool name.
+   *
+   * The method supports all system tools with their specific parameter and return types:
+   * - list-servers: returns string[]
+   * - find-servers: returns string[]
+   * - list-all-tools-in-server: returns { serverName: string; tools: Tool[] }
+   * - find-tools-in-server: returns { serverName: string; tools: Tool[] }
+   * - get-tool: returns Tool | undefined
+   * - call-tool: returns unknown (tool-specific result)
+   * - find-tools: returns Record<string, { tools: Tool[] }>
+   *
+   * @param {T} toolName - System tool name with generic type constraint
+   * @param {SystemToolArgs} toolArgs - Type-safe arguments based on tool name
+   * @returns {Promise<ConditionalReturnType>} Tool execution result with accurate type safety matching actual method return types
+   * @throws {Error} If the system tool is not found or execution fails
+   *
+   * @example
+   * ```typescript
+   * // Type-safe system tool call
+   * const servers = await hubToolsService.callSystemTool('list-servers', {});
+   * const result = await hubToolsService.callSystemTool('call-tool', {
+   *   serverName: 'my-server',
+   *   toolName: 'list-files',
+   *   toolArgs: { directory: '/home' }
+   * });
+   * ```
    */
   async callSystemTool<T extends SystemToolName>(
     toolName: T,
@@ -502,19 +742,19 @@ export class HubToolsService {
                   : never
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
-      ? ServerConfig[]
+      ? string[]
       : T extends typeof FIND_SERVERS_TOOL
-        ? ServerConfig[]
+        ? string[]
         : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
-          ? Tool[]
+          ? { serverName: string; tools: Tool[] }
           : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
-            ? Tool[]
+            ? { serverName: string; tools: Tool[] }
             : T extends typeof GET_TOOL_TOOL
               ? Tool | undefined
               : T extends typeof CALL_TOOL_TOOL
                 ? unknown
                 : T extends typeof FIND_TOOLS_TOOL
-                  ? Tool[]
+                  ? Record<string, { tools: Tool[] }>
                   : never
   > {
     logger.info(`System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`, {
@@ -594,19 +834,19 @@ export class HubToolsService {
       logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL
-        ? ServerConfig[]
+        ? string[]
         : T extends typeof FIND_SERVERS_TOOL
-          ? ServerConfig[]
+          ? string[]
           : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
-            ? Tool[]
+            ? { serverName: string; tools: Tool[] }
             : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
-              ? Tool[]
+              ? { serverName: string; tools: Tool[] }
               : T extends typeof GET_TOOL_TOOL
                 ? Tool | undefined
                 : T extends typeof CALL_TOOL_TOOL
                   ? unknown
                   : T extends typeof FIND_TOOLS_TOOL
-                    ? Tool[]
+                    ? Record<string, { tools: Tool[] }>
                     : never;
     } catch (error) {
       logger.error(
@@ -619,11 +859,27 @@ export class HubToolsService {
   }
 
   /**
-   * Call a specific tool from a specific server
-   * @param serverName Name of the MCP server to call tool from
-   * @param toolName Name of the tool to call
-   * @param toolArgs Arguments to pass to the tool
-   * @returns Result of the tool call
+   * Calls a specific tool from a specific MCP server with comprehensive event tracking.
+   *
+   * This method handles both regular MCP server tool calls and system tool calls (when
+   * serverName is 'mcp-hub-lite'). It publishes TOOL_CALL_STARTED, TOOL_CALL_COMPLETED,
+   * and TOOL_CALL_ERROR events for monitoring and debugging purposes, and includes
+   * detailed logging for observability.
+   *
+   * @param {string} serverName - Name of the MCP server to call tool from
+   * @param {string} toolName - Name of the tool to call
+   * @param {Record<string, unknown>} toolArgs - Arguments to pass to the tool
+   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @returns {Promise<unknown>} Tool execution result as returned by the server
+   * @throws {Error} If the server is not found, not connected, or tool execution fails
+   *
+   * @example
+   * ```typescript
+   * const result = await hubToolsService.callTool('my-mcp-server', 'list-files', {
+   *   directory: '/home/user'
+   * });
+   * console.log('Tool result:', result);
+   * ```
    */
   async callTool(
     serverName: string,
@@ -700,8 +956,21 @@ export class HubToolsService {
   }
 
   /**
-   * List all available tools from all connected servers including system tools
-   * @returns All tools grouped by server name
+   * Lists all available tools from all connected servers including system tools.
+   *
+   * This method aggregates tools from all configured and connected MCP servers, including
+   * the system tools provided by the MCP Hub Lite server itself. It returns a structured
+   * object mapping server names to their respective tool arrays.
+   *
+   * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to tool arrays
+   *
+   * @example
+   * ```typescript
+   * const allTools = await hubToolsService.listAllTools();
+   * Object.entries(allTools).forEach(([serverName, { tools }]) => {
+   *   console.log(`${serverName}: ${tools.length} tools`);
+   * });
+   * ```
    */
   async listAllTools(): Promise<
     Record<
@@ -744,11 +1013,25 @@ export class HubToolsService {
   }
 
   /**
-   * Find tools matching a pattern across all connected servers
-   * @param pattern Regex pattern to search for in tool names and descriptions
-   * @param searchIn Where to search: 'name', 'description', or 'both' (default: 'both')
-   * @param caseSensitive Whether the search should be case-sensitive (default: false)
-   * @returns Matching tools grouped by server name
+   * Finds tools matching a pattern across all connected MCP servers.
+   *
+   * This method searches through all available tools from all connected servers using the
+   * provided regex pattern, supporting flexible search options including case sensitivity
+   * and search scope (name, description, or both). It returns matching tools grouped by
+   * their originating server names.
+   *
+   * @param {string} pattern - Regex pattern to search for in tool names and descriptions
+   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
+   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
+   * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to matching tools
+   *
+   * @example
+   * ```typescript
+   * const matchingTools = await hubToolsService.findTools('list');
+   * Object.entries(matchingTools).forEach(([serverName, { tools }]) => {
+   *   console.log(`${serverName}: ${tools.length} matching tools`);
+   * });
+   * ```
    */
   async findTools(
     pattern: string,
@@ -786,8 +1069,24 @@ export class HubToolsService {
   }
 
   /**
-   * Generate dynamic Hub resources based on connected servers
-   * @returns Array of dynamically generated McpResource objects
+   * Generates dynamic Hub resources based on currently connected MCP servers.
+   *
+   * This method creates virtual resources that represent the current state of connected
+   * servers, including server metadata, available tools, and server resources. Each
+   * resource has a unique URI following the hub://servers/{serverName}[/type] pattern.
+   *
+   * The generated resources include:
+   * - Server metadata: hub://servers/{serverName}
+   * - Tools list: hub://servers/{serverName}/tools
+   * - Resources list: hub://servers/{serverName}/resources (only if server has resources)
+   *
+   * @returns {Resource[]} Array of dynamically generated MCP resource objects
+   *
+   * @example
+   * ```typescript
+   * const resources = hubToolsService.generateDynamicResources();
+   * console.log(`Generated ${resources.length} dynamic resources`);
+   * ```
    */
   private generateDynamicResources(): Resource[] {
     const resources: Resource[] = [];
@@ -846,17 +1145,49 @@ export class HubToolsService {
   }
 
   /**
-   * List all Hub resources (dynamically generated based on connected servers)
-   * @returns Array of McpResource objects representing Hub resources
+   * Lists all dynamically generated Hub resources based on connected MCP servers.
+   *
+   * This method returns an array of virtual resources that represent the current state
+   * of connected servers, providing a unified interface for resource discovery and access.
+   * The resources are generated on-demand based on the current server configuration.
+   *
+   * @returns {Promise<Resource[]>} Array of MCP resource objects representing Hub resources
+   *
+   * @example
+   * ```typescript
+   * const resources = await hubToolsService.listResources();
+   * console.log(`Available Hub resources: ${resources.length}`);
+   * ```
    */
   async listResources(): Promise<Resource[]> {
     return this.generateDynamicResources();
   }
 
   /**
-   * Read content from a specific Hub resource URI
-   * @param uri Resource URI to read (e.g., hub://servers/server-name)
-   * @returns Resource content as JSON string or object
+   * Reads content from a specific Hub resource URI.
+   *
+   * This method provides access to dynamically generated Hub resources by parsing the URI
+   * and returning the appropriate content based on the resource type. It supports three
+   * types of resources:
+   * - Server metadata: hub://servers/{serverName}
+   * - Tools list: hub://servers/{serverName}/tools
+   * - Resources list: hub://servers/{serverName}/resources
+   *
+   * The method includes comprehensive validation of URI format and server existence,
+   * throwing descriptive errors for invalid requests.
+   *
+   * @param {string} uri - Resource URI to read (e.g., hub://servers/server-name)
+   * @returns {Promise<ServerMetadata | Tool[] | Resource[]>} Resource content based on URI type
+   * @throws {Error} If URI format is invalid, server not found, or resource type unknown
+   *
+   * @example
+   * ```typescript
+   * // Read server metadata
+   * const serverInfo = await hubToolsService.readResource('hub://servers/my-mcp-server');
+   *
+   * // Read tools list
+   * const tools = await hubToolsService.readResource('hub://servers/my-mcp-server/tools');
+   * ```
    */
   async readResource(uri: string): Promise<
     | {

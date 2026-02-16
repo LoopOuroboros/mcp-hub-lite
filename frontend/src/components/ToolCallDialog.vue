@@ -1,3 +1,18 @@
+<!--
+  ToolCallDialog Component
+
+  A modal dialog component for executing MCP tools with parameter input and result display.
+  Supports both system tools and server-specific tools with instance selection.
+
+  Features:
+  - JSON argument input with syntax formatting
+  - Input schema display based on tool definition
+  - Server instance selection for multi-instance servers
+  - Real-time result/error display with color coding
+  - Automatic template generation from input schema
+  - Internationalization support via vue-i18n
+  - Responsive layout with split view for arguments and results
+-->
 <template>
   <el-dialog
     v-model="visible"
@@ -140,12 +155,30 @@ const { t } = useI18n();
 import type { JsonSchema } from '@shared-models/tool.model';
 import type { ServerInstanceConfig } from '@shared-models/server.model';
 
-// Server instance type (extends shared ServerInstanceConfig)
+/**
+ * Extended server instance type that includes runtime properties
+ *
+ * @typedef {Object} ServerInstance
+ * @property {string} id - Unique instance identifier
+ * @property {string} status - Current instance status
+ * @property {number} [pid] - Process ID for stdio instances (optional)
+ * @property {number} [startTime] - Instance start timestamp (optional)
+ */
 type ServerInstance = ServerInstanceConfig & {
   pid?: number;
   startTime?: number;
 };
 
+/**
+ * Props interface for ToolCallDialog component
+ *
+ * @interface ToolCallDialogProps
+ * @property {boolean} modelValue - Dialog visibility state (v-model binding)
+ * @property {string} [serverName] - Optional server name for server-specific tools
+ * @property {string} toolName - Name of the tool to execute
+ * @property {string} [description] - Optional tool description
+ * @property {JsonSchema} [inputSchema] - Optional JSON schema for tool parameters
+ */
 const props = defineProps<{
   modelValue: boolean;
   serverName?: string;
@@ -154,13 +187,35 @@ const props = defineProps<{
   inputSchema?: JsonSchema;
 }>();
 
+/**
+ * Emits interface for ToolCallDialog component
+ *
+ * @interface ToolCallDialogEmits
+ * @event update:modelValue - Updates the dialog visibility state
+ */
 const emit = defineEmits(['update:modelValue']);
 
+/**
+ * Computed property for two-way binding of dialog visibility
+ *
+ * @type {ComputedRef<boolean>}
+ */
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
 });
 
+/**
+ * Reactive state variables for component functionality
+ *
+ * @type {Ref<string>} argsJson - JSON string of tool arguments
+ * @type {Ref<string|null>} result - Execution result (null when not executed)
+ * @type {Ref<string|null>} error - Execution error (null when no error)
+ * @type {Ref<boolean>} loading - Loading state during tool execution
+ * @type {Ref<boolean>} showInputSchema - Toggle for showing input schema vs results
+ * @type {Ref<ServerInstance[]>} serverInstances - Available server instances
+ * @type {Ref<string|null>} selectedInstanceId - Currently selected instance ID
+ */
 const argsJson = ref('{}');
 const result = ref<string | null>(null);
 const error = ref<string | null>(null);
@@ -169,12 +224,25 @@ const showInputSchema = ref(false);
 const serverInstances = ref<ServerInstance[]>([]);
 const selectedInstanceId = ref<string | null>(null);
 
+/**
+ * Computed property that formats the input schema as pretty-printed JSON
+ *
+ * @returns {string} Formatted JSON schema or '{}' if no schema provided
+ */
 const formattedSchema = computed(() => {
   if (!props.inputSchema) return '{}';
   return JSON.stringify(props.inputSchema, null, 2);
 });
 
-// Fetch server instances when serverName is provided
+/**
+ * Fetches available server instances from the API when serverName is provided
+ *
+ * Makes an HTTP GET request to retrieve server instances and handles errors gracefully.
+ * Automatically selects the first instance if available.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 const fetchServerInstances = async () => {
   if (props.serverName) {
     try {
@@ -192,7 +260,9 @@ const fetchServerInstances = async () => {
   }
 };
 
-// Watch for serverName changes
+/**
+ * Watches for serverName changes and fetches instances accordingly
+ */
 watch(
   () => props.serverName,
   () => {
@@ -200,6 +270,12 @@ watch(
   }
 );
 
+/**
+ * Watches for dialog visibility changes and initializes component state
+ *
+ * When the dialog opens, it generates a template from the input schema,
+ * resets result/error states, and fetches server instances.
+ */
 watch(
   () => props.modelValue,
   (val) => {
@@ -216,6 +292,20 @@ watch(
   { immediate: true }
 );
 
+/**
+ * Generates a template object based on the provided JSON schema
+ *
+ * Creates default values for each property based on its type:
+ * - strings: empty string
+ * - numbers/integers: 0
+ * - booleans: false
+ * - arrays: empty array
+ * - objects: empty object
+ * - others: null
+ *
+ * @param {JsonSchema|undefined} schema - Input schema to generate template from
+ * @returns {Record<string, unknown>} Template object with default values
+ */
 function generateTemplate(schema: JsonSchema | undefined) {
   if (!schema || !schema.properties) return {};
   const template: Record<string, unknown> = {};
@@ -241,6 +331,12 @@ function generateTemplate(schema: JsonSchema | undefined) {
   return template;
 }
 
+/**
+ * Formats the current JSON arguments with proper indentation
+ *
+ * Parses and re-stringifies the JSON with 2-space indentation for better readability.
+ * Shows a warning message if the JSON is invalid.
+ */
 function formatJson() {
   try {
     const parsed = JSON.parse(argsJson.value);
@@ -250,18 +346,46 @@ function formatJson() {
   }
 }
 
+/**
+ * Toggles between showing input schema and execution results
+ */
 function toggleSchemaView() {
   showInputSchema.value = !showInputSchema.value;
 }
 
+/**
+ * Formats the display label for server instances in the dropdown
+ *
+ * @param {ServerInstance} instance - Server instance object
+ * @returns {string} Formatted label string
+ */
 function formatInstanceLabel(instance: ServerInstance) {
   return `${instance.id}`;
 }
 
+/**
+ * Handles changes to the selected server instance
+ *
+ * Logs the selected instance ID for debugging purposes.
+ */
 function handleInstanceChange() {
   console.log('Selected instance:', selectedInstanceId.value);
 }
 
+/**
+ * Executes the tool call with the provided arguments
+ *
+ * Handles both system tools (no serverName) and server-specific tools.
+ * Includes comprehensive error handling for different error types:
+ * - Standard JavaScript errors
+ * - HttpError with detailed response data
+ * - Legacy Axios error format
+ *
+ * Shows appropriate success/error messages using Element Plus notifications.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function handleCall() {
   try {
     let args: unknown;
@@ -332,6 +456,11 @@ async function handleCall() {
 </script>
 
 <style scoped>
+/**
+ * Custom textarea styling to ensure full height usage
+ *
+ * Overrides Element Plus default textarea height to fill container.
+ */
 .custom-textarea :deep(.el-textarea__inner) {
   height: 100%;
 }

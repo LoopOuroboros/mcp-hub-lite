@@ -1,6 +1,27 @@
 /**
- * WebSocket connection manager
- * Manages the lifecycle and message handling of a single WebSocket connection
+ * WebSocket Connection Handler
+ *
+ * Manages the complete lifecycle and message handling for individual WebSocket connections
+ * between MCP Hub Lite clients and the server. This class handles client subscriptions,
+ * message routing, heartbeat management, and event distribution through the system's
+ * event bus architecture.
+ *
+ * The handler supports multiple message types including:
+ * - Subscription management (subscribe/unsubscribe to event types)
+ * - Heartbeat/ping-pong for connection health monitoring
+ * - Historical log retrieval requests
+ * - Real-time event delivery from the event bus
+ *
+ * It maintains a mapping between WebSocket event types and internal system event types,
+ * ensuring proper protocol translation and secure message delivery. The handler also
+ * implements robust error handling and connection cleanup to prevent resource leaks.
+ *
+ * @example
+ * ```typescript
+ * // Create a new WebSocket handler instance
+ * const handler = new WebSocketHandler(socket, eventBus);
+ * handler.initialize();
+ * ```
  */
 
 import { WebSocket } from 'ws';

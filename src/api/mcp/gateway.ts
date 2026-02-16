@@ -20,6 +20,28 @@ interface RequestBody {
   [key: string]: unknown;
 }
 
+/**
+ * Extracts session context from incoming MCP requests to establish client identity and session management.
+ *
+ * This function implements a sophisticated session ID resolution strategy with multiple fallback mechanisms:
+ * 1. Query parameter sessionId (for SSE connections)
+ * 2. Initialize request parameters (for JSON-RPC initialization)
+ * 3. Existing client tracker information (for subsequent requests)
+ * 4. Persisted session states (for service restart recovery)
+ * 5. New unique session ID generation (fallback)
+ *
+ * The function also extracts and enriches client context including name, version, working directory,
+ * project information, IP address, and user agent for comprehensive session tracking.
+ *
+ * @param {FastifyRequest<{ Body: RequestBody | null }>} request - Incoming Fastify request object
+ * @returns {{ sessionId: string; clientContext: ClientContext }} Object containing resolved session ID and enriched client context
+ *
+ * @example
+ * ```typescript
+ * const { sessionId, clientContext } = extractSessionContext(request);
+ * console.log(`Session: ${sessionId}, Client: ${clientContext.clientName}`);
+ * ```
+ */
 function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | null }>): {
   sessionId: string;
   clientContext: ClientContext;

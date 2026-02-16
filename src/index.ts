@@ -1,4 +1,56 @@
 #!/usr/bin/env node
+
+/**
+ * MCP Hub Lite CLI Entry Point
+ *
+ * This module serves as the primary command-line interface for the MCP Hub Lite application,
+ * providing a comprehensive set of commands to manage the MCP (Model Context Protocol) gateway service.
+ *
+ * The CLI enables users to start, stop, restart, and monitor the MCP Hub Lite server through
+ * intuitive subcommands, making it easy to manage the lifecycle of the MCP gateway service
+ * from the terminal.
+ *
+ * Key Features:
+ * - **Server Management**: Start, stop, restart, and check status of the MCP Hub Lite server
+ * - **Daemon Mode**: Automatically runs the server in background mode with proper log rotation
+ * - **STDIO Mode**: Supports direct STDIO communication for MCP protocol integration
+ * - **Process Monitoring**: Tracks server process via PID files and provides real-time status
+ * - **Web UI Integration**: Opens the web-based management interface directly from CLI
+ * - **Server Listing**: Displays all configured and managed MCP servers in a tabular format
+ * - **Error Handling**: Provides detailed error messages and troubleshooting guidance
+ * - **Log Management**: Implements automatic log rotation for long-running server instances
+ *
+ * Usage Examples:
+ * ```bash
+ * # Start server in background (default)
+ * mcp-hub-lite start
+ *
+ * # Start server in foreground for debugging
+ * mcp-hub-lite start --foreground
+ *
+ * # Start in STDIO mode for MCP protocol
+ * mcp-hub-lite start --stdio
+ *
+ * # Stop the running server
+ * mcp-hub-lite stop
+ *
+ * # Check system status
+ * mcp-hub-lite status
+ *
+ * # List all managed MCP servers
+ * mcp-hub-lite list
+ *
+ * # Open web UI
+ * mcp-hub-lite ui
+ * ```
+ *
+ * The CLI automatically handles daemonization when started without the `--foreground` flag,
+ * redirecting logs to rotated log files in the user's home directory under `~/.mcp-hub-lite/logs/`.
+ *
+ * @module src/index
+ * @since 0.0.1
+ * @see {@link https://github.com/modelcontextprotocol} for MCP protocol specification
+ */
 import { Command } from 'commander';
 import { runServer } from './server/runner.js';
 import { configManager } from './config/config-manager.js';
@@ -331,4 +383,6 @@ if (process.argv.length === 2) {
   // I'll update package.json script later. For now, let's make it show help.
 }
 
+// Parse command-line arguments and execute the appropriate command
+// This is the main entry point that processes all CLI commands
 program.parse();

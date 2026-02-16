@@ -5,10 +5,28 @@ import { logger } from '@utils/logger.js';
 /**
  * Session Management API Routes
  *
- * Routes:
- * - GET /web/sessions - List all persisted sessions
- * - GET /web/sessions/:sessionId - Get session details
- * - DELETE /web/sessions/:sessionId - Delete a session
+ * Provides comprehensive session management endpoints for the MCP Hub Lite system's persistent session storage.
+ * This module enables administrators and clients to monitor, inspect, and manage active and persisted sessions
+ * that maintain client connection state across service restarts.
+ *
+ * Sessions store critical client context including connection metadata, working directories, project information,
+ * and other state that enables seamless reconnection and continuity of operations. The session persistence
+ * feature ensures that client connections can be restored even after service interruptions.
+ *
+ * Key features include:
+ * - Listing all persisted sessions with metadata
+ * - Detailed session inspection by session ID
+ * - Session deletion for cleanup and maintenance
+ * - Integration with the MCP session manager for consistency
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register session management routes
+ * await webSessionRoutes(app);
+ * ```
  */
 export async function webSessionRoutes(fastify: FastifyInstance) {
   /**

@@ -14,6 +14,19 @@ import * as fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+/**
+ * Represents an active MCP session with its associated server and transport.
+ *
+ * Each session maintains its own MCP server instance and HTTP transport layer,
+ * providing isolated communication channels for different clients. The session
+ * tracks the last access time for automatic cleanup of stale sessions.
+ *
+ * @interface Session
+ * @property {McpServer} server - The MCP server instance handling this session
+ * @property {StreamableHTTPServerTransport} transport - The HTTP transport for this session
+ * @property {string} sessionId - Unique identifier for the session
+ * @property {number} lastAccessed - Timestamp (milliseconds) of last session access
+ */
 interface Session {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
@@ -22,14 +35,37 @@ interface Session {
 }
 
 /**
- * Enhanced MCP Session Manager with persistence support
+ * Enhanced MCP Session Manager with comprehensive persistence and lifecycle management.
  *
- * Features:
- * - Session state persistence to disk
- * - Dirty tracking for optimized writes
- * - Batch flushing for reduced I/O
- * - Graceful shutdown handling
- * - Detailed logging with environment variable control
+ * This service manages MCP sessions with full state persistence, automatic cleanup,
+ * and graceful shutdown handling. It provides session isolation through unique
+ * server and transport instances per session while maintaining shared resources
+ * for efficiency.
+ *
+ * Key features include:
+ * - Session state persistence to disk with individual session files and index
+ * - Dirty tracking with 5-second batch flushing to minimize I/O operations
+ * - Automatic cleanup of stale sessions based on configurable timeout (default 30 minutes)
+ * - Graceful shutdown handling with SIGTERM/SIGINT signal capture
+ * - Client metadata integration from client tracker service
+ * - Environment variable controlled debugging (SESSION_DEBUG)
+ *
+ * Session storage structure:
+ * ```
+ * ~/.mcp-hub-lite/
+ * └── sessions/
+ *     ├── index.json          # Session index file
+ *     └── {sessionId}.json    # Individual session state files
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const sessionManager = new McpSessionManager();
+ * const session = await sessionManager.getSession('my-session-id');
+ * // Use session.server and session.transport for MCP communication
+ * ```
+ *
+ * @since 1.0.0
  */
 export class McpSessionManager {
   private sessions: Map<string, Session> = new Map();
@@ -66,7 +102,22 @@ export class McpSessionManager {
   }
 
   /**
-   * Register process shutdown handlers for graceful cleanup
+   * Registers process shutdown handlers for graceful session cleanup.
+   *
+   * This method sets up event listeners for SIGTERM and SIGINT signals to ensure
+   * that all dirty sessions are flushed to disk before the process terminates.
+   * This prevents data loss during unexpected shutdowns or service restarts.
+   *
+   * The shutdown handler performs a final flush of all dirty sessions and
+   * clears any pending flush timeouts to ensure clean termination.
+   *
+   * @returns {void}
+   *
+   * @example
+   * ```typescript
+   * // Called automatically in constructor
+   * sessionManager.registerShutdownHandler();
+   * ```
    */
   private registerShutdownHandler(): void {
     const gracefulShutdown = async () => {
@@ -86,7 +137,24 @@ export class McpSessionManager {
   }
 
   /**
-   * Mark a session as dirty (needs to be persisted)
+   * Marks a session as dirty, indicating it needs to be persisted to disk.
+   *
+   * This method adds the session ID to the dirty sessions set and initiates
+   * a delayed batch flush operation with a 5-second timeout. This optimization
+   * prevents excessive I/O operations by batching multiple session updates
+   * that occur in quick succession.
+   *
+   * When the SESSION_DEBUG environment variable is set, detailed logging
+   * is enabled for debugging session persistence behavior.
+   *
+   * @param {string} sessionId - Unique identifier of the session to mark as dirty
+   * @returns {void}
+   *
+   * @example
+   * ```typescript
+   * sessionManager.markAsDirty('my-session-id');
+   * // Session will be flushed to disk within 5 seconds
+   * ```
    */
   private markAsDirty(sessionId: string): void {
     this.dirtySessions.add(sessionId);
@@ -104,7 +172,24 @@ export class McpSessionManager {
   }
 
   /**
-   * Load session store from disk
+   * Loads the complete session store from disk, including all individual session files.
+   *
+   * This method reads the sessions index file and loads each individual session state
+   * file, validating each session state against the SessionStateSchema. Invalid
+   * session states are skipped with warning logs, ensuring robust recovery from
+   * corrupted data.
+   *
+   * The method creates the sessions directory and index file if they don't exist,
+   * providing a clean initialization path for first-time usage.
+   *
+   * @returns {Promise<SessionStore>} Complete session store with all valid sessions
+   * @throws {Error} If critical I/O operations fail (non-recoverable errors)
+   *
+   * @example
+   * ```typescript
+   * const store = await sessionManager.loadSessionStore();
+   * console.log(`Loaded ${Object.keys(store.sessions).length} sessions`);
+   * ```
    */
   private async loadSessionStore(): Promise<SessionStore> {
     try {
@@ -164,7 +249,21 @@ export class McpSessionManager {
   }
 
   /**
-   * Save session store to disk
+   * Saves the complete session store to disk, writing individual session files and index.
+   *
+   * This method persists all session states by writing individual JSON files for each
+   * session and updating the sessions index file. The operation is atomic at the
+   * file level, ensuring data integrity even if the process is interrupted.
+   *
+   * @param {SessionStore} store - Complete session store to persist
+   * @returns {Promise<void>} Resolves when all files are successfully written
+   * @throws {Error} If any file write operations fail
+   *
+   * @example
+   * ```typescript
+   * await sessionManager.saveSessionStore(mySessionStore);
+   * console.log('Session store saved successfully');
+   * ```
    */
   private async saveSessionStore(store: SessionStore): Promise<void> {
     try {
@@ -199,7 +298,23 @@ export class McpSessionManager {
   }
 
   /**
-   * Restore sessions from disk on startup
+   * Restores all sessions from disk during service startup.
+   *
+   * This method is called automatically during initialization to recover session states
+   * from persistent storage. It loads the session store, validates each session state,
+   * and populates the in-memory session state cache. Invalid sessions are skipped
+   * with warning logs to ensure robust startup even with corrupted data.
+   *
+   * The method ensures idempotent execution by checking the initialization flag,
+   * preventing multiple restoration attempts.
+   *
+   * @returns {Promise<void>} Resolves when all valid sessions are restored
+   *
+   * @example
+   * ```typescript
+   * await sessionManager.restoreSessions();
+   * console.log('Sessions restored from disk');
+   * ```
    */
   public async restoreSessions(): Promise<void> {
     if (this.isInitialized) {
@@ -239,7 +354,22 @@ export class McpSessionManager {
   }
 
   /**
-   * Flush dirty sessions to disk
+   * Flushes all dirty sessions to disk in a single batch operation.
+   *
+   * This method collects all sessions marked as dirty, loads the current session store,
+   * updates it with the dirty sessions, and saves the complete store back to disk.
+   * This batch approach minimizes I/O operations and ensures data consistency.
+   *
+   * The method includes comprehensive error handling to prevent partial writes and
+   * maintains detailed logging for debugging and monitoring purposes.
+   *
+   * @returns {Promise<void>} Resolves when all dirty sessions are successfully flushed
+   *
+   * @example
+   * ```typescript
+   * await sessionManager.flushDirtySessions();
+   * console.log('All dirty sessions flushed to disk');
+   * ```
    */
   private async flushDirtySessions(): Promise<void> {
     if (this.dirtySessions.size === 0) {
@@ -284,7 +414,20 @@ export class McpSessionManager {
   }
 
   /**
-   * Update session metadata from client tracker
+   * Updates session metadata by retrieving client information from the client tracker service.
+   *
+   * This method fetches current client information including name, version, working directory,
+   * and project context from the client tracker service and returns a partial session state
+   * update object containing only the relevant metadata fields.
+   *
+   * @param {string} sessionId - Unique identifier of the session to update
+   * @returns {Partial<SessionState>} Partial session state with updated client metadata
+   *
+   * @example
+   * ```typescript
+   * const metadata = sessionManager.updateSessionMetadataFromClient('my-session-id');
+   * console.log('Updated client metadata:', metadata);
+   * ```
    */
   private updateSessionMetadataFromClient(sessionId: string): Partial<SessionState> {
     const clientInfo = clientTrackerService.getClient(sessionId);
@@ -297,7 +440,21 @@ export class McpSessionManager {
   }
 
   /**
-   * Create or update session state
+   * Creates or updates a session state with current metadata and timestamps.
+   *
+   * This method merges existing session state (if any) with current client metadata
+   * from the client tracker service, updates access timestamps, and ensures proper
+   * session state structure. The updated state is stored in memory and marked as dirty
+   * for persistence.
+   *
+   * @param {string} sessionId - Unique identifier of the session to create or update
+   * @returns {SessionState} Complete updated session state object
+   *
+   * @example
+   * ```typescript
+   * const state = sessionManager.upsertSessionState('my-session-id');
+   * console.log('Session state updated:', state);
+   * ```
    */
   private upsertSessionState(sessionId: string): SessionState {
     const existing = this.sessionStates.get(sessionId);
@@ -322,7 +479,23 @@ export class McpSessionManager {
   }
 
   /**
-   * Update session metadata explicitly
+   * Updates session metadata explicitly with provided key-value pairs.
+   *
+   * This method merges the provided metadata object with existing session metadata,
+   * updates the last accessed timestamp, and marks the session as dirty for persistence.
+   * It's useful for storing custom session-specific information that needs to be persisted.
+   *
+   * @param {string} sessionId - Unique identifier of the session to update
+   * @param {Record<string, unknown>} metadata - Key-value pairs to merge into session metadata
+   * @returns {Promise<void>} Resolves when metadata is updated and marked for persistence
+   *
+   * @example
+   * ```typescript
+   * await sessionManager.updateSessionMetadata('my-session-id', {
+   *   userPreferences: { theme: 'dark' },
+   *   lastProject: 'my-project'
+   * });
+   * ```
    */
   public async updateSessionMetadata(
     sessionId: string,
@@ -349,7 +522,27 @@ export class McpSessionManager {
   }
 
   /**
-   * Get or create a session
+   * Retrieves an existing session or creates a new one if it doesn't exist.
+   *
+   * This method provides access to active sessions, creating new ones on demand with
+   * proper initialization based on the requireInitialize parameter. It updates session
+   * access timestamps and persists session state changes to ensure data consistency.
+   *
+   * The method includes optimization to prevent excessive timestamp updates for rapid
+   * successive requests by only updating when at least 100ms have passed since the last access.
+   *
+   * @param {string} sessionId - Unique identifier of the session to retrieve or create
+   * @param {boolean} [requireInitialize=true] - Whether to require MCP protocol initialization
+   * @returns {Promise<Session>} Active session object with server and transport
+   *
+   * @example
+   * ```typescript
+   * // Get or create session with default initialization
+   * const session = await sessionManager.getSession('my-session-id');
+   *
+   * // Get or create session without requiring initialization (for restored sessions)
+   * const restoredSession = await sessionManager.getSession('restored-session-id', false);
+   * ```
    */
   public async getSession(sessionId: string, requireInitialize: boolean = true): Promise<Session> {
     let session = this.sessions.get(sessionId);
@@ -374,21 +567,63 @@ export class McpSessionManager {
   }
 
   /**
-   * Get all persisted session states (for API)
+   * Retrieves all persisted session states for API exposure.
+   *
+   * This method returns an array of all current session states, providing a complete
+   * snapshot of all active sessions and their metadata. It's primarily used by the
+   * web API to expose session information to clients.
+   *
+   * @returns {SessionState[]} Array of all current session states
+   *
+   * @example
+   * ```typescript
+   * const allStates = sessionManager.getAllSessionStates();
+   * console.log(`Total active sessions: ${allStates.length}`);
+   * ```
    */
   public getAllSessionStates(): SessionState[] {
     return Array.from(this.sessionStates.values());
   }
 
   /**
-   * Get a specific session state (for API)
+   * Retrieves a specific session state by session ID for API exposure.
+   *
+   * This method returns the current state of a specific session or undefined if
+   * the session doesn't exist. It's primarily used by the web API to provide
+   * detailed information about individual sessions.
+   *
+   * @param {string} sessionId - Unique identifier of the session to retrieve
+   * @returns {SessionState | undefined} Session state object or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const state = sessionManager.getSessionState('my-session-id');
+   * if (state) {
+   *   console.log('Session client:', state.clientName);
+   * }
+   * ```
    */
   public getSessionState(sessionId: string): SessionState | undefined {
     return this.sessionStates.get(sessionId);
   }
 
   /**
-   * Delete a session (for API)
+   * Deletes a session and removes it from persistent storage.
+   *
+   * This method gracefully closes the session's MCP server, removes it from memory,
+   * and ensures it's removed from persistent storage by marking it as dirty and
+   * performing an immediate flush. It returns true if the session existed and was deleted.
+   *
+   * @param {string} sessionId - Unique identifier of the session to delete
+   * @returns {Promise<boolean>} True if session existed and was deleted, false otherwise
+   *
+   * @example
+   * ```typescript
+   * const deleted = await sessionManager.deleteSession('my-session-id');
+   * if (deleted) {
+   *   console.log('Session deleted successfully');
+   * }
+   * ```
    */
   public async deleteSession(sessionId: string): Promise<boolean> {
     const session = this.sessions.get(sessionId);
@@ -414,6 +649,31 @@ export class McpSessionManager {
     return existed;
   }
 
+  /**
+   * Creates a new MCP session with proper initialization and transport setup.
+   *
+   * This method sets up a complete MCP session including server, transport, and
+   * communication logging. It handles both fresh sessions and restored sessions,
+   * with special logic for skipping initialization when appropriate.
+   *
+   * Key features:
+   * - Creates StreamableHTTPServerTransport with custom session ID generation
+   * - Sets up comprehensive message logging for debugging
+   * - Handles restored sessions by manually initializing transport state
+   * - Integrates with client tracker service for metadata
+   * - Creates/updates session state and marks as dirty for persistence
+   *
+   * @param {string} sessionId - Unique identifier for the new session
+   * @param {boolean} [requireInitialize=true] - Whether to require MCP protocol initialization
+   * @returns {Promise<Session>} Newly created session object
+   * @throws {Error} If session creation or connection fails
+   *
+   * @example
+   * ```typescript
+   * const session = await sessionManager.createSession('new-session-id');
+   * // Use session.server and session.transport for MCP communication
+   * ```
+   */
   private async createSession(
     sessionId: string,
     requireInitialize: boolean = true
@@ -554,6 +814,25 @@ export class McpSessionManager {
     return session;
   }
 
+  /**
+   * Cleans up stale sessions based on the configured session timeout.
+   *
+   * This method is called periodically (every 60 seconds) to identify and close
+   * sessions that haven't been accessed within the configured timeout period
+   * (default 30 minutes). It gracefully closes MCP servers and removes sessions
+   * from memory to prevent resource leaks.
+   *
+   * The method logs detailed information about cleaned sessions and maintains
+   * active session count for monitoring purposes.
+   *
+   * @returns {void}
+   *
+   * @example
+   * ```typescript
+   * // Called automatically every 60 seconds
+   * sessionManager.cleanup();
+   * ```
+   */
   private cleanup() {
     const now = Date.now();
     let cleanedCount = 0;

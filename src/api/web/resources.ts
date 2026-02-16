@@ -4,6 +4,31 @@ import { hubToolsService } from '@services/hub-tools.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { Resource } from '@shared-models/resource.model.js';
 
+/**
+ * MCP Resources API Routes
+ *
+ * Provides endpoints for discovering and accessing resources from connected MCP (Model Context Protocol) servers.
+ * This module enables clients to list available resources across all servers and read specific resource content.
+ *
+ * The resources API handles both system-level resources (provided by MCP Hub Lite itself) and server-specific
+ * resources from connected MCP servers. It provides a unified interface for resource discovery and access,
+ * abstracting away the underlying server implementation details.
+ *
+ * Key features include:
+ * - Cross-server resource listing with server categorization
+ * - Resource content reading with proper URI handling
+ * - System resource integration alongside server resources
+ * - Error handling for disconnected or unavailable servers
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register resource routes
+ * await webResourceRoutes(app);
+ * ```
+ */
 export async function webResourceRoutes(fastify: FastifyInstance) {
   // GET /web/servers/:name/resources/read
   fastify.get<{ Params: { name: string }; Querystring: { uri: string } }>(

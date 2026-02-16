@@ -12,6 +12,24 @@ import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { ServerConfig } from '@config/config.schema.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
 
+/**
+ * Represents the connection status and metadata of an MCP server instance.
+ *
+ * This interface tracks the operational state of connected MCP servers,
+ * including connection status, error information, resource counts, and
+ * process-level details for stdio-based servers.
+ *
+ * @interface ServerStatus
+ * @property {boolean} connected - Whether the server is currently connected
+ * @property {string} [error] - Error message if connection failed or was lost
+ * @property {number} lastCheck - Timestamp (milliseconds) of last status check
+ * @property {number} toolsCount - Number of tools available from this server
+ * @property {number} resourcesCount - Number of resources available from this server
+ * @property {number} [pid] - Process ID for stdio-based servers
+ * @property {number} [startTime] - Server startup timestamp (milliseconds)
+ * @property {string} [version] - Server version string from MCP protocol
+ * @property {string} [hash] - Unique identifier hash for the server instance
+ */
 export interface ServerStatus {
   connected: boolean;
   error?: string;
@@ -24,6 +42,29 @@ export interface ServerStatus {
   hash?: string;
 }
 
+/**
+ * Manages MCP (Model Context Protocol) server connections and provides a unified interface
+ * for tool and resource operations across multiple connected servers.
+ *
+ * This service handles the complete lifecycle of MCP server connections including:
+ * - Establishing connections via various transport protocols (stdio, SSE, HTTP)
+ * - Managing client instances and transport layers
+ * - Caching tools and resources for performance optimization
+ * - Providing both server ID-based and server name-based access patterns
+ * - Handling connection events and error recovery
+ * - Supporting bidirectional communication for tool execution
+ *
+ * The manager maintains separate caches for server ID-level and server name-level
+ * operations to optimize different access patterns while ensuring data consistency.
+ *
+ * @example
+ * ```typescript
+ * const manager = new McpConnectionManager();
+ * await manager.connect(serverConfig);
+ * const tools = await manager.getTools(serverId);
+ * const result = await manager.callTool(serverId, 'tool-name', { param: 'value' });
+ * ```
+ */
 class McpConnectionManager {
   private clients: Map<string, Client> = new Map();
   private transports: Map<string, Transport> = new Map();
@@ -47,6 +88,41 @@ class McpConnectionManager {
     });
   }
 
+  /**
+   * Establishes a connection to an MCP server using the specified configuration.
+   *
+   * This method handles the complete connection process including transport creation,
+   * client initialization, validation, and automatic tool/resource discovery.
+   * It supports multiple transport protocols (stdio, SSE, streamable-http, http)
+   * and provides comprehensive error handling with proper status tracking.
+   *
+   * For bidirectional transports (stdio, streamable-http, http), it automatically
+   * fetches and caches available tools and resources upon successful connection.
+   * SSE transports are unidirectional and skip this step for performance reasons.
+   *
+   * The method publishes SERVER_CONNECTED and SERVER_STATUS_CHANGE events upon
+   * successful connection, and SERVER_STATUS_CHANGE events with error details
+   * on failure.
+   *
+   * @param {ServerConfig & ServerInstanceConfig} server - Server configuration containing
+   * connection details, transport type, and instance-specific parameters
+   * @returns {Promise<boolean>} True if connection succeeds, false if it fails
+   * @throws {Error} If server ID is missing or required configuration is invalid
+   *
+   * @example
+   * ```typescript
+   * const serverConfig = {
+   *   id: 'my-server-1',
+   *   type: 'stdio' as const,
+   *   command: 'npx my-mcp-server',
+   *   name: 'My MCP Server'
+   * };
+   * const success = await manager.connect(serverConfig);
+   * if (success) {
+   *   console.log('Connected successfully');
+   * }
+   * ```
+   */
   public async connect(server: ServerConfig & ServerInstanceConfig): Promise<boolean> {
     // Use trace helper to wrap the entire connection process
     return withSpan<boolean>(
@@ -247,6 +323,27 @@ class McpConnectionManager {
     );
   }
 
+  /**
+   * Disconnects from an MCP server and cleans up all associated resources.
+   *
+   * This method performs a graceful shutdown by closing the client connection,
+   * closing the transport layer, and removing all cached data including tools,
+   * resources, and status information. It also updates the server name-level
+   * tool cache to maintain consistency across multiple instances of the same server.
+   *
+   * The method publishes SERVER_DISCONNECTED and SERVER_STATUS_CHANGE events
+   * upon completion and handles any errors during the disconnection process
+   * without throwing exceptions.
+   *
+   * @param {string} serverId - Unique identifier of the server instance to disconnect
+   * @returns {Promise<void>} Resolves when disconnection is complete
+   *
+   * @example
+   * ```typescript
+   * await manager.disconnect('my-server-1');
+   * console.log('Server disconnected');
+   * ```
+   */
   public async disconnect(serverId: string): Promise<void> {
     logger.info(`Disconnecting from server [${serverId}]...`);
 
@@ -336,6 +433,22 @@ class McpConnectionManager {
     }
   }
 
+  /**
+   * Disconnects from all currently connected MCP servers concurrently.
+   *
+   * This method iterates through all active client connections and calls
+   * disconnect() on each one, handling errors individually to ensure
+   * that failure to disconnect from one server doesn't prevent disconnection
+   * from others. All disconnections are performed in parallel for efficiency.
+   *
+   * @returns {Promise<void>} Resolves when all disconnection attempts complete
+   *
+   * @example
+   * ```typescript
+   * await manager.disconnectAll();
+   * console.log('All servers disconnected');
+   * ```
+   */
   public async disconnectAll(): Promise<void> {
     logger.info('Disconnecting all servers...');
     const serverIds = Array.from(this.clients.keys());
@@ -355,6 +468,24 @@ class McpConnectionManager {
     logger.info('All servers disconnected');
   }
 
+  /**
+   * Refreshes the tool cache for a specific server by fetching the latest tool list.
+   *
+   * This method queries the connected MCP server for its current set of available tools,
+   * updates both the server ID-level and server name-level caches, and maintains
+   * accurate tool counts in the server status. It handles server name resolution
+   * to ensure proper caching across multiple instances of the same server.
+   *
+   * @param {string} serverId - Unique identifier of the server instance to refresh
+   * @returns {Promise<Tool[]>} Array of updated tools with server context
+   * @throws {Error} If the server is not connected or tool listing fails
+   *
+   * @example
+   * ```typescript
+   * const tools = await manager.refreshTools('my-server-1');
+   * console.log(`Found ${tools.length} tools`);
+   * ```
+   */
   public async refreshTools(serverId: string): Promise<Tool[]> {
     const client = this.clients.get(serverId);
     if (!client) {
@@ -415,6 +546,28 @@ class McpConnectionManager {
     }
   }
 
+  /**
+   * Refreshes the resource cache for a specific server by fetching available resources.
+   *
+   * This method queries the connected MCP server for its current set of available resources,
+   * handling servers that don't support the resources functionality gracefully by returning
+   * an empty array. It updates the resource cache and maintains accurate resource counts
+   * in the server status.
+   *
+   * The method specifically handles "Method not found" errors (MCP error code -32601)
+   * which indicate that the server doesn't implement the resources protocol, treating
+   * this as a normal case rather than an error.
+   *
+   * @param {string} serverId - Unique identifier of the server instance to refresh
+   * @returns {Promise<Resource[]>} Array of available resources, empty if unsupported
+   * @throws {Error} If the server is not connected or resource listing fails unexpectedly
+   *
+   * @example
+   * ```typescript
+   * const resources = await manager.refreshResources('my-server-1');
+   * console.log(`Found ${resources.length} resources`);
+   * ```
+   */
   public async refreshResources(serverId: string): Promise<Resource[]> {
     const client = this.clients.get(serverId);
     if (!client) {
@@ -468,22 +621,89 @@ class McpConnectionManager {
     }
   }
 
+  /**
+   * Retrieves the current connection status for a specific server instance.
+   *
+   * This method provides access to the server's operational state including connection
+   * status, error information, tool/resource counts, and process details.
+   *
+   * @param {string} serverId - Unique identifier of the server instance
+   * @returns {ServerStatus | undefined} Current status object or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const status = manager.getStatus('my-server-1');
+   * if (status?.connected) {
+   *   console.log('Server is connected');
+   * }
+   * ```
+   */
   public getStatus(serverId: string): ServerStatus | undefined {
     return this.serverStatus.get(serverId);
   }
 
+  /**
+   * Retrieves cached tools for a specific server instance.
+   *
+   * This method returns the currently cached tool list for the specified server,
+   * which may be empty if tools haven't been refreshed yet or if the server
+   * doesn't provide any tools. The method includes logging for debugging purposes.
+   *
+   * @param {string} serverId - Unique identifier of the server instance
+   * @returns {Tool[]} Array of cached tools, empty if none available
+   *
+   * @example
+   * ```typescript
+   * const tools = manager.getTools('my-server-1');
+   * console.log(`Server has ${tools.length} tools`);
+   * ```
+   */
   public getTools(serverId: string): Tool[] {
     const tools = this.toolCache.get(serverId) || [];
     logger.info(`getTools for [${serverId}]: returned ${tools.length} tools`);
     return tools;
   }
 
+  /**
+   * Retrieves cached resources for a specific server instance.
+   *
+   * This method returns the currently cached resource list for the specified server,
+   * which may be empty if resources haven't been refreshed yet, if the server doesn't
+   * support resources, or if the server doesn't provide any resources. The method
+   * includes logging for debugging purposes.
+   *
+   * @param {string} serverId - Unique identifier of the server instance
+   * @returns {Resource[]} Array of cached resources, empty if none available
+   *
+   * @example
+   * ```typescript
+   * const resources = manager.getResources('my-server-1');
+   * console.log(`Server has ${resources.length} resources`);
+   * ```
+   */
   public getResources(serverId: string): Resource[] {
     const resources = this.resourceCache.get(serverId) || [];
     logger.info(`getResources for [${serverId}]: returned ${resources.length} resources`);
     return resources;
   }
 
+  /**
+   * Reads content from a specific resource URI on a connected MCP server.
+   *
+   * This method delegates the resource reading operation to the underlying MCP client,
+   * providing direct access to server-provided resources through their URIs.
+   *
+   * @param {string} serverId - Unique identifier of the connected server instance
+   * @param {string} uri - Resource URI to read (e.g., "file:///path/to/file")
+   * @returns {Promise<unknown>} Resource content as returned by the server
+   * @throws {Error} If the server is not connected or resource reading fails
+   *
+   * @example
+   * ```typescript
+   * const content = await manager.readResource('my-server-1', 'hub://config/settings.json');
+   * console.log('Resource content:', content);
+   * ```
+   */
   public async readResource(serverId: string, uri: string): Promise<unknown> {
     const client = this.clients.get(serverId);
     if (!client) {
@@ -492,6 +712,21 @@ class McpConnectionManager {
     return client.readResource({ uri });
   }
 
+  /**
+   * Retrieves all cached tools from all connected server instances.
+   *
+   * This method aggregates tools from all server ID-level caches into a single array,
+   * providing a unified view of all available tools across all connected servers.
+   * The returned tools include server context information for proper identification.
+   *
+   * @returns {Tool[]} Array of all cached tools from all connected servers
+   *
+   * @example
+   * ```typescript
+   * const allTools = manager.getAllTools();
+   * console.log(`Total tools available: ${allTools.length}`);
+   * ```
+   */
   public getAllTools(): Tool[] {
     const allTools: Tool[] = [];
     for (const tools of this.toolCache.values()) {
@@ -500,14 +735,67 @@ class McpConnectionManager {
     return allTools;
   }
 
+  /**
+   * Retrieves all tool cache entries as server ID to tools mapping.
+   *
+   * This method returns the raw tool cache structure as an array of [serverId, tools] tuples,
+   * providing direct access to the internal caching mechanism for debugging or advanced use cases.
+   *
+   * @returns {[string, Tool[]][]} Array of [serverId, tools] tuples representing the cache
+   *
+   * @example
+   * ```typescript
+   * const cacheEntries = manager.getToolCacheEntries();
+   * cacheEntries.forEach(([serverId, tools]) => {
+   *   console.log(`Server ${serverId} has ${tools.length} tools`);
+   * });
+   * ```
+   */
   public getToolCacheEntries(): [string, Tool[]][] {
     return Array.from(this.toolCache.entries());
   }
 
+  /**
+   * Resolves a server name to its corresponding server instance ID.
+   *
+   * This method provides reverse lookup from server names (as defined in configuration)
+   * to the unique server instance IDs used internally for connection management.
+   * It's useful when you have a server name but need the instance ID for operations.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @returns {string | undefined} Corresponding server instance ID or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const serverId = manager.getServerIdByName('my-mcp-server');
+   * if (serverId) {
+   *   const status = manager.getStatus(serverId);
+   * }
+   * ```
+   */
   public getServerIdByName(name: string): string | undefined {
     return this.nameToIdMap.get(name);
   }
 
+  /**
+   * Retrieves the MCP client instance for a server by its name.
+   *
+   * This method resolves a server name to its instance ID and returns the corresponding
+   * MCP client instance, providing direct access to the underlying SDK client for
+   * advanced operations that aren't covered by the manager's high-level methods.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @returns {Client | undefined} MCP client instance or undefined if not connected
+   *
+   * @example
+   * ```typescript
+   * const client = manager.getClientByName('my-mcp-server');
+   * if (client) {
+   *   // Use direct client methods for advanced operations
+   *   const result = await client.listPrompts();
+   * }
+   * ```
+   */
   public getClientByName(name: string): Client | undefined {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
@@ -516,6 +804,30 @@ class McpConnectionManager {
     return this.clients.get(serverId);
   }
 
+  /**
+   * Calls a tool on a connected server using the server name instead of instance ID.
+   *
+   * This method provides a convenient way to execute tools when you have a server name
+   * rather than an instance ID. It resolves the server name to its instance ID and
+   * delegates to the callTool method for actual execution.
+   *
+   * The method is wrapped in OpenTelemetry tracing for observability and includes
+   * comprehensive error handling with proper logging.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @param {string} toolName - Name of the tool to execute
+   * @param {Record<string, unknown>} args - Arguments to pass to the tool
+   * @returns {Promise<unknown>} Tool execution result as returned by the server
+   * @throws {Error} If server is not connected, not found, or tool execution fails
+   *
+   * @example
+   * ```typescript
+   * const result = await manager.callToolByName('my-mcp-server', 'list-files', {
+   *   directory: '/home/user'
+   * });
+   * console.log('Tool result:', result);
+   * ```
+   */
   public async callToolByName(
     name: string,
     toolName: string,
@@ -529,6 +841,24 @@ class McpConnectionManager {
     return this.callTool(serverId, toolName, args);
   }
 
+  /**
+   * Retrieves the connection status for a server using its name instead of instance ID.
+   *
+   * This method resolves a server name to its instance ID and returns the corresponding
+   * server status, providing a convenient way to check server health when working with
+   * server names rather than instance IDs.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @returns {ServerStatus | undefined} Current status object or undefined if not found/connected
+   *
+   * @example
+   * ```typescript
+   * const status = manager.getStatusByName('my-mcp-server');
+   * if (status?.connected) {
+   *   console.log('Server is online');
+   * }
+   * ```
+   */
   public getStatusByName(name: string): ServerStatus | undefined {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
@@ -537,6 +867,22 @@ class McpConnectionManager {
     return this.serverStatus.get(serverId);
   }
 
+  /**
+   * Retrieves cached tools for a server using its name instead of instance ID.
+   *
+   * This method resolves a server name to its instance ID and returns the corresponding
+   * cached tool list, providing a convenient way to access tools when working with
+   * server names rather than instance IDs.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @returns {Tool[]} Array of cached tools, empty if none available or not connected
+   *
+   * @example
+   * ```typescript
+   * const tools = manager.getToolsByName('my-mcp-server');
+   * console.log(`Server has ${tools.length} tools`);
+   * ```
+   */
   public getToolsByName(name: string): Tool[] {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
@@ -545,6 +891,22 @@ class McpConnectionManager {
     return this.toolCache.get(serverId) || [];
   }
 
+  /**
+   * Retrieves cached resources for a server using its name instead of instance ID.
+   *
+   * This method resolves a server name to its instance ID and returns the corresponding
+   * cached resource list, providing a convenient way to access resources when working with
+   * server names rather than instance IDs.
+   *
+   * @param {string} name - Server name as defined in the configuration
+   * @returns {Resource[]} Array of cached resources, empty if none available or not connected
+   *
+   * @example
+   * ```typescript
+   * const resources = manager.getResourcesByName('my-mcp-server');
+   * console.log(`Server has ${resources.length} resources`);
+   * ```
+   */
   public getResourcesByName(name: string): Resource[] {
     const serverId = this.nameToIdMap.get(name);
     if (!serverId) {
@@ -553,11 +915,46 @@ class McpConnectionManager {
     return this.resourceCache.get(serverId) || [];
   }
 
+  /**
+   * Retrieves a specific tool by name from a server's cached tools.
+   *
+   * This method searches the server name-level tool cache for a tool with the specified name,
+   * providing efficient lookup without needing to iterate through all tools manually.
+   *
+   * @param {string} serverName - Server name as defined in the configuration
+   * @param {string} toolName - Exact name of the tool to find
+   * @returns {Tool | undefined} Tool object if found, undefined otherwise
+   *
+   * @example
+   * ```typescript
+   * const tool = manager.getTool('my-mcp-server', 'list-files');
+   * if (tool) {
+   *   console.log('Tool description:', tool.description);
+   * }
+   * ```
+   */
   public getTool(serverName: string, toolName: string): Tool | undefined {
     const tools = this.serverNameToolCache.get(serverName);
     return tools?.find((t) => t.name === toolName);
   }
 
+  /**
+   * Retrieves all cached resources grouped by server name.
+   *
+   * This method aggregates resources from all server instances and groups them by their
+   * corresponding server names, providing a structured view of all available resources
+   * across the system organized by server origin.
+   *
+   * @returns {Record<string, Resource[]>} Object mapping server names to resource arrays
+   *
+   * @example
+   * ```typescript
+   * const allResources = manager.getAllResources();
+   * Object.entries(allResources).forEach(([serverName, resources]) => {
+   *   console.log(`Server ${serverName} has ${resources.length} resources`);
+   * });
+   * ```
+   */
   public getAllResources(): Record<string, Resource[]> {
     const result: Record<string, Resource[]> = {};
 
@@ -581,6 +978,28 @@ class McpConnectionManager {
     return result;
   }
 
+  /**
+   * Executes a tool on a connected MCP server using its instance ID.
+   *
+   * This is the primary method for executing tools on connected servers. It delegates
+   * the actual execution to the underlying MCP client and includes comprehensive
+   * error handling with proper logging. The method is wrapped in OpenTelemetry tracing
+   * for observability and monitoring.
+   *
+   * @param {string} serverId - Unique identifier of the connected server instance
+   * @param {string} toolName - Name of the tool to execute
+   * @param {Record<string, unknown>} args - Arguments to pass to the tool
+   * @returns {Promise<unknown>} Tool execution result as returned by the server
+   * @throws {Error} If server is not connected or tool execution fails
+   *
+   * @example
+   * ```typescript
+   * const result = await manager.callTool('my-server-1', 'list-files', {
+   *   directory: '/home/user'
+   * });
+   * console.log('Tool result:', result);
+   * ```
+   */
   public async callTool(
     serverId: string,
     toolName: string,
@@ -612,12 +1031,41 @@ class McpConnectionManager {
     );
   }
 
-  // Get tool cache based on server name
+  /**
+   * Retrieves cached tools for a specific server name from the server name-level cache.
+   *
+   * This method provides access to the server name-level tool cache, which aggregates
+   * tools from all instances of the same server name. It's optimized for scenarios
+   * where you need to work with server names rather than individual instance IDs.
+   *
+   * @param {string} serverName - Server name as defined in the configuration
+   * @returns {Tool[]} Array of cached tools for the specified server name
+   *
+   * @example
+   * ```typescript
+   * const tools = manager.getToolsByServerName('my-mcp-server');
+   * console.log(`Server has ${tools.length} tools across all instances`);
+   * ```
+   */
   public getToolsByServerName(serverName: string): Tool[] {
     return this.serverNameToolCache.get(serverName) || [];
   }
 
-  // Get all tools by server name (for search)
+  /**
+   * Retrieves all cached tools from all servers using the server name-level cache.
+   *
+   * This method aggregates tools from the server name-level cache, providing a unified
+   * view of all available tools optimized for search operations and scenarios where
+   * server name context is more relevant than individual instance IDs.
+   *
+   * @returns {Tool[]} Array of all cached tools from all servers
+   *
+   * @example
+   * ```typescript
+   * const allTools = manager.getAllToolsByServerName();
+   * console.log(`Total tools available: ${allTools.length}`);
+   * ```
+   */
   public getAllToolsByServerName(): Tool[] {
     const allTools: Tool[] = [];
     for (const tools of this.serverNameToolCache.values()) {

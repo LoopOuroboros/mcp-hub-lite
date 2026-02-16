@@ -3,8 +3,27 @@ import { searchCoreService } from '@services/search/search-core.service.js';
 import type { SearchOptions } from '@services/search/types.js';
 
 /**
- * Web API routes for tool search
- * Endpoint under /web/search
+ * Tool Search API Routes
+ *
+ * Provides powerful fuzzy search capabilities for discovering tools across all connected MCP (Model Context Protocol) servers.
+ * This module enables users to quickly find relevant tools based on name, description, or other metadata using
+ * advanced search algorithms with pagination support.
+ *
+ * The search API supports flexible query parameters including result limits, offsets for pagination,
+ * and various search modes. It integrates with the core search service to provide fast and accurate
+ * tool discovery across the entire MCP ecosystem.
+ *
+ * Additionally includes a dedicated health check endpoint for monitoring the search service availability
+ * in production environments.
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register search routes
+ * await webSearchRoutes(app);
+ * ```
  */
 export async function webSearchRoutes(fastify: FastifyInstance) {
   // GET /web/search - Search for tools with query and optional filters

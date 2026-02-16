@@ -1,3 +1,15 @@
+<!--
+  ServerStatusTags Component
+
+  Displays server status information as a series of styled tags showing:
+  - Server status (running, error, starting, etc.)
+  - Transport type and relevant details (command for stdio, URL for SSE)
+  - Server version (if available)
+  - Uptime (optional, controlled by includeUptime prop)
+
+  This component provides a compact, visual representation of server state
+  for use in server lists and detail views.
+-->
 <template>
   <div class="flex flex-wrap items-center gap-2 w-full">
     <!-- Status -->
@@ -48,6 +60,22 @@
 <script setup lang="ts">
 import { getExecutableName } from '@utils/format-utils';
 
+/**
+ * Props interface for ServerStatusTags component
+ *
+ * @interface ServerStatusTagsProps
+ * @property {Object} server - Server object containing status, version, and configuration
+ * @property {string} server.status - Current server status (running, error, starting, etc.)
+ * @property {string} [server.version] - Server version string (optional)
+ * @property {number|null} [server.pid] - Process ID for stdio servers (optional)
+ * @property {Object} server.config - Server configuration object
+ * @property {string} server.config.type - Transport type (stdio, sse, streamable-http)
+ * @property {string} [server.config.command] - Command for stdio transport (optional)
+ * @property {string} [server.config.url] - URL for SSE transport (optional)
+ * @property {number} [server.startTime] - Server start timestamp (optional)
+ * @property {boolean} [includeUptime] - Whether to display uptime information (optional)
+ * @property {string} [formattedUptime] - Pre-formatted uptime string (optional)
+ */
 interface ServerStatusTagsProps {
   server: {
     status: string;
@@ -66,7 +94,12 @@ interface ServerStatusTagsProps {
 
 const props = defineProps<ServerStatusTagsProps>();
 
-// Helper functions for status styling (copied from existing components)
+/**
+ * Returns CSS class names for status badge styling based on server status
+ *
+ * @param {string} status - Server status string
+ * @returns {string} CSS class names for the status badge
+ */
 function getStatusBadgeClass(status: string) {
   switch (status) {
     case 'running':
@@ -82,6 +115,12 @@ function getStatusBadgeClass(status: string) {
   }
 }
 
+/**
+ * Returns CSS class names for status dot color based on server status
+ *
+ * @param {string} status - Server status string
+ * @returns {string} CSS class name for the status dot color
+ */
 function getStatusDotClass(status: string) {
   switch (status) {
     case 'running':

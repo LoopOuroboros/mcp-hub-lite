@@ -11,8 +11,34 @@ interface BatchResultSuccess {
 }
 
 /**
- * Web API routes for server management
- * All endpoints under /web/servers
+ * MCP Server Management API Routes
+ *
+ * Provides comprehensive CRUD (Create, Read, Update, Delete) operations for managing MCP (Model Context Protocol) servers
+ * and their runtime instances within the MCP Hub Lite system. This module serves as the primary interface for
+ * server configuration management, process control, and bulk operations.
+ *
+ * The API supports both static server configuration (defining how servers should be configured) and dynamic
+ * instance management (controlling actual running server processes). It includes sophisticated validation
+ * using Zod schemas to ensure configuration integrity and provides detailed error handling with appropriate
+ * HTTP status codes.
+ *
+ * Key features include:
+ * - Full CRUD operations for server configurations
+ * - Instance-level management for running server processes
+ * - Batch import/export capabilities for server configurations
+ * - Automatic server startup based on enabled status
+ * - Comprehensive validation using Zod schemas
+ * - Detailed error handling with appropriate HTTP status codes
+ * - Support for multiple server types (stdio, sse, streamable-http)
+ *
+ * @param fastify - The Fastify instance to register routes on
+ * @returns Promise that resolves when all routes are registered
+ *
+ * @example
+ * ```typescript
+ * // Register server management routes
+ * await webServerRoutes(app);
+ * ```
  */
 export async function webServerRoutes(fastify: FastifyInstance) {
   // GET /web/servers

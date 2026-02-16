@@ -170,6 +170,22 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Server List View Component
+ *
+ * This component displays a list of configured MCP servers with their current status,
+ * configuration details, and action buttons for managing server lifecycle.
+ *
+ * Features:
+ * - Server card display with status indicators
+ * - Server lifecycle management (start, stop, restart)
+ * - Navigation to server detail views (tools, config, logs)
+ * - Server configuration saving
+ * - Server addition via modal dialog
+ *
+ * @component
+ */
+
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useServerStore } from '@stores/server';
@@ -199,6 +215,20 @@ const { t } = useI18n();
 const showAddModal = ref(false);
 const addModalMode = ref<'form' | 'json'>('form');
 
+/**
+ * Handles saving the current server configuration to persistent storage.
+ *
+ * This function collects all server configurations from the store and sends them
+ * to the backend API for persistence. It provides user feedback via success/error messages.
+ *
+ * @async
+ * @throws {Error} If the save operation fails
+ *
+ * @example
+ * ```typescript
+ * await handleSave(); // Saves all server configurations
+ * ```
+ */
 async function handleSave() {
   try {
     // Get current server configuration
@@ -224,21 +254,56 @@ async function handleSave() {
   }
 }
 
+// Fetch servers when component is mounted
 onMounted(() => {
   store.fetchServers();
 });
 
+/**
+ * Opens the Add Server modal dialog with the specified mode.
+ *
+ * @param {'form' | 'json'} mode - The mode to open the modal in ('form' for form input, 'json' for JSON input)
+ *
+ * @example
+ * ```typescript
+ * openAddModal('form'); // Open modal in form mode
+ * openAddModal('json'); // Open modal in JSON mode
+ * ```
+ */
 function openAddModal(mode: 'form' | 'json') {
   addModalMode.value = mode;
   showAddModal.value = true;
 }
 
+/**
+ * Navigates to the dashboard view with the specified server selected and tab active.
+ *
+ * @param {string} serverId - The ID of the server to select
+ * @param {string} tabName - The name of the tab to activate ('logs', 'config', 'tools')
+ *
+ * @example
+ * ```typescript
+ * navigateToTab('server-123', 'logs'); // Navigate to logs tab for server-123
+ * ```
+ */
 function navigateToTab(serverId: string, tabName: string) {
   store.selectServer(serverId);
   // Navigate to dashboard where ServerDetail is shown with the specified tab
   router.push({ name: 'dashboard', query: { tab: tabName } });
 }
 
+/**
+ * Handles clicking on a server card to navigate to the appropriate detail view.
+ *
+ * For online servers, navigates to the logs tab. For offline servers, navigates to the config tab.
+ *
+ * @param {Server} server - The server object that was clicked
+ *
+ * @example
+ * ```typescript
+ * handleCardClick(selectedServer); // Navigate based on server status
+ * ```
+ */
 function handleCardClick(server: Server) {
   if (server.status === 'online') {
     navigateToTab(server.id, 'logs');
@@ -247,6 +312,21 @@ function handleCardClick(server: Server) {
   }
 }
 
+/**
+ * Starts the specified server instance.
+ *
+ * This function calls the store's startServer method and provides user feedback
+ * via success/error messages.
+ *
+ * @param {Server} server - The server to start
+ * @async
+ * @throws {Error} If the server fails to start
+ *
+ * @example
+ * ```typescript
+ * await startServer(selectedServer); // Start the selected server
+ * ```
+ */
 async function startServer(server: Server) {
   try {
     await store.startServer(server.id);
@@ -256,6 +336,21 @@ async function startServer(server: Server) {
   }
 }
 
+/**
+ * Stops the specified server instance.
+ *
+ * This function calls the store's stopServer method and provides user feedback
+ * via success/error messages.
+ *
+ * @param {Server} server - The server to stop
+ * @async
+ * @throws {Error} If the server fails to stop
+ *
+ * @example
+ * ```typescript
+ * await stopServer(selectedServer); // Stop the selected server
+ * ```
+ */
 async function stopServer(server: Server) {
   try {
     await store.stopServer(server.id);
@@ -265,6 +360,21 @@ async function stopServer(server: Server) {
   }
 }
 
+/**
+ * Restarts the specified server instance.
+ *
+ * This function first stops the server, then starts it again, providing user feedback
+ * via success/error messages.
+ *
+ * @param {Server} server - The server to restart
+ * @async
+ * @throws {Error} If the server fails to restart
+ *
+ * @example
+ * ```typescript
+ * await restartServer(selectedServer); // Restart the selected server
+ * ```
+ */
 async function restartServer(server: Server) {
   try {
     await store.stopServer(server.id);

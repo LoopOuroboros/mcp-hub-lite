@@ -36,6 +36,34 @@ import {
   type FindToolsParams
 } from '@models/system-tools.constants.js';
 
+/**
+ * MCP Gateway service that aggregates tools from multiple MCP servers and provides a unified interface.
+ *
+ * This service acts as the central hub for MCP (Model Context Protocol) communication,
+ * exposing both system tools and aggregated tools from connected MCP servers through
+ * a single stdio transport endpoint. It handles tool name resolution, collision detection,
+ * request routing, and comprehensive error handling.
+ *
+ * Key features:
+ * - Tool name collision resolution with server hash suffixing
+ * - Automatic CWD injection for tool calls
+ * - Comprehensive logging and OpenTelemetry tracing
+ * - System tools for server management and discovery
+ * - Resource support for MCP resources protocol
+ * - Error code mapping and standardized error responses
+ *
+ * The gateway supports both direct system tool calls and proxied tool calls to
+ * connected MCP servers, providing a seamless unified interface for clients.
+ *
+ * @example
+ * ```typescript
+ * const gateway = new GatewayService();
+ * await gateway.start(); // Start on stdio transport
+ *
+ * // Or create connection server for HTTP transport
+ * const server = gateway.createConnectionServer();
+ * ```
+ */
 export class GatewayService {
   private server: McpServer;
   private transport: StdioServerTransport | null = null;
@@ -719,9 +747,29 @@ export class GatewayService {
   }
 
   /**
-   * Generate gateway tools list with consistent naming and mapping logic
-   * This function is used by both tools/list MCP request handler and
-   * hub-tools.service listAllToolsInServer method for mcp-hub-lite server
+   * Generates a unified list of gateway tools with proper naming and collision resolution.
+   *
+   * This method creates a comprehensive tool list that includes both system tools and
+   * aggregated tools from all connected MCP servers. It implements sophisticated
+   * naming collision resolution by:
+   * - Adding server hash suffixes to non-unique tool names
+   * - Handling conflicts with system tool names
+   * - Ensuring names don't exceed 60 characters
+   * - Providing final uniqueness guarantees through counter suffixes
+   *
+   * The method also populates the provided toolMap with mappings from gateway tool names
+   * to actual server IDs and real tool names for efficient routing during tool execution.
+   *
+   * @param {Map<string, { serverId: string; realToolName: string }>} toolMap - Map to populate with gateway tool name to actual tool mappings
+   * @returns {Array<{ name: string; description: string; inputSchema?: JsonSchema; annotations?: ToolAnnotations }>}
+   * Array of gateway tools with resolved names and descriptions
+   *
+   * @example
+   * ```typescript
+   * const toolMap = new Map();
+   * const gatewayTools = gateway.generateGatewayToolsList(toolMap);
+   * console.log(`Generated ${gatewayTools.length} gateway tools`);
+   * ```
    */
   public generateGatewayToolsList(
     toolMap: Map<string, { serverId: string; realToolName: string }>
@@ -847,8 +895,20 @@ export class GatewayService {
   }
 
   /**
-   * Safely format tool arguments for logging
-   * Handles circular references and limits output size
+   * Safely formats tool arguments for logging with circular reference handling and size limits.
+   *
+   * This method provides safe JSON serialization of tool arguments for logging purposes,
+   * handling circular references by replacing them with '[Circular Reference]' and
+   * truncating large strings and outputs to prevent log noise and performance issues.
+   *
+   * @param {unknown} args - Tool arguments to format
+   * @returns {string} Safe formatted string representation of the arguments
+   *
+   * @example
+   * ```typescript
+   * const formatted = gateway.formatToolArgs({ param: 'value', circular: obj });
+   * logger.info(`Tool args: ${formatted}`);
+   * ```
    */
   private formatToolArgs(args: unknown): string {
     try {
@@ -881,7 +941,20 @@ export class GatewayService {
   }
 
   /**
-   * Safely format tool response for logging
+   * Safely formats tool responses for logging with size limits.
+   *
+   * This method provides safe JSON serialization of tool responses for logging purposes,
+   * truncating large outputs to prevent log noise and performance issues while maintaining
+   * readability through pretty-printed JSON formatting.
+   *
+   * @param {unknown} response - Tool response to format
+   * @returns {string} Safe formatted string representation of the response
+   *
+   * @example
+   * ```typescript
+   * const formatted = gateway.formatToolResponse({ result: 'success', data: largeObject });
+   * logger.info(`Tool response: ${formatted}`);
+   * ```
    */
   private formatToolResponse(response: unknown): string {
     try {
@@ -900,6 +973,22 @@ export class GatewayService {
     }
   }
 
+  /**
+   * Creates a new MCP server instance with all handlers registered for connection-based transports.
+   *
+   * This method creates a fresh MCP server instance with the same capabilities and request
+   * handlers as the main gateway server, but with its own local toolMap for session isolation.
+   * It's primarily used for HTTP-based transports where each client connection needs its own
+   * server instance.
+   *
+   * @returns {McpServer} New MCP server instance with all handlers registered
+   *
+   * @example
+   * ```typescript
+   * const server = gateway.createConnectionServer();
+   * await server.connect(transport); // Connect to specific transport
+   * ```
+   */
   public createConnectionServer(): McpServer {
     const server = new McpServer(
       {
@@ -922,6 +1011,21 @@ export class GatewayService {
     return server;
   }
 
+  /**
+   * Starts the MCP gateway service on stdio transport.
+   *
+   * This method initializes the stdio transport and connects the main MCP server to it,
+   * making the gateway available for communication through standard input/output streams.
+   * The method is wrapped in OpenTelemetry tracing for observability and monitoring.
+   *
+   * @returns {Promise<void>} Resolves when the gateway is successfully started on stdio
+   *
+   * @example
+   * ```typescript
+   * await gateway.start();
+   * console.log('MCP Gateway is now running on stdio');
+   * ```
+   */
   public async start() {
     return withSpan<void>(
       'mcp.gateway.start',
