@@ -8,8 +8,11 @@ export const SessionStateSchema = z.object({
   sessionId: z.string(),
   clientName: z.string().optional(),
   clientVersion: z.string().optional(),
+  protocolVersion: z.string().optional(),
   cwd: z.string().optional(),
   project: z.string().optional(),
+  userAgent: z.string().optional(),
+  ip: z.string().optional(),
   createdAt: z.number(),
   lastAccessedAt: z.number(),
   metadata: z.record(z.string(), z.any()).default({})
@@ -54,7 +57,9 @@ export function createEmptySessionStore(): SessionStore {
  * @example
  * ```typescript
  * // Validate data from a JSON file
- * const rawData = JSON.parse(fs.readFileSync('sessions.json', 'utf-8'));
+ * // Note: In practice, sessions are stored in a directory structure:
+ * // - sessions/index.json (contains session ID list)
+ * // - sessions/{sessionId}.json (individual session files)
  * const validatedStore = validateSessionStore(rawData);
  *
  * // Use the validated store

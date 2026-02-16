@@ -29,9 +29,9 @@ const router = createRouter({
           component: () => import('@views/ResourcesView.vue')
         },
         {
-          path: 'clients',
-          name: 'clients',
-          component: () => import('@views/ClientsView.vue')
+          path: 'sessions',
+          name: 'sessions',
+          component: () => import('@views/SessionsView.vue')
         },
         {
           path: 'servers/:name/resources/detail',

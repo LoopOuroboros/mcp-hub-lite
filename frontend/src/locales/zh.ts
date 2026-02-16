@@ -26,7 +26,7 @@ export default {
   sidebar: {
     title: 'MCP 服务器管理器',
     dashboard: '仪表板',
-    clients: '客户端',
+    sessions: '会话',
     servers: 'MCP 服务器',
     resources: 'MCP 资源网关',
     addServer: '添加新服务器',
@@ -46,20 +46,18 @@ export default {
     uri: 'URI',
     mimeType: 'MIME 类型'
   },
-  clients: {
-    title: '已连接的客户端',
+  sessions: {
+    title: '持久化会话',
     refresh: '刷新',
     sessionId: '会话 ID',
-    name: '客户端名称',
+    clientName: '客户端名称',
     clientVersion: '客户端版本',
     protocolVersion: '协议版本',
     userAgent: '用户代理',
-    ip: 'IP 地址',
     cwd: '工作目录',
     project: '项目',
-    roots: '根目录',
-    lastSeen: '最后活跃',
-    noRoots: '-'
+    createdAt: '创建时间',
+    lastAccessedAt: '最后访问时间'
   },
   settings: {
     title: '系统设置',
@@ -79,6 +77,7 @@ export default {
     logLevel: '日志级别',
     logRotation: '日志轮转',
     maxAge: '最大保留时间 (天)',
+    jsonPretty: '日志中JSON格式化',
     security: '安全设置',
     allowedNetworks: '允许的网络',
     allowedNetworksHint: '输入 IP CIDR (如 192.168.1.0/24)。按回车添加。',

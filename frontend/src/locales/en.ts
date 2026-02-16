@@ -26,7 +26,7 @@ export default {
   sidebar: {
     title: 'MCP Server Manager',
     dashboard: 'Dashboard',
-    clients: 'Clients',
+    sessions: 'Sessions',
     servers: 'MCP Servers',
     resources: 'MCP Resources',
     addServer: 'Add New Server',
@@ -46,20 +46,18 @@ export default {
     uri: 'URI',
     mimeType: 'MIME Type'
   },
-  clients: {
-    title: 'Connected Clients',
+  sessions: {
+    title: 'Persisted Sessions',
     refresh: 'Refresh',
     sessionId: 'Session ID',
-    name: 'Client Name',
+    clientName: 'Client Name',
     clientVersion: 'Client Version',
     protocolVersion: 'Protocol Version',
     userAgent: 'User Agent',
-    ip: 'IP Address',
     cwd: 'CWD',
     project: 'Project',
-    roots: 'Roots',
-    lastSeen: 'Last Seen',
-    noRoots: '-'
+    createdAt: 'Created At',
+    lastAccessedAt: 'Last Accessed At'
   },
   settings: {
     title: 'System Settings',
@@ -79,6 +77,7 @@ export default {
     logLevel: 'Log Level',
     logRotation: 'Log Rotation',
     maxAge: 'Max Age (Days)',
+    jsonPretty: 'Pretty JSON in logs',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',
     allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',

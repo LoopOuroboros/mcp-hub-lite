@@ -23,7 +23,7 @@ Router 模块负责前端路由管理，使用 Vue Router 实现单页应用（S
 - `/` - 主页 (HomeView)
 - `/servers` - 服务器仪表板 (ServerDashboard)
 - `/tools` - 工具列表 (ToolsView)
-- `/clients` - 客户端管理 (ClientsView)
+- `/sessions` - 会话管理 (SessionsView)
 - `/settings` - 系统设置 (SettingsView)
 
 **依赖**:
@@ -39,7 +39,7 @@ router/
     ├── depends on: ../views/HomeView.vue
     ├── depends on: ../views/ServerDashboard.vue
     ├── depends on: ../views/ToolsView.vue
-    ├── depends on: ../views/ClientsView.vue
+    ├── depends on: ../views/SessionsView.vue
     └── depends on: ../views/SettingsView.vue
 ```
 
@@ -78,6 +78,10 @@ A: 在 `router/index.ts` 中使用 Vue Router 的导航守卫：
 | `router/index.ts` | Vue Router 配置 |
 
 ## 变更记录 (Changelog)
+
+### 2026-02-16
+
+- 将 ClientsView 重命名为 SessionsView，路由路径从 `/clients` 更新为 `/sessions`
 
 ### 2026-01-29
 

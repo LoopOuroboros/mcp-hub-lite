@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { LogLevel } from '@shared-types/common.types.js';
+import { stringifyForLogging } from './json-utils.js';
 
 export interface LogContext {
   pid?: number;
@@ -85,6 +86,9 @@ export class Logger {
 
     // Enable session debug logging for development
     process.env.SESSION_DEBUG = '1';
+
+    // Enable JSON pretty logging for development
+    process.env.LOG_JSON_PRETTY = '1';
 
     const logDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logDir)) {
@@ -266,7 +270,7 @@ export class Logger {
       }
       // For other objects, we should convert them to JSON string
       try {
-        return JSON.stringify(error);
+        return stringifyForLogging(error);
       } catch {
         return String(error);
       }

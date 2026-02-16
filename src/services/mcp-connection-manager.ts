@@ -11,6 +11,7 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { ServerConfig } from '@config/config.schema.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
+import { stringifyForLogging } from '@utils/json-utils.js';
 
 /**
  * Represents the connection status and metadata of an MCP server instance.
@@ -1009,7 +1010,7 @@ class McpConnectionManager {
     return withSpan<unknown>(
       'mcp.tool.call',
       createMcpSpanOptions('call', serverId, toolName, {
-        'mcp.tool.args': JSON.stringify(args)
+        'mcp.tool.args': stringifyForLogging(args)
       }),
       async () => {
         const client = this.clients.get(serverId);

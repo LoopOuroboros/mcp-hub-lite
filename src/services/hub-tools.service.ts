@@ -9,6 +9,7 @@ import type { ServerTransport } from '@shared-types/common.types.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger } from '@utils/logger.js';
+import { stringifyForLogging } from '@utils/json-utils.js';
 import {
   SYSTEM_TOOL_NAMES,
   LIST_SERVERS_TOOL,
@@ -757,7 +758,7 @@ export class HubToolsService {
                   ? Record<string, { tools: Tool[] }>
                   : never
   > {
-    logger.info(`System tool called: ${toolName}, args=${JSON.stringify(toolArgs)}`, {
+    logger.info(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
       subModule: 'HUB-TOOLS'
     });
 
@@ -893,7 +894,7 @@ export class HubToolsService {
     }
 
     logger.info(
-      `Tool call received: serverName=${serverName}, toolName=${toolName}, args=${JSON.stringify(toolArgs)}`,
+      `Tool call received: serverName=${serverName}, toolName=${toolName}, args=${stringifyForLogging(toolArgs)}`,
       { subModule: 'HUB-TOOLS' }
     );
 

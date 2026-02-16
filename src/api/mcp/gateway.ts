@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
+import { stringifyForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
 import type { ClientContext } from '@shared-types/client.types';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -234,7 +235,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
     if (request.body) {
       try {
-        const preview = JSON.stringify(request.body);
+        const preview = stringifyForLogging(request.body);
         logMsg += ` Body: ${preview}`;
       } catch {
         logMsg += ` Body: [Unserializable]`;
@@ -327,7 +328,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
                   const jsonData = dataMatch[1].trim();
                   try {
                     const parsed = JSON.parse(jsonData);
-                    const formattedData = JSON.stringify(parsed, null, 2);
+                    const formattedData = stringifyForLogging(parsed);
                     logResponse = `event: message\ndata: ${formattedData}`;
                   } catch {
                     logResponse = responseBuffer;
@@ -338,7 +339,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
               } else {
                 // Try to format other JSON responses to improve readability
                 const parsed = JSON.parse(responseBuffer);
-                logResponse = JSON.stringify(parsed, null, 2);
+                logResponse = stringifyForLogging(parsed);
               }
             }
           } catch {
@@ -385,7 +386,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
             if (headers) {
               logger.debug(
-                `MCP Gateway error response: ${statusCode} ${statusMessage || ''} Headers: ${JSON.stringify(headers)}`,
+                `MCP Gateway error response: ${statusCode} ${statusMessage || ''} Headers: ${stringifyForLogging(headers)}`,
                 { subModule: 'Communication' }
               );
             } else {

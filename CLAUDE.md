@@ -56,6 +56,7 @@ graph TD
     A["(根) MCP Hub Lite"] --> B["src/"];
     A --> C["frontend/"];
     A --> D["tests/"];
+    A --> E["shared/"];
 
     B --> B1["api/"];
     B --> B2["services/"];
@@ -77,6 +78,9 @@ graph TD
     D --> D2["integration/"];
     D --> D3["contract/"];
 
+    E --> E1["models/"];
+    E --> E2["types/"];
+
     click B1 "./src/api/CLAUDE.md" "查看 API 模块文档"
     click B2 "./src/services/CLAUDE.md" "查看 Services 模块文档"
     click B3 "./src/models/CLAUDE.md" "查看 Models 模块文档"
@@ -95,6 +99,9 @@ graph TD
     click D1 "./tests/unit/CLAUDE.md" "查看 Unit Tests 文档"
     click D2 "./tests/integration/CLAUDE.md" "查看 Integration Tests 文档"
     click D3 "./tests/contract/CLAUDE.md" "查看 Contract Tests 文档"
+
+    click E1 "./shared/CLAUDE.md" "查看 Shared Models 文档"
+    click E2 "./shared/CLAUDE.md" "查看 Shared Types 文档"
 ```
 
 ## 模块索引
@@ -116,6 +123,7 @@ graph TD
 | `frontend/src/stores/`     | Pinia 状态管理                                                 | TypeScript     |
 | `frontend/src/router/`     | Vue Router 路由配置                                            | TypeScript     |
 | `frontend/src/i18n/`       | 国际化支持                                                     | TypeScript     |
+| `shared/`                  | 前后端共享的模型和类型定义                                     | TypeScript     |
 | `tests/unit/`              | 单元测试                                                       | TypeScript     |
 | `tests/integration/`       | 集成测试                                                       | TypeScript     |
 | `tests/contract/`          | 契约测试                                                       | TypeScript     |
@@ -152,7 +160,7 @@ graph TD
 **相关文件**:
 
 - `src/services/mcp-session-manager.ts` - 会话管理器实现
-- `src/models/session.model.ts` - 会话数据模型
+- `shared/models/session.model.ts` - 会话数据模型（前后端共享）
 - `src/api/web/sessions.ts` - 会话管理 API
 
 ### 传输协议支持

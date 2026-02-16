@@ -69,7 +69,7 @@ export async function configRoutes(fastify: FastifyInstance) {
       const config = configManager.getConfig();
       reply.header('Content-Disposition', 'attachment; filename=mcp-hub-config.json');
       reply.header('Content-Type', 'application/json');
-      return reply.send(JSON.stringify(config, null, 2));
+      return reply.send(JSON.stringify(config));
     } catch (error: unknown) {
       const errorObj = error as Error;
       return reply.code(500).send({

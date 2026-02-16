@@ -103,6 +103,10 @@
                 <el-form-item :label="$t('settings.maxAge')">
                   <el-input-number v-model="maxAgeDays" :min="1" class="w-[150px]" />
                 </el-form-item>
+
+                <el-form-item :label="$t('settings.jsonPretty')">
+                  <el-switch v-model="config.system.logging.jsonPretty" />
+                </el-form-item>
               </el-form>
             </div>
           </el-tab-pane>

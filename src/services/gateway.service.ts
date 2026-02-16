@@ -35,6 +35,7 @@ import {
   type CallToolParams,
   type FindToolsParams
 } from '@models/system-tools.constants.js';
+import { stringifyForLogging, stringifyForLoggingWithReplacer } from '@utils/json-utils.js';
 
 /**
  * MCP Gateway service that aggregates tools from multiple MCP servers and provides a unified interface.
@@ -498,7 +499,7 @@ export class GatewayService {
           contents: [
             {
               type: 'text',
-              text: typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+              text: typeof content === 'string' ? content : stringifyForLogging(content)
             }
           ]
         };
@@ -636,7 +637,7 @@ export class GatewayService {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(result, null, 2)
+                text: stringifyForLogging(result)
               }
             ]
           };
@@ -927,7 +928,7 @@ export class GatewayService {
         return value;
       };
 
-      const formatted = JSON.stringify(args, replacer, 2);
+      const formatted = stringifyForLoggingWithReplacer(args, replacer);
       // Limit total output length
       if (formatted.length > 2000) {
         return formatted.substring(0, 2000) + '... [truncated]';
@@ -958,7 +959,7 @@ export class GatewayService {
    */
   private formatToolResponse(response: unknown): string {
     try {
-      const formatted = JSON.stringify(response, null, 2);
+      const formatted = stringifyForLogging(response);
       // Limit total output length
       if (formatted.length > 2000) {
         return formatted.substring(0, 2000) + '... [truncated]';

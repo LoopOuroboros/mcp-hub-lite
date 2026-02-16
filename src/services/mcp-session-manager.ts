@@ -2,13 +2,14 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { gateway } from '@services/gateway.service.js';
 import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
+import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
 import {
   SessionState,
   SessionStore,
   SessionStateSchema,
   createEmptySessionStore
-} from '@models/session.model.js';
+} from '@shared-models/session.model.js';
 import { clientTrackerService } from './client-tracker.service.js';
 import * as fs from 'fs';
 import path from 'path';
@@ -80,14 +81,14 @@ export class McpSessionManager {
   }
 
   constructor() {
-    // Initialize sessions file path
+    // Initialize sessions directory path
     const configPath =
       process.env.MCP_HUB_CONFIG_PATH ||
       path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
     const mcpHubDir = path.dirname(path.dirname(configPath)); // Get ~/.mcp-hub-lite directory
-    this.sessionsPath = path.join(mcpHubDir, 'sessions.json');
+    this.sessionsPath = path.join(mcpHubDir, 'sessions');
 
-    logger.info(`Using sessions file: ${this.sessionsPath}`, { subModule: 'SessionManager' });
+    logger.info(`Using sessions directory: ${this.sessionsPath}`, { subModule: 'SessionManager' });
 
     // Start cleanup interval
     setInterval(() => this.cleanup(), 60000);
@@ -193,17 +194,15 @@ export class McpSessionManager {
    */
   private async loadSessionStore(): Promise<SessionStore> {
     try {
-      const sessionsDir = path.join(path.dirname(this.sessionsPath), 'sessions');
-
-      if (!fs.existsSync(sessionsDir)) {
+      if (!fs.existsSync(this.sessionsPath)) {
         if (process.env.SESSION_DEBUG) {
           logger.debug('Sessions directory not found, creating new one', { subModule: 'Session' });
         }
-        fs.mkdirSync(sessionsDir, { recursive: true });
+        fs.mkdirSync(this.sessionsPath, { recursive: true });
         return createEmptySessionStore();
       }
 
-      const indexPath = path.join(sessionsDir, 'index.json');
+      const indexPath = path.join(this.sessionsPath, 'index.json');
       if (!fs.existsSync(indexPath)) {
         if (process.env.SESSION_DEBUG) {
           logger.debug('Sessions index file not found, creating new one', { subModule: 'Session' });
@@ -222,7 +221,7 @@ export class McpSessionManager {
       const store: SessionStore = createEmptySessionStore();
 
       for (const sessionId of index.sessions) {
-        const sessionPath = path.join(sessionsDir, `${sessionId}.json`);
+        const sessionPath = path.join(this.sessionsPath, `${sessionId}.json`);
         if (fs.existsSync(sessionPath)) {
           try {
             const sessionContent = fs.readFileSync(sessionPath, 'utf-8');
@@ -267,20 +266,18 @@ export class McpSessionManager {
    */
   private async saveSessionStore(store: SessionStore): Promise<void> {
     try {
-      const sessionsDir = path.join(path.dirname(this.sessionsPath), 'sessions');
-
-      if (!fs.existsSync(sessionsDir)) {
-        fs.mkdirSync(sessionsDir, { recursive: true });
+      if (!fs.existsSync(this.sessionsPath)) {
+        fs.mkdirSync(this.sessionsPath, { recursive: true });
       }
 
       // Save individual session files
       for (const [sessionId, state] of Object.entries(store.sessions)) {
-        const sessionPath = path.join(sessionsDir, `${sessionId}.json`);
+        const sessionPath = path.join(this.sessionsPath, `${sessionId}.json`);
         fs.writeFileSync(sessionPath, JSON.stringify(state, null, 2));
       }
 
       // Save index file
-      const indexPath = path.join(sessionsDir, 'index.json');
+      const indexPath = path.join(this.sessionsPath, 'index.json');
       fs.writeFileSync(
         indexPath,
         JSON.stringify(
@@ -434,8 +431,11 @@ export class McpSessionManager {
     return {
       clientName: clientInfo?.clientName,
       clientVersion: clientInfo?.clientVersion,
+      protocolVersion: clientInfo?.protocolVersion,
       cwd: clientInfo?.cwd,
-      project: clientInfo?.project
+      project: clientInfo?.project,
+      userAgent: clientInfo?.userAgent,
+      ip: clientInfo?.ip
     };
   }
 
@@ -465,8 +465,11 @@ export class McpSessionManager {
       sessionId,
       clientName: clientMetadata.clientName || existing?.clientName,
       clientVersion: clientMetadata.clientVersion || existing?.clientVersion,
+      protocolVersion: clientMetadata.protocolVersion || existing?.protocolVersion,
       cwd: clientMetadata.cwd || existing?.cwd,
       project: clientMetadata.project || existing?.project,
+      userAgent: clientMetadata.userAgent || existing?.userAgent,
+      ip: clientMetadata.ip || existing?.ip,
       createdAt: existing?.createdAt || now,
       lastAccessedAt: now,
       metadata: existing?.metadata || {}
@@ -545,9 +548,35 @@ export class McpSessionManager {
    * ```
    */
   public async getSession(sessionId: string, requireInitialize: boolean = true): Promise<Session> {
+    if (process.env.SESSION_DEBUG) {
+      const hasSessionState = this.sessionStates.has(sessionId);
+      const hasSessionObject = this.sessions.has(sessionId);
+      logger.debug(
+        `getSession called for ${sessionId} (requireInitialize: ${requireInitialize}). State exists: ${hasSessionState}, Object exists: ${hasSessionObject}`,
+        { subModule: 'Session' }
+      );
+    }
+
     let session = this.sessions.get(sessionId);
 
-    if (!session) {
+    // Check if session state exists but session object doesn't (inconsistency case)
+    const hasSessionState = this.sessionStates.has(sessionId);
+    const hasSessionObject = this.sessions.has(sessionId);
+
+    if (hasSessionState && !hasSessionObject) {
+      // Session state exists but session object is missing - recreate session
+      if (process.env.SESSION_DEBUG) {
+        logger.debug(
+          `Session state exists but session object missing for ${sessionId}, recreating...`,
+          {
+            subModule: 'Session'
+          }
+        );
+      }
+      session = await this.createSession(sessionId, requireInitialize);
+      this.sessions.set(sessionId, session);
+    } else if (!session) {
+      // Normal case: create new session
       session = await this.createSession(sessionId, requireInitialize);
       this.sessions.set(sessionId, session);
     }
@@ -561,6 +590,10 @@ export class McpSessionManager {
       session.lastAccessed = now;
       // Also update and persist session state
       this.upsertSessionState(sessionId);
+    }
+
+    if (process.env.SESSION_DEBUG) {
+      logger.debug(`Returning session for ${sessionId}`, { subModule: 'Session' });
     }
 
     return session;
@@ -718,6 +751,8 @@ export class McpSessionManager {
       interface WebStandardTransport {
         sessionId?: string;
         _initialized?: boolean;
+        // Add additional properties that might be needed
+        _session?: string;
       }
 
       interface TransportWithWebStandard {
@@ -728,13 +763,17 @@ export class McpSessionManager {
       if (webTransport) {
         webTransport.sessionId = sessionId;
         webTransport._initialized = true;
+        // Ensure session property is also set if it exists
+        if (webTransport._session !== undefined) {
+          webTransport._session = sessionId;
+        }
         if (process.env.SESSION_DEBUG) {
           logger.debug(
             `Manually initialized transport for session: ${sessionId} (skipInitialize: ${!requireInitialize}, restored: ${!!restoredState})`,
             { subModule: 'Session' }
           );
           logger.debug(
-            `Transport state after manual init - sessionId: ${webTransport.sessionId}, _initialized: ${webTransport._initialized}`,
+            `Transport state after manual init - sessionId: ${webTransport.sessionId}, _initialized: ${webTransport._initialized}, _session: ${webTransport._session}`,
             { subModule: 'Session' }
           );
         }
@@ -742,13 +781,15 @@ export class McpSessionManager {
         logger.error(`Failed to get _webStandardTransport from transport!`, {
           subModule: 'SessionManager'
         });
+        // Even if we can't manually initialize, continue with normal initialization
+        // The transport will be initialized when the first request arrives
       }
     }
 
     // Communication debug logs: always set, controlled by logger.debug output level
     transport.onmessage = (message) => {
       try {
-        const messageStr = JSON.stringify(message);
+        const messageStr = stringifyForLogging(message);
         logger.debug(`MCP message received: ${messageStr}`, { subModule: 'Communication' });
       } catch {
         logger.debug(`MCP message received: [Unserializable]`, { subModule: 'Communication' });
@@ -760,14 +801,14 @@ export class McpSessionManager {
     transport.send = async (message, options) => {
       try {
         // Log response messages, simplify tools/list responses
-        let logMessage = JSON.stringify(message);
+        let logMessage = stringifyForLogging(message);
         if (isToolsListResponse(logMessage)) {
           logMessage = simplifyToolsListResponse(logMessage);
         } else {
           try {
             // Try to format other JSON responses to improve readability
             const parsed = JSON.parse(logMessage);
-            logMessage = JSON.stringify(parsed, null, 2);
+            logMessage = stringifyForLogging(parsed);
           } catch {
             // If not valid JSON, output as-is and truncate long content
             logMessage =

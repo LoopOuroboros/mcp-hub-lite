@@ -39,6 +39,7 @@ export interface SystemConfig {
     logging: {
       level: string;
       rotationAge: string;
+      jsonPretty: boolean;
     };
   };
   security: {
@@ -69,7 +70,8 @@ export const useSystemStore = defineStore('system', () => {
       theme: 'system',
       logging: {
         level: 'info',
-        rotationAge: '7d'
+        rotationAge: '7d',
+        jsonPretty: true
       }
     },
     security: {

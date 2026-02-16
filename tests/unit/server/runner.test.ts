@@ -90,7 +90,8 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -138,7 +139,8 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -187,7 +189,8 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -250,7 +253,8 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -320,7 +324,8 @@ describe('Server Runner', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -412,7 +417,8 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -479,7 +485,8 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -542,7 +549,8 @@ describe('Server Runner', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {

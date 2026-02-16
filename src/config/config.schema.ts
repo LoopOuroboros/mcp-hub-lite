@@ -34,11 +34,13 @@ export const ServerInstanceConfigSchema = z.object({
 export const LoggingConfigSchema = z
   .object({
     level: z.custom<LogLevel>().default('info'),
-    rotationAge: z.string().default('7d') // e.g., "7d", "30d"
+    rotationAge: z.string().default('7d'), // e.g., "7d", "30d"
+    jsonPretty: z.boolean().default(true) // Enable pretty JSON formatting in logs
   })
   .default({
     level: 'info',
-    rotationAge: '7d'
+    rotationAge: '7d',
+    jsonPretty: true
   });
 
 /**
@@ -115,7 +117,8 @@ export const SystemConfigSchema = z.object({
       theme: 'system',
       logging: {
         level: 'info',
-        rotationAge: '7d'
+        rotationAge: '7d',
+        jsonPretty: true
       }
     }),
   security: SecurityConfigSchema,

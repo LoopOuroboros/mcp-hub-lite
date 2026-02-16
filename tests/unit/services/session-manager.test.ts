@@ -9,7 +9,7 @@ import {
   SessionStoreSchema,
   createEmptySessionStore,
   validateSessionStore
-} from '@models/session.model.js';
+} from '@shared-models/session.model.js';
 
 // Reset module cache
 vi.resetModules();
@@ -128,7 +128,7 @@ describe('Session Persistence', () => {
     // Create temporary directory
     const testRunId = `session-test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     tempDir = path.join(os.tmpdir(), `mcp-hub-session-test-${testRunId}`);
-    sessionsPath = path.join(tempDir, 'sessions.json');
+    sessionsPath = path.join(tempDir, 'sessions');
 
     fs.mkdirSync(tempDir, { recursive: true });
 
@@ -176,49 +176,83 @@ describe('Session Persistence', () => {
     };
 
     // Ensure directory doesn't exist
-    if (fs.existsSync(path.dirname(sessionsPath))) {
-      fs.rmSync(path.dirname(sessionsPath), { recursive: true, force: true });
+    if (fs.existsSync(sessionsPath)) {
+      fs.rmSync(sessionsPath, { recursive: true, force: true });
     }
 
-    // Simulate save operation
-    const dir = path.dirname(sessionsPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    // Simulate save operation - create sessions directory
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
     }
-    fs.writeFileSync(sessionsPath, JSON.stringify(testStore, null, 2));
 
-    // Verify file was created
+    // Save individual session file
+    const sessionPath = path.join(sessionsPath, 'test-session.json');
+    fs.writeFileSync(sessionPath, JSON.stringify(testStore.sessions['test-session'], null, 2));
+
+    // Save index file
+    const indexPath = path.join(sessionsPath, 'index.json');
+    fs.writeFileSync(indexPath, JSON.stringify({ sessions: ['test-session'] }, null, 2));
+
+    // Verify directory and files were created
     expect(fs.existsSync(sessionsPath)).toBe(true);
-    const savedContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    expect(savedContent.version).toBe('1.0.0');
-    expect(savedContent.sessions['test-session']).toBeDefined();
+    expect(fs.existsSync(sessionPath)).toBe(true);
+    expect(fs.existsSync(indexPath)).toBe(true);
+
+    const savedSession = JSON.parse(fs.readFileSync(sessionPath, 'utf-8'));
+    expect(savedSession.sessionId).toBe('test-session');
+
+    const savedIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+    expect(savedIndex.sessions).toContain('test-session');
   });
 
-  it('should read existing sessions file', () => {
-    const testStore: SessionStore = {
+  it('should read existing sessions directory', () => {
+    // Create sessions directory
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
+    }
+
+    // Create individual session files
+    const session1Path = path.join(sessionsPath, 'session-1.json');
+    const session2Path = path.join(sessionsPath, 'session-2.json');
+
+    fs.writeFileSync(session1Path, JSON.stringify({
+      sessionId: 'session-1',
+      clientName: 'test-client',
+      createdAt: 1234567890,
+      lastAccessedAt: 1234567890,
+      metadata: {}
+    }, null, 2));
+
+    fs.writeFileSync(session2Path, JSON.stringify({
+      sessionId: 'session-2',
+      clientName: 'another-client',
+      createdAt: 9876543210,
+      lastAccessedAt: 9876543210,
+      metadata: {}
+    }, null, 2));
+
+    // Create index file
+    const indexPath = path.join(sessionsPath, 'index.json');
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['session-1', 'session-2']
+    }, null, 2));
+
+    // Simulate load operation
+    const indexContent = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+    const loadedSessions: Record<string, SessionState> = {};
+
+    for (const sessionId of indexContent.sessions) {
+      const sessionPath = path.join(sessionsPath, `${sessionId}.json`);
+      const sessionContent = JSON.parse(fs.readFileSync(sessionPath, 'utf-8'));
+      loadedSessions[sessionId] = sessionContent;
+    }
+
+    const loadedStore: SessionStore = {
       version: '1.0.0',
-      sessions: {
-        'session-1': {
-          sessionId: 'session-1',
-          clientName: 'test-client',
-          createdAt: 1234567890,
-          lastAccessedAt: 1234567890,
-          metadata: {}
-        },
-        'session-2': {
-          sessionId: 'session-2',
-          clientName: 'another-client',
-          createdAt: 9876543210,
-          lastAccessedAt: 9876543210,
-          metadata: {}
-        }
-      }
+      sessions: loadedSessions
     };
 
-    fs.writeFileSync(sessionsPath, JSON.stringify(testStore, null, 2));
-
-    const loadedContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    const validated = validateSessionStore(loadedContent);
+    const validated = validateSessionStore(loadedStore);
 
     expect(validated.version).toBe('1.0.0');
     expect(Object.keys(validated.sessions)).toHaveLength(2);
@@ -226,9 +260,9 @@ describe('Session Persistence', () => {
     expect(validated.sessions['session-2'].clientName).toBe('another-client');
   });
 
-  it('should handle missing sessions file gracefully', () => {
+  it('should handle missing sessions directory gracefully', () => {
     if (fs.existsSync(sessionsPath)) {
-      fs.unlinkSync(sessionsPath);
+      fs.rmSync(sessionsPath, { recursive: true, force: true });
     }
 
     const store = createEmptySessionStore();
@@ -236,95 +270,123 @@ describe('Session Persistence', () => {
     expect(store.sessions).toEqual({});
   });
 
-  it('should handle invalid JSON in sessions file', () => {
-    fs.writeFileSync(sessionsPath, 'invalid json content');
+  it('should handle invalid JSON in session files', () => {
+    // Create sessions directory
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
+    }
 
-    const content = fs.readFileSync(sessionsPath, 'utf-8');
+    // Create invalid session file
+    const sessionPath = path.join(sessionsPath, 'invalid-session.json');
+    fs.writeFileSync(sessionPath, 'invalid json content');
+
+    // Create index file
+    const indexPath = path.join(sessionsPath, 'index.json');
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['invalid-session']
+    }, null, 2));
+
+    const content = fs.readFileSync(sessionPath, 'utf-8');
     expect(() => JSON.parse(content)).toThrow();
 
-    // Verify it returns empty store
+    // Verify it returns empty store when validation fails
     const store = validateSessionStore(null);
     expect(store.version).toBe('1.0.0');
     expect(store.sessions).toEqual({});
   });
 
   it('should update sessions incrementally', () => {
-    // Initial store
-    const initialStore: SessionStore = {
-      version: '1.0.0',
-      sessions: {
-        'session-1': {
-          sessionId: 'session-1',
-          createdAt: 1234567890,
-          lastAccessedAt: 1234567890,
-          metadata: {}
-        }
-      }
-    };
+    // Create sessions directory
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
+    }
 
-    fs.writeFileSync(sessionsPath, JSON.stringify(initialStore, null, 2));
+    // Initial session
+    const session1Path = path.join(sessionsPath, 'session-1.json');
+    fs.writeFileSync(session1Path, JSON.stringify({
+      sessionId: 'session-1',
+      createdAt: 1234567890,
+      lastAccessedAt: 1234567890,
+      metadata: {}
+    }, null, 2));
 
-    // Load and update
-    const loaded = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    const updatedStore: SessionStore = {
-      ...loaded,
-      sessions: {
-        ...loaded.sessions,
-        'session-2': {
-          sessionId: 'session-2',
-          createdAt: 9876543210,
-          lastAccessedAt: 9876543210,
-          metadata: {}
-        }
-      }
-    };
+    // Create initial index
+    const indexPath = path.join(sessionsPath, 'index.json');
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['session-1']
+    }, null, 2));
 
-    fs.writeFileSync(sessionsPath, JSON.stringify(updatedStore, null, 2));
+    // Add second session
+    const session2Path = path.join(sessionsPath, 'session-2.json');
+    fs.writeFileSync(session2Path, JSON.stringify({
+      sessionId: 'session-2',
+      createdAt: 9876543210,
+      lastAccessedAt: 9876543210,
+      metadata: {}
+    }, null, 2));
+
+    // Update index to include both sessions
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['session-1', 'session-2']
+    }, null, 2));
 
     // Verify both sessions exist
-    const finalContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    expect(Object.keys(finalContent.sessions)).toHaveLength(2);
-    expect(finalContent.sessions['session-1']).toBeDefined();
-    expect(finalContent.sessions['session-2']).toBeDefined();
+    expect(fs.existsSync(session1Path)).toBe(true);
+    expect(fs.existsSync(session2Path)).toBe(true);
+
+    const session1Content = JSON.parse(fs.readFileSync(session1Path, 'utf-8'));
+    const session2Content = JSON.parse(fs.readFileSync(session2Path, 'utf-8'));
+
+    expect(session1Content.sessionId).toBe('session-1');
+    expect(session2Content.sessionId).toBe('session-2');
   });
 
   it('should remove sessions when deleted', () => {
-    const initialStore: SessionStore = {
-      version: '1.0.0',
-      sessions: {
-        'session-1': {
-          sessionId: 'session-1',
-          createdAt: 1234567890,
-          lastAccessedAt: 1234567890,
-          metadata: {}
-        },
-        'session-2': {
-          sessionId: 'session-2',
-          createdAt: 9876543210,
-          lastAccessedAt: 9876543210,
-          metadata: {}
-        }
-      }
-    };
+    // Create sessions directory
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
+    }
 
-    fs.writeFileSync(sessionsPath, JSON.stringify(initialStore, null, 2));
+    // Create initial sessions
+    const session1Path = path.join(sessionsPath, 'session-1.json');
+    const session2Path = path.join(sessionsPath, 'session-2.json');
 
-    // Delete session-1
-    const loaded = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { ['session-1']: unused, ...remainingSessions } = loaded.sessions;
-    const updatedStore: SessionStore = {
-      ...loaded,
-      sessions: remainingSessions
-    };
+    fs.writeFileSync(session1Path, JSON.stringify({
+      sessionId: 'session-1',
+      createdAt: 1234567890,
+      lastAccessedAt: 1234567890,
+      metadata: {}
+    }, null, 2));
 
-    fs.writeFileSync(sessionsPath, JSON.stringify(updatedStore, null, 2));
+    fs.writeFileSync(session2Path, JSON.stringify({
+      sessionId: 'session-2',
+      createdAt: 9876543210,
+      lastAccessedAt: 9876543210,
+      metadata: {}
+    }, null, 2));
+
+    // Create initial index
+    const indexPath = path.join(sessionsPath, 'index.json');
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['session-1', 'session-2']
+    }, null, 2));
+
+    // Delete session-1 (remove file and update index)
+    fs.unlinkSync(session1Path);
+
+    // Update index to only include session-2
+    fs.writeFileSync(indexPath, JSON.stringify({
+      sessions: ['session-2']
+    }, null, 2));
 
     // Verify session-1 has been deleted
-    const finalContent = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
-    expect(Object.keys(finalContent.sessions)).toHaveLength(1);
-    expect(finalContent.sessions['session-1']).toBeUndefined();
-    expect(finalContent.sessions['session-2']).toBeDefined();
+    expect(fs.existsSync(session1Path)).toBe(false);
+    expect(fs.existsSync(session2Path)).toBe(true);
+
+    const finalIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+    expect(finalIndex.sessions).toHaveLength(1);
+    expect(finalIndex.sessions).toContain('session-2');
+    expect(finalIndex.sessions).not.toContain('session-1');
   });
 });
 
@@ -419,7 +481,7 @@ describe('McpSessionManager with Real SDK', () => {
     // This test verifies the complete persistence flow - using real SessionStore model
 
     // 1. Create test session store
-    const sessionsPath = path.join(tempDir, 'sessions.json');
+    const sessionsPath = path.join(tempDir, 'sessions');
     const sessionIds = ['session-abc-123', 'session-def-456', 'session-ghi-789'];
 
     const sessions: Record<string, SessionState> = {};

@@ -25,7 +25,8 @@ function createTestConfig(
       theme: 'system' as const,
       logging: {
         level: 'info' as const,
-        rotationAge: rotationConfig.rotationAge ?? '7d'
+        rotationAge: rotationConfig.rotationAge ?? '7d',
+        jsonPretty: true
       }
     },
     security: {

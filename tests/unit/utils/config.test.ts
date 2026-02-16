@@ -176,7 +176,8 @@ describe('ConfigManager', () => {
           theme: 'system',
           logging: {
             level: 'info',
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         }
       });
@@ -234,7 +235,8 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         }
       });
@@ -279,7 +281,8 @@ describe('ConfigManager', () => {
           theme: 'light' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         }
       };
@@ -563,7 +566,8 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {
@@ -596,7 +600,8 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         }
       });
@@ -646,7 +651,8 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         }
       });
@@ -661,7 +667,8 @@ describe('ConfigManager', () => {
           theme: 'system' as const,
           logging: {
             level: 'info' as const,
-            rotationAge: '7d'
+            rotationAge: '7d',
+            jsonPretty: true
           }
         },
         security: {

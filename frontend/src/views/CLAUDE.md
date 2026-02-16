@@ -13,6 +13,7 @@ views/
 ├── HomeView.vue          # 主页视图（根路由容器）
 ├── ServerDashboard.vue   # 服务器仪表板
 ├── ToolsView.vue         # 工具浏览和搜索页面
+├── SessionsView.vue      # 会话管理页面
 └── SettingsView.vue      # 设置页面
 ```
 
@@ -139,6 +140,9 @@ views/
 │   ├── depends on: useServerStore
 │   └── uses API: /web/hub-tools/system, /web/search
 │
+├── SessionsView.vue
+│   └── depends on: useSessionStore
+│
 └── SettingsView.vue
     └── uses API: /web/config
 ```
@@ -173,11 +177,17 @@ A: 使用 `useI18n()` 钩子获取 `t` 函数，然后在模板中使用 `$t('ke
 | `views/HomeView.vue`        | 主页视图           |
 | `views/ServerDashboard.vue` | 服务器仪表板       |
 | `views/ToolsView.vue`       | 工具浏览和搜索页面 |
+| `views/SessionsView.vue`    | 会话管理页面       |
 | `views/SettingsView.vue`    | 设置页面           |
 
 `../router/index.ts` | 路由配置 |
 
 ## 变更记录 (Changelog)
+
+### 2026-02-16
+
+- 添加 SessionsView.vue 会话管理页面
+- 更新路由配置和文档
 
 ### 2026-01-20
 
