@@ -7,12 +7,12 @@ const LOG_FILE = path.join(process.cwd(), 'logs', 'lint.log');
 
 function runEslintCheck() {
   try {
-    // 确保 logs 目录存在
+    // Ensure logs directory exists
     if (!fs.existsSync(path.dirname(LOG_FILE))) {
       fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
     }
 
-    // 运行 eslint 检查
+    // Run eslint check
     console.log('Running eslint check...');
     execSync('npx eslint . --no-color --format stylish --output-file logs/lint.log', {
       encoding: 'utf8',
@@ -34,7 +34,7 @@ function analyzeLintLog() {
 
     const content = fs.readFileSync(LOG_FILE, 'utf-8');
 
-    // 检查日志文件是否为空
+    // Check if log file is empty
     if (!content.trim()) {
       let summary = '\n\n=================================================================\n';
       summary += `LINT ANALYSIS REPORT (${new Date().toLocaleString()})\n`;
@@ -54,21 +54,21 @@ function analyzeLintLog() {
     const messageCounts = new Map();
     let totalIssues = 0;
 
-    // 正则匹配: line:col severity message rule_id(optional)
-    // 示例: 617:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    // Regex pattern: line:col severity message rule_id(optional)
+    // Example: 617:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
     const regex = /^\s*(\d+):(\d+)\s+(error|warning)\s+(.+?)(?:\s{2,}(.*))?$/;
 
     for (const line of lines) {
-      // 移除行首尾空白
+      // Remove leading and trailing whitespace
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
 
       const match = line.match(regex);
       if (match) {
-        // 只提取 message 字段（索引为4）
+        // Extract only the message field (index 4)
         const message = match[4];
 
-        // 清理 message (去除多余空白)
+        // Clean message (remove extra whitespace)
         const cleanMessage = message.trim();
 
         const count = messageCounts.get(cleanMessage) || 0;
@@ -82,7 +82,7 @@ function analyzeLintLog() {
       return;
     }
 
-    // 按出现次数降序排序
+    // Sort by occurrence count in descending order
     const sortedStats = [...messageCounts.entries()].sort((a, b) => b[1] - a[1]);
 
     let summary = '\n\n=================================================================\n';
@@ -95,22 +95,22 @@ function analyzeLintLog() {
     summary += '------+----------------------------------------------------------\n';
 
     for (const [msg, count] of sortedStats) {
-      // 格式化输出，保持对齐
+      // Format output to maintain alignment
       summary += `${count.toString().padEnd(6)}| ${msg}\n`;
     }
     summary += '=================================================================\n';
 
-    // 追加到日志文件末尾
+    // Append to the end of the log file
     fs.appendFileSync(LOG_FILE, summary);
     console.log(`Analysis successfully appended to ${LOG_FILE}`);
 
-    // 同时也输出到控制台以便查看
+    // Also output to console for viewing
     console.log(summary);
   } catch (error) {
     console.error('Error analyzing lint log:', error);
   }
 }
 
-// 执行完整流程
+// Execute complete process
 runEslintCheck();
 analyzeLintLog();
