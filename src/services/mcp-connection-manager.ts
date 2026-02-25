@@ -618,6 +618,17 @@ class McpConnectionManager {
       } else {
         logger.warn(`Failed to list resources for server [${serverId}]:`, error);
       }
+
+      // Even if server doesn't support resources, store empty array in cache to ensure subsequent calls hit cache
+      this.resourceCache.set(serverId, []);
+
+      // Update server status
+      const status = this.serverStatus.get(serverId);
+      if (status) {
+        status.resourcesCount = 0;
+        status.lastCheck = Date.now();
+      }
+
       return [];
     }
   }
@@ -661,7 +672,8 @@ class McpConnectionManager {
    */
   public getTools(serverId: string): Tool[] {
     const tools = this.toolCache.get(serverId) || [];
-    logger.info(`getTools for [${serverId}]: returned ${tools.length} tools`);
+    const fromCache = this.toolCache.has(serverId);
+    logger.debug(`getTools for [${serverId}]: returned ${tools.length} tools (${fromCache ? 'from cache' : 'no cache'})`);
     return tools;
   }
 
@@ -684,7 +696,8 @@ class McpConnectionManager {
    */
   public getResources(serverId: string): Resource[] {
     const resources = this.resourceCache.get(serverId) || [];
-    logger.info(`getResources for [${serverId}]: returned ${resources.length} resources`);
+    const fromCache = this.resourceCache.has(serverId);
+    logger.debug(`getResources for [${serverId}]: returned ${resources.length} resources (${fromCache ? 'from cache' : 'no cache'})`);
     return resources;
   }
 
