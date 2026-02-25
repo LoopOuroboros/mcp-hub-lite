@@ -21,15 +21,19 @@
       >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">URI</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.uri') }}</div>
             <div class="font-mono text-sm break-all select-all">{{ resourceUri }}</div>
           </div>
           <div>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">MIME Type</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.mimeType') }}</div>
             <div class="font-mono text-sm">{{ resourceMimeType }}</div>
           </div>
           <div class="md:col-span-2">
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Server</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.description') }}</div>
+            <div class="text-sm">{{ resourceDescription }}</div>
+          </div>
+          <div class="md:col-span-2">
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.server') }}</div>
             <div class="text-sm">{{ serverName }}</div>
           </div>
         </div>
@@ -42,24 +46,30 @@
         <div
           class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-[#2d2d2d]"
         >
-          <div class="font-medium">Content Preview</div>
+          <div class="font-medium">{{ $t('resources.contentPreview') }}</div>
           <div class="flex gap-2">
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="preview">
-                <el-icon class="mr-1"><View /></el-icon> Preview
+                <el-icon class="mr-1"><View /></el-icon> {{ $t('resources.preview') }}
               </el-radio-button>
               <el-radio-button value="source">
-                <el-icon class="mr-1"><Document /></el-icon> Source
+                <el-icon class="mr-1"><Document /></el-icon> {{ $t('resources.source') }}
               </el-radio-button>
             </el-radio-group>
-            <el-button size="small" :icon="Download" @click="downloadResource">Download</el-button>
+            <el-button size="small" :icon="Download" @click="downloadResource">{{ $t('resources.download') }}</el-button>
           </div>
         </div>
 
         <div class="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#0f172a]">
+          <!-- Resource Description -->
+          <div v-if="resourceDescription && resourceDescription !== 'No description available'" class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">Description</div>
+            <div class="text-sm text-blue-700 dark:text-blue-300">{{ resourceDescription }}</div>
+          </div>
+
           <!-- Loading State -->
           <div v-if="loading" class="h-full flex items-center justify-center text-gray-400">
-            Loading content...
+            {{ $t('resources.loadingContent') }}
           </div>
 
           <!-- Error State -->
@@ -110,17 +120,38 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, View, Document, Download, Warning } from '@element-plus/icons-vue';
 import { useServerStore } from '@stores/server';
+import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
 const router = useRouter();
 const store = useServerStore();
+const { t: $t } = useI18n();
 
 const serverName = computed(() => route.params.name as string);
 const resourceUri = computed(() => route.query.uri as string);
-const resourceName = computed(() => (route.query.name as string) || 'Unknown Resource');
+const resourceName = computed(() => {
+  // 1. 优先使用查询参数
+  if (route.query.name) return route.query.name as string;
+
+  // 2. 从 URI 中提取文件名
+  const uri = route.query.uri as string;
+  if (uri) {
+    const parts = uri.split('/');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && lastPart.length > 0) {
+      return lastPart;
+    }
+  }
+
+  // 3. 最后的默认值
+  return 'Unknown Resource';
+});
 const resourceMimeType = computed(
   () => (route.query.mimeType as string) || 'application/octet-stream'
 );
+const resourceDescription = computed(() => {
+  return route.query.description as string || $t('resources.noDescription');
+});
 
 const loading = ref(false);
 const error = ref<string | null>(null);

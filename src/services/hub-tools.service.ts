@@ -5,7 +5,6 @@ import type { ServerConfig, ServerInstanceConfig } from '@config/config.schema.j
 import type { Tool } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { ServerStatus } from '@shared-types/common.types.js';
-import type { ServerTransport } from '@shared-types/common.types.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger } from '@utils/logger.js';
@@ -240,6 +239,33 @@ function hasValidId(server: unknown): server is { name: string; config: ServerCo
  * ```
  */
 export class HubToolsService {
+  /**
+   * Cached dynamic resource list to avoid regenerating on every request
+   */
+  private generatedResourcesCache: Resource[] | null = null;
+
+  constructor() {
+    // Listen for server status change events to invalidate resource cache
+    eventBus.subscribe(EventTypes.SERVER_STATUS_CHANGE, () => {
+      this.generatedResourcesCache = null;
+    });
+
+    eventBus.subscribe(EventTypes.SERVER_CONNECTED, () => {
+      this.generatedResourcesCache = null;
+    });
+
+    eventBus.subscribe(EventTypes.SERVER_DISCONNECTED, () => {
+      this.generatedResourcesCache = null;
+    });
+
+    eventBus.subscribe(EventTypes.RESOURCES_UPDATED, () => {
+      this.generatedResourcesCache = null;
+    });
+
+    eventBus.subscribe(EventTypes.TOOLS_UPDATED, () => {
+      this.generatedResourcesCache = null;
+    });
+  }
   /**
    * Retrieves the complete list of system tools provided by this service.
    *
@@ -1092,15 +1118,14 @@ export class HubToolsService {
   private generateDynamicResources(): Resource[] {
     const resources: Resource[] = [];
 
-    // Get all connected servers
+    // Use the same access pattern as tools - directly access manager cache
     const servers = hubManager.getAllServers();
 
     for (const server of servers) {
-      if (!hasValidId(server)) {
+      if (!hasValidId(server) || !server.config.enabled) {
         continue;
       }
 
-      // Use selectBestInstance to choose the best instance (currently returns first instance)
       const bestInstance = selectBestInstance(server.name);
       if (!bestInstance || !bestInstance.instance.id) {
         continue;
@@ -1112,12 +1137,12 @@ export class HubToolsService {
       resources.push({
         uri: `hub://servers/${server.name}`,
         name: `Server: ${server.name}`,
-        description: `Connected MCP server: ${server.name}`,
+        description: server.config.description || `Connected MCP server: ${server.name}`,
         mimeType: 'application/json',
         serverId: instanceId
       });
 
-      // Tools resource
+      // Tools resource - only add if server has tools
       const tools = mcpConnectionManager.getTools(instanceId);
       if (tools.length > 0) {
         resources.push({
@@ -1161,7 +1186,13 @@ export class HubToolsService {
    * ```
    */
   async listResources(): Promise<Resource[]> {
-    return this.generateDynamicResources();
+    if (this.generatedResourcesCache) {
+      return this.generatedResourcesCache;
+    }
+
+    const resources = this.generateDynamicResources();
+    this.generatedResourcesCache = resources;
+    return resources;
   }
 
   /**
@@ -1199,8 +1230,6 @@ export class HubToolsService {
         tags: Record<string, string>;
         lastHeartbeat: number;
         uptime: number;
-        type: ServerTransport;
-        enabled: boolean;
       }
     | Tool[]
     | Resource[]
@@ -1241,9 +1270,7 @@ export class HubToolsService {
         resourcesCount: resources.length,
         tags: serverConfig?.tags || {},
         lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
-        uptime: serverInfo.instance.uptime as number,
-        type: (serverConfig?.type || 'unknown') as ServerTransport,
-        enabled: serverConfig?.enabled || false
+        uptime: serverInfo.instance.uptime as number
       };
     } else if (resourceType === 'tools') {
       // Tools list

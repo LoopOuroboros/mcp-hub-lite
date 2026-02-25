@@ -678,9 +678,7 @@ describe('HubToolsService', () => {
         resourcesCount: 1,
         tags: { env: 'test' },
         lastHeartbeat: mockInstance.lastHeartbeat,
-        uptime: mockInstance.uptime,
-        type: 'stdio',
-        enabled: true
+        uptime: mockInstance.uptime
       });
     });
 

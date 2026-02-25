@@ -44,7 +44,15 @@ export default {
     dataResources: '数据资源',
     name: '名称',
     uri: 'URI',
-    mimeType: 'MIME 类型'
+    mimeType: 'MIME 类型',
+    description: '描述',
+    server: '服务器',
+    contentPreview: '内容预览',
+    preview: '预览',
+    source: '源代码',
+    download: '下载',
+    loadingContent: '加载内容中...',
+    noDescription: '无描述信息'
   },
   sessions: {
     title: '持久化会话',
@@ -138,7 +146,9 @@ export default {
       addArg: '添加参数',
       addEnv: '添加环境变量',
       save: '保存配置',
-      editByJson: '通过 JSON 编辑'
+      editByJson: '通过 JSON 编辑',
+      description: '描述',
+      descriptionPlaceholder: '请输入服务器描述'
     },
     logs: {
       autoScroll: '自动滚动',

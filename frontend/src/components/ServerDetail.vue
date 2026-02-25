@@ -95,6 +95,11 @@
               <el-input-number v-model="timeoutInSeconds" :min="0" :step="1" />
             </el-form-item>
 
+            <el-form-item :label="$t('serverDetail.config.description')">
+              <el-input v-model="server.config.description" type="textarea" :rows="3"
+                :placeholder="$t('serverDetail.config.descriptionPlaceholder')" />
+            </el-form-item>
+
             <el-form-item :label="$t('serverDetail.config.autoStart')">
               <el-switch v-model="server.config.enabled" />
             </el-form-item>
@@ -715,7 +720,8 @@ const openEditJson = () => {
 
   const configObj: Record<string, unknown> = {
     env: server.value.config.env || {},
-    enabled: server.value.config.enabled
+    enabled: server.value.config.enabled,
+    description: server.value.config.description
   };
 
   if (server.value.config.timeout) {
@@ -779,6 +785,10 @@ const saveJsonConfig = async () => {
 
       if (newConfig.enabled !== undefined) {
         updatedConfig.enabled = newConfig.enabled;
+      }
+
+      if (newConfig.description !== undefined) {
+        updatedConfig.description = newConfig.description;
       }
 
       await store.updateServer(server.value.id, {

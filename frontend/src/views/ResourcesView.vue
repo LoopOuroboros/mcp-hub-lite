@@ -82,7 +82,7 @@
               </el-table-column>
               <el-table-column label="" width="100" align="right">
                 <template #default="{ row }">
-                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{
+                  <el-button size="small" plain @click="viewResource(serverName, row)">{{
                     $t('action.view')
                   }}</el-button>
                 </template>
@@ -124,7 +124,7 @@
               </el-table-column>
               <el-table-column label="" width="100" align="right">
                 <template #default="{ row }">
-                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{
+                  <el-button size="small" plain @click="viewResource(serverName, row)">{{
                     $t('action.view')
                   }}</el-button>
                 </template>
@@ -166,7 +166,7 @@
               </el-table-column>
               <el-table-column label="" width="100" align="right">
                 <template #default="{ row }">
-                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{
+                  <el-button size="small" plain @click="viewResource(serverName, row)">{{
                     $t('action.view')
                   }}</el-button>
                 </template>
@@ -207,7 +207,7 @@
               </el-table-column>
               <el-table-column label="" width="100" align="right">
                 <template #default="{ row }">
-                  <el-button size="small" plain @click="viewResource(serverName, row.uri)">{{
+                  <el-button size="small" plain @click="viewResource(serverName, row)">{{
                     $t('action.view')
                   }}</el-button>
                 </template>
@@ -284,11 +284,16 @@ function getSystemDataResources(resources: Resource[]) {
   return resources.filter((r) => isDataResource(r.uri));
 }
 
-function viewResource(serverName: string, uri: string) {
+function viewResource(serverName: string, resource: Resource) {
   router.push({
     name: 'resource-detail',
     params: { name: serverName },
-    query: { uri }
+    query: {
+      uri: resource.uri,
+      name: resource.name,
+      mimeType: resource.mimeType,
+      description: resource.description
+    }
   });
 }
 </script>

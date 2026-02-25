@@ -16,7 +16,8 @@ export const ServerConfigSchema = z.object({
   type: z.enum(['stdio', 'sse', 'streamable-http', 'http']).default('stdio'),
   timeout: z.number().default(60000),
   url: z.string().optional(),
-  allowedTools: z.array(z.string()).default([])
+  allowedTools: z.array(z.string()).default([]),
+  description: z.string().optional()
 });
 
 // Server instance schema (each instance contains id, timestamp, hash)

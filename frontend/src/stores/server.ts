@@ -301,6 +301,8 @@ export const useServerStore = defineStore('server', () => {
           payload.allowedTools = serverData.config.allowedTools;
         if (serverData.config.type) payload.type = serverData.config.type;
         if (serverData.config.tags) payload.tags = serverData.config.tags;
+        if (serverData.config.description !== undefined)
+          payload.description = serverData.config.description;
 
         await http.put(`/web/servers/${server.name}`, payload);
       }

@@ -44,7 +44,15 @@ export default {
     dataResources: 'Data Resources',
     name: 'Name',
     uri: 'URI',
-    mimeType: 'MIME Type'
+    mimeType: 'MIME Type',
+    description: 'Description',
+    server: 'Server',
+    contentPreview: 'Content Preview',
+    preview: 'Preview',
+    source: 'Source',
+    download: 'Download',
+    loadingContent: 'Loading content...',
+    noDescription: 'No description available'
   },
   sessions: {
     title: 'Persisted Sessions',
@@ -138,7 +146,9 @@ export default {
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
       save: 'Save Configuration',
-      editByJson: 'Edit By Json'
+      editByJson: 'Edit By Json',
+      description: 'Description',
+      descriptionPlaceholder: 'Enter server description'
     },
     logs: {
       autoScroll: 'Auto-scroll',
