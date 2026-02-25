@@ -177,39 +177,59 @@ export class StdioTransport implements Transport {
         this.onerror?.(error);
       });
 
+      /**
+       * Handles stderr data with common processing logic.
+       *
+       * @param chunk - The stderr data chunk
+       * @param writeToStream - Whether to write data to the PassThrough stream
+       */
+      const handleStderrData = (chunk: Buffer, writeToStream: boolean = false) => {
+        const dataStr = chunk.toString('utf8');
+        // Forward raw stderr data
+        this.onstderr?.(dataStr);
+
+        const trimmedData = dataStr.trim();
+        let logLevel: 'error' | 'warn' | 'info' = 'error';
+
+        // Identify normal information patterns
+        if (
+          trimmedData.includes('Installed') ||
+          trimmedData.includes('running on') ||
+          trimmedData.includes('Server running') ||
+          trimmedData.includes('INFO:') ||
+          trimmedData.includes('Loaded') ||
+          trimmedData.includes('Ready') ||
+          trimmedData.includes('Started')
+        ) {
+          logLevel = 'info';
+        } else if (trimmedData.includes('WARN:') || trimmedData.includes('Warning') || trimmedData.includes('warning')) {
+          logLevel = 'warn';
+        }
+
+        if (this._serverName) {
+          logger.serverLog(logLevel, this._serverName, trimmedData, {
+            pid: this._process?.pid
+          });
+        } else {
+          logger.serverLog(logLevel, 'Unknown Server', trimmedData, {
+            pid: this._process?.pid
+          });
+        }
+
+        // Optionally write to PassThrough stream if configured
+        if (writeToStream) {
+          this._stderrStream?.write(chunk);
+        }
+      };
+
       if (this._stderrStream && this._process.stderr) {
         this._process.stderr.on('data', (chunk: Buffer) => {
-          const dataStr = chunk.toString('utf8');
-          // Forward raw stderr data
-          this.onstderr?.(dataStr);
-
-          if (this._serverName) {
-            logger.serverLog('error', this._serverName, dataStr.trim(), {
-              pid: this._process?.pid
-            });
-          } else {
-            logger.serverLog('error', 'Unknown Server', dataStr.trim(), {
-              pid: this._process?.pid
-            });
-          }
-          // Also write stderr data to PassThrough stream
-          this._stderrStream?.write(chunk);
+          handleStderrData(chunk, true); // Write to PassThrough stream for piped stderr
         });
       } else if (this._process.stderr) {
         // If stderr is not in pipe mode, listen directly
         this._process.stderr.on('data', (chunk: Buffer) => {
-          const dataStr = chunk.toString('utf8');
-          this.onstderr?.(dataStr);
-
-          if (this._serverName) {
-            logger.serverLog('error', this._serverName, dataStr.trim(), {
-              pid: this._process?.pid
-            });
-          } else {
-            logger.serverLog('error', 'Unknown Server', dataStr.trim(), {
-              pid: this._process?.pid
-            });
-          }
+          handleStderrData(chunk, false); // No PassThrough stream for non-piped stderr
         });
       }
     });
