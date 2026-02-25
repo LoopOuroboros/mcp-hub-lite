@@ -2,6 +2,8 @@ import type { ClientContext, ClientInfo, ClientRoot } from '@shared-types/client
 import { logger } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
 import { fileURLToPath } from 'node:url';
+import { configManager } from '@config/config-manager.js';
+import { formatDuration } from '@utils/format-utils.js';
 
 /**
  * Client tracking service that manages client connections and their metadata.
@@ -28,7 +30,10 @@ import { fileURLToPath } from 'node:url';
  */
 class ClientTrackerService {
   private clients: Map<string, ClientInfo> = new Map();
-  private readonly TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout
+  // Use the same timeout as session manager (default 30 minutes)
+  private get TIMEOUT_MS(): number {
+    return configManager.getConfig().security.sessionTimeout;
+  }
 
   /**
    * Creates a new client tracker service instance.
@@ -193,10 +198,9 @@ class ClientTrackerService {
     const now = Date.now();
     for (const [id, info] of this.clients.entries()) {
       if (now - info.lastSeen > this.TIMEOUT_MS) {
+        logger.debug(`Removing stale client: ${id}. Last seen ${formatDuration(now - info.lastSeen)} ago, timeout ${formatDuration(this.TIMEOUT_MS)}`);
         this.clients.delete(id);
-        logger.debug(`Removed stale client: ${id}`);
 
-        // Publish client disconnection event
         eventBus.publish('client-disconnected', {
           timestamp: Date.now(),
           clientId: id,

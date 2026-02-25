@@ -109,6 +109,7 @@ export const SecurityConfigSchema = z.object({
     "connectionTimeout": 30000,
     "idleConnectionTimeout": 300000,
     "sessionTimeout": 1800000,
+    "sessionFlushInterval": 900000,
     "maxConnections": 50
   },
   "servers": {
@@ -145,6 +146,7 @@ export const SecurityConfigSchema = z.object({
 | `connectionTimeout`        | number   | `30000`                                                          | 连接超时（毫秒，最小 1000）                |
 | `idleConnectionTimeout`    | number   | `300000`                                                         | 空闲连接超时（毫秒，最小 30000）           |
 | `sessionTimeout`           | number   | `1800000`                                                        | 会话超时（毫秒，最小 60000，默认 30 分钟） |
+| `sessionFlushInterval`     | number   | `900000`                                                         | 会话刷盘间隔（毫秒，最小 1000，默认 15 分钟） |
 | `maxConnections`           | number   | `50`                                                             | 最大连接数 (1-1000)                        |
 
 ### 服务器配置 (servers)
@@ -219,6 +221,7 @@ export interface SecurityConfig {
   connectionTimeout: number;
   idleConnectionTimeout: number;
   sessionTimeout: number;
+  sessionFlushInterval: number;
   maxConnections: number;
 }
 ```

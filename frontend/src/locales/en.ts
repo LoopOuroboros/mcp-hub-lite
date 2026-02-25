@@ -94,6 +94,7 @@ export default {
     connectionTimeout: 'Connection Timeout',
     idleConnectionTimeout: 'Idle Connection Timeout',
     sessionTimeout: 'Session Timeout',
+    sessionFlushInterval: 'Session Flush Interval',
     fetchError: 'Failed to fetch configuration',
     saveSuccess: 'Configuration saved successfully',
     saveError: 'Failed to save configuration',

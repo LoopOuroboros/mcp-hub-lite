@@ -4,6 +4,7 @@ import { gateway } from '@services/gateway.service.js';
 import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
+import { formatDuration } from '@utils/format-utils.js';
 import {
   SessionState,
   SessionStore,
@@ -28,6 +29,16 @@ import os from 'os';
  * @property {string} sessionId - Unique identifier for the session
  * @property {number} lastAccessed - Timestamp (milliseconds) of last session access
  */
+interface WebStandardTransport {
+  sessionId?: string;
+  _initialized?: boolean;
+  _session?: string;
+}
+
+interface TransportWithWebStandard {
+  _webStandardTransport?: WebStandardTransport;
+}
+
 interface Session {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
@@ -163,12 +174,13 @@ export class McpSessionManager {
       logger.debug(`Session marked as dirty: ${sessionId}`, { subModule: 'Session' });
     }
 
-    // Set one-time delayed flush to avoid frequent writes (5-second delay, batch processing)
+    // Set one-time delayed flush to avoid frequent writes (configurable delay, batch processing)
     if (!this.flushTimeout) {
+      const flushInterval = configManager.getConfig().security.sessionFlushInterval || 5000;
       this.flushTimeout = setTimeout(() => {
         this.flushDirtySessions();
         this.flushTimeout = null;
-      }, 5000);
+      }, flushInterval);
     }
   }
 
@@ -579,6 +591,31 @@ export class McpSessionManager {
       // Normal case: create new session
       session = await this.createSession(sessionId, requireInitialize);
       this.sessions.set(sessionId, session);
+    } else {
+      // Enhanced check: ensure transport session state is correctly initialized
+      // This fixes the "Session not found" error when transport has lost session context
+      const hasRestoredState = this.sessionStates.has(sessionId);
+      const shouldManuallyInitialize = !requireInitialize || hasRestoredState;
+
+      if (shouldManuallyInitialize) {
+        const webTransport = (session.transport as unknown as TransportWithWebStandard)._webStandardTransport;
+        if (webTransport) {
+          // Ensure transport has the correct sessionId and is initialized
+          if (webTransport.sessionId !== sessionId || !webTransport._initialized) {
+            webTransport.sessionId = sessionId;
+            webTransport._initialized = true;
+            if (webTransport._session !== undefined) {
+              webTransport._session = sessionId;
+            }
+            if (process.env.SESSION_DEBUG) {
+              logger.debug(
+                `Reinitialized transport session state for: ${sessionId}`,
+                { subModule: 'Session' }
+              );
+            }
+          }
+        }
+      }
     }
 
     const now = Date.now();
@@ -879,10 +916,7 @@ export class McpSessionManager {
     let cleanedCount = 0;
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
-        logger.info(
-          `Cleaning up stale session: ${sessionId} (last accessed ${(now - session.lastAccessed) / 1000}s ago)`,
-          { subModule: 'SessionManager' }
-        );
+        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`);
         try {
           session.server.close();
           cleanedCount++;

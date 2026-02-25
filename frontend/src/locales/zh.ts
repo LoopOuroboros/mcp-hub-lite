@@ -94,6 +94,7 @@ export default {
     connectionTimeout: '连接超时',
     idleConnectionTimeout: '空闲连接超时',
     sessionTimeout: '会话超时',
+    sessionFlushInterval: '会话刷盘间隔',
     fetchError: '获取配置失败',
     saveSuccess: '配置保存成功',
     saveError: '保存配置失败',

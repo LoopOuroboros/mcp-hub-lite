@@ -59,6 +59,10 @@ export const SecurityConfigSchema = z
       .number()
       .min(60000)
       .default(30 * 60 * 1000), // Default 30 minutes, min 1 minute
+    sessionFlushInterval: z
+      .number()
+      .min(1000)
+      .default(15 * 60 * 1000), // Default 15 minutes, min 1 second
     maxConnections: z.number().min(1).max(1000).default(50)
   })
   .default({
@@ -67,6 +71,7 @@ export const SecurityConfigSchema = z
     connectionTimeout: 30000,
     idleConnectionTimeout: 300000,
     sessionTimeout: 30 * 60 * 1000,
+    sessionFlushInterval: 15 * 60 * 1000,
     maxConnections: 50
   });
 

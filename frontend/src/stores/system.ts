@@ -48,6 +48,7 @@ export interface SystemConfig {
     connectionTimeout: number;
     idleConnectionTimeout: number;
     sessionTimeout: number;
+    sessionFlushInterval: number;
     maxConnections: number;
   };
   observability: {
@@ -80,6 +81,7 @@ export const useSystemStore = defineStore('system', () => {
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
       sessionTimeout: 30 * 60 * 1000,
+      sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
     },
     observability: {

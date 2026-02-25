@@ -100,6 +100,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -149,6 +150,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -199,6 +201,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -263,6 +266,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -334,6 +338,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -427,6 +432,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -495,6 +501,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},
@@ -559,6 +566,7 @@ describe('Server Runner', () => {
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
           sessionTimeout: 30 * 60 * 1000,
+          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
         servers: {},

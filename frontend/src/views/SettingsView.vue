@@ -248,7 +248,7 @@
                         :step="1"
                         class="w-32"
                       />
-                      <el-select v-model="connectionTimeoutUnit" class="w-24">
+                      <el-select v-model="connectionTimeoutUnit" class="w-32">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -269,7 +269,7 @@
                         :step="1"
                         class="w-32"
                       />
-                      <el-select v-model="idleConnectionTimeoutUnit" class="w-24">
+                      <el-select v-model="idleConnectionTimeoutUnit" class="w-32">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -290,7 +290,28 @@
                         :step="1"
                         class="w-32"
                       />
-                      <el-select v-model="sessionTimeoutUnit" class="w-24">
+                      <el-select v-model="sessionTimeoutUnit" class="w-32">
+                        <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                        <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                        <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
+                        <el-option :label="$t('settings.timeUnits.days')" value="days" />
+                      </el-select>
+                    </div>
+                  </div>
+
+                  <!-- Session flush interval -->
+                  <div class="flex items-center gap-4">
+                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                      $t('settings.sessionFlushInterval')
+                    }}</span>
+                    <div class="flex items-center gap-2">
+                      <el-input-number
+                        v-model="sessionFlushIntervalValue"
+                        :min="1"
+                        :step="1"
+                        class="w-32"
+                      />
+                      <el-select v-model="sessionFlushIntervalUnit" class="w-32">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -347,7 +368,13 @@ const unitPriority: TimeUnit[] = ['days', 'hours', 'minutes', 'seconds'];
 const getOptimalUnit = (seconds: number): TimeUnit => {
   for (const unit of unitPriority) {
     const factor = unitFactors[unit];
-    if (seconds >= factor && seconds % factor === 0) {
+    // Correct unit selection logic:
+    // - Use the unit for values greater than or equal to its complete value
+    // - For example: >= 86400 seconds → days
+    // -             >= 3600 seconds → hours
+    // -             >= 60 seconds → minutes
+    // -             < 60 seconds → seconds
+    if (seconds >= factor) {
       return unit;
     }
   }
@@ -367,7 +394,7 @@ const maxAgeDays = computed({
 });
 
 // Connection timeout
-const connectionTimeoutUnit = ref<TimeUnit>('seconds');
+const connectionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.connectionTimeout || 30000) / 1000));
 const connectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.connectionTimeout || 30000;
@@ -385,7 +412,7 @@ const connectionTimeoutValue = computed({
 });
 
 // Idle connection timeout
-const idleConnectionTimeoutUnit = ref<TimeUnit>('seconds');
+const idleConnectionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.idleConnectionTimeout || 300000) / 1000));
 const idleConnectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.idleConnectionTimeout || 300000;
@@ -403,7 +430,7 @@ const idleConnectionTimeoutValue = computed({
 });
 
 // Session timeout
-const sessionTimeoutUnit = ref<TimeUnit>('seconds');
+const sessionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.sessionTimeout || 30 * 60 * 1000) / 1000));
 const sessionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.sessionTimeout || 30 * 60 * 1000;
@@ -419,36 +446,22 @@ const sessionTimeoutValue = computed({
   }
 });
 
-// Update unit selection when config changes
-watch(
-  () => config.value?.security?.connectionTimeout,
-  (ms) => {
-    if (ms) {
-      const seconds = ms / 1000;
-      connectionTimeoutUnit.value = getOptimalUnit(seconds);
+// Session flush interval
+const sessionFlushIntervalUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.sessionFlushInterval || 15 * 60 * 1000) / 1000));
+const sessionFlushIntervalValue = computed({
+  get: () => {
+    const ms = config.value?.security?.sessionFlushInterval || 15 * 60 * 1000;
+    const seconds = ms / 1000;
+    // Automatically select the most appropriate unit
+    const optimalUnit = getOptimalUnit(seconds);
+    return seconds / unitFactors[optimalUnit];
+  },
+  set: (val: number | undefined | null) => {
+    if (config.value?.security && val) {
+      config.value.security.sessionFlushInterval = val * unitFactors[sessionFlushIntervalUnit.value] * 1000;
     }
   }
-);
-
-watch(
-  () => config.value?.security?.idleConnectionTimeout,
-  (ms) => {
-    if (ms) {
-      const seconds = ms / 1000;
-      idleConnectionTimeoutUnit.value = getOptimalUnit(seconds);
-    }
-  }
-);
-
-watch(
-  () => config.value?.security?.sessionTimeout,
-  (ms) => {
-    if (ms) {
-      const seconds = ms / 1000;
-      sessionTimeoutUnit.value = getOptimalUnit(seconds);
-    }
-  }
-);
+});
 
 // Automatically convert values when unit changes
 watch(connectionTimeoutUnit, (newUnit, oldUnit) => {
@@ -475,6 +488,14 @@ watch(sessionTimeoutUnit, (newUnit, oldUnit) => {
   }
 });
 
+watch(sessionFlushIntervalUnit, (newUnit, oldUnit) => {
+  if (oldUnit && newUnit !== oldUnit) {
+    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
+    const currentValue = sessionFlushIntervalValue.value;
+    sessionFlushIntervalValue.value = Math.round(currentValue / factor);
+  }
+});
+
 // Format sample rate for slider tooltip
 const formatSampleRate = (value: number) => {
   return `${Math.round(value * 100)}%`;
@@ -484,6 +505,14 @@ onMounted(async () => {
   // Config is already fetched by App.vue usually
   if (!config.value.host) {
     await systemStore.fetchConfig();
+  }
+
+  // Initialize time units based on actual config values
+  if (config.value?.security) {
+    connectionTimeoutUnit.value = getOptimalUnit((config.value.security.connectionTimeout || 30000) / 1000);
+    idleConnectionTimeoutUnit.value = getOptimalUnit((config.value.security.idleConnectionTimeout || 300000) / 1000);
+    sessionTimeoutUnit.value = getOptimalUnit((config.value.security.sessionTimeout || 30 * 60 * 1000) / 1000);
+    sessionFlushIntervalUnit.value = getOptimalUnit((config.value.security.sessionFlushInterval || 15 * 60 * 1000) / 1000);
   }
 });
 
