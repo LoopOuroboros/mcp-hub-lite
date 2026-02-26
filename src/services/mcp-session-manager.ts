@@ -600,18 +600,25 @@ export class McpSessionManager {
       if (shouldManuallyInitialize) {
         const webTransport = (session.transport as unknown as TransportWithWebStandard)._webStandardTransport;
         if (webTransport) {
-          // Ensure transport has the correct sessionId and is initialized
+          const currentSessionId = webTransport.sessionId;
+          const isInitialized = webTransport._initialized;
+
+          if (process.env.SESSION_DEBUG) {
+            logger.debug(
+              `Transport state check - Expected: ${sessionId} (initialized: true), Actual: ${currentSessionId} (initialized: ${isInitialized})`,
+              { subModule: 'Session' }
+            );
+          }
+
           if (webTransport.sessionId !== sessionId || !webTransport._initialized) {
+            logger.warn(
+              `Session state mismatch detected for ${sessionId}. Resetting transport state.`,
+              { subModule: 'Session' }
+            );
             webTransport.sessionId = sessionId;
             webTransport._initialized = true;
             if (webTransport._session !== undefined) {
               webTransport._session = sessionId;
-            }
-            if (process.env.SESSION_DEBUG) {
-              logger.debug(
-                `Reinitialized transport session state for: ${sessionId}`,
-                { subModule: 'Session' }
-              );
             }
           }
         }
@@ -675,6 +682,16 @@ export class McpSessionManager {
    */
   public getSessionState(sessionId: string): SessionState | undefined {
     return this.sessionStates.get(sessionId);
+  }
+
+  /**
+   * Checks if a session object exists in the active sessions map.
+   *
+   * @param sessionId - Unique identifier of the session to check
+   * @returns {boolean} True if the session object exists, false otherwise
+   */
+  public hasSession(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
   }
 
   /**

@@ -201,6 +201,14 @@ function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | nul
     }
   }
 
+  // Add consistency check before returning session information
+  if (sessionId && mcpSessionManager.getSessionState(sessionId)) {
+    const hasSessionObject = mcpSessionManager.hasSession(sessionId);
+    if (!hasSessionObject) {
+      logger.warn(`Session state exists but session object missing for ${sessionId}`);
+    }
+  }
+
   const clientContext: ClientContext = {
     sessionId,
     clientName,
@@ -433,6 +441,22 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           const separator = request.raw.url.includes('?') ? '&' : '?';
           request.raw.url = `${request.raw.url}${separator}sessionId=${sessionId}`;
           logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`);
+        }
+
+        // Add Mcp-Session-Id header to request for proper SDK session validation
+        // Ensure headers object is modifiable (Node.js incoming message headers may be read-only)
+        if (typeof request.headers === 'object' && request.headers !== null) {
+          // Create a new modifiable headers object
+          const modifiableHeaders = Object.assign({}, request.headers);
+          modifiableHeaders['mcp-session-id'] = sessionId;
+          modifiableHeaders['Mcp-Session-Id'] = sessionId;  // Add case-insensitive version
+          request.headers = modifiableHeaders;
+        }
+
+        // Also modify request.raw.headers (Node.js original request object)
+        if (request.raw && request.raw.headers) {
+          request.raw.headers['mcp-session-id'] = sessionId;
+          request.raw.headers['Mcp-Session-Id'] = sessionId;
         }
 
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
