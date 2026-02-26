@@ -1,4 +1,4 @@
-import type { ClientContext, ClientInfo, ClientRoot } from '@shared-types/client.types';
+import type { ClientContext, ClientInfo, ClientRoot } from '@shared-types/client.types.js';
 import { logger } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
 import { fileURLToPath } from 'node:url';

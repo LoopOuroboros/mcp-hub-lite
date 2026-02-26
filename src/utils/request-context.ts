@@ -14,7 +14,7 @@
  */
 
 import { AsyncLocalStorage } from 'async_hooks';
-import type { ClientContext } from '@shared-types/client.types';
+import type { ClientContext } from '@shared-types/client.types.js';
 
 /**
  * AsyncLocalStorage instance for storing request context.

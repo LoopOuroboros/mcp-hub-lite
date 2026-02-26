@@ -6,6 +6,8 @@
  */
 
 import { Command } from 'commander';
+import { argv } from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { startCommand } from '@cli/commands/start.js';
 import { stopCommand } from '@cli/commands/stop.js';
 import { statusCommand } from '@cli/commands/status.js';
@@ -87,7 +89,7 @@ export function createCli(): Command {
 }
 
 // Execute the CLI if this file is run directly
-if (require.main === module) {
+if (argv[1] && pathToFileURL(argv[1]).href === import.meta.url) {
   const cli = createCli();
   cli.parse();
 }

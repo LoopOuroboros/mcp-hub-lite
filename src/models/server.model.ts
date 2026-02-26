@@ -1,4 +1,4 @@
-import type { ServerStatus, ServerTransport } from '@shared-types/common.types';
+import type { ServerStatus, ServerTransport } from '@shared-types/common.types.js';
 import type { ServerConfig as SharedServerConfig } from '@shared-models/server.model';
 
 // Backend server configuration interface, extending shared configuration

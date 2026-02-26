@@ -3,9 +3,7 @@
  * Handles start, stop, status, restart operations
  */
 
-import { buildApp } from '@src/app.js';
 import { PidManager } from '@pid/manager.js';
-import { hubManager } from '@services/hub-manager.service.js';
 
 interface ServerOptions {
   port: number;
@@ -53,6 +51,8 @@ interface ServerOptions {
  * @see {@link PidManager} for process ID management
  */
 export async function startServer(options: ServerOptions) {
+  // Dynamic import to avoid loading heavyweight services for simple commands
+  const { buildApp } = await import('@src/app.js');
   const app = await buildApp();
 
   // Start the server
@@ -134,8 +134,7 @@ export async function getServerStatus(pid?: string) {
     process.kill(parseInt(actualPid), 0); // Signal 0 just checks if process exists
     return {
       running: true,
-      pid: actualPid,
-      servers: hubManager.getAllServers().length
+      pid: actualPid
     };
   } catch {
     return { running: false, message: 'Server process not found' };
@@ -193,6 +192,8 @@ export async function restartServer(options: ServerOptions) {
  * ```
  */
 export async function listServers() {
+  // Dynamic import to avoid loading heavyweight services for simple commands
+  const { hubManager } = await import('@services/hub-manager.service.js');
   const servers = hubManager.getAllServers();
   const serverInstances = hubManager.getServerInstances();
 

@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
-import type { ClientContext } from '@shared-types/client.types';
+import type { ClientContext } from '@shared-types/client.types.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
 import { randomUUID } from 'crypto';
