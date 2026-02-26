@@ -459,6 +459,29 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           request.raw.headers['Mcp-Session-Id'] = sessionId;
         }
 
+        // Also modify request.raw.rawHeaders directly, because @hono/node-server uses it
+        // to create the Web Standard Headers object
+        if (request.raw && request.raw.rawHeaders) {
+          // Remove any existing mcp-session-id headers
+          const filteredHeaders = [];
+          for (let i = 0; i < request.raw.rawHeaders.length; i += 2) {
+            const key = request.raw.rawHeaders[i];
+            const value = request.raw.rawHeaders[i + 1];
+            if (!key.toLowerCase().includes('mcp-session-id')) {
+              filteredHeaders.push(key, value);
+            }
+          }
+          // Add the new mcp-session-id header
+          filteredHeaders.push('mcp-session-id', sessionId);
+          request.raw.rawHeaders = filteredHeaders;
+
+          logger.debug(`Modified rawHeaders: ${JSON.stringify(request.raw.rawHeaders)}`, { subModule: 'Gateway' });
+        }
+
+        // Log the final headers for debugging
+        logger.debug(`Final request.headers: ${JSON.stringify(request.headers)}`, { subModule: 'Gateway' });
+        logger.debug(`Final request.raw.headers: ${JSON.stringify(request.raw.headers)}`, { subModule: 'Gateway' });
+
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
 
