@@ -77,7 +77,7 @@ export class WebSocketHandler {
     // Start heartbeat detection
     this.startHeartbeat();
 
-    logger.info('connection established', { subModule: 'WebSocket' });
+    logger.debug('connection established', { subModule: 'WebSocket' });
   }
 
   /**

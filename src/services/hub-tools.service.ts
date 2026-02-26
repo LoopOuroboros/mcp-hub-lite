@@ -785,7 +785,7 @@ export class HubToolsService {
                   ? Record<string, { tools: Tool[] }>
                   : never
   > {
-    logger.info(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
+    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
       subModule: 'HUB-TOOLS'
     });
 
@@ -859,7 +859,7 @@ export class HubToolsService {
           throw new Error(`System tool "${toolName}" not found`);
       }
 
-      logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
+      logger.debug(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL
         ? string[]
@@ -974,7 +974,7 @@ export class HubToolsService {
       serverName = matchingServers[0];
     }
 
-    logger.info(
+    logger.debug(
       `Tool call received: serverName=${serverName}, toolName=${toolName}, args=${stringifyForLogging(toolArgs)}`,
       { subModule: 'HUB-TOOLS' }
     );
@@ -1012,7 +1012,7 @@ export class HubToolsService {
         result
       });
 
-      logger.info(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, {
+      logger.debug(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, {
         subModule: 'HUB-TOOLS'
       });
       return result;

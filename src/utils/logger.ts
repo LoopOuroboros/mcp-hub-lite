@@ -82,7 +82,7 @@ export class Logger {
     process.env.DEV_LOG_FILE = '1';
 
     // Enable communication debug logging for development
-    process.env.MCP_COMM_DEBUG = '1';
+    process.env.MCP_COMM_DEBUG = '0';
 
     // Enable session debug logging for development
     process.env.SESSION_DEBUG = '1';
@@ -96,13 +96,8 @@ export class Logger {
     }
     const logFile = path.join(logDir, 'dev-server.log');
 
-    // Clear log file in development mode to avoid interference from stale logs
-    if (fs.existsSync(logFile)) {
-      fs.truncateSync(logFile, 0);
-    }
-
     this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
-    this.debug(`Writing logs to: ${logFile} (cleared on startup)`, { subModule: 'DEV LOG' });
+    this.debug(`Writing logs to: ${logFile} (appending to existing log)`, { subModule: 'DEV LOG' });
   }
 
   public setUseStderr(use: boolean) {

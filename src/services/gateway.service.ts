@@ -572,7 +572,7 @@ export class GatewayService {
 
       // Handle system tools
       if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-        logger.info(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, {
+        logger.debug(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, {
           subModule: 'GATEWAY'
         });
 
@@ -619,7 +619,7 @@ export class GatewayService {
           toolArgs.cwd = cwd;
           logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, { subModule: toolName });
         }
-        logger.info(
+        logger.debug(
           `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${this.formatToolArgs(toolArgs)}`,
           { subModule: 'GATEWAY' }
         );

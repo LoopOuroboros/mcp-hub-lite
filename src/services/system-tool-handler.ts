@@ -28,7 +28,7 @@ export class SystemToolHandler {
    * Handles system tool calls
    */
   static async handleSystemToolCall(toolName: string, toolArgs: Record<string, unknown>): Promise<unknown> {
-    logger.info(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
+    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
       subModule: 'SYSTEM-TOOL'
     });
 
