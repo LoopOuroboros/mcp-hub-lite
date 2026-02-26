@@ -31,6 +31,7 @@ import type {
   CallToolParams,
   FindToolsParams
 } from '@models/system-tools.constants.js';
+import { ToolArgsParser } from '@utils/tool-args-parser.js';
 
 /**
  * Configuration options for server instance selection in multi-instance scenarios.
@@ -908,15 +909,69 @@ export class HubToolsService {
    * console.log('Tool result:', result);
    * ```
    */
+
   async callTool(
     serverName: string,
     toolName: string,
     toolArgs: Record<string, unknown>,
     requestOptions?: RequestOptions
   ): Promise<unknown> {
-    // Handle MCP Hub Lite server (system tool call)
+    // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
+    const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
+    if (parsedTool) {
+      logger.debug(
+        `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
+        { subModule: 'HUB-TOOLS' }
+      );
+      serverName = parsedTool.serverName;
+      toolName = parsedTool.toolName;
+    }
+
+    // Handle MCP Hub Lite server (system tool call or find tool in all servers)
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
-      return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
+      // Check if it's a system tool
+      if (SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
+        return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
+      }
+
+      // Not a system tool - find it in all connected servers
+      logger.info(
+        `Looking for tool '${toolName}' in all connected servers (gateway mode)`,
+        { subModule: 'HUB-TOOLS' }
+      );
+
+      // Find all servers that have this tool
+      const matchingServers: string[] = [];
+      const servers = hubManager.getAllServers();
+
+      for (const server of servers) {
+        if (!hasValidId(server)) {
+          continue;
+        }
+
+        const serverInfo = selectBestInstance(server.name, requestOptions);
+        if (serverInfo && serverInfo.instance.id) {
+          const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
+          if (tools.some(tool => tool.name === toolName)) {
+            matchingServers.push(server.name);
+          }
+        }
+      }
+
+      if (matchingServers.length === 0) {
+        logger.error(`Tool '${toolName}' not found in any connected server`, { subModule: 'HUB-TOOLS' });
+        throw new Error(`Tool '${toolName}' not found`);
+      }
+
+      if (matchingServers.length > 1) {
+        logger.warn(
+          `Tool '${toolName}' found in multiple servers: ${matchingServers.join(', ')}. Using first match.`,
+          { subModule: 'HUB-TOOLS' }
+        );
+      }
+
+      // Use the first matching server
+      serverName = matchingServers[0];
     }
 
     logger.info(

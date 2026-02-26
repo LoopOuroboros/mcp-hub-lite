@@ -27,15 +27,12 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
-  MCP_HUB_LITE_SERVER,
-  type FindServersParams,
-  type ListAllToolsInServerParams,
-  type FindToolsInServerParams,
-  type GetToolParams,
-  type CallToolParams,
-  type FindToolsParams
+  MCP_HUB_LITE_SERVER
 } from '@models/system-tools.constants.js';
 import { stringifyForLogging, stringifyForLoggingWithReplacer } from '@utils/json-utils.js';
+import { SystemToolHandler } from './system-tool-handler.js';
+import { ToolArgsParser } from '@utils/tool-args-parser.js';
+import { ErrorHandler } from '@utils/error-handler.js';
 
 /**
  * MCP Gateway service that aggregates tools from multiple MCP servers and provides a unified interface.
@@ -527,6 +524,42 @@ export class GatewayService {
       const toolName = request.params.name;
       const toolArgs: Record<string, unknown> = request.params.arguments || {};
 
+      // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
+      // This handles Claude Code style tool names with server prefix
+      const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
+      if (parsedTool) {
+        logger.debug(
+          `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
+          { subModule: 'GATEWAY' }
+        );
+
+        // Check if it's a system tool call
+        if (parsedTool.serverName === MCP_HUB_LITE_SERVER && SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)) {
+          logger.info(`System tool called via prefixed name: ${parsedTool.toolName}`, {
+            subModule: 'GATEWAY'
+          });
+
+          try {
+            const result = await SystemToolHandler.handleSystemToolCall(parsedTool.toolName, toolArgs);
+
+            if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
+              return result;
+            }
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: stringifyForLogging(result)
+                }
+              ]
+            };
+          } catch (error) {
+            ErrorHandler.handleSystemToolError(parsedTool.toolName, error);
+          }
+        }
+      }
+
       // Log incoming tool request with full context
       logger.info(
         `Tool call REQUEST received: toolName=${toolName}, args=${this.formatToolArgs(toolArgs)}`,
@@ -542,94 +575,11 @@ export class GatewayService {
         logger.info(`System tool called: ${toolName}, args=${this.formatToolArgs(toolArgs)}`, {
           subModule: 'GATEWAY'
         });
+
         try {
-          let result;
-          switch (toolName) {
-            case LIST_SERVERS_TOOL:
-              result = await hubToolsService.listServers();
-              break;
-            case FIND_SERVERS_TOOL: {
-              const findServersArgs = toolArgs as unknown as FindServersParams;
-              result = await hubToolsService.findServers(
-                findServersArgs.pattern,
-                findServersArgs.searchIn,
-                findServersArgs.caseSensitive
-              );
-              break;
-            }
-            case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
-              const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
-              result = await hubToolsService.listAllToolsInServer(
-                listAllToolsArgs.serverName,
-                listAllToolsArgs.requestOptions
-              );
-              break;
-            }
-            case FIND_TOOLS_IN_SERVER_TOOL: {
-              const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
-              result = await hubToolsService.findToolsInServer(
-                findToolsInServerArgs.serverName,
-                findToolsInServerArgs.pattern,
-                findToolsInServerArgs.searchIn,
-                findToolsInServerArgs.caseSensitive,
-                findToolsInServerArgs.requestOptions
-              );
-              break;
-            }
-            case GET_TOOL_TOOL: {
-              const getToolArgs = toolArgs as unknown as GetToolParams;
-              result = await hubToolsService.getTool(
-                getToolArgs.serverName,
-                getToolArgs.toolName,
-                getToolArgs.requestOptions
-              );
-              break;
-            }
-            case CALL_TOOL_TOOL: {
-              const callToolArgs = toolArgs as unknown as CallToolParams;
-              let serverName = callToolArgs.serverName;
-              if (!serverName || serverName === 'undefined') {
-                serverName = MCP_HUB_LITE_SERVER;
-              }
+          const result = await SystemToolHandler.handleSystemToolCall(toolName, toolArgs);
 
-              // Inject CWD for nested call-tool
-              const cwd = getClientCwd();
-              if (cwd && callToolArgs.toolArgs && !callToolArgs.toolArgs.cwd) {
-                // Use type assertion to ensure we can safely add cwd property
-                const toolArgsWithCwd = callToolArgs.toolArgs as Record<string, unknown> & {
-                  cwd?: string;
-                };
-                toolArgsWithCwd.cwd = cwd;
-                logger.debug(`Injected CWD into nested tool call: ${cwd}`);
-              }
-              result = await hubToolsService.callTool(
-                serverName,
-                callToolArgs.toolName,
-                callToolArgs.toolArgs,
-                callToolArgs.requestOptions
-              );
-              break;
-            }
-            case FIND_TOOLS_TOOL: {
-              const findToolsArgs = toolArgs as unknown as FindToolsParams;
-              result = await hubToolsService.findTools(
-                findToolsArgs.pattern,
-                findToolsArgs.searchIn,
-                findToolsArgs.caseSensitive
-              );
-              break;
-            }
-          }
-
-          logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'GATEWAY' });
-
-          // Check if result is already in Mcp content format (especially for call-tool)
-          if (
-            result &&
-            typeof result === 'object' &&
-            'content' in result &&
-            Array.isArray(result.content)
-          ) {
+          if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
             return result;
           }
 
@@ -641,18 +591,8 @@ export class GatewayService {
               }
             ]
           };
-        } catch (error: unknown) {
-          if (error instanceof Error) {
-            logger.error(`System tool FAILED: ${toolName}, error=${error.message}`, error, {
-              subModule: 'GATEWAY'
-            });
-            throw new McpError(-32802, error.message || 'System Tool Error');
-          } else {
-            logger.error(`System tool FAILED: ${toolName}, error=${String(error)}`, error, {
-              subModule: 'GATEWAY'
-            });
-            throw new McpError(-32802, String(error) || 'System Tool Error');
-          }
+        } catch (error) {
+          ErrorHandler.handleSystemToolError(toolName, error);
         }
       }
 
@@ -713,36 +653,7 @@ export class GatewayService {
           };
         }
       } catch (error: unknown) {
-        const duration = Date.now() - startTime;
-        if (error instanceof Error) {
-          logger.error(
-            `Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${error.message}`,
-            { subModule: 'GATEWAY' }
-          );
-
-          if (error.stack) {
-            logger.debug(`Error stack for ${target.realToolName}:`, error.stack, {
-              subModule: 'GATEWAY'
-            });
-          }
-
-          if (error instanceof McpError) {
-            throw error;
-          }
-
-          // Map internal errors to standard MCP error codes
-          if (error.message?.includes('not connected')) {
-            throw new McpError(-32001, `Server not reachable: ${error.message}`);
-          }
-
-          throw new McpError(-32802, error.message || 'Internal Gateway Error');
-        } else {
-          logger.error(
-            `Tool call FAILED: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, error=${String(error)}`,
-            { subModule: 'GATEWAY' }
-          );
-          throw new McpError(-32802, String(error) || 'Internal Gateway Error');
-        }
+        ErrorHandler.handleToolCallError(target.serverId, target.realToolName, error);
       }
     });
   }
