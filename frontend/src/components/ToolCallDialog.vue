@@ -31,7 +31,7 @@
       </div>
 
       <!-- Server Instance Selection -->
-      <div v-if="serverName" class="mb-4 flex items-center">
+      <div v-if="serverName && serverName !== 'system'" class="mb-4 flex items-center">
         <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
           t('toolCallDialog.instance')
         }}</span>
