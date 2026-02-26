@@ -23,9 +23,7 @@ config/
 **配置查找优先级**:
 
 1. 环境变量 `MCP_HUB_CONFIG_PATH`
-2. 当前目录的 `.mcp-hub.json`
-3. `config/.mcp-hub.json`
-4. `~/.mcp-hub.json`
+2. `~/.mcp-hub-lite/config/.mcp-hub.json`（用户主目录下的隐藏文件夹）
 
 **主要方法**:
 

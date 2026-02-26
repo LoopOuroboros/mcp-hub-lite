@@ -1,32 +1,6 @@
 # MCP Hub Lite - AI 编程助手指南
 
-## 变更记录 (Changelog)
-
-查看完整变更记录：[CHANGELOG_zh-CN.md](CHANGELOG_zh-CN.md)
-
-### 2026-02-16
-
-- 更新文档覆盖率和完整性
-- 完善所有模块的 CLAUDE.md 文档
-- 更新 .claude/index.json 索引文件
-- 优化模块索引表格
-- 添加会话管理相关文档
-
-### 2026-02-15
-
-- 新增会话持久化功能：会话状态自动保存到磁盘，支持服务重启后恢复
-- 新增会话管理 API：提供会话列表、详情查询和删除接口
-- 新增配置安全选项：会话超时可配置（默认 30 分钟）
-- 更新模块文档：完善所有相关模块的文档覆盖
-- 更新模块结构图：添加 Mermaid 树形图
-- 完善面包屑导航：所有模块文档添加导航面包屑
-
-### 2026-02-05
-
-- 更新项目索引和文档覆盖率
-- 完善所有模块的 CLAUDE.md 文档
-- 更新 .claude/index.json 索引文件
-- 优化模块索引表格
+完整变更记录请参见：[CHANGELOG_zh-CN.md](CHANGELOG_zh-CN.md)
 
 ## 项目概述
 
@@ -224,18 +198,42 @@ npm run ui
 MCP-HUB-LITE 使用 `.mcp-hub.json` 文件进行配置。配置查找优先级：
 
 1. 环境变量 `MCP_HUB_CONFIG_PATH`
-2. 当前目录的 `.mcp-hub.json`
-3. `config/.mcp-hub.json`
-4. `~/.mcp-hub.json`
+2. `~/.mcp-hub-lite/config/.mcp-hub.json`（用户主目录下的隐藏文件夹）
+
+### 开发模式日志
+
+**日志文件位置**：项目根目录下的 `logs/dev-server.log` 文件
+
+**功能特性**：
+- 当使用 `npm run dev` 命令启动时自动启用
+- 包含详细的调试信息（debug 级别）
+- 记录 MCP 服务器通信日志
+- 记录会话管理日志
+- 支持 JSON 格式美化输出
+- 自动创建 logs 目录（如果不存在）
+
+**启用的调试功能**：
+- `MCP_COMM_DEBUG` - MCP 服务器通信调试日志
+- `SESSION_DEBUG` - 会话管理调试日志
+- `LOG_JSON_PRETTY` - JSON 输出美化
+
+**日志文件路径**：
+```
+# 相对于项目根目录
+logs/dev-server.log
+```
 
 ### 环境变量
 
-| 变量            | 描述             |
-| --------------- | ---------------- |
-| `PORT`          | 覆盖配置的端口   |
-| `HOST`          | 覆盖配置的主机   |
-| `LOG_LEVEL`     | 覆盖日志级别     |
-| `SESSION_DEBUG` | 启用会话调试日志 |
+| 变量名              | 描述                     |
+|---------------------|--------------------------|
+| `PORT`              | 覆盖配置的端口           |
+| `HOST`              | 覆盖配置的主机           |
+| `LOG_LEVEL`         | 覆盖日志级别             |
+| `SESSION_DEBUG`     | 启用会话调试日志         |
+| `DEV_LOG_FILE`      | 启用开发日志文件输出     |
+| `MCP_COMM_DEBUG`    | 启用 MCP 通信调试日志     |
+| `LOG_JSON_PRETTY`   | 启用 JSON 输出美化       |
 
 ## 测试策略
 
@@ -258,63 +256,9 @@ tests/
 ### 运行测试
 
 ```bash
-# 运行所有测试（静默模式 + 生成摘要）
-npm test
-
-# 使用 Vitest 直接运行（开发模式，带颜色输出）
-npx vitest
-
-# 单独运行后端测试
-npm run test:backend
-
-# 单独运行前端测试
-npm run test:frontend
-
-# 在静默模式下运行后端测试（输出到日志文件）
-npm run test:backend:silent
-
-# 在静默模式下运行前端测试（输出到日志文件）
-npm run test:frontend:silent
-
-# 运行测试并生成覆盖率报告
-npm run test:coverage
-
-# 生成测试结果摘要（读取日志文件生成摘要）
-npm run test:summary
+# 运行所有测试
+npm run test
 ```
-
-### 测试结果查看
-
-`npm test` 采用静默模式运行，测试输出重定向到日志文件：
-
-1. **运行完整测试**：执行 `npm test`（静默模式）
-2. **生成摘要**：测试完成后自动生成 `logs/test-summary.log`
-3. **查看结果**：摘要包含测试文件统计、用例统计、失败详情等
-
-**日志文件：**
-
-- `logs/test-summary.log` - 测试摘要汇总
-- `logs/test-backend.log` - 后端测试详细输出
-- `logs/test-frontend.log` - 前端测试详细输出
-
-**查看实时输出（带颜色）：**
-
-```bash
-# 开发模式带热重载
-npx vitest
-
-# 单独运行后端/前端测试
-npm run test:backend
-npm run test:frontend
-```
-
-### 测试覆盖
-
-| 类型     | 状态     | 文件数 |
-| -------- | -------- | ------ |
-| 单元测试 | 部分实现 | 15     |
-| 集成测试 | 部分实现 | 3      |
-| 契约测试 | 完整实现 | 3      |
 
 ## 编码规范
 
@@ -330,17 +274,7 @@ npm run test:frontend
 
 ### TypeScript 规范
 
-完整的 TypeScript 规范设计请参见：[`.claude/rules/typescript.md`](.claude/rules/typescript.md)
-
-该`规范采用模块化管理，包含以下专题：
-
-- 基础类型安全规范
-- Vue3 + TypeScript 集成规范
-- 测试框架与规范 (Vite + Vitest)
-- 代码组织与模块化分层规范
-- 性能与配置管理规范
-- 错误处理与日志规范
-- CI/CD 与质量保证规范
+完整的 TypeScript 规范请参见：[`.claude/rules/typescript.md`](.claude/rules/typescript.md)
 
 ### 命名规范
 
@@ -363,12 +297,17 @@ npm run test:frontend
 
 ### 代码修改验证流程
 
-**每轮代码修改结束后，必须按顺序执行以下验证步骤：**
+**每轮代码修改结束后，只需执行一个命令完成所有验证：**
 
-1. **编译检查**：执行 `npm run build` 进行完整的编译和类型检查
-2. **测试验证**：执行 `npm run test` 运行所有测试（自动包含结果摘要）
+```bash
+# 完整检查（构建 + 测试 + 代码检查）
+npm run full:check
+```
 
-查看测试结果摘要：`cat logs/test-summary.log`
+该命令会自动执行以下验证步骤：
+1. **编译检查**：完整的 TypeScript 编译和类型检查
+2. **测试验证**：运行所有单元测试（自动包含结果摘要）
+3. **代码检查**：执行 ESLint 和代码规范检查
 
 详细规范参见：[`.claude/rules/development.md`](.claude/rules/development.md)
 

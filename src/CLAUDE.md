@@ -103,9 +103,7 @@ mcp-hub-lite start --foreground
 - **主配置**: `.mcp-hub.json` - 服务器配置和安全设置
 - **配置查找优先级**:
   1. 环境变量 `MCP_HUB_CONFIG_PATH`
-  2. 当前目录的 `.mcp-hub.json`
-  3. `config/.mcp-hub.json`
-  4. `~/.mcp-hub.json`
+  2. `~/.mcp-hub-lite/config/.mcp-hub.json`（用户主目录下的隐藏文件夹）
 
 ## 数据模型
 
