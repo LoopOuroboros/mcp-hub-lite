@@ -102,7 +102,7 @@ export class Logger {
     }
 
     this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
-    this.debug(`[DEV LOG] Writing logs to: ${logFile} (cleared on startup)`);
+    this.debug(`Writing logs to: ${logFile} (cleared on startup)`, { subModule: 'DEV LOG' });
   }
 
   public setUseStderr(use: boolean) {
@@ -431,17 +431,19 @@ export class Logger {
   }
 
   private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
-    if (
-      args.length > 0 &&
-      typeof args[0] === 'object' &&
-      args[0] !== null &&
-      !Array.isArray(args[0])
-    ) {
-      const firstArg = args[0] as Record<string, unknown>;
-      if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
-        return [args[0] as LogOptions, args.slice(1)];
-      }
+    const optionsIndex = args.findIndex(arg =>
+      typeof arg === 'object' &&
+      arg !== null &&
+      !Array.isArray(arg) &&
+      ('subModule' in arg || 'traceId' in arg || 'spanId' in arg)
+    );
+
+    if (optionsIndex !== -1) {
+      const options = args[optionsIndex] as LogOptions;
+      const restArgs = [...args.slice(0, optionsIndex), ...args.slice(optionsIndex + 1)];
+      return [options, restArgs];
     }
+
     return [undefined, args];
   }
 
