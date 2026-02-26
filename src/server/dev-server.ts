@@ -65,6 +65,12 @@ let app: FastifyInstance | null = null;
  */
 async function startDevServer() {
   try {
+    // Log startup separator
+    logger.info('------------------------------------------------');
+    logger.info('MCP Hub Lite Dev Server Starting...');
+    logger.info(`Start Time: ${new Date().toISOString()}`);
+    logger.info('------------------------------------------------');
+
     app = await buildApp();
     const config = configManager.getConfig();
 
