@@ -390,28 +390,34 @@ export class McpSessionManager {
         subModule: 'SessionManager'
       });
 
-      // Collect all sessions to save
-      const sessionsToSave: Record<string, SessionState> = {};
-      for (const sessionId of this.dirtySessions) {
-        const sessionState = this.sessionStates.get(sessionId);
-        if (sessionState) {
-          sessionsToSave[sessionId] = sessionState;
-        }
-      }
-
-      // Load current store and update
+      // Load current store
       const currentStore = await this.loadSessionStore();
       const newStore: SessionStore = {
         ...currentStore,
-        sessions: {
-          ...currentStore.sessions,
-          ...sessionsToSave
-        }
+        sessions: { ...currentStore.sessions }
       };
+
+      // Process all dirty sessions
+      for (const sessionId of this.dirtySessions) {
+        const sessionState = this.sessionStates.get(sessionId);
+        if (sessionState) {
+          // Session exists - update it
+          newStore.sessions[sessionId] = sessionState;
+        } else {
+          // Session does not exist - remove it
+          delete newStore.sessions[sessionId];
+          // Also remove the individual session file
+          const sessionPath = path.join(this.sessionsPath, `${sessionId}.json`);
+          if (fs.existsSync(sessionPath)) {
+            fs.unlinkSync(sessionPath);
+            logger.debug(`Deleted session file: ${sessionId}.json`, { subModule: 'Session' });
+          }
+        }
+      }
 
       await this.saveSessionStore(newStore);
 
-      const flushedCount = Object.keys(sessionsToSave).length;
+      const flushedCount = this.dirtySessions.size;
       this.dirtySessions.clear();
 
       logger.info(`Successfully flushed ${flushedCount} session(s)`, {
@@ -597,30 +603,37 @@ export class McpSessionManager {
       const hasRestoredState = this.sessionStates.has(sessionId);
       const shouldManuallyInitialize = !requireInitialize || hasRestoredState;
 
-      if (shouldManuallyInitialize) {
-        const webTransport = (session.transport as unknown as TransportWithWebStandard)._webStandardTransport;
-        if (webTransport) {
-          const currentSessionId = webTransport.sessionId;
-          const isInitialized = webTransport._initialized;
+      // Always ensure sessionId is set on transport, regardless of initialization status
+      // This fixes the "Session not found" error for non-initialization requests
+      const webTransport = (session.transport as unknown as TransportWithWebStandard)._webStandardTransport;
+      if (webTransport) {
+        const currentSessionId = webTransport.sessionId;
+        const isInitialized = webTransport._initialized;
 
-          if (process.env.SESSION_DEBUG) {
-            logger.debug(
-              `Transport state check - Expected: ${sessionId} (initialized: true), Actual: ${currentSessionId} (initialized: ${isInitialized})`,
-              { subModule: 'Session' }
-            );
-          }
+        if (process.env.SESSION_DEBUG) {
+          logger.debug(
+            `Transport state check - Expected: ${sessionId} (initialized: ${shouldManuallyInitialize}), Actual: ${currentSessionId} (initialized: ${isInitialized})`,
+            { subModule: 'Session' }
+          );
+        }
 
-          if (webTransport.sessionId !== sessionId || !webTransport._initialized) {
-            logger.warn(
-              `Session state mismatch detected for ${sessionId}. Resetting transport state.`,
-              { subModule: 'Session' }
-            );
-            webTransport.sessionId = sessionId;
-            webTransport._initialized = true;
-            if (webTransport._session !== undefined) {
-              webTransport._session = sessionId;
-            }
+        if (webTransport.sessionId !== sessionId) {
+          logger.warn(
+            `Session ID mismatch detected for ${sessionId}. Resetting transport sessionId.`,
+            { subModule: 'Session' }
+          );
+          webTransport.sessionId = sessionId;
+          if (webTransport._session !== undefined) {
+            webTransport._session = sessionId;
           }
+        }
+
+        if (shouldManuallyInitialize && !webTransport._initialized) {
+          logger.warn(
+            `Session initialization state mismatch detected for ${sessionId}. Setting initialized flag.`,
+            { subModule: 'Session' }
+          );
+          webTransport._initialized = true;
         }
       }
     }
@@ -782,6 +795,21 @@ export class McpSessionManager {
       }
     });
 
+    // Directly set sessionId property to avoid validateSession failure
+    // because WebStandardStreamableHTTPServerTransport only calls sessionIdGenerator during initialize
+    const webTransport = (transport as unknown as TransportWithWebStandard)._webStandardTransport;
+    if (webTransport) {
+      webTransport.sessionId = sessionId;
+      // Do not set _initialized = true here because it will cause initialize request to fail
+      // _initialized flag will be set as needed in the shouldManuallyInitialize logic
+      if (process.env.SESSION_DEBUG) {
+        logger.debug(
+          `Directly set sessionId on transport: ${sessionId}`,
+          { subModule: 'Session' }
+        );
+      }
+    }
+
     // Check if we have a restored state for this session
     const restoredState = this.sessionStates.get(sessionId);
     if (restoredState) {
@@ -931,6 +959,8 @@ export class McpSessionManager {
   private cleanup() {
     const now = Date.now();
     let cleanedCount = 0;
+
+    // Cleanup in-memory session objects
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
         logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`);
@@ -943,9 +973,32 @@ export class McpSessionManager {
         this.sessions.delete(sessionId);
       }
     }
+
+    // Cleanup persisted session states
+    const expiredSessionIds: string[] = [];
+    for (const [sessionId, session] of this.sessionStates.entries()) {
+      if (now - session.lastAccessedAt > this.SESSION_TIMEOUT) {
+        expiredSessionIds.push(sessionId);
+        cleanedCount++;
+      }
+    }
+
+    for (const sessionId of expiredSessionIds) {
+      this.sessionStates.delete(sessionId);
+      this.markAsDirty(sessionId);
+      logger.debug(`Marking expired session for deletion: ${sessionId}`);
+    }
+
+    // Immediately flush to delete session files from disk
+    if (expiredSessionIds.length > 0) {
+      this.flushDirtySessions().catch(error => {
+        logger.error('Failed to flush expired sessions:', error);
+      });
+    }
+
     if (cleanedCount > 0) {
       logger.info(
-        `Cleaned up ${cleanedCount} stale sessions. Active sessions: ${this.sessions.size}`,
+        `Cleaned up ${cleanedCount} stale sessions. Active sessions: ${this.sessions.size}, Persisted states: ${this.sessionStates.size}`,
         { subModule: 'SessionManager' }
       );
     }
