@@ -478,10 +478,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           logger.debug(`Modified rawHeaders: ${stringifyRawHeadersForLogging(request.raw.rawHeaders)}`, { subModule: 'Gateway' });
         }
 
-        // Log the final headers for debugging
-        logger.debug(`Final request.headers: ${stringifyForLogging(request.headers)}`, { subModule: 'Gateway' });
-        logger.debug(`Final request.raw.headers: ${stringifyForLogging(request.raw.headers)}`, { subModule: 'Gateway' });
-
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
 
