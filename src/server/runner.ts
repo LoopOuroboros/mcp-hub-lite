@@ -1,6 +1,7 @@
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
 import { logger } from '@utils/logger.js';
+import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { telemetryManager } from '@utils/telemetry/index.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { gateway } from '@services/gateway.service.js';
@@ -70,6 +71,9 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
     }
 
     const config = configManager.getConfig();
+
+    // Set config getter for json-utils to use config from configManager
+    setJsonPrettyConfigGetter(() => configManager.getConfig());
 
     // Initialize OpenTelemetry tracing
     telemetryManager.initialize(config);

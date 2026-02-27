@@ -1,6 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { configManager } from '@config/config-manager.js';
+
+/**
+ * Configuration interface for custom log rotation settings.
+ */
+export interface RotatorConfig {
+  rotationAge?: string;
+}
+
+/**
+ * Type for the config getter function to avoid direct import dependency.
+ */
+type ConfigGetter = () => { system: { logging: { rotationAge: string } } };
 
 /**
  * Manages log file rotation and cleanup for MCP Hub Lite.
@@ -30,18 +41,39 @@ import { configManager } from '@config/config-manager.js';
  * const logFiles = rotator.getLogFiles();
  * ```
  *
+ * @example
+ * ```typescript
+ * // With custom configuration (independent from global config)
+ * const rotator = new LogRotator(logDir, 'dev-server', { rotationAge: '7d' });
+ * ```
+ *
  * @class
  * @since 1.0.0
  */
 export class LogRotator {
   private logDir: string;
   private logBaseName: string;
-  private config: ReturnType<typeof configManager.getConfig>;
+  private customConfig: RotatorConfig | null;
+  private configGetter: ConfigGetter | null;
 
-  constructor(logDir: string, logBaseName: string = 'mcp-hub') {
+  /**
+   * Creates a new LogRotator instance.
+   *
+   * @param logDir - The directory where log files are stored
+   * @param logBaseName - The base name for log files (default: 'mcp-hub')
+   * @param customConfig - Optional custom configuration for independent rotation settings
+   * @param configGetter - Optional config getter function for global config access (for backward compatibility)
+   */
+  constructor(
+    logDir: string,
+    logBaseName: string = 'mcp-hub',
+    customConfig?: RotatorConfig,
+    configGetter?: ConfigGetter
+  ) {
     this.logDir = logDir;
     this.logBaseName = logBaseName;
-    this.config = configManager.getConfig();
+    this.customConfig = customConfig || null;
+    this.configGetter = configGetter || null;
 
     // Ensure log directory exists
     if (!fs.existsSync(this.logDir)) {
@@ -52,17 +84,22 @@ export class LogRotator {
   /**
    * Calculates the retention period in days from the configured rotation age.
    *
-   * Parses the `system.logging.rotationAge` configuration value which can be in
+   * Parses the rotation age configuration value which can be in
    * various formats (e.g., "7d", "24h", "1440m") and converts it to days.
    * Hours and minutes are converted to days using ceiling division to ensure
    * proper retention behavior.
+   *
+   * If a customConfig was provided, it will be used; otherwise, falls back to
+   * the configGetter if provided; defaults to 7 days.
    *
    * @returns {number} The retention period in days. Defaults to 7 days if the
    *                   configuration is invalid or cannot be parsed.
    * @private
    */
   private getRetentionDays(): number {
-    const maxAge = this.config.system.logging.rotationAge;
+    const maxAge = this.customConfig?.rotationAge
+      ?? (this.configGetter ? this.configGetter().system.logging.rotationAge : null)
+      ?? '7d';
     // Parse maxAge like "7d", "30d", etc.
     const match = maxAge.match(/^(\d+)([dhm])$/);
     if (match) {

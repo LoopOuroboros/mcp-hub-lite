@@ -408,4 +408,103 @@ describe('Logger', () => {
     // Restore console methods
     consoleInfoSpy.mockRestore();
   });
+
+  describe('dev log rotation', () => {
+    it('should create devLogRotator when enableDevLog is called', () => {
+      // Mock fs modules to avoid file system operations
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          destroyed: false
+        } as unknown as WriteStream;
+      });
+
+      logger = new Logger();
+      logger.enableDevLog();
+
+      // @ts-expect-error - accessing private property for testing
+      expect(logger.devLogRotator).toBeDefined();
+
+      createWriteStreamSpy.mockRestore();
+    });
+
+    it('should use date-based log file naming for dev logs', () => {
+      // Mock fs modules
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      let capturedLogPath = '';
+      const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation((path) => {
+        capturedLogPath = path as string;
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          destroyed: false
+        } as unknown as WriteStream;
+      });
+
+      logger = new Logger();
+      logger.enableDevLog();
+
+      // Verify the log path contains today's date
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const expectedDateString = `${year}-${month}-${day}`;
+
+      expect(capturedLogPath).toContain(`dev-server.${expectedDateString}.log`);
+
+      createWriteStreamSpy.mockRestore();
+    });
+
+    it('should accept custom rotator config in enableDevLog', () => {
+      // Mock fs modules
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          destroyed: false
+        } as unknown as WriteStream;
+      });
+
+      logger = new Logger();
+      logger.enableDevLog({ rotationAge: '14d' });
+
+      // @ts-expect-error - accessing private property for testing
+      expect(logger.devLogRotator).toBeDefined();
+
+      createWriteStreamSpy.mockRestore();
+    });
+
+    it('should not create multiple log streams when enableDevLog is called multiple times', () => {
+      // Mock fs modules
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const createWriteStreamSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          destroyed: false
+        } as unknown as WriteStream;
+      });
+
+      logger = new Logger();
+      logger.enableDevLog();
+      logger.enableDevLog(); // Call again
+
+      // createWriteStream should only be called once
+      expect(createWriteStreamSpy).toHaveBeenCalledTimes(1);
+
+      createWriteStreamSpy.mockRestore();
+    });
+  });
 });

@@ -3,6 +3,27 @@
  */
 
 /**
+ * Type for the config getter function to avoid direct import dependency.
+ */
+type ConfigGetter = () => { system: { logging: { jsonPretty: boolean } } };
+
+/**
+ * Optional config getter to retrieve jsonPretty setting from config.
+ * This avoids circular dependency issues.
+ */
+let _configGetter: ConfigGetter | null = null;
+
+/**
+ * Set the config getter for jsonPretty setting.
+ * This allows retrieving the setting from config without direct import dependency.
+ *
+ * @param getter - Function that returns the config object
+ */
+export function setJsonPrettyConfigGetter(getter: ConfigGetter): void {
+  _configGetter = getter;
+}
+
+/**
  * Convert Node.js rawHeaders array [key1, value1, key2, value2, ...] to object
  * @param rawHeaders Node.js rawHeaders array
  * @returns Headers as key-value object
@@ -31,10 +52,21 @@ export function stringifyRawHeadersForLogging(rawHeaders: string[]): string {
 }
 
 /**
- * Get JSON pretty setting from environment variable
+ * Get JSON pretty setting from config getter if available, otherwise from environment variable.
+ *
  * @returns boolean indicating whether to use pretty JSON formatting
  */
 export function getJsonPrettySetting(): boolean {
+  // Try config getter first
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.jsonPretty;
+    } catch {
+      // Fall through to environment variable if config getter fails
+    }
+  }
+  // Fall back to environment variable
   const envValue = process.env.LOG_JSON_PRETTY;
   if (envValue !== undefined) {
     return envValue.toLowerCase() === 'true' || envValue === '1';

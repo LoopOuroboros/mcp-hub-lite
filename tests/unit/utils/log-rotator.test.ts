@@ -3,48 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { LogRotator } from '@utils/log-rotator.js';
-import { configManager } from '@config/config-manager.js';
-
-// Mock configManager
-vi.mock('@config/config-manager.js', () => ({
-  configManager: {
-    getConfig: vi.fn()
-  }
-}));
 
 // Helper function to create a complete system config with custom logging rotation
 function createTestConfig(
   rotationConfig: Partial<{ rotationAge: string }> = {}
-): ReturnType<typeof configManager.getConfig> {
+): { system: { logging: { rotationAge: string } } } {
   return {
-    version: '1.0.0',
     system: {
-      host: 'localhost',
-      port: 7788,
-      language: 'zh' as const,
-      theme: 'system' as const,
       logging: {
-        level: 'info' as const,
-        rotationAge: rotationConfig.rotationAge ?? '7d',
-        jsonPretty: true
-      }
-    },
-    security: {
-      allowedNetworks: ['127.0.0.1'],
-      maxConcurrentConnections: 50,
-      connectionTimeout: 30000,
-      idleConnectionTimeout: 300000,
-      sessionTimeout: 30 * 60 * 1000,
-      sessionFlushInterval: 15 * 60 * 1000,
-      maxConnections: 50
-    },
-    servers: {},
-    observability: {
-      tracing: {
-        enabled: false,
-        exporter: 'console' as const,
-        endpoint: 'http://localhost:4318/v1/traces',
-        sampleRate: 1.0
+        rotationAge: rotationConfig.rotationAge ?? '7d'
       }
     }
   };
@@ -53,7 +20,7 @@ function createTestConfig(
 describe('LogRotator', () => {
   let logRotator: LogRotator;
   let tempLogDir: string;
-  let originalConfig: ReturnType<typeof configManager.getConfig>;
+  let originalConfig: ReturnType<typeof createTestConfig>;
 
   beforeEach(() => {
     // Create temporary log directory
@@ -62,8 +29,6 @@ describe('LogRotator', () => {
 
     // Set default configuration
     originalConfig = createTestConfig();
-
-    vi.mocked(configManager.getConfig).mockReturnValue(originalConfig);
   });
 
   afterEach(() => {
@@ -92,7 +57,7 @@ describe('LogRotator', () => {
   });
 
   it("should get current log file path with today's date", () => {
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const currentPath = logRotator.getCurrentLogFilePath();
 
     const today = new Date();
@@ -105,7 +70,7 @@ describe('LogRotator', () => {
   });
 
   it('should get current log file path with custom base name', () => {
-    logRotator = new LogRotator(tempLogDir, 'custom-log');
+    logRotator = new LogRotator(tempLogDir, 'custom-log', undefined, () => originalConfig);
     const currentPath = logRotator.getCurrentLogFilePath();
 
     const today = new Date();
@@ -119,9 +84,7 @@ describe('LogRotator', () => {
 
   it('should parse retention days correctly for days', () => {
     const configWithDays = createTestConfig({ rotationAge: '30d' });
-    vi.mocked(configManager.getConfig).mockReturnValue(configWithDays);
-
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => configWithDays);
     // @ts-expect-error - accessing private method for testing
     const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(30);
@@ -129,9 +92,7 @@ describe('LogRotator', () => {
 
   it('should parse retention days correctly for hours', () => {
     const configWithHours = createTestConfig({ rotationAge: '48h' });
-    vi.mocked(configManager.getConfig).mockReturnValue(configWithHours);
-
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => configWithHours);
     // @ts-expect-error - accessing private method for testing
     const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(2); // 48 hours = 2 days
@@ -139,9 +100,7 @@ describe('LogRotator', () => {
 
   it('should parse retention days correctly for minutes', () => {
     const configWithMinutes = createTestConfig({ rotationAge: '1440m' });
-    vi.mocked(configManager.getConfig).mockReturnValue(configWithMinutes);
-
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => configWithMinutes);
     // @ts-expect-error - accessing private method for testing
     const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(1); // 1440 minutes = 1 day
@@ -149,16 +108,21 @@ describe('LogRotator', () => {
 
   it('should return default retention days for invalid format', () => {
     const configWithInvalid = createTestConfig({ rotationAge: 'invalid' });
-    vi.mocked(configManager.getConfig).mockReturnValue(configWithInvalid);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => configWithInvalid);
+    // @ts-expect-error - accessing private method for testing
+    const retentionDays = logRotator.getRetentionDays();
+    expect(retentionDays).toBe(7); // default
+  });
 
-    logRotator = new LogRotator(tempLogDir);
+  it('should use default 7 days when no config provided', () => {
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub');
     // @ts-expect-error - accessing private method for testing
     const retentionDays = logRotator.getRetentionDays();
     expect(retentionDays).toBe(7); // default
   });
 
   it('should extract date from filename correctly', () => {
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const filename = 'mcp-hub.2025-12-01.log';
     // @ts-expect-error - accessing private method for testing
     const date = logRotator.extractDateFromFilename(filename);
@@ -170,7 +134,7 @@ describe('LogRotator', () => {
   });
 
   it('should return null for invalid filename', () => {
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const filename = 'invalid-filename.txt';
     // @ts-expect-error - accessing private method for testing
     const date = logRotator.extractDateFromFilename(filename);
@@ -186,7 +150,7 @@ describe('LogRotator', () => {
       fs.writeFileSync(filePath, 'test content');
     }
 
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const logFiles = logRotator.getLogFiles();
 
     expect(logFiles).toHaveLength(3);
@@ -197,7 +161,7 @@ describe('LogRotator', () => {
   });
 
   it('should handle empty log directory', () => {
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const logFiles = logRotator.getLogFiles();
 
     expect(logFiles).toHaveLength(0);
@@ -218,7 +182,7 @@ describe('LogRotator', () => {
     const recentFilePath = path.join(tempLogDir, `mcp-hub.${recentDateString}.log`);
     fs.writeFileSync(recentFilePath, 'recent log content');
 
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     logRotator.rotateLogs();
 
     // Old file should be deleted, recent file should remain
@@ -232,7 +196,7 @@ describe('LogRotator', () => {
       throw new Error('Permission denied');
     });
 
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
 
     // Should not throw an error
     expect(() => logRotator.rotateLogs()).not.toThrow();
@@ -246,11 +210,89 @@ describe('LogRotator', () => {
       throw new Error('Permission denied');
     });
 
-    logRotator = new LogRotator(tempLogDir);
+    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
     const logFiles = logRotator.getLogFiles();
 
     expect(logFiles).toHaveLength(0);
 
     readdirSyncSpy.mockRestore();
+  });
+
+  describe('with custom config', () => {
+    it('should create log rotator with custom configuration', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', { rotationAge: '14d' });
+      expect(logRotator).toBeDefined();
+    });
+
+    it('should use custom rotation age when provided', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', { rotationAge: '30d' });
+      // @ts-expect-error - accessing private method for testing
+      const retentionDays = logRotator.getRetentionDays();
+      expect(retentionDays).toBe(30);
+    });
+
+    it('should parse custom rotation age in hours', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', { rotationAge: '48h' });
+      // @ts-expect-error - accessing private method for testing
+      const retentionDays = logRotator.getRetentionDays();
+      expect(retentionDays).toBe(2);
+    });
+
+    it('should parse custom rotation age in minutes', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', { rotationAge: '2880m' });
+      // @ts-expect-error - accessing private method for testing
+      const retentionDays = logRotator.getRetentionDays();
+      expect(retentionDays).toBe(2); // 2880 minutes = 2 days
+    });
+
+    it('should return default 7 days for invalid custom format', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', { rotationAge: 'invalid' });
+      // @ts-expect-error - accessing private method for testing
+      const retentionDays = logRotator.getRetentionDays();
+      expect(retentionDays).toBe(7);
+    });
+
+    it('should use default 7 days when no custom rotation age provided', () => {
+      logRotator = new LogRotator(tempLogDir, 'custom-log', {});
+      // @ts-expect-error - accessing private method for testing
+      const retentionDays = logRotator.getRetentionDays();
+      expect(retentionDays).toBe(7);
+    });
+
+    it('should get current log file path with custom base name and custom config', () => {
+      logRotator = new LogRotator(tempLogDir, 'dev-server', { rotationAge: '7d' });
+      const currentPath = logRotator.getCurrentLogFilePath();
+
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const expectedPath = path.join(tempLogDir, `dev-server.${year}-${month}-${day}.log`);
+
+      expect(currentPath).toBe(expectedPath);
+    });
+
+    it('should rotate logs with custom retention period', () => {
+      // Create old log files (beyond custom 2-day retention period)
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 3); // 3 days old
+      const oldDateString = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}-${String(oldDate.getDate()).padStart(2, '0')}`;
+      const oldFilePath = path.join(tempLogDir, `dev-server.${oldDateString}.log`);
+      fs.writeFileSync(oldFilePath, 'old log content');
+      fs.utimesSync(oldFilePath, oldDate, oldDate);
+
+      // Create recent log file (within custom 2-day retention period)
+      const recentDate = new Date();
+      const recentDateString = `${recentDate.getFullYear()}-${String(recentDate.getMonth() + 1).padStart(2, '0')}-${String(recentDate.getDate()).padStart(2, '0')}`;
+      const recentFilePath = path.join(tempLogDir, `dev-server.${recentDateString}.log`);
+      fs.writeFileSync(recentFilePath, 'recent log content');
+
+      logRotator = new LogRotator(tempLogDir, 'dev-server', { rotationAge: '2d' });
+      logRotator.rotateLogs();
+
+      // Old file should be deleted, recent file should remain
+      expect(fs.existsSync(oldFilePath)).toBe(false);
+      expect(fs.existsSync(recentFilePath)).toBe(true);
+    });
   });
 });

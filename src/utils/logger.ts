@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { LogLevel } from '@shared-types/common.types.js';
 import { stringifyForLogging } from './json-utils.js';
+import { LogRotator, type RotatorConfig } from './log-rotator.js';
 
 export interface LogContext {
   pid?: number;
@@ -27,6 +28,7 @@ const PID_WIDTH = 8;
  * - Context-aware logging with subModule, traceId, and spanId support
  * - Error formatting with stack trace truncation to prevent overly verbose logs
  * - MCP server-specific logging with serverName context
+ * - Log rotation with date-based file naming and automatic cleanup
  *
  * The logger supports four log levels: debug, info, warn, and error, with configurable
  * minimum log level threshold.
@@ -47,6 +49,7 @@ export class Logger {
   private level: LogLevel = 'info';
   private useStderr: boolean = false;
   private logFileStream: fs.WriteStream | null = null;
+  private devLogRotator: LogRotator | null = null;
 
   constructor(level: LogLevel = 'info') {
     this.level = level;
@@ -64,18 +67,23 @@ export class Logger {
    * - Write all log output to a file in the logs/ directory
    * - Enable communication debug logging (MCP_COMM_DEBUG)
    * - Enable session debug logging (SESSION_DEBUG)
-   * - Clear the log file on startup to avoid interference from stale logs
+   * - Use date-based log file naming (dev-server.YYYY-MM-DD.log)
+   * - Automatically clean up old log files (default: 7 days retention)
    *
-   * The log file is created at logs/dev-server.log and will contain plain text
-   * formatted logs without ANSI color codes for easier analysis.
+   * The log file is created at logs/dev-server.{YYYY-MM-DD}.log and will contain
+   * plain text formatted logs without ANSI color codes for easier analysis.
    *
+   * @param rotatorConfig - Optional custom rotation configuration (default: 7 days retention)
    * @example
    * ```typescript
    * const logger = new Logger();
-   * logger.enableDevLog(); // Logs will be written to logs/dev-server.log
+   * logger.enableDevLog(); // Logs will be written to logs/dev-server.2026-02-27.log
+   *
+   * // With custom retention period
+   * logger.enableDevLog({ rotationAge: '14d' });
    * ```
    */
-  public enableDevLog() {
+  public enableDevLog(rotatorConfig?: RotatorConfig) {
     if (this.logFileStream) return;
 
     // Enable dev logging to file via environment variable
@@ -94,7 +102,16 @@ export class Logger {
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
-    const logFile = path.join(logDir, 'dev-server.log');
+
+    // Create log rotator with default 7 days retention if not specified
+    const config: RotatorConfig = rotatorConfig || { rotationAge: '7d' };
+    this.devLogRotator = new LogRotator(logDir, 'dev-server', config);
+
+    // Perform log rotation to clean up old files
+    this.devLogRotator.rotateLogs();
+
+    // Get current log file path with date
+    const logFile = this.devLogRotator.getCurrentLogFilePath();
 
     this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
     this.debug(`Writing logs to: ${logFile} (appending to existing log)`, { subModule: 'DEV LOG' });
