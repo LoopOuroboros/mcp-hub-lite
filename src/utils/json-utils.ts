@@ -3,6 +3,34 @@
  */
 
 /**
+ * Convert Node.js rawHeaders array [key1, value1, key2, value2, ...] to object
+ * @param rawHeaders Node.js rawHeaders array
+ * @returns Headers as key-value object
+ */
+export function rawHeadersToObject(rawHeaders: string[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const key = rawHeaders[i];
+    const value = rawHeaders[i + 1];
+    if (key !== undefined && value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Stringify Node.js rawHeaders array for logging
+ * Converts [key1, value1, key2, value2, ...] to readable object format
+ * @param rawHeaders Node.js rawHeaders array
+ * @returns Formatted JSON string
+ */
+export function stringifyRawHeadersForLogging(rawHeaders: string[]): string {
+  const headersObj = rawHeadersToObject(rawHeaders);
+  return stringifyForLogging(headersObj);
+}
+
+/**
  * Get JSON pretty setting from environment variable
  * @returns boolean indicating whether to use pretty JSON formatting
  */

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
+import { stringifyForLogging, stringifyRawHeadersForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
 import type { ClientContext } from '@shared-types/client.types.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -475,12 +475,12 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           filteredHeaders.push('mcp-session-id', sessionId);
           request.raw.rawHeaders = filteredHeaders;
 
-          logger.debug(`Modified rawHeaders: ${JSON.stringify(request.raw.rawHeaders)}`, { subModule: 'Gateway' });
+          logger.debug(`Modified rawHeaders: ${stringifyRawHeadersForLogging(request.raw.rawHeaders)}`, { subModule: 'Gateway' });
         }
 
         // Log the final headers for debugging
-        logger.debug(`Final request.headers: ${JSON.stringify(request.headers)}`, { subModule: 'Gateway' });
-        logger.debug(`Final request.raw.headers: ${JSON.stringify(request.raw.headers)}`, { subModule: 'Gateway' });
+        logger.debug(`Final request.headers: ${stringifyForLogging(request.headers)}`, { subModule: 'Gateway' });
+        logger.debug(`Final request.raw.headers: ${stringifyForLogging(request.raw.headers)}`, { subModule: 'Gateway' });
 
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
