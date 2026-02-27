@@ -7,6 +7,63 @@ import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
 import { randomUUID } from 'crypto';
 
+// ============================================================================
+// SSE Stream Cleanup Utilities
+// These utilities help resolve the "Only one SSE stream is allowed per session"
+// error by cleaning up stale streams before handling new requests.
+// This preserves sessionId and only cleans up SDK-internal stream state.
+// ============================================================================
+
+/**
+ * Helper to clean up stale SSE streams before handling new requests.
+ * This preserves sessionId and only cleans up SDK-internal stream state.
+ *
+ * @param transport - The StreamableHTTPServerTransport instance from MCP SDK
+ * @param sessionId - The current session ID for logging purposes
+ */
+const cleanupStaleSseStreams = (transport: unknown, sessionId: string): void => {
+  try {
+    // Access internal SDK structures to clean up stream mapping
+    // The transport wraps a WebStandardStreamableHTTPServerTransport internally
+    const webTransport = (transport as {
+      _webStandardTransport?: {
+        _streamMapping?: Map<string, unknown>;
+        _standaloneSseStreamId?: string;
+        close?: () => Promise<void>;
+      };
+    })._webStandardTransport;
+
+    if (webTransport?._streamMapping) {
+      const streamId = webTransport._standaloneSseStreamId || '_GET_stream';
+      const existingStream = webTransport._streamMapping.get(streamId);
+
+      if (existingStream) {
+        logger.debug(`Cleaning up stale SSE stream for session ${sessionId} (preserving session state)`, {
+          subModule: 'Gateway'
+        });
+
+        // Try to call cleanup if available on the stream object
+        const streamWithCleanup = existingStream as { cleanup?: () => void };
+        if (typeof streamWithCleanup.cleanup === 'function') {
+          streamWithCleanup.cleanup();
+        } else {
+          // Fallback: directly delete from mapping
+          webTransport._streamMapping.delete(streamId);
+        }
+
+        logger.debug(`Successfully cleaned up SSE stream mapping for session ${sessionId}`, {
+          subModule: 'Gateway'
+        });
+      }
+    }
+  } catch (error) {
+    // Non-critical error - if we can't clean up, just continue
+    logger.debug(`Error cleaning up SSE streams (non-critical, continuing): ${error}`, {
+      subModule: 'Gateway'
+    });
+  }
+};
+
 // MCP Protocol Request Body Types
 interface RequestBody {
   method?: string;
@@ -261,9 +318,121 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       const originalWrite = reply.raw.write.bind(reply.raw);
       const originalEnd = reply.raw.end.bind(reply.raw);
       let responseBuffer = '';
+      let socketBuffer = '';
+      let hasLoggedResponse = false;
+      let socketWrapped = false;
 
-      logger.debug(`MCP Gateway: Wrapping reply.raw for session ${sessionId}`, {
+      logger.debug(`Wrapping response - writable: ${reply.raw.writable}, destroyed: ${reply.raw.destroyed}, socket: ${!!reply.raw.socket}`, {
         subModule: 'Communication'
+      });
+
+      // Wrap socket write if socket exists (for transports that bypass http.ServerResponse.write/end)
+      const wrapSocket = () => {
+        if (socketWrapped || !reply.raw.socket) {
+          return;
+        }
+
+        const socket = reply.raw.socket;
+        const originalSocketWrite = socket.write.bind(socket);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socket.write = function (data: any, encoding?: any, callback?: any) {
+          try {
+            if (typeof data === 'string') {
+              socketBuffer += data;
+            } else if (data instanceof Buffer) {
+              socketBuffer += data.toString(encoding || 'utf8');
+            } else if (data instanceof Uint8Array) {
+              try {
+                socketBuffer += new TextDecoder('utf-8').decode(data);
+              } catch {
+                socketBuffer += `[Binary data: ${data.length} bytes]`;
+              }
+            }
+          } catch (error) {
+            logger.debug(`MCP Gateway: Error processing socket write: ${error}`, {
+              subModule: 'Communication'
+            });
+          }
+          return originalSocketWrite(data, encoding, callback);
+        };
+
+        // Also listen for socket finish to log any remaining data
+        socket.once('finish', () => {
+          if (!hasLoggedResponse && (socketBuffer.length > 0 || responseBuffer.length > 0)) {
+            logFinalResponse();
+          }
+        });
+
+        socketWrapped = true;
+        logger.debug(`MCP Gateway: Socket wrapped successfully for session ${sessionId}`, {
+          subModule: 'Communication'
+        });
+      };
+
+      // Helper function to format and log response
+      const logFinalResponse = () => {
+        if (hasLoggedResponse) {
+          return;
+        }
+        hasLoggedResponse = true;
+
+        // Determine which buffer to use
+        const primaryBuffer = responseBuffer.length > 0 ? responseBuffer : socketBuffer;
+        const bufferSource = responseBuffer.length > 0 ? 'http.ServerResponse' : 'socket';
+
+        if (primaryBuffer.length === 0) {
+          logger.debug(`MCP Gateway response for ${sessionId}: [No response data captured - transport may have used direct socket operations]`, {
+            subModule: 'Communication'
+          });
+          return;
+        }
+
+        // Log response content, simplify tools/list responses
+        let logResponse = primaryBuffer;
+        try {
+          if (isToolsListResponse(primaryBuffer)) {
+            logResponse = simplifyToolsListResponse(primaryBuffer);
+          } else {
+            // Handle SSE format responses (event: message followed by data: JSON)
+            if (primaryBuffer.includes('event: message') && primaryBuffer.includes('data:')) {
+              const dataMatch = primaryBuffer.match(/data: ([^\n]+)/);
+              if (dataMatch) {
+                const jsonData = dataMatch[1].trim();
+                try {
+                  const parsed = JSON.parse(jsonData);
+                  const formattedData = stringifyForLogging(parsed);
+                  logResponse = `event: message\ndata: ${formattedData}`;
+                } catch {
+                  logResponse = primaryBuffer;
+                }
+              } else {
+                logResponse = primaryBuffer;
+              }
+            } else {
+              // Try to format other JSON responses to improve readability
+              const parsed = JSON.parse(primaryBuffer);
+              logResponse = stringifyForLogging(parsed);
+            }
+          }
+        } catch {
+          // If not valid JSON, output as-is and truncate long content
+          logResponse =
+            primaryBuffer.length > 500
+              ? primaryBuffer.substring(0, 500) + '...'
+              : primaryBuffer;
+        }
+        logger.debug(`MCP Gateway response for ${sessionId} (source: ${bufferSource}):\n${logResponse.trimEnd()}`, {
+          subModule: 'Communication'
+        });
+      };
+
+      // Try to wrap socket immediately
+      wrapSocket();
+
+      // Also try to wrap socket when it becomes available (in case it's not yet attached)
+      reply.raw.once('socket', () => {
+        wrapSocket();
       });
 
       // Wrap write method
@@ -323,43 +492,8 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
             responseBuffer += chunkStr;
           }
 
-          // Log response content, simplify tools/list responses
-          let logResponse = responseBuffer;
-          try {
-            if (isToolsListResponse(responseBuffer)) {
-              logResponse = simplifyToolsListResponse(responseBuffer);
-            } else {
-              // Handle SSE format responses (event: message followed by data: JSON)
-              if (responseBuffer.includes('event: message') && responseBuffer.includes('data:')) {
-                const dataMatch = responseBuffer.match(/data: ([^\n]+)/);
-                if (dataMatch) {
-                  const jsonData = dataMatch[1].trim();
-                  try {
-                    const parsed = JSON.parse(jsonData);
-                    const formattedData = stringifyForLogging(parsed);
-                    logResponse = `event: message\ndata: ${formattedData}`;
-                  } catch {
-                    logResponse = responseBuffer;
-                  }
-                } else {
-                  logResponse = responseBuffer;
-                }
-              } else {
-                // Try to format other JSON responses to improve readability
-                const parsed = JSON.parse(responseBuffer);
-                logResponse = stringifyForLogging(parsed);
-              }
-            }
-          } catch {
-            // If not valid JSON, output as-is and truncate long content
-            logResponse =
-              responseBuffer.length > 500
-                ? responseBuffer.substring(0, 500) + '...'
-                : responseBuffer;
-          }
-          logger.debug(`MCP Gateway response for ${sessionId}:\n${logResponse.trimEnd()}`, {
-            subModule: 'Communication'
-          });
+          // Log response before calling original end
+          logFinalResponse();
         } catch (error) {
           logger.debug(`MCP Gateway: Error processing end chunk: ${error}`, {
             subModule: 'Communication'
@@ -373,6 +507,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       reply.raw.writeHead = function (statusCode: number, ...args: any[]) {
         try {
+          // Ensure socket is wrapped before any response is sent
+          wrapSocket();
+
           // If it's an error response, log status code and headers
           if (statusCode >= 400) {
             let statusMessage: string | undefined;
@@ -410,6 +547,20 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         }
         return originalWriteHead(statusCode, ...args);
       };
+
+      // Set up fallback logging in case end() is never called
+      reply.raw.once('finish', () => {
+        if (!hasLoggedResponse) {
+          logFinalResponse();
+        }
+      });
+
+      // Also set up close event for fallback
+      reply.raw.once('close', () => {
+        if (!hasLoggedResponse) {
+          logFinalResponse();
+        }
+      });
     };
 
     wrapReplyForDebug();
@@ -431,6 +582,15 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       );
 
       const session = await mcpSessionManager.getSession(sessionId, requireInitialize);
+
+      // Proactive cleanup: For GET requests (SSE connections), clean up stale streams first
+      // This prevents "Only one SSE stream is allowed per session" errors
+      if (request.method === 'GET') {
+        logger.debug(`Proactive SSE stream cleanup for session ${sessionId} before handling request`, {
+          subModule: 'Gateway'
+        });
+        cleanupStaleSseStreams(session.transport, sessionId);
+      }
 
       await requestContext.run(clientContext, async () => {
         if (
