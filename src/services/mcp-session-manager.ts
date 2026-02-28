@@ -109,7 +109,7 @@ export class McpSessionManager {
 
     // Initialize by restoring sessions
     this.restoreSessions().catch((error) => {
-      logger.error(' Failed to restore sessions during initialization:', error);
+      logger.error(' Failed to restore sessions during initialization:', error, { subModule: 'SessionManager' });
     });
   }
 
@@ -133,11 +133,11 @@ export class McpSessionManager {
    */
   private registerShutdownHandler(): void {
     const gracefulShutdown = async () => {
-      logger.info(' Shutting down, flushing dirty sessions...');
+      logger.info(' Shutting down, flushing dirty sessions...', { subModule: 'SessionManager' });
       try {
         await this.flushDirtySessions();
       } catch (error) {
-        logger.error(' Error during shutdown flush:', error);
+        logger.error(' Error during shutdown flush:', error, { subModule: 'SessionManager' });
       }
       if (this.flushTimeout) {
         clearTimeout(this.flushTimeout);
@@ -226,7 +226,7 @@ export class McpSessionManager {
       const index = JSON.parse(indexContent);
 
       if (!index.sessions || !Array.isArray(index.sessions)) {
-        logger.error(' Invalid sessions index file, creating new one');
+        logger.error(' Invalid sessions index file, creating new one', { subModule: 'Session' });
         return createEmptySessionStore();
       }
 
@@ -241,7 +241,7 @@ export class McpSessionManager {
             const validated = SessionStateSchema.parse(sessionState);
             store.sessions[sessionId] = validated;
           } catch (error) {
-            logger.warn(` Failed to load session ${sessionId}:`, error);
+            logger.warn(` Failed to load session ${sessionId}:`, error, { subModule: 'Session' });
           }
         }
       }
@@ -254,7 +254,7 @@ export class McpSessionManager {
 
       return store;
     } catch (error) {
-      logger.error(' Failed to load sessions store:', error);
+      logger.error(' Failed to load sessions store:', error, { subModule: 'Session' });
       return createEmptySessionStore();
     }
   }
@@ -301,7 +301,7 @@ export class McpSessionManager {
         )
       );
     } catch (error) {
-      logger.error(' Failed to save sessions store:', error);
+      logger.error(' Failed to save sessions store:', error, { subModule: 'Session' });
       throw error;
     }
   }
@@ -331,7 +331,7 @@ export class McpSessionManager {
     }
 
     try {
-      logger.info('Restoring sessions from disk...');
+      logger.info('Restoring sessions from disk...', { subModule: 'SessionManager' });
 
       const store = await this.loadSessionStore();
       let restoredCount = 0;
@@ -347,7 +347,7 @@ export class McpSessionManager {
             logger.debug(`Restored session state: ${sessionId}`, { subModule: 'Session' });
           }
         } catch (error) {
-          logger.warn(` Skipping invalid session state for ${sessionId}:`, error);
+          logger.warn(` Skipping invalid session state for ${sessionId}:`, error, { subModule: 'Session' });
         }
       }
 
@@ -356,7 +356,7 @@ export class McpSessionManager {
         subModule: 'SessionManager'
       });
     } catch (error) {
-      logger.error(' Failed to restore sessions:', error);
+      logger.error(' Failed to restore sessions:', error, { subModule: 'SessionManager' });
       // Continue with empty state rather than failing
       this.isInitialized = true;
     }
@@ -424,7 +424,7 @@ export class McpSessionManager {
         subModule: 'SessionManager'
       });
     } catch (error) {
-      logger.error(' Failed to flush dirty sessions:', error);
+      logger.error(' Failed to flush dirty sessions:', error, { subModule: 'SessionManager' });
     }
   }
 
@@ -731,7 +731,7 @@ export class McpSessionManager {
       try {
         await session.server.close();
       } catch (e) {
-        logger.error(` Error closing session ${sessionId}:`, e);
+        logger.error(` Error closing session ${sessionId}:`, e, { subModule: 'Session' });
       }
       this.sessions.delete(sessionId);
     }
@@ -778,7 +778,7 @@ export class McpSessionManager {
     sessionId: string,
     requireInitialize: boolean = true
   ): Promise<Session> {
-    logger.info(` Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`);
+    logger.info(` Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`, { subModule: 'SessionManager' });
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => sessionId,
@@ -963,12 +963,12 @@ export class McpSessionManager {
     // Cleanup in-memory session objects
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
-        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`);
+        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`, { subModule: 'Session' });
         try {
           session.server.close();
           cleanedCount++;
         } catch (e) {
-          logger.error(` Error closing session ${sessionId}:`, e);
+          logger.error(` Error closing session ${sessionId}:`, e, { subModule: 'Session' });
         }
         this.sessions.delete(sessionId);
       }
@@ -986,13 +986,13 @@ export class McpSessionManager {
     for (const sessionId of expiredSessionIds) {
       this.sessionStates.delete(sessionId);
       this.markAsDirty(sessionId);
-      logger.debug(`Marking expired session for deletion: ${sessionId}`);
+      logger.debug(`Marking expired session for deletion: ${sessionId}`, { subModule: 'Session' });
     }
 
     // Immediately flush to delete session files from disk
     if (expiredSessionIds.length > 0) {
       this.flushDirtySessions().catch(error => {
-        logger.error('Failed to flush expired sessions:', error);
+        logger.error('Failed to flush expired sessions:', error, { subModule: 'SessionManager' });
       });
     }
 

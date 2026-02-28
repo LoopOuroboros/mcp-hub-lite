@@ -133,7 +133,7 @@ export class ConfigManager {
   private loadConfig(): void {
     try {
       if (fs.existsSync(this.configPath)) {
-        logger.info(`Loading configuration from: ${this.configPath}`);
+        logger.info(`Loading configuration from: ${this.configPath}`, { subModule: 'ConfigManager' });
         const content = fs.readFileSync(this.configPath, 'utf-8');
         this.config = JSON.parse(content);
         // Unified type conversion: convert http to streamable-http
