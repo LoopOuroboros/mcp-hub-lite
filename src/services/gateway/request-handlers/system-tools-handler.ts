@@ -50,8 +50,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   });
 
   server.server.setRequestHandler(FindServersRequestSchema, async (request) => {
-    const { pattern, searchIn, caseSensitive } = request.params;
-    const servers = await hubToolsService.findServers(pattern, searchIn, caseSensitive);
+    const servers = await hubToolsService.findServers(request.params);
     return { servers };
   });
 
@@ -73,8 +72,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(ListAllToolsInServerRequestSchema, async (request) => {
     try {
-      const { serverName, requestOptions } = request.params;
-      const result = await hubToolsService.listAllToolsInServer(serverName, requestOptions);
+      const result = await hubToolsService.listAllToolsInServer(request.params);
       return result;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -108,14 +106,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(FindToolsInServerRequestSchema, async (request) => {
     try {
-      const { serverName, pattern, searchIn, caseSensitive, requestOptions } = request.params;
-      const result = await hubToolsService.findToolsInServer(
-        serverName,
-        pattern,
-        searchIn,
-        caseSensitive,
-        requestOptions
-      );
+      const result = await hubToolsService.findToolsInServer(request.params);
       return result;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -147,11 +138,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(GetToolRequestSchema, async (request) => {
     try {
-      const { serverName, toolName, requestOptions } = request.params;
-      const tool = await hubToolsService.getTool(serverName, toolName, requestOptions);
+      const tool = await hubToolsService.getTool(request.params);
 
       if (!tool) {
-        throw new McpError(-32801, `Tool "${toolName}" not found on server "${serverName}"`);
+        throw new McpError(-32801, `Tool "${request.params.toolName}" not found on server "${request.params.serverName}"`);
       }
 
       return { tool };
@@ -187,21 +177,16 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(CallToolDirectRequestSchema, async (request) => {
     try {
-      const { serverName, toolName, toolArgs, requestOptions } = request.params;
+      const params = { ...request.params };
 
       // Inject CWD if available and not present in args
       const cwd = getClientCwd();
-      if (cwd && !toolArgs.cwd) {
-        toolArgs.cwd = cwd;
+      if (cwd && !params.toolArgs.cwd) {
+        params.toolArgs.cwd = cwd;
         logger.debug(`Injected CWD into direct tool call: ${cwd}`);
       }
 
-      const result = await hubToolsService.callTool(
-        serverName,
-        toolName,
-        toolArgs,
-        requestOptions
-      );
+      const result = await hubToolsService.callTool(params);
       // Wrap the result in a valid CallToolResult structure
       if (typeof result === 'object' && result !== null) {
         return {
@@ -256,8 +241,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   });
 
   server.server.setRequestHandler(FindToolsRequestSchema, async (request) => {
-    const { pattern, searchIn, caseSensitive } = request.params;
-    const tools = await hubToolsService.findTools(pattern, searchIn, caseSensitive);
+    const tools = await hubToolsService.findTools(request.params);
     return tools;
   });
 }

@@ -105,11 +105,11 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   }>('/web/hub-tools/servers/find', async (request) => {
     const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
 
-    const servers = await hubToolsService.findServers(
+    const servers = await hubToolsService.findServers({
       pattern,
-      searchIn as 'name' | 'description' | 'both',
-      caseSensitive === 'true'
-    );
+      searchIn: searchIn as 'name' | 'description' | 'both',
+      caseSensitive: caseSensitive === 'true'
+    });
 
     return servers;
   });
@@ -128,7 +128,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
         tags: tags ? JSON.parse(tags) : undefined
       };
 
-      const result = await hubToolsService.listAllToolsInServer(serverName, requestOptions);
+      const result = await hubToolsService.listAllToolsInServer({ serverName, requestOptions });
       return result;
     } catch (error) {
       return reply.code(404).send({
@@ -164,13 +164,13 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
         tags: tags ? JSON.parse(tags) : undefined
       };
 
-      const result = await hubToolsService.findToolsInServer(
+      const result = await hubToolsService.findToolsInServer({
         serverName,
         pattern,
-        searchIn as 'name' | 'description' | 'both',
-        caseSensitive === 'true',
+        searchIn: searchIn as 'name' | 'description' | 'both',
+        caseSensitive: caseSensitive === 'true',
         requestOptions
-      );
+      });
 
       return result;
     } catch (error) {
@@ -201,7 +201,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
         tags: tags ? JSON.parse(tags) : undefined
       };
 
-      const tool = await hubToolsService.getTool(serverName, toolName, requestOptions);
+      const tool = await hubToolsService.getTool({ serverName, toolName, requestOptions });
 
       if (!tool) {
         return reply.code(404).send({
@@ -244,7 +244,7 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       const { serverName, toolName } = request.params;
       const { toolArgs, requestOptions } = CallToolBodySchema.parse(request.body);
 
-      const result = await hubToolsService.callTool(serverName, toolName, toolArgs, requestOptions);
+      const result = await hubToolsService.callTool({ serverName, toolName, toolArgs, requestOptions });
       return result;
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
@@ -276,11 +276,11 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   }>('/web/hub-tools/tools/find', async (request) => {
     const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
 
-    const tools = await hubToolsService.findTools(
+    const tools = await hubToolsService.findTools({
       pattern,
-      searchIn as 'name' | 'description' | 'both',
-      caseSensitive === 'true'
-    );
+      searchIn: searchIn as 'name' | 'description' | 'both',
+      caseSensitive: caseSensitive === 'true'
+    });
 
     return tools;
   });

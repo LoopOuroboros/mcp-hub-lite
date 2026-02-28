@@ -41,39 +41,26 @@ export class SystemToolHandler {
           break;
         case FIND_SERVERS_TOOL: {
           const findServersArgs = toolArgs as unknown as FindServersParams;
-          result = await hubToolsService.findServers(
-            findServersArgs.pattern,
-            findServersArgs.searchIn,
-            findServersArgs.caseSensitive
-          );
+          result = await hubToolsService.findServers(findServersArgs);
           break;
         }
         case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
           const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
           result = await hubToolsService.listAllToolsInServer(
-            listAllToolsArgs.serverName,
-            listAllToolsArgs.requestOptions
+            listAllToolsArgs
           );
           break;
         }
         case FIND_TOOLS_IN_SERVER_TOOL: {
           const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
           result = await hubToolsService.findToolsInServer(
-            findToolsInServerArgs.serverName,
-            findToolsInServerArgs.pattern,
-            findToolsInServerArgs.searchIn,
-            findToolsInServerArgs.caseSensitive,
-            findToolsInServerArgs.requestOptions
+            findToolsInServerArgs
           );
           break;
         }
         case GET_TOOL_TOOL: {
           const getToolArgs = toolArgs as unknown as GetToolParams;
-          result = await hubToolsService.getTool(
-            getToolArgs.serverName,
-            getToolArgs.toolName,
-            getToolArgs.requestOptions
-          );
+          result = await hubToolsService.getTool(getToolArgs);
           break;
         }
         case CALL_TOOL_TOOL: {
@@ -82,20 +69,16 @@ export class SystemToolHandler {
           if (!serverName || serverName === 'undefined') {
             serverName = MCP_HUB_LITE_SERVER;
           }
-          result = await hubToolsService.callTool(
-            serverName,
-            callToolArgs.toolName,
-            callToolArgs.toolArgs,
-            callToolArgs.requestOptions
-          );
+          result = await hubToolsService.callTool({
+            ...callToolArgs,
+            serverName
+          });
           break;
         }
         case FIND_TOOLS_TOOL: {
           const findToolsArgs = toolArgs as unknown as FindToolsParams;
           result = await hubToolsService.findTools(
-            findToolsArgs.pattern,
-            findToolsArgs.searchIn,
-            findToolsArgs.caseSensitive
+            findToolsArgs
           );
           break;
         }

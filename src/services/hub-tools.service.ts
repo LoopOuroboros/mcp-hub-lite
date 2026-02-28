@@ -1,16 +1,13 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
-import type { JsonSchema } from '@shared-models/tool.model.js';
-import type { ServerConfig, ServerInstanceConfig } from '@config/config.schema.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
-import type { ServerStatus } from '@shared-types/common.types.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import {
-  SYSTEM_TOOL_NAMES,
+  MCP_HUB_LITE_SERVER,
   LIST_SERVERS_TOOL,
   FIND_SERVERS_TOOL,
   LIST_ALL_TOOLS_IN_SERVER_TOOL,
@@ -18,7 +15,7 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   FIND_TOOLS_TOOL,
-  MCP_HUB_LITE_SERVER
+  SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
   SystemToolArgs,
@@ -32,159 +29,16 @@ import type {
   FindToolsParams
 } from '@models/system-tools.constants.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
-
-/**
- * Configuration options for server instance selection in multi-instance scenarios.
- *
- * This interface defines request options that can be used to select specific server instances
- * when multiple instances of the same MCP server are available. The current implementation
- * uses the first available instance, but the interface is designed to support future
- * extensions for intelligent instance selection based on various criteria.
- *
- * @interface RequestOptions
- * @property {string} [sessionId] - Session identifier for selecting instance associated with specific session
- * @property {Record<string, string>} [tags] - Key-value tags for matching against server instance tags
- *
- * @example
- * ```typescript
- * // Select instance based on session
- * const options: RequestOptions = { sessionId: 'session-123' };
- *
- * // Select instance based on tags
- * const options: RequestOptions = { tags: { environment: 'production' } };
- * ```
- */
-export interface RequestOptions {
-  sessionId?: string; // Session ID (for selecting specific instance)
-  tags?: Record<string, string>; // Tags (for future support)
-  // Future options that may be added
-  // clientId?: string;  // Client ID (for selecting dedicated instance)
-}
-
-/**
- * Selects the best server instance based on server name and request options.
- *
- * This function resolves a server name to its configuration and instance details,
- * handling both single and multiple instance scenarios. Currently, it returns
- * the first instance for multi-instance servers, but the architecture supports
- * future extensions for intelligent instance selection based on session ID,
- * tags, client ID, or load conditions.
- *
- * The function performs the following steps:
- * 1. Retrieves all instances of the specified server name
- * 2. Returns undefined if no instances are found
- * 3. Gets the server configuration from the hub manager
- * 4. For single-instance servers, returns the instance directly
- * 5. For multi-instance servers, currently returns the first instance (with future extension support)
- *
- * Future extensions planned include:
- * - Session-aware instance selection based on sessionId
- * - Tag-based instance selection for matching specific requirements
- * - Load-balancing across multiple instances
- * - Client-specific instance assignment
- *
- * @param {string} serverName - Name of the server to select an instance for
- * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
- * @returns {{ name: string; config: ServerConfig; instance: ServerInstanceConfig & Record<string, unknown> } | undefined}
- * Server information with configuration and instance details, or undefined if not found
- *
- * @example
- * ```typescript
- * const serverInfo = selectBestInstance('my-mcp-server');
- * if (serverInfo) {
- *   console.log(`Selected instance: ${serverInfo.instance.id}`);
- * }
- *
- * // With request options (future extension)
- * const serverInfoWithOptions = selectBestInstance('my-mcp-server', {
- *   sessionId: 'session-123',
- *   tags: { environment: 'production' }
- * });
- * ```
- */
-function selectBestInstance(
-  serverName: string,
-  requestOptions?: RequestOptions
-):
-  | {
-      name: string;
-      config: ServerConfig;
-      instance: ServerInstanceConfig & Record<string, unknown>;
-    }
-  | undefined {
-  // Get all instances of the server
-  const instances = hubManager.getServerInstanceByName(serverName);
-
-  if (instances.length === 0) {
-    return undefined;
-  }
-
-  // Get server configuration
-  const serverConfig = hubManager.getServerByName(serverName);
-  if (!serverConfig) {
-    return undefined;
-  }
-
-  // If there's only one instance, return it directly
-  if (instances.length === 1) {
-    return {
-      name: serverName,
-      config: serverConfig,
-      instance: instances[0]
-    };
-  }
-
-  // Multi-instance selection logic (for future extension)
-  // Currently simplified implementation: return the first instance
-  // Future extensions could support:
-  // - Selecting specific instance based on sessionId
-  // - Selecting optimal instance based on tags matching
-  // - Selecting dedicated instance based on client ID
-  // - Selecting instance based on load conditions
-
-  // Although requestOptions is not currently used, it's kept for future extension
-  if (requestOptions?.sessionId) {
-    // In the future, specific instance can be selected based on sessionId
-    // Currently return the first instance temporarily
-  }
-
-  if (requestOptions?.tags) {
-    // In the future, optimal instance can be selected based on tags matching
-    // Currently return the first instance temporarily
-  }
-
-  return {
-    name: serverName,
-    config: serverConfig,
-    instance: instances[0] // Will be extended to intelligent selection logic later
-  };
-}
-
-/**
- * Type guard to validate that a server object has valid name and configuration.
- *
- * This function checks if the provided object is a valid server with both a non-empty
- * name string and a configuration object, ensuring type safety for server operations.
- *
- * @param {unknown} server - Object to validate as a server
- * @returns {boolean} True if the object is a valid server with name and config
- *
- * @example
- * ```typescript
- * const server = { name: 'my-server', config: { type: 'stdio' } };
- * if (hasValidId(server)) {
- *   // TypeScript knows server is properly typed
- *   console.log(server.name);
- * }
- * ```
- */
-function hasValidId(server: unknown): server is { name: string; config: ServerConfig } {
-  if (typeof server !== 'object' || server === null) {
-    return false;
-  }
-  const s = server as { name?: unknown; config?: unknown };
-  return typeof s.name === 'string' && s.name.length > 0 && typeof s.config === 'object';
-}
+import {
+  hasValidId,
+  selectBestInstance,
+  getSystemTools,
+  findServers as findServersUtil,
+  findToolsInServer as findToolsInServerUtil,
+  findTools as findToolsUtil,
+  generateDynamicResources,
+  readResource as readResourceUtil
+} from './hub-tools/index.js';
 
 /**
  * Central service for managing system tools and MCP server interactions in the MCP Hub Lite gateway.
@@ -267,6 +121,7 @@ export class HubToolsService {
       this.generatedResourcesCache = null;
     });
   }
+
   /**
    * Retrieves the complete list of system tools provided by this service.
    *
@@ -274,235 +129,11 @@ export class HubToolsService {
    * ensuring consistency with the defined system tool names. Each tool includes its name,
    * description, input schema, and annotations for proper client-side rendering and behavior.
    *
-   * The method implements all standard system tools:
-   * - list-servers: List all connected servers
-   * - find-servers: Find servers matching a pattern
-   * - list-all-tools-in-server: List tools from a specific server
-   * - find-tools-in-server: Find tools in a specific server
-   * - get-tool: Get complete tool schema
-   * - call-tool: Call a specific tool from a specific server
-   * - find-tools: Find tools across all servers
-   *
    * @returns {Array<{ name: string; description: string; inputSchema: JsonSchema; annotations?: ToolAnnotations }>}
    * Array of system tool configurations
-   *
-   * @example
-   * ```typescript
-   * const systemTools = hubToolsService.getSystemTools();
-   * console.log(`Available system tools: ${systemTools.length}`);
-   * ```
    */
   getSystemTools() {
-    const systemTools: Array<{
-      name: string;
-      description: string;
-      inputSchema: JsonSchema;
-      annotations?: {
-        title?: string;
-        readOnlyHint?: boolean;
-        destructiveHint?: boolean;
-        idempotentHint?: boolean;
-        openWorldHint?: boolean;
-      };
-    }> = [];
-
-    // Build system tools based on the constant array to ensure consistency
-    for (const toolName of SYSTEM_TOOL_NAMES) {
-      switch (toolName) {
-        case LIST_SERVERS_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'List all connected servers',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            },
-            annotations: {
-              title: 'List Servers',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case FIND_SERVERS_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Find servers matching a pattern',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: {
-                  type: 'string',
-                  enum: ['name', 'description', 'both'],
-                  default: 'both'
-                },
-                caseSensitive: { type: 'boolean', default: false }
-              },
-              required: ['pattern']
-            },
-            annotations: {
-              title: 'Find Servers',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case LIST_ALL_TOOLS_IN_SERVER_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'List all tools from a specific server',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                serverName: { type: 'string', description: 'Name of the MCP server' },
-                requestOptions: {
-                  type: 'object',
-                  properties: {
-                    sessionId: { type: 'string', description: 'Session ID for instance selection' },
-                    tags: { type: 'object', description: 'Tags for instance selection' }
-                  }
-                }
-              },
-              required: ['serverName']
-            },
-            annotations: {
-              title: 'List Tools in Server',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case FIND_TOOLS_IN_SERVER_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Find tools matching a pattern in a specific server',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                serverName: { type: 'string', description: 'Name of the MCP server' },
-                pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: {
-                  type: 'string',
-                  enum: ['name', 'description', 'both'],
-                  default: 'both'
-                },
-                caseSensitive: { type: 'boolean', default: false },
-                requestOptions: {
-                  type: 'object',
-                  properties: {
-                    sessionId: { type: 'string', description: 'Session ID for instance selection' },
-                    tags: { type: 'object', description: 'Tags for instance selection' }
-                  }
-                }
-              },
-              required: ['serverName', 'pattern']
-            },
-            annotations: {
-              title: 'Find Tools in Server',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case GET_TOOL_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Get complete schema for a specific tool from a specific server',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                serverName: { type: 'string', description: 'Name of the MCP server' },
-                toolName: { type: 'string', description: 'Exact name of the tool' },
-                requestOptions: {
-                  type: 'object',
-                  properties: {
-                    sessionId: { type: 'string', description: 'Session ID for instance selection' },
-                    tags: { type: 'object', description: 'Tags for instance selection' }
-                  }
-                }
-              },
-              required: ['serverName', 'toolName']
-            },
-            annotations: {
-              title: 'Get Tool Details',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        case CALL_TOOL_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Call a specific tool from a specific server',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                serverName: { type: 'string', description: 'Name of the MCP server' },
-                toolName: { type: 'string', description: 'Name of the tool to call' },
-                toolArgs: { type: 'object', description: 'Arguments to pass to the tool' },
-                requestOptions: {
-                  type: 'object',
-                  properties: {
-                    sessionId: { type: 'string', description: 'Session ID for instance selection' },
-                    tags: { type: 'object', description: 'Tags for instance selection' }
-                  }
-                }
-              },
-              required: ['serverName', 'toolName', 'toolArgs']
-            },
-            annotations: {
-              title: 'Call Tool',
-              readOnlyHint: false,
-              destructiveHint: false,
-              idempotentHint: false,
-              openWorldHint: true
-            }
-          });
-          break;
-        case FIND_TOOLS_TOOL:
-          systemTools.push({
-            name: toolName,
-            description: 'Find tools matching a pattern across all connected servers',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                pattern: { type: 'string', description: 'Regex pattern to search for' },
-                searchIn: {
-                  type: 'string',
-                  enum: ['name', 'description', 'both'],
-                  default: 'both'
-                },
-                caseSensitive: { type: 'boolean', default: false }
-              },
-              required: ['pattern']
-            },
-            annotations: {
-              title: 'Find Tools',
-              readOnlyHint: true,
-              destructiveHint: false,
-              idempotentHint: true,
-              openWorldHint: false
-            }
-          });
-          break;
-        default:
-          // This should never happen due to TypeScript type checking
-          throw new Error(`Unknown system tool: ${toolName}`);
-      }
-    }
-
-    return systemTools;
+    return getSystemTools();
   }
 
   /**
@@ -513,12 +144,6 @@ export class HubToolsService {
    * It provides a simple way to discover available servers in the system.
    *
    * @returns {Promise<string[]>} Array of connected server names
-   *
-   * @example
-   * ```typescript
-   * const servers = await hubToolsService.listServers();
-   * console.log(`Connected servers: ${servers.join(', ')}`);
-   * ```
    */
   async listServers(): Promise<string[]> {
     const servers = hubManager.getAllServers();
@@ -532,36 +157,11 @@ export class HubToolsService {
    * supporting flexible search options including case sensitivity and search scope
    * (name, description, or both). It returns an array of matching server names.
    *
-   * @param {string} pattern - Regex pattern to search for in server names and descriptions
-   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
-   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
+   * @param {FindServersParams} args - Search parameters
    * @returns {Promise<string[]>} Array of matching server names
-   *
-   * @example
-   * ```typescript
-   * // Find servers with 'api' in their name (case-insensitive)
-   * const apiServers = await hubToolsService.findServers('api');
-   *
-   * // Find servers with exact case match
-   * const exactMatch = await hubToolsService.findServers('^MyServer$', 'name', true);
-   * ```
    */
-  async findServers(
-    pattern: string,
-    searchIn: 'name' | 'description' | 'both' = 'both',
-    caseSensitive: boolean = false
-  ): Promise<string[]> {
-    const allServers = hubManager.getAllServers();
-    const validServers = allServers.filter(hasValidId);
-    const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
-
-    return validServers
-      .filter((server) => {
-        const matchName = searchIn !== 'description' && regex.test(server.name);
-        const matchDescription = searchIn !== 'name' && server.name && regex.test(server.name); // Using name as fallback if no description
-        return matchName || matchDescription;
-      })
-      .map((server) => server.name);
+  async findServers(args: FindServersParams): Promise<string[]> {
+    return findServersUtil(args.pattern, args.searchIn, args.caseSensitive);
   }
 
   /**
@@ -572,26 +172,18 @@ export class HubToolsService {
    * It uses the selectBestInstance function to resolve server names to instances
    * and leverages the MCP connection manager for tool retrieval.
    *
-   * @param {string} serverName - Name of the MCP server to list tools from
-   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @param {ListAllToolsInServerParams} args - Server name and request options
    * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and tools array
    * @throws {Error} If the specified server is not found or not connected
-   *
-   * @example
-   * ```typescript
-   * const result = await hubToolsService.listAllToolsInServer('my-mcp-server');
-   * console.log(`Server ${result.serverName} has ${result.tools.length} tools`);
-   * ```
    */
   async listAllToolsInServer(
-    serverName: string,
-    requestOptions?: RequestOptions
+    args: ListAllToolsInServerParams
   ): Promise<{
     serverName: string;
     tools: Tool[];
   }> {
     // Handle MCP Hub Lite server (return system tools list)
-    if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
+    if (typeof args.serverName === 'string' && args.serverName === MCP_HUB_LITE_SERVER) {
       // Generate tool list using the same logic as tools/list
       const toolMap = new Map<string, { serverId: string; realToolName: string }>();
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
@@ -606,15 +198,15 @@ export class HubToolsService {
       }));
 
       return {
-        serverName,
+        serverName: args.serverName,
         tools
       };
     }
 
-    const serverInfo = selectBestInstance(serverName, requestOptions);
+    const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
 
     if (!serverInfo) {
-      throw new Error(`Server not found: ${serverName}`);
+      throw new Error(`Server not found: ${args.serverName}`);
     }
 
     // Get instance ID
@@ -624,7 +216,7 @@ export class HubToolsService {
     const tools = mcpConnectionManager.getTools(serverId);
 
     return {
-      serverName,
+      serverName: args.serverName,
       tools
     };
   }
@@ -637,50 +229,23 @@ export class HubToolsService {
    * sensitivity and search scope (name, description, or both). It returns matching
    * tools grouped by server name.
    *
-   * @param {string} serverName - Name of the MCP server to search tools in
-   * @param {string} pattern - Regex pattern to search for in tool names and descriptions
-   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
-   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
-   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @param {FindToolsInServerParams} args - Search parameters
    * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and matching tools
    * @throws {Error} If the specified server is not found or not connected
-   *
-   * @example
-   * ```typescript
-   * const result = await hubToolsService.findToolsInServer('my-mcp-server', 'list');
-   * console.log(`Found ${result.tools.length} tools matching 'list'`);
-   * ```
    */
   async findToolsInServer(
-    serverName: string,
-    pattern: string,
-    searchIn: 'name' | 'description' | 'both' = 'both',
-    caseSensitive: boolean = false,
-    requestOptions?: RequestOptions
+    args: FindToolsInServerParams
   ): Promise<{
     serverName: string;
     tools: Tool[];
   }> {
-    const serverInfo = selectBestInstance(serverName, requestOptions);
-
-    if (!serverInfo) {
-      throw new Error(`Server not found: ${serverName}`);
-    }
-
-    const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
-    const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
-
-    const matchingTools = tools.filter((tool) => {
-      const matchName = searchIn !== 'description' && regex.test(tool.name);
-      const matchDescription =
-        searchIn !== 'name' && tool.description && regex.test(tool.description);
-      return matchName || matchDescription;
-    });
-
-    return {
-      serverName: serverName,
-      tools: matchingTools
-    };
+    return findToolsInServerUtil(
+      args.serverName,
+      args.pattern,
+      args.searchIn,
+      args.caseSensitive,
+      args.requestOptions
+    );
   }
 
   /**
@@ -690,33 +255,21 @@ export class HubToolsService {
    * and any annotations. It's useful for clients that need detailed information about
    * a tool's capabilities and expected parameters before execution.
    *
-   * @param {string} serverName - Name of the MCP server containing the tool
-   * @param {string} toolName - Exact name of the tool to retrieve
-   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @param {GetToolParams} args - Tool retrieval parameters
    * @returns {Promise<Tool | undefined>} Complete tool schema or undefined if not found
    * @throws {Error} If the specified server is not found or not connected
-   *
-   * @example
-   * ```typescript
-   * const tool = await hubToolsService.getTool('my-mcp-server', 'list-files');
-   * if (tool) {
-   *   console.log('Tool input schema:', tool.inputSchema);
-   * }
-   * ```
    */
   async getTool(
-    serverName: string,
-    toolName: string,
-    requestOptions?: RequestOptions
+    args: GetToolParams
   ): Promise<Tool | undefined> {
-    const serverInfo = selectBestInstance(serverName, requestOptions);
+    const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
 
     if (!serverInfo) {
-      throw new Error(`Server not found: ${serverName}`);
+      throw new Error(`Server not found: ${args.serverName}`);
     }
 
     const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
-    return tools.find((tool) => tool.name === toolName);
+    return tools.find((tool) => tool.name === args.toolName);
   }
 
   /**
@@ -726,30 +279,10 @@ export class HubToolsService {
    * conditional types to ensure type safety based on the tool name. It handles logging,
    * error handling, and delegates to the appropriate internal methods based on the tool name.
    *
-   * The method supports all system tools with their specific parameter and return types:
-   * - list-servers: returns string[]
-   * - find-servers: returns string[]
-   * - list-all-tools-in-server: returns { serverName: string; tools: Tool[] }
-   * - find-tools-in-server: returns { serverName: string; tools: Tool[] }
-   * - get-tool: returns Tool | undefined
-   * - call-tool: returns unknown (tool-specific result)
-   * - find-tools: returns Record<string, { tools: Tool[] }>
-   *
    * @param {T} toolName - System tool name with generic type constraint
    * @param {SystemToolArgs} toolArgs - Type-safe arguments based on tool name
    * @returns {Promise<ConditionalReturnType>} Tool execution result with accurate type safety matching actual method return types
    * @throws {Error} If the system tool is not found or execution fails
-   *
-   * @example
-   * ```typescript
-   * // Type-safe system tool call
-   * const servers = await hubToolsService.callSystemTool('list-servers', {});
-   * const result = await hubToolsService.callSystemTool('call-tool', {
-   *   serverName: 'my-server',
-   *   toolName: 'list-files',
-   *   toolArgs: { directory: '/home' }
-   * });
-   * ```
    */
   async callSystemTool<T extends SystemToolName>(
     toolName: T,
@@ -796,40 +329,19 @@ export class HubToolsService {
           result = await this.listServers();
           break;
         case FIND_SERVERS_TOOL: {
-          const findServersArgs = toolArgs as FindServersParams;
-          result = await this.findServers(
-            findServersArgs.pattern,
-            findServersArgs.searchIn,
-            findServersArgs.caseSensitive
-          );
+          result = await this.findServers(toolArgs as FindServersParams);
           break;
         }
         case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
-          const listAllToolsArgs = toolArgs as ListAllToolsInServerParams;
-          result = await this.listAllToolsInServer(
-            listAllToolsArgs.serverName,
-            listAllToolsArgs.requestOptions
-          );
+          result = await this.listAllToolsInServer(toolArgs as ListAllToolsInServerParams);
           break;
         }
         case FIND_TOOLS_IN_SERVER_TOOL: {
-          const findToolsInServerArgs = toolArgs as FindToolsInServerParams;
-          result = await this.findToolsInServer(
-            findToolsInServerArgs.serverName,
-            findToolsInServerArgs.pattern,
-            findToolsInServerArgs.searchIn,
-            findToolsInServerArgs.caseSensitive,
-            findToolsInServerArgs.requestOptions
-          );
+          result = await this.findToolsInServer(toolArgs as FindToolsInServerParams);
           break;
         }
         case GET_TOOL_TOOL: {
-          const getToolArgs = toolArgs as GetToolParams;
-          result = await this.getTool(
-            getToolArgs.serverName,
-            getToolArgs.toolName,
-            getToolArgs.requestOptions
-          );
+          result = await this.getTool(toolArgs as GetToolParams);
           break;
         }
         case CALL_TOOL_TOOL: {
@@ -838,21 +350,14 @@ export class HubToolsService {
           if (!serverName || serverName === 'undefined') {
             serverName = MCP_HUB_LITE_SERVER;
           }
-          result = await this.callTool(
-            serverName,
-            callToolArgs.toolName,
-            callToolArgs.toolArgs,
-            callToolArgs.requestOptions
-          );
+          result = await this.callTool({
+            ...callToolArgs,
+            serverName
+          });
           break;
         }
         case FIND_TOOLS_TOOL: {
-          const findToolsArgs = toolArgs as FindToolsParams;
-          result = await this.findTools(
-            findToolsArgs.pattern,
-            findToolsArgs.searchIn,
-            findToolsArgs.caseSensitive
-          );
+          result = await this.findTools(toolArgs as FindToolsParams);
           break;
         }
         default:
@@ -894,28 +399,13 @@ export class HubToolsService {
    * and TOOL_CALL_ERROR events for monitoring and debugging purposes, and includes
    * detailed logging for observability.
    *
-   * @param {string} serverName - Name of the MCP server to call tool from
-   * @param {string} toolName - Name of the tool to call
-   * @param {Record<string, unknown>} toolArgs - Arguments to pass to the tool
-   * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+   * @param {CallToolParams} args - Tool call parameters
    * @returns {Promise<unknown>} Tool execution result as returned by the server
    * @throws {Error} If the server is not found, not connected, or tool execution fails
-   *
-   * @example
-   * ```typescript
-   * const result = await hubToolsService.callTool('my-mcp-server', 'list-files', {
-   *   directory: '/home/user'
-   * });
-   * console.log('Tool result:', result);
-   * ```
    */
-
-  async callTool(
-    serverName: string,
-    toolName: string,
-    toolArgs: Record<string, unknown>,
-    requestOptions?: RequestOptions
-  ): Promise<unknown> {
+  async callTool(args: CallToolParams): Promise<unknown> {
+    let { serverName, toolName } = args;
+    const { toolArgs, requestOptions } = args;
     // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
     const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
     if (parsedTool) {
@@ -928,6 +418,9 @@ export class HubToolsService {
     }
 
     // Handle MCP Hub Lite server (system tool call or find tool in all servers)
+    if (!serverName || serverName === 'undefined') {
+      serverName = MCP_HUB_LITE_SERVER;
+    }
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       // Check if it's a system tool
       if (SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
@@ -1045,14 +538,6 @@ export class HubToolsService {
    * object mapping server names to their respective tool arrays.
    *
    * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to tool arrays
-   *
-   * @example
-   * ```typescript
-   * const allTools = await hubToolsService.listAllTools();
-   * Object.entries(allTools).forEach(([serverName, { tools }]) => {
-   *   console.log(`${serverName}: ${tools.length} tools`);
-   * });
-   * ```
    */
   async listAllTools(): Promise<
     Record<
@@ -1102,23 +587,11 @@ export class HubToolsService {
    * and search scope (name, description, or both). It returns matching tools grouped by
    * their originating server names.
    *
-   * @param {string} pattern - Regex pattern to search for in tool names and descriptions
-   * @param {'name' | 'description' | 'both'} [searchIn='both'] - Where to perform the search
-   * @param {boolean} [caseSensitive=false] - Whether the search should be case-sensitive
+   * @param {FindToolsParams} args - Search parameters
    * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to matching tools
-   *
-   * @example
-   * ```typescript
-   * const matchingTools = await hubToolsService.findTools('list');
-   * Object.entries(matchingTools).forEach(([serverName, { tools }]) => {
-   *   console.log(`${serverName}: ${tools.length} matching tools`);
-   * });
-   * ```
    */
   async findTools(
-    pattern: string,
-    searchIn: 'name' | 'description' | 'both' = 'both',
-    caseSensitive: boolean = false
+    args: FindToolsParams
   ): Promise<
     Record<
       string,
@@ -1127,102 +600,7 @@ export class HubToolsService {
       }
     >
   > {
-    const allTools = await this.listAllTools();
-    const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
-
-    const matchingTools: Record<string, { tools: Tool[] }> = {};
-
-    for (const [serverName, serverData] of Object.entries(allTools)) {
-      const filteredTools = serverData.tools.filter((tool) => {
-        const matchName = searchIn !== 'description' && regex.test(tool.name);
-        const matchDescription =
-          searchIn !== 'name' && tool.description && regex.test(tool.description);
-        return matchName || matchDescription;
-      });
-
-      if (filteredTools.length > 0) {
-        matchingTools[serverName] = {
-          tools: filteredTools
-        };
-      }
-    }
-
-    return matchingTools;
-  }
-
-  /**
-   * Generates dynamic Hub resources based on currently connected MCP servers.
-   *
-   * This method creates virtual resources that represent the current state of connected
-   * servers, including server metadata, available tools, and server resources. Each
-   * resource has a unique URI following the hub://servers/{serverName}[/type] pattern.
-   *
-   * The generated resources include:
-   * - Server metadata: hub://servers/{serverName}
-   * - Tools list: hub://servers/{serverName}/tools
-   * - Resources list: hub://servers/{serverName}/resources (only if server has resources)
-   *
-   * @returns {Resource[]} Array of dynamically generated MCP resource objects
-   *
-   * @example
-   * ```typescript
-   * const resources = hubToolsService.generateDynamicResources();
-   * console.log(`Generated ${resources.length} dynamic resources`);
-   * ```
-   */
-  private generateDynamicResources(): Resource[] {
-    const resources: Resource[] = [];
-
-    // Use the same access pattern as tools - directly access manager cache
-    const servers = hubManager.getAllServers();
-
-    for (const server of servers) {
-      if (!hasValidId(server) || !server.config.enabled) {
-        continue;
-      }
-
-      const bestInstance = selectBestInstance(server.name);
-      if (!bestInstance || !bestInstance.instance.id) {
-        continue;
-      }
-
-      const instanceId = bestInstance.instance.id;
-
-      // Server metadata resource
-      resources.push({
-        uri: `hub://servers/${server.name}`,
-        name: `Server: ${server.name}`,
-        description: server.config.description || `Connected MCP server: ${server.name}`,
-        mimeType: 'application/json',
-        serverId: instanceId
-      });
-
-      // Tools resource - only add if server has tools
-      const tools = mcpConnectionManager.getTools(instanceId);
-      if (tools.length > 0) {
-        resources.push({
-          uri: `hub://servers/${server.name}/tools`,
-          name: `Tools: ${server.name}`,
-          description: `${tools.length} tools available from ${server.name}`,
-          mimeType: 'application/json',
-          serverId: instanceId
-        });
-      }
-
-      // Resources resource - only add if server has resources
-      const serverResources = mcpConnectionManager.getResources(instanceId);
-      if (serverResources.length > 0) {
-        resources.push({
-          uri: `hub://servers/${server.name}/resources`,
-          name: `Resources: ${server.name}`,
-          description: `${serverResources.length} resources available from ${server.name}`,
-          mimeType: 'application/json',
-          serverId: instanceId
-        });
-      }
-    }
-
-    return resources;
+    return findToolsUtil(args.pattern, args.searchIn, args.caseSensitive, () => this.listAllTools());
   }
 
   /**
@@ -1233,19 +611,13 @@ export class HubToolsService {
    * The resources are generated on-demand based on the current server configuration.
    *
    * @returns {Promise<Resource[]>} Array of MCP resource objects representing Hub resources
-   *
-   * @example
-   * ```typescript
-   * const resources = await hubToolsService.listResources();
-   * console.log(`Available Hub resources: ${resources.length}`);
-   * ```
    */
   async listResources(): Promise<Resource[]> {
     if (this.generatedResourcesCache) {
       return this.generatedResourcesCache;
     }
 
-    const resources = this.generateDynamicResources();
+    const resources = generateDynamicResources();
     this.generatedResourcesCache = resources;
     return resources;
   }
@@ -1260,26 +632,14 @@ export class HubToolsService {
    * - Tools list: hub://servers/{serverName}/tools
    * - Resources list: hub://servers/{serverName}/resources
    *
-   * The method includes comprehensive validation of URI format and server existence,
-   * throwing descriptive errors for invalid requests.
-   *
    * @param {string} uri - Resource URI to read (e.g., hub://servers/server-name)
    * @returns {Promise<ServerMetadata | Tool[] | Resource[]>} Resource content based on URI type
    * @throws {Error} If URI format is invalid, server not found, or resource type unknown
-   *
-   * @example
-   * ```typescript
-   * // Read server metadata
-   * const serverInfo = await hubToolsService.readResource('hub://servers/my-mcp-server');
-   *
-   * // Read tools list
-   * const tools = await hubToolsService.readResource('hub://servers/my-mcp-server/tools');
-   * ```
    */
   async readResource(uri: string): Promise<
     | {
         name: string;
-        status: ServerStatus;
+        status: unknown;
         toolsCount: number;
         resourcesCount: number;
         tags: Record<string, string>;
@@ -1289,53 +649,18 @@ export class HubToolsService {
     | Tool[]
     | Resource[]
   > {
-    // Validate URI format
-    if (!uri.startsWith('hub://')) {
-      throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
-    }
-
-    // Parse URI
-    const uriParts = uri.replace('hub://', '').split('/');
-    if (uriParts.length < 2 || uriParts[0] !== 'servers') {
-      throw new Error(`Invalid Hub resource URI format: ${uri}`);
-    }
-
-    const serverName = uriParts[1];
-    const resourceType = uriParts[2]; // 'tools', 'resources', or undefined for server metadata
-
-    // Check if server exists and is connected
-    const serverInfo = selectBestInstance(serverName);
-    if (!serverInfo) {
-      throw new Error(`Server not found or not connected: ${serverName}`);
-    }
-
-    const instanceId = serverInfo.instance.id;
-
-    // Return appropriate content based on resource type
-    if (!resourceType) {
-      // Server metadata
-      const serverConfig = hubManager.getServerByName(serverName);
-      const tools = mcpConnectionManager.getTools(instanceId);
-      const resources = mcpConnectionManager.getResources(instanceId);
-
-      return {
-        name: serverName,
-        status: serverInfo.instance.status as ServerStatus,
-        toolsCount: tools.length,
-        resourcesCount: resources.length,
-        tags: serverConfig?.tags || {},
-        lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
-        uptime: serverInfo.instance.uptime as number
-      };
-    } else if (resourceType === 'tools') {
-      // Tools list
-      return mcpConnectionManager.getTools(instanceId);
-    } else if (resourceType === 'resources') {
-      // Resources list
-      return mcpConnectionManager.getResources(instanceId);
-    } else {
-      throw new Error(`Unknown resource type: ${resourceType}`);
-    }
+    return readResourceUtil(uri) as unknown as
+      | {
+          name: string;
+          status: unknown;
+          toolsCount: number;
+          resourcesCount: number;
+          tags: Record<string, string>;
+          lastHeartbeat: number;
+          uptime: number;
+        }
+      | Tool[]
+      | Resource[];
   }
 }
 

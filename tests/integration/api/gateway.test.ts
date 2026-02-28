@@ -394,8 +394,8 @@ describe('GatewayService', () => {
     // Note: listServers returns server names, not server IDs
     vi.mocked(mocks.listServers).mockImplementation(async () => ['Test Server']);
     // Mock callToolDirect to return the expected result format
-    vi.mocked(mocks.callToolDirect).mockImplementation(async (_serverName, toolName) => {
-      if (toolName === 'list_servers') {
+    vi.mocked(mocks.callToolDirect).mockImplementation(async (args) => {
+      if (args.toolName === 'list_servers') {
         return {
           content: [
             {
