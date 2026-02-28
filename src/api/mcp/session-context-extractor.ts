@@ -4,7 +4,7 @@
  */
 
 import type { FastifyRequest } from 'fastify';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { randomUUID } from 'crypto';
 import type { ClientContext } from '@shared-types/client.types.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -60,7 +60,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     const match = request.url.match(/sessionId=([^&]+)/);
     if (match) {
       sessionId = match[1];
-      logger.debug(`Extracted sessionId from URL: ${sessionId}`);
+      logger.debug(`Extracted sessionId from URL: ${sessionId}`, LOG_MODULES.CONTEXT);
     }
   }
 
@@ -71,7 +71,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   let protocolVersion: string | undefined;
   logger.debug(
     `ClientName: ${clientName}, Query SessionId: ${sessionId}, Active Clients: ${clients.length}, Persisted Sessions: ${existingSessionStates.length}`,
-    { subModule: 'Context' }
+    LOG_MODULES.CONTEXT
   );
 
   // Priority 2: For JSON-RPC requests like initialize, maintain session consistency
@@ -97,7 +97,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
         baseId = `${baseId}-${randomHash}`;
       }
       sessionId = baseId;
-      logger.debug(`Extracted sessionId from initialize params: ${sessionId}`);
+      logger.debug(`Extracted sessionId from initialize params: ${sessionId}`, LOG_MODULES.CONTEXT);
 
       // Save client version and protocol version information
       clientVersion = version;
@@ -113,7 +113,8 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
       if (existingSessionStates.length > 0) {
         // If there are persisted sessions, prioritize using them (this indicates recovery after restart)
         logger.debug(
-          `Found ${existingSessionStates.length} persisted session states, will try to match`
+          `Found ${existingSessionStates.length} persisted session states, will try to match`,
+          LOG_MODULES.CONTEXT
         );
         // First, look for sessions matching the current clientName
         if (clientName) {
@@ -122,7 +123,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
           );
           if (matchedSession) {
             sessionId = matchedSession.sessionId;
-            logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`);
+            logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`, LOG_MODULES.CONTEXT);
           }
         }
 
@@ -133,7 +134,8 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
           });
           sessionId = latestClient.sessionId;
           logger.debug(
-            `Extracted sessionId from latest client for ${request.body.method}: ${sessionId}`
+            `Extracted sessionId from latest client for ${request.body.method}: ${sessionId}`,
+            LOG_MODULES.CONTEXT
           );
         }
 
@@ -143,7 +145,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
             (a, b) => b.lastAccessedAt - a.lastAccessedAt
           );
           sessionId = sortedSessions[0].sessionId;
-          logger.debug(`Using most recently accessed persisted session: ${sessionId}`);
+          logger.debug(`Using most recently accessed persisted session: ${sessionId}`, LOG_MODULES.CONTEXT);
         }
       }
     }
@@ -156,7 +158,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
       return current.timestamp > latest.timestamp ? current : latest;
     });
     sessionId = latestClient.sessionId;
-    logger.debug(`Extracted sessionId from latest client: ${sessionId}`);
+    logger.debug(`Extracted sessionId from latest client: ${sessionId}`, LOG_MODULES.CONTEXT);
   }
 
   // Priority 4: Simplified session matching - only match exact sessionId or clientName
@@ -165,20 +167,20 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
       const existingClient = clients.find((c) => c.clientName === clientName);
       if (existingClient) {
         sessionId = existingClient.sessionId; // Use existing sessionId
-        logger.debug(`Found existing sessionId for ${clientName}: ${sessionId}`);
+        logger.debug(`Found existing sessionId for ${clientName}: ${sessionId}`, LOG_MODULES.CONTEXT);
       }
     }
   }
 
   // Priority 4.5: Try to find from persisted session states (when clientTracker has no clients but sessions are persisted)
   if (!sessionId && existingSessionStates.length > 0) {
-    logger.debug(`ClientTracker has no clients, using persisted session states`);
+    logger.debug(`ClientTracker has no clients, using persisted session states`, LOG_MODULES.CONTEXT);
     // First, try to find matching clientName
     if (clientName) {
       const matchedSession = existingSessionStates.find((state) => state.clientName === clientName);
       if (matchedSession) {
         sessionId = matchedSession.sessionId;
-        logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`);
+        logger.debug(`Matched persisted session by clientName ${clientName}: ${sessionId}`, LOG_MODULES.CONTEXT);
       }
     }
 
@@ -188,7 +190,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
         (a, b) => b.lastAccessedAt - a.lastAccessedAt
       );
       sessionId = sortedSessions[0].sessionId;
-      logger.debug(`Using most recently accessed persisted session: ${sessionId}`);
+      logger.debug(`Using most recently accessed persisted session: ${sessionId}`, LOG_MODULES.CONTEXT);
     }
   }
 
@@ -198,9 +200,9 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     sessionId = `${prefix}${randomUUID().substring(0, 8)}`;
     // Detect if this is an initial StreamableHttp connection (GET request without any session context)
     if (!clientName && !request.body) {
-      logger.debug(`Initial StreamableHttp connection - created new sessionId: ${sessionId}`);
+      logger.debug(`Initial StreamableHttp connection - created new sessionId: ${sessionId}`, LOG_MODULES.CONTEXT);
     } else {
-      logger.debug(`Generated new sessionId: ${sessionId}`);
+      logger.debug(`Generated new sessionId: ${sessionId}`, LOG_MODULES.CONTEXT);
     }
   }
 
@@ -208,7 +210,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   if (sessionId && mcpSessionManager.getSessionState(sessionId)) {
     const hasSessionObject = mcpSessionManager.hasSession(sessionId);
     if (!hasSessionObject) {
-      logger.warn(`Session state exists but session object missing for ${sessionId}`);
+      logger.warn(`Session state exists but session object missing for ${sessionId}`, LOG_MODULES.CONTEXT);
     }
   }
 

@@ -82,7 +82,7 @@ export function createColoredLogMessage(
   const levelColor = getColorCodeForLevel(level);
   const pidColor = COLORS.cyan;
   const serverColor = COLORS.brightCyan;
-  const subModuleColor = COLORS.brightMagenta;
+  const moduleColor = COLORS.brightMagenta;
   const traceColor = COLORS.yellow;
   const resetColor = getResetColor();
 
@@ -98,8 +98,8 @@ export function createColoredLogMessage(
 
   result += ` ${serverColor}[${actualServerName}]${resetColor}`;
 
-  if (context?.subModule) {
-    result += ` ${subModuleColor}[${context.subModule}]${resetColor}`;
+  if (context?.module) {
+    result += ` ${moduleColor}[${context.module}]${resetColor}`;
   }
 
   result += ` ${message}`;
@@ -136,8 +136,8 @@ export function createLogMessage(
 
   result += ` [${serverIdentifier}]`;
 
-  if (context?.subModule) {
-    result += ` [${context.subModule}]`;
+  if (context?.module) {
+    result += ` [${context.module}]`;
   }
 
   result += ` ${message}`;
@@ -162,7 +162,7 @@ export function formatError(error: unknown): string {
   }
 
   if (typeof error === 'object' && error !== null) {
-    if ('subModule' in error || 'traceId' in error || 'spanId' in error) {
+    if ('module' in error || 'traceId' in error || 'spanId' in error) {
       return '';
     }
 

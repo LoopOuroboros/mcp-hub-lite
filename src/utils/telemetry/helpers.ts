@@ -44,7 +44,7 @@ export async function withSpan<T>(
           !Array.isArray(args[0])
         ) {
           const firstArg = args[0] as Record<string, unknown>;
-          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
             originalDebug(message, mergedOptions, ...args.slice(1));
             return;
@@ -62,7 +62,7 @@ export async function withSpan<T>(
           !Array.isArray(args[0])
         ) {
           const firstArg = args[0] as Record<string, unknown>;
-          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
             originalInfo(message, mergedOptions, ...args.slice(1));
             return;
@@ -79,7 +79,7 @@ export async function withSpan<T>(
           !Array.isArray(args[0])
         ) {
           const firstArg = args[0] as Record<string, unknown>;
-          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
             originalWarn(message, mergedOptions, ...args.slice(1));
             return;
@@ -96,7 +96,7 @@ export async function withSpan<T>(
           !Array.isArray(args[0])
         ) {
           const firstArg = args[0] as Record<string, unknown>;
-          if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+          if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
             const mergedOptions = { ...firstArg, ...logContext };
             originalError(message, mergedOptions, ...args.slice(1));
             return;
@@ -188,7 +188,7 @@ export function withSpanSync<T>(
         !Array.isArray(args[0])
       ) {
         const firstArg = args[0] as Record<string, unknown>;
-        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+        if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
           originalDebug(message, mergedOptions, ...args.slice(1));
           return;
@@ -205,7 +205,7 @@ export function withSpanSync<T>(
         !Array.isArray(args[0])
       ) {
         const firstArg = args[0] as Record<string, unknown>;
-        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+        if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
           originalInfo(message, mergedOptions, ...args.slice(1));
           return;
@@ -222,7 +222,7 @@ export function withSpanSync<T>(
         !Array.isArray(args[0])
       ) {
         const firstArg = args[0] as Record<string, unknown>;
-        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+        if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
           originalWarn(message, mergedOptions, ...args.slice(1));
           return;
@@ -239,7 +239,7 @@ export function withSpanSync<T>(
         !Array.isArray(args[0])
       ) {
         const firstArg = args[0] as Record<string, unknown>;
-        if ('subModule' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
+        if ('module' in firstArg || 'traceId' in firstArg || 'spanId' in firstArg) {
           const mergedOptions = { ...firstArg, ...logContext };
           originalError(message, mergedOptions, ...args.slice(1));
           return;

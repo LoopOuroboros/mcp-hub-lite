@@ -30,7 +30,7 @@
 
 import path from 'path';
 import os from 'os';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import {
   SystemConfigSchema,
   ServerConfigSchema,
@@ -79,7 +79,7 @@ export class ConfigManager {
       configPath ||
       process.env.MCP_HUB_CONFIG_PATH ||
       path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
-    logger.info(`Using config file: ${this.configPath}`, { subModule: 'ConfigManager' });
+    logger.info(`Using config file: ${this.configPath}`, LOG_MODULES.CONFIG_MANAGER);
     this.config = loadConfig(this.configPath);
     this.initServerInstances();
   }

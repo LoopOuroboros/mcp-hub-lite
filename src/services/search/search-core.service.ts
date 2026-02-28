@@ -5,7 +5,7 @@ import { SearchResult, SearchOptions } from './types.js';
 import { SearchScorer } from './search-scorer.js';
 import { SearchCacheService } from './search-cache.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**
  * Core search service that provides fuzzy search functionality across all available MCP tools.
@@ -40,18 +40,18 @@ export class SearchCoreService {
   constructor() {
     // Listen for server update events and clear search cache to ensure results are up-to-date
     eventBus.subscribe(EventTypes.SERVER_UPDATED, () => {
-      logger.debug('Server updated event received, clearing search cache', { subModule: 'Search' });
+      logger.debug('Server updated event received, clearing search cache', LOG_MODULES.SEARCH);
       this.cacheService.invalidate();
     });
 
     // Listen for server add/delete events and also clear cache
     eventBus.subscribe(EventTypes.SERVER_ADDED, () => {
-      logger.debug('Server added event received, clearing search cache', { subModule: 'Search' });
+      logger.debug('Server added event received, clearing search cache', LOG_MODULES.SEARCH);
       this.cacheService.invalidate();
     });
 
     eventBus.subscribe(EventTypes.SERVER_DELETED, () => {
-      logger.debug('Server deleted event received, clearing search cache', { subModule: 'Search' });
+      logger.debug('Server deleted event received, clearing search cache', LOG_MODULES.SEARCH);
       this.cacheService.invalidate();
     });
   }
@@ -106,7 +106,7 @@ export class SearchCoreService {
     const paginatedResults = sortedResults.slice(offset, offset + limit);
 
     const processingTime = Date.now() - startTime;
-    logger.debug(`Search completed in ${processingTime}ms`, { subModule: 'Search' });
+    logger.debug(`Search completed in ${processingTime}ms`, LOG_MODULES.SEARCH);
 
     return paginatedResults;
   }

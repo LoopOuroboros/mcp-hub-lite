@@ -6,7 +6,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { stringifyForLogging, stringifyRawHeadersForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -41,7 +41,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         logMsg += ` Body: [Unserializable]`;
       }
     }
-    logger.info(logMsg);
+    logger.info(logMsg, LOG_MODULES.GATEWAY);
 
     reply.header('Content-Type', 'application/json');
     if (!request.headers['accept']) {
@@ -63,7 +63,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       const requireInitialize = isInitializeRequest;
       logger.debug(
         `Request for session: ${sessionId}, method: ${request.body?.method || 'GET'}, isInitialize: ${isInitializeRequest}, hasRestoredState: ${hasRestoredState}, requireInitialize: ${requireInitialize}`,
-        { subModule: 'Gateway' }
+        LOG_MODULES.GATEWAY
       );
 
       const session = await mcpSessionManager.getSession(sessionId, requireInitialize);
@@ -71,9 +71,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       // Proactive cleanup: For GET requests (SSE connections), clean up stale streams first
       // This prevents "Only one SSE stream is allowed per session" errors
       if (request.method === 'GET') {
-        logger.debug(`Proactive SSE stream cleanup for session ${sessionId} before handling request`, {
-          subModule: 'Gateway'
-        });
+        logger.debug(`Proactive SSE stream cleanup for session ${sessionId} before handling request`, LOG_MODULES.GATEWAY);
         cleanupStaleSseStreams(session.transport, sessionId);
       }
 
@@ -85,7 +83,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         ) {
           const separator = request.raw.url.includes('?') ? '&' : '?';
           request.raw.url = `${request.raw.url}${separator}sessionId=${sessionId}`;
-          logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`);
+          logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`, LOG_MODULES.GATEWAY);
         }
 
         // Add Mcp-Session-Id header to request for proper SDK session validation
@@ -120,14 +118,14 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           filteredHeaders.push('mcp-session-id', sessionId);
           request.raw.rawHeaders = filteredHeaders;
 
-          logger.debug(`Modified rawHeaders: ${stringifyRawHeadersForLogging(request.raw.rawHeaders)}`, { subModule: 'Gateway' });
+          logger.debug(`Modified rawHeaders: ${stringifyRawHeadersForLogging(request.raw.rawHeaders)}`, LOG_MODULES.GATEWAY);
         }
 
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
 
       const duration = Date.now() - startTime;
-      logger.info(`MCP Gateway response for ${sessionId}: handled in ${duration}ms`);
+      logger.info(`MCP Gateway response for ${sessionId}: handled in ${duration}ms`, LOG_MODULES.GATEWAY);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 

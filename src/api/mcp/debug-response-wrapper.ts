@@ -4,7 +4,7 @@
  */
 
 import type { FastifyReply } from 'fastify';
-import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
+import { logger, LOG_MODULES, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 
 /**
@@ -21,9 +21,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
   let hasLoggedResponse = false;
   let socketWrapped = false;
 
-  logger.debug(`Wrapping response - writable: ${reply.raw.writable}, destroyed: ${reply.raw.destroyed}, socket: ${!!reply.raw.socket}`, {
-    subModule: 'Communication'
-  });
+  logger.debug(`Wrapping response - writable: ${reply.raw.writable}, destroyed: ${reply.raw.destroyed}, socket: ${!!reply.raw.socket}`, LOG_MODULES.COMMUNICATION);
 
   // Wrap socket write if socket exists (for transports that bypass http.ServerResponse.write/end)
   const wrapSocket = () => {
@@ -49,9 +47,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
           }
         }
       } catch (error) {
-        logger.debug(`MCP Gateway: Error processing socket write: ${error}`, {
-          subModule: 'Communication'
-        });
+        logger.debug(`MCP Gateway: Error processing socket write: ${error}`, LOG_MODULES.COMMUNICATION);
       }
       return originalSocketWrite(data, encoding, callback);
     };
@@ -64,9 +60,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
     });
 
     socketWrapped = true;
-    logger.debug(`MCP Gateway: Socket wrapped successfully for session ${sessionId}`, {
-      subModule: 'Communication'
-    });
+    logger.debug(`MCP Gateway: Socket wrapped successfully for session ${sessionId}`, LOG_MODULES.COMMUNICATION);
   };
 
   // Helper function to format and log response
@@ -81,9 +75,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
     const bufferSource = responseBuffer.length > 0 ? 'http.ServerResponse' : 'socket';
 
     if (primaryBuffer.length === 0) {
-      logger.debug(`MCP Gateway response for ${sessionId}: [No response data captured - transport may have used direct socket operations]`, {
-        subModule: 'Communication'
-      });
+      logger.debug(`MCP Gateway response for ${sessionId}: [No response data captured - transport may have used direct socket operations]`, LOG_MODULES.COMMUNICATION);
       return;
     }
 
@@ -121,9 +113,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
           ? primaryBuffer.substring(0, 500) + '...'
           : primaryBuffer;
     }
-    logger.debug(`MCP Gateway response for ${sessionId} (source: ${bufferSource}):\n${logResponse.trimEnd()}`, {
-      subModule: 'Communication'
-    });
+    logger.debug(`MCP Gateway response for ${sessionId} (source: ${bufferSource}):\n${logResponse.trimEnd()}`, LOG_MODULES.COMMUNICATION);
   };
 
   // Try to wrap socket immediately
@@ -158,9 +148,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
       }
       responseBuffer += chunkStr;
     } catch (error) {
-      logger.debug(`MCP Gateway: Error processing write chunk: ${error}`, {
-        subModule: 'Communication'
-      });
+      logger.debug(`MCP Gateway: Error processing write chunk: ${error}`, LOG_MODULES.COMMUNICATION);
     }
     return originalWrite(chunk, encoding, callback);
   };
@@ -194,9 +182,7 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
       // Log response before calling original end
       logFinalResponse();
     } catch (error) {
-      logger.debug(`MCP Gateway: Error processing end chunk: ${error}`, {
-        subModule: 'Communication'
-      });
+      logger.debug(`MCP Gateway: Error processing end chunk: ${error}`, LOG_MODULES.COMMUNICATION);
     }
     return originalEnd(chunk, encoding, callback);
   };
@@ -231,18 +217,14 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
         if (headers) {
           logger.debug(
             `MCP Gateway error response: ${statusCode} ${statusMessage || ''} Headers: ${stringifyForLogging(headers)}`,
-            { subModule: 'Communication' }
+            LOG_MODULES.COMMUNICATION
           );
         } else {
-          logger.debug(`MCP Gateway error response: ${statusCode} ${statusMessage || ''}`, {
-            subModule: 'Communication'
-          });
+          logger.debug(`MCP Gateway error response: ${statusCode} ${statusMessage || ''}`, LOG_MODULES.COMMUNICATION);
         }
       }
     } catch (error) {
-      logger.debug(`MCP Gateway: Error processing writeHead: ${error}`, {
-        subModule: 'Communication'
-      });
+      logger.debug(`MCP Gateway: Error processing writeHead: ${error}`, LOG_MODULES.COMMUNICATION);
     }
     return originalWriteHead(statusCode, ...args);
   };

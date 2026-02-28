@@ -46,6 +46,10 @@ vi.mock('@utils/logger.js', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn()
+  },
+  LOG_MODULES: {
+    SYSTEM_TOOL: { module: 'SYSTEM-TOOL' },
+    GATEWAY: { module: 'GATEWAY' }
   }
 }));
 

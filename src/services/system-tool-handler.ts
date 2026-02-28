@@ -1,6 +1,6 @@
 import { hubToolsService } from './hub-tools.service.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import {
   SystemToolName,
   LIST_SERVERS_TOOL,
@@ -28,9 +28,7 @@ export class SystemToolHandler {
    * Handles system tool calls
    */
   static async handleSystemToolCall(toolName: string, toolArgs: Record<string, unknown>): Promise<unknown> {
-    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
-      subModule: 'SYSTEM-TOOL'
-    });
+    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, LOG_MODULES.SYSTEM_TOOL);
 
     try {
       let result;
@@ -86,12 +84,10 @@ export class SystemToolHandler {
           throw new McpError(-32801, `Unknown system tool: ${toolName}`);
       }
 
-      logger.info(`System tool SUCCESS: ${toolName}`, { subModule: 'SYSTEM-TOOL' });
+      logger.info(`System tool SUCCESS: ${toolName}`, LOG_MODULES.SYSTEM_TOOL);
       return result;
     } catch (error: unknown) {
-      logger.error(`System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, {
-        subModule: 'SYSTEM-TOOL'
-      });
+      logger.error(`System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, LOG_MODULES.SYSTEM_TOOL);
 
       if (error instanceof McpError) {
         throw error;

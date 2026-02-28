@@ -3,7 +3,7 @@
  * Handles cleanup and management of Server-Sent Events streams.
  */
 
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**
  * Helper to clean up stale SSE streams before handling new requests.
@@ -29,9 +29,7 @@ export function cleanupStaleSseStreams(transport: unknown, sessionId: string): v
       const existingStream = webTransport._streamMapping.get(streamId);
 
       if (existingStream) {
-        logger.debug(`Cleaning up stale SSE stream for session ${sessionId} (preserving session state)`, {
-          subModule: 'Gateway'
-        });
+        logger.debug(`Cleaning up stale SSE stream for session ${sessionId} (preserving session state)`, LOG_MODULES.GATEWAY);
 
         // Try to call cleanup if available on the stream object
         const streamWithCleanup = existingStream as { cleanup?: () => void };
@@ -42,15 +40,11 @@ export function cleanupStaleSseStreams(transport: unknown, sessionId: string): v
           webTransport._streamMapping.delete(streamId);
         }
 
-        logger.debug(`Successfully cleaned up SSE stream mapping for session ${sessionId}`, {
-          subModule: 'Gateway'
-        });
+        logger.debug(`Successfully cleaned up SSE stream mapping for session ${sessionId}`, LOG_MODULES.GATEWAY);
       }
     }
   } catch (error) {
     // Non-critical error - if we can't clean up, just continue
-    logger.debug(`Error cleaning up SSE streams (non-critical, continuing): ${error}`, {
-      subModule: 'Gateway'
-    });
+    logger.debug(`Error cleaning up SSE streams (non-critical, continuing): ${error}`, LOG_MODULES.GATEWAY);
   }
 }

@@ -1,5 +1,5 @@
 import type { Tool } from '@shared-models/tool.model.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**
  * Search cache service that provides time-based caching for search results.
@@ -154,8 +154,6 @@ export class SearchCacheService {
   updateTool(): void {
     // Since serverId field has been removed from Tool interface, this method needs refactoring
     // Currently kept but not performing any operations, or modify according to actual requirements
-    logger.warn('updateTool method is deprecated because serverId field is removed from Tool', {
-      subModule: 'Search'
-    });
+    logger.warn('updateTool method is deprecated because serverId field is removed from Tool', LOG_MODULES.SEARCH);
   }
 }

@@ -29,7 +29,7 @@ import type { FastifyInstance } from 'fastify';
 import fastifyWebSocket from '@fastify/websocket';
 import { WebSocketHandler } from './ws-handler.js';
 import { eventBus } from '@services/event-bus.service.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 export async function webSocketRoutes(fastify: FastifyInstance): Promise<void> {
   // Register WebSocket plugin
@@ -39,12 +39,12 @@ export async function webSocketRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.register(async function (fastify) {
     // WebSocket endpoint: /ws
     fastify.get('/ws', { websocket: true }, (socket, request) => {
-      logger.info(`connection established from ${request.ip}`, { subModule: 'WebSocket' });
+      logger.info(`connection established from ${request.ip}`, LOG_MODULES.WEBSOCKET);
 
       const handler = new WebSocketHandler(socket, eventBus);
       handler.initialize();
     });
   });
 
-  logger.info('WebSocket routes registered', { subModule: 'WebSocket' });
+  logger.info('WebSocket routes registered', LOG_MODULES.WEBSOCKET);
 }

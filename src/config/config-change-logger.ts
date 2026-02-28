@@ -3,7 +3,7 @@
  * Handles comparison and logging of configuration changes.
  */
 
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**
@@ -49,6 +49,6 @@ export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfi
   compare(oldConfig, newConfig, '');
 
   if (changes.length > 0) {
-    logger.info(`${changes.join('\n')}`, { subModule: 'System Config Changes' });
+    logger.info(`${changes.join('\n')}`, LOG_MODULES.CONFIG_CHANGES);
   }
 }

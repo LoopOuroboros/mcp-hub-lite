@@ -27,7 +27,7 @@
 import { WebSocket } from 'ws';
 import { EventBusService, EventTypes } from '@services/event-bus.service.js';
 import { logStorage } from '@services/log-storage.service.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types.js';
 import type {
   ClientMessage,
@@ -77,7 +77,7 @@ export class WebSocketHandler {
     // Start heartbeat detection
     this.startHeartbeat();
 
-    logger.debug('connection established', { subModule: 'WebSocket' });
+    logger.debug('connection established', LOG_MODULES.WEBSOCKET);
   }
 
   /**
@@ -101,12 +101,10 @@ export class WebSocketHandler {
           this.handleFetchLogs(message);
           break;
         default:
-          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, {
-            subModule: 'WebSocket'
-          });
+          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, LOG_MODULES.WEBSOCKET);
       }
     } catch (error) {
-      logger.error(`Failed to parse WebSocket message: ${error}`, { subModule: 'WebSocket' });
+      logger.error(`Failed to parse WebSocket message: ${error}`, LOG_MODULES.WEBSOCKET);
       this.sendError('Invalid message format');
     }
   }
@@ -157,7 +155,7 @@ export class WebSocketHandler {
 
     logger.info(
       `Subscribed to events: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`,
-      { subModule: 'WebSocket' }
+      LOG_MODULES.WEBSOCKET
     );
   }
 
@@ -182,7 +180,7 @@ export class WebSocketHandler {
 
     logger.info(
       `Remaining subscriptions: ${Array.from(this.subscriptions.keys()).sort().join(', ')}`,
-      { subModule: 'WebSocket' }
+      LOG_MODULES.WEBSOCKET
     );
   }
 
@@ -190,7 +188,7 @@ export class WebSocketHandler {
    * Handle connection close
    */
   private handleClose(): void {
-    logger.info('connection closed', { subModule: 'WebSocket' });
+    logger.info('connection closed', LOG_MODULES.WEBSOCKET);
     this.stopHeartbeat();
 
     // Unsubscribe from all events
@@ -214,7 +212,7 @@ export class WebSocketHandler {
    * Handle connection error
    */
   private handleError(error: Error): void {
-    logger.error(`error: ${error}`, { subModule: 'WebSocket' });
+    logger.error(`error: ${error}`, LOG_MODULES.WEBSOCKET);
   }
 
   /**

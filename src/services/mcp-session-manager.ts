@@ -1,7 +1,7 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { gateway } from '@services/gateway.service.js';
-import { logger, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
+import { logger, LOG_MODULES, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
 import { formatDuration } from '@utils/format-utils.js';
@@ -99,7 +99,7 @@ export class McpSessionManager {
     const mcpHubDir = path.dirname(path.dirname(configPath)); // Get ~/.mcp-hub-lite directory
     this.sessionsPath = path.join(mcpHubDir, 'sessions');
 
-    logger.info(`Using sessions directory: ${this.sessionsPath}`, { subModule: 'SessionManager' });
+    logger.info(`Using sessions directory: ${this.sessionsPath}`, LOG_MODULES.SESSION_MANAGER);
 
     // Start cleanup interval
     setInterval(() => this.cleanup(), 60000);
@@ -109,7 +109,7 @@ export class McpSessionManager {
 
     // Initialize by restoring sessions
     this.restoreSessions().catch((error) => {
-      logger.error(' Failed to restore sessions during initialization:', error, { subModule: 'SessionManager' });
+      logger.error(' Failed to restore sessions during initialization:', error, LOG_MODULES.SESSION_MANAGER);
     });
   }
 
@@ -133,11 +133,11 @@ export class McpSessionManager {
    */
   private registerShutdownHandler(): void {
     const gracefulShutdown = async () => {
-      logger.info(' Shutting down, flushing dirty sessions...', { subModule: 'SessionManager' });
+      logger.info(' Shutting down, flushing dirty sessions...', LOG_MODULES.SESSION_MANAGER);
       try {
         await this.flushDirtySessions();
       } catch (error) {
-        logger.error(' Error during shutdown flush:', error, { subModule: 'SessionManager' });
+        logger.error(' Error during shutdown flush:', error, LOG_MODULES.SESSION_MANAGER);
       }
       if (this.flushTimeout) {
         clearTimeout(this.flushTimeout);
@@ -171,7 +171,7 @@ export class McpSessionManager {
   private markAsDirty(sessionId: string): void {
     this.dirtySessions.add(sessionId);
     if (process.env.SESSION_DEBUG) {
-      logger.debug(`Session marked as dirty: ${sessionId}`, { subModule: 'Session' });
+      logger.debug(`Session marked as dirty: ${sessionId}`, LOG_MODULES.SESSION);
     }
 
     // Set one-time delayed flush to avoid frequent writes (configurable delay, batch processing)
@@ -208,7 +208,7 @@ export class McpSessionManager {
     try {
       if (!fs.existsSync(this.sessionsPath)) {
         if (process.env.SESSION_DEBUG) {
-          logger.debug('Sessions directory not found, creating new one', { subModule: 'Session' });
+          logger.debug('Sessions directory not found, creating new one', LOG_MODULES.SESSION);
         }
         fs.mkdirSync(this.sessionsPath, { recursive: true });
         return createEmptySessionStore();
@@ -217,7 +217,7 @@ export class McpSessionManager {
       const indexPath = path.join(this.sessionsPath, 'index.json');
       if (!fs.existsSync(indexPath)) {
         if (process.env.SESSION_DEBUG) {
-          logger.debug('Sessions index file not found, creating new one', { subModule: 'Session' });
+          logger.debug('Sessions index file not found, creating new one', LOG_MODULES.SESSION);
         }
         return createEmptySessionStore();
       }
@@ -226,7 +226,7 @@ export class McpSessionManager {
       const index = JSON.parse(indexContent);
 
       if (!index.sessions || !Array.isArray(index.sessions)) {
-        logger.error(' Invalid sessions index file, creating new one', { subModule: 'Session' });
+        logger.error(' Invalid sessions index file, creating new one', LOG_MODULES.SESSION);
         return createEmptySessionStore();
       }
 
@@ -241,20 +241,18 @@ export class McpSessionManager {
             const validated = SessionStateSchema.parse(sessionState);
             store.sessions[sessionId] = validated;
           } catch (error) {
-            logger.warn(` Failed to load session ${sessionId}:`, error, { subModule: 'Session' });
+            logger.warn(` Failed to load session ${sessionId}:`, error, LOG_MODULES.SESSION);
           }
         }
       }
 
       if (process.env.SESSION_DEBUG) {
-        logger.debug(`Loaded ${Object.keys(store.sessions).length} sessions from store`, {
-          subModule: 'Session'
-        });
+        logger.debug(`Loaded ${Object.keys(store.sessions).length} sessions from store`, LOG_MODULES.SESSION);
       }
 
       return store;
     } catch (error) {
-      logger.error(' Failed to load sessions store:', error, { subModule: 'Session' });
+      logger.error(' Failed to load sessions store:', error, LOG_MODULES.SESSION);
       return createEmptySessionStore();
     }
   }
@@ -301,7 +299,7 @@ export class McpSessionManager {
         )
       );
     } catch (error) {
-      logger.error(' Failed to save sessions store:', error, { subModule: 'Session' });
+      logger.error(' Failed to save sessions store:', error, LOG_MODULES.SESSION);
       throw error;
     }
   }
@@ -331,7 +329,7 @@ export class McpSessionManager {
     }
 
     try {
-      logger.info('Restoring sessions from disk...', { subModule: 'SessionManager' });
+      logger.info('Restoring sessions from disk...', LOG_MODULES.SESSION_MANAGER);
 
       const store = await this.loadSessionStore();
       let restoredCount = 0;
@@ -344,19 +342,17 @@ export class McpSessionManager {
           restoredCount++;
 
           if (process.env.SESSION_DEBUG) {
-            logger.debug(`Restored session state: ${sessionId}`, { subModule: 'Session' });
+            logger.debug(`Restored session state: ${sessionId}`, LOG_MODULES.SESSION);
           }
         } catch (error) {
-          logger.warn(` Skipping invalid session state for ${sessionId}:`, error, { subModule: 'Session' });
+          logger.warn(` Skipping invalid session state for ${sessionId}:`, error, LOG_MODULES.SESSION);
         }
       }
 
       this.isInitialized = true;
-      logger.info(`Successfully restored ${restoredCount} session(s)`, {
-        subModule: 'SessionManager'
-      });
+      logger.info(`Successfully restored ${restoredCount} session(s)`, LOG_MODULES.SESSION_MANAGER);
     } catch (error) {
-      logger.error(' Failed to restore sessions:', error, { subModule: 'SessionManager' });
+      logger.error(' Failed to restore sessions:', error, LOG_MODULES.SESSION_MANAGER);
       // Continue with empty state rather than failing
       this.isInitialized = true;
     }
@@ -386,9 +382,7 @@ export class McpSessionManager {
     }
 
     try {
-      logger.info(`Flushing ${this.dirtySessions.size} dirty session(s) to disk`, {
-        subModule: 'SessionManager'
-      });
+      logger.info(`Flushing ${this.dirtySessions.size} dirty session(s) to disk`, LOG_MODULES.SESSION_MANAGER);
 
       // Load current store
       const currentStore = await this.loadSessionStore();
@@ -410,7 +404,7 @@ export class McpSessionManager {
           const sessionPath = path.join(this.sessionsPath, `${sessionId}.json`);
           if (fs.existsSync(sessionPath)) {
             fs.unlinkSync(sessionPath);
-            logger.debug(`Deleted session file: ${sessionId}.json`, { subModule: 'Session' });
+            logger.debug(`Deleted session file: ${sessionId}.json`, LOG_MODULES.SESSION);
           }
         }
       }
@@ -420,11 +414,9 @@ export class McpSessionManager {
       const flushedCount = this.dirtySessions.size;
       this.dirtySessions.clear();
 
-      logger.info(`Successfully flushed ${flushedCount} session(s)`, {
-        subModule: 'SessionManager'
-      });
+      logger.info(`Successfully flushed ${flushedCount} session(s)`, LOG_MODULES.SESSION_MANAGER);
     } catch (error) {
-      logger.error(' Failed to flush dirty sessions:', error, { subModule: 'SessionManager' });
+      logger.error(' Failed to flush dirty sessions:', error, LOG_MODULES.SESSION_MANAGER);
     }
   }
 
@@ -537,7 +529,7 @@ export class McpSessionManager {
       this.markAsDirty(sessionId);
 
       if (process.env.SESSION_DEBUG) {
-        logger.debug(`Updated metadata for session: ${sessionId}`, { subModule: 'Session' });
+        logger.debug(`Updated metadata for session: ${sessionId}`, LOG_MODULES.SESSION);
       }
     }
   }
@@ -571,7 +563,7 @@ export class McpSessionManager {
       const hasSessionObject = this.sessions.has(sessionId);
       logger.debug(
         `getSession called for ${sessionId} (requireInitialize: ${requireInitialize}). State exists: ${hasSessionState}, Object exists: ${hasSessionObject}`,
-        { subModule: 'Session' }
+        LOG_MODULES.SESSION
       );
     }
 
@@ -586,9 +578,7 @@ export class McpSessionManager {
       if (process.env.SESSION_DEBUG) {
         logger.debug(
           `Session state exists but session object missing for ${sessionId}, recreating...`,
-          {
-            subModule: 'Session'
-          }
+          LOG_MODULES.SESSION
         );
       }
       session = await this.createSession(sessionId, requireInitialize);
@@ -613,14 +603,14 @@ export class McpSessionManager {
         if (process.env.SESSION_DEBUG) {
           logger.debug(
             `Transport state check - Expected: ${sessionId} (initialized: ${shouldManuallyInitialize}), Actual: ${currentSessionId} (initialized: ${isInitialized})`,
-            { subModule: 'Session' }
+            LOG_MODULES.SESSION
           );
         }
 
         if (webTransport.sessionId !== sessionId) {
           logger.warn(
             `Session ID mismatch detected for ${sessionId}. Resetting transport sessionId.`,
-            { subModule: 'Session' }
+            LOG_MODULES.SESSION
           );
           webTransport.sessionId = sessionId;
           if (webTransport._session !== undefined) {
@@ -631,7 +621,7 @@ export class McpSessionManager {
         if (shouldManuallyInitialize && !webTransport._initialized) {
           logger.warn(
             `Session initialization state mismatch detected for ${sessionId}. Setting initialized flag.`,
-            { subModule: 'Session' }
+            LOG_MODULES.SESSION
           );
           webTransport._initialized = true;
         }
@@ -650,7 +640,7 @@ export class McpSessionManager {
     }
 
     if (process.env.SESSION_DEBUG) {
-      logger.debug(`Returning session for ${sessionId}`, { subModule: 'Session' });
+      logger.debug(`Returning session for ${sessionId}`, LOG_MODULES.SESSION);
     }
 
     return session;
@@ -731,7 +721,7 @@ export class McpSessionManager {
       try {
         await session.server.close();
       } catch (e) {
-        logger.error(` Error closing session ${sessionId}:`, e, { subModule: 'Session' });
+        logger.error(` Error closing session ${sessionId}:`, e, LOG_MODULES.SESSION);
       }
       this.sessions.delete(sessionId);
     }
@@ -778,18 +768,18 @@ export class McpSessionManager {
     sessionId: string,
     requireInitialize: boolean = true
   ): Promise<Session> {
-    logger.info(` Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`, { subModule: 'SessionManager' });
+    logger.info(` Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`, LOG_MODULES.SESSION_MANAGER);
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => sessionId,
       onsessioninitialized: (id) => {
         if (process.env.SESSION_DEBUG) {
-          logger.debug(`Session initialized: ${id}`, { subModule: 'Session' });
+          logger.debug(`Session initialized: ${id}`, LOG_MODULES.SESSION);
         }
       },
       onsessionclosed: (id) => {
         if (process.env.SESSION_DEBUG) {
-          logger.debug(`Session closed: ${id}`, { subModule: 'Session' });
+          logger.debug(`Session closed: ${id}`, LOG_MODULES.SESSION);
         }
         this.sessions.delete(id);
       }
@@ -805,7 +795,7 @@ export class McpSessionManager {
       if (process.env.SESSION_DEBUG) {
         logger.debug(
           `Directly set sessionId on transport: ${sessionId}`,
-          { subModule: 'Session' }
+          LOG_MODULES.SESSION
         );
       }
     }
@@ -813,9 +803,7 @@ export class McpSessionManager {
     // Check if we have a restored state for this session
     const restoredState = this.sessionStates.get(sessionId);
     if (restoredState) {
-      logger.info(`Reusing restored session state for: ${sessionId}`, {
-        subModule: 'SessionManager'
-      });
+      logger.info(`Reusing restored session state for: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
     }
 
     // For restored sessions or when explicitly requested to skip initialization, manually set the initialized flag
@@ -824,7 +812,7 @@ export class McpSessionManager {
     if (process.env.SESSION_DEBUG) {
       logger.debug(
         `shouldManuallyInitialize: ${shouldManuallyInitialize} (!requireInitialize: ${!requireInitialize} || restored: ${!!restoredState})`,
-        { subModule: 'Session' }
+        LOG_MODULES.SESSION
       );
     }
 
@@ -852,17 +840,15 @@ export class McpSessionManager {
         if (process.env.SESSION_DEBUG) {
           logger.debug(
             `Manually initialized transport for session: ${sessionId} (skipInitialize: ${!requireInitialize}, restored: ${!!restoredState})`,
-            { subModule: 'Session' }
+            LOG_MODULES.SESSION
           );
           logger.debug(
             `Transport state after manual init - sessionId: ${webTransport.sessionId}, _initialized: ${webTransport._initialized}, _session: ${webTransport._session}`,
-            { subModule: 'Session' }
+            LOG_MODULES.SESSION
           );
         }
       } else {
-        logger.error(`Failed to get _webStandardTransport from transport!`, {
-          subModule: 'SessionManager'
-        });
+        logger.error(`Failed to get _webStandardTransport from transport!`, LOG_MODULES.SESSION_MANAGER);
         // Even if we can't manually initialize, continue with normal initialization
         // The transport will be initialized when the first request arrives
       }
@@ -872,9 +858,9 @@ export class McpSessionManager {
     transport.onmessage = (message) => {
       try {
         const messageStr = stringifyForLogging(message);
-        logger.debug(`MCP message received: ${messageStr}`, { subModule: 'Communication' });
+        logger.debug(`MCP message received: ${messageStr}`, LOG_MODULES.COMMUNICATION);
       } catch {
-        logger.debug(`MCP message received: [Unserializable]`, { subModule: 'Communication' });
+        logger.debug(`MCP message received: [Unserializable]`, LOG_MODULES.COMMUNICATION);
       }
     };
 
@@ -897,11 +883,9 @@ export class McpSessionManager {
               logMessage.length > 500 ? logMessage.substring(0, 500) + '...' : logMessage;
           }
         }
-        logger.debug(`MCP message sent: ${logMessage}`, { subModule: 'Communication' });
+        logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       } catch {
-        logger.debug(`MCP message sent: [Error formatting response]`, {
-          subModule: 'Communication'
-        });
+        logger.debug(`MCP message sent: [Error formatting response]`, LOG_MODULES.COMMUNICATION);
       }
 
       // Call original send method
@@ -917,15 +901,13 @@ export class McpSessionManager {
     // when the first actual request (GET /mcp) arrives, not during connect().
     // Therefore, we don't need to wait for this event - the transport is ready to receive requests.
     if (process.env.SESSION_DEBUG) {
-      logger.debug(`StreamableHTTPServerTransport ready for session: ${sessionId}`, {
-        subModule: 'Session'
-      });
+      logger.debug(`StreamableHTTPServerTransport ready for session: ${sessionId}`, LOG_MODULES.SESSION);
     }
 
     // Create/update session state
     this.upsertSessionState(sessionId);
 
-    logger.info(`MCP session created successfully: ${sessionId}`, { subModule: 'SessionManager' });
+    logger.info(`MCP session created successfully: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
 
     const session = {
       server,
@@ -963,12 +945,12 @@ export class McpSessionManager {
     // Cleanup in-memory session objects
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
-        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`, { subModule: 'Session' });
+        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`, LOG_MODULES.SESSION);
         try {
           session.server.close();
           cleanedCount++;
         } catch (e) {
-          logger.error(` Error closing session ${sessionId}:`, e, { subModule: 'Session' });
+          logger.error(` Error closing session ${sessionId}:`, e, LOG_MODULES.SESSION);
         }
         this.sessions.delete(sessionId);
       }
@@ -986,20 +968,20 @@ export class McpSessionManager {
     for (const sessionId of expiredSessionIds) {
       this.sessionStates.delete(sessionId);
       this.markAsDirty(sessionId);
-      logger.debug(`Marking expired session for deletion: ${sessionId}`, { subModule: 'Session' });
+      logger.debug(`Marking expired session for deletion: ${sessionId}`, LOG_MODULES.SESSION);
     }
 
     // Immediately flush to delete session files from disk
     if (expiredSessionIds.length > 0) {
       this.flushDirtySessions().catch(error => {
-        logger.error('Failed to flush expired sessions:', error, { subModule: 'SessionManager' });
+        logger.error('Failed to flush expired sessions:', error, LOG_MODULES.SESSION_MANAGER);
       });
     }
 
     if (cleanedCount > 0) {
       logger.info(
         `Cleaned up ${cleanedCount} stale sessions. Active sessions: ${this.sessions.size}, Persisted states: ${this.sessionStates.size}`,
-        { subModule: 'SessionManager' }
+        LOG_MODULES.SESSION_MANAGER
       );
     }
   }

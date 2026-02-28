@@ -4,7 +4,7 @@
  */
 
 import * as fs from 'fs';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { SystemConfigSchema } from './config.schema.js';
 import type { SystemConfig } from './config.schema.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
@@ -27,7 +27,7 @@ import { convertHttpToStreamableHttp } from './type-converter.js';
 export function loadConfig(configPath: string): SystemConfig {
   try {
     if (fs.existsSync(configPath)) {
-      logger.info(`Loading configuration from: ${configPath}`, { subModule: 'ConfigManager' });
+      logger.info(`Loading configuration from: ${configPath}`, LOG_MODULES.CONFIG_MANAGER);
       const content = fs.readFileSync(configPath, 'utf-8');
       let config = JSON.parse(content);
 

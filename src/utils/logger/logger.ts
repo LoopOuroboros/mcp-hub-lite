@@ -6,7 +6,7 @@
  * - Structured context information including PID, server name, trace ID, span ID
  * - File output with plain text formatting (no colors) for log analysis
  * - Development mode with automatic log file creation and clearing
- * - Context-aware logging with subModule, traceId, and spanId support
+ * - Context-aware logging with module, traceId, and spanId support
  * - Error formatting with stack trace truncation to prevent overly verbose logs
  * - MCP server-specific logging with serverName context
  * - Log rotation with date-based file naming and automatic cleanup
@@ -67,7 +67,7 @@ export class Logger {
    */
   public enableDevLog(rotatorConfig?: Parameters<DevLogger['enableDevLog']>[0]): void {
     this.devLogger.enableDevLog(rotatorConfig, (logFile) => {
-      this.debug(`Writing logs to: ${logFile} (appending to existing log)`, { subModule: 'DEV LOG' });
+      this.debug(`Writing logs to: ${logFile} (appending to existing log)`, { module: 'DEV LOG' });
     });
   }
 
@@ -100,7 +100,7 @@ export class Logger {
 
     const context: LogContext | undefined = options
       ? {
-          subModule: options.subModule,
+          module: options.module,
           traceId: options.traceId,
           spanId: options.spanId
         }
@@ -146,7 +146,7 @@ export class Logger {
    * logger.debug('Processing request');
    *
    * // With context
-   * logger.debug('Tool called', { subModule: 'Gateway', traceId: 'abc123' }, toolName, args);
+   * logger.debug('Tool called', { module: 'Gateway', traceId: 'abc123' }, toolName, args);
    * ```
    */
   debug(message: string, ...args: unknown[]): void {
@@ -166,7 +166,7 @@ export class Logger {
    * logger.info('Server started successfully');
    *
    * // With context and additional data
-   * logger.info('Request processed', { subModule: 'API' }, { duration: 150, statusCode: 200 });
+   * logger.info('Request processed', { module: 'API' }, { duration: 150, statusCode: 200 });
    * ```
    */
   info(message: string, ...args: unknown[]): void {
@@ -186,7 +186,7 @@ export class Logger {
    * logger.warn('Deprecated API usage detected');
    *
    * // With context and error details
-   * logger.warn('Connection timeout', { subModule: 'Network' }, { server: 'api.example.com', timeout: 5000 });
+   * logger.warn('Connection timeout', { module: 'Network' }, { server: 'api.example.com', timeout: 5000 });
    * ```
    */
   warn(message: string, ...args: unknown[]): void {
@@ -206,7 +206,7 @@ export class Logger {
    * logger.error('Database connection failed');
    *
    * // With error object and context
-   * logger.error('Request processing failed', { subModule: 'API' }, error, { requestId: '123' });
+   * logger.error('Request processing failed', { module: 'API' }, error, { requestId: '123' });
    * ```
    */
   error(message: string, ...args: unknown[]): void {
@@ -219,7 +219,7 @@ export class Logger {
       typeof arg === 'object' &&
       arg !== null &&
       !Array.isArray(arg) &&
-      ('subModule' in arg || 'traceId' in arg || 'spanId' in arg)
+      ('module' in arg || 'traceId' in arg || 'spanId' in arg)
     );
 
     if (optionsIndex !== -1) {

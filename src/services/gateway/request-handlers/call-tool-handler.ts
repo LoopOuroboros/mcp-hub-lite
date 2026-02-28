@@ -4,7 +4,7 @@
 
 import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { logger } from '@utils/index.js';
+import { logger, LOG_MODULES } from '@utils/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { getClientCwd } from '@utils/request-context.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
@@ -50,14 +50,12 @@ export function registerCallToolHandler(
     if (parsedTool) {
       logger.debug(
         `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
 
       // Check if it's a system tool call
       if (parsedTool.serverName === MCP_HUB_LITE_SERVER && SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)) {
-        logger.info(`System tool called via prefixed name: ${parsedTool.toolName}`, {
-          subModule: 'GATEWAY'
-        });
+        logger.info(`System tool called via prefixed name: ${parsedTool.toolName}`, LOG_MODULES.GATEWAY);
 
         try {
           const result = await SystemToolHandler.handleSystemToolCall(parsedTool.toolName, toolArgs);
@@ -83,18 +81,16 @@ export function registerCallToolHandler(
     // Log incoming tool request with full context
     logger.info(
       `Tool call REQUEST received: toolName=${toolName}, args=${formatToolArgs(toolArgs)}`,
-      { subModule: 'GATEWAY' }
+      LOG_MODULES.GATEWAY
     );
     logger.debug(
       `Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`,
-      { subModule: 'GATEWAY' }
+      LOG_MODULES.GATEWAY
     );
 
     // Handle system tools
     if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-      logger.debug(`System tool called: ${toolName}, args=${formatToolArgs(toolArgs)}`, {
-        subModule: 'GATEWAY'
-      });
+      logger.debug(`System tool called: ${toolName}, args=${formatToolArgs(toolArgs)}`, LOG_MODULES.GATEWAY);
 
       try {
         const result = await SystemToolHandler.handleSystemToolCall(toolName, toolArgs);
@@ -120,13 +116,13 @@ export function registerCallToolHandler(
 
     logger.debug(
       `Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`,
-      { subModule: 'GATEWAY' }
+      LOG_MODULES.GATEWAY
     );
 
     if (!target) {
       logger.error(
         `Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
       throw new McpError(-32801, `Tool ${toolName} not found`);
     }
@@ -137,11 +133,11 @@ export function registerCallToolHandler(
       const cwd = getClientCwd();
       if (cwd && !toolArgs.cwd) {
         toolArgs.cwd = cwd;
-        logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, { subModule: toolName });
+        logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, LOG_MODULES.dynamic(toolName));
       }
       logger.debug(
         `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
 
       const result = await mcpConnectionManager.callTool(
@@ -153,7 +149,7 @@ export function registerCallToolHandler(
       const duration = Date.now() - startTime;
       logger.info(
         `Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
 
       // Wrap the result in a valid CallToolResult structure

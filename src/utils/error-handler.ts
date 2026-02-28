@@ -1,5 +1,5 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**
  * Unified error handler
@@ -12,7 +12,7 @@ export class ErrorHandler {
     logger.error(
       `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
       error,
-      { subModule: 'SYSTEM-TOOL' }
+      LOG_MODULES.SYSTEM_TOOL
     );
 
     if (error instanceof McpError) {
@@ -35,13 +35,11 @@ export class ErrorHandler {
     if (error instanceof Error) {
       logger.error(
         `Tool call FAILED: serverId=${serverId}, realToolName=${realToolName}, error=${error.message}`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
 
       if (error.stack) {
-        logger.debug(`Error stack for ${realToolName}:`, error.stack, {
-          subModule: 'GATEWAY'
-        });
+        logger.debug(`Error stack for ${realToolName}:`, error.stack, LOG_MODULES.GATEWAY);
       }
 
       if (error instanceof McpError) {
@@ -56,7 +54,7 @@ export class ErrorHandler {
     } else {
       logger.error(
         `Tool call FAILED: serverId=${serverId}, realToolName=${realToolName}, error=${String(error)}`,
-        { subModule: 'GATEWAY' }
+        LOG_MODULES.GATEWAY
       );
       throw new McpError(-32802, String(error) || 'Internal Gateway Error');
     }

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**
  * Session Management API Routes
@@ -41,7 +41,7 @@ export async function webSessionRoutes(fastify: FastifyInstance) {
         count: sessions.length
       });
     } catch (error) {
-      logger.error('Failed to get sessions:', error, { subModule: 'Session API' });
+      logger.error('Failed to get sessions:', error, LOG_MODULES.SESSION_API);
       return reply.code(500).send({
         success: false,
         error: 'Failed to get sessions'
@@ -71,7 +71,7 @@ export async function webSessionRoutes(fastify: FastifyInstance) {
           data: session
         });
       } catch (error) {
-        logger.error('Failed to get session:', error, { subModule: 'Session API' });
+        logger.error('Failed to get session:', error, LOG_MODULES.SESSION_API);
         return reply.code(500).send({
           success: false,
           error: 'Failed to get session'
@@ -88,7 +88,7 @@ export async function webSessionRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { sessionId } = request.params;
-        logger.info(`Deleting session: ${sessionId}`, { subModule: 'Session API' });
+        logger.info(`Deleting session: ${sessionId}`, LOG_MODULES.SESSION_API);
 
         const existed = await mcpSessionManager.deleteSession(sessionId);
 
@@ -99,14 +99,14 @@ export async function webSessionRoutes(fastify: FastifyInstance) {
           });
         }
 
-        logger.info(`Session deleted successfully: ${sessionId}`, { subModule: 'Session API' });
+        logger.info(`Session deleted successfully: ${sessionId}`, LOG_MODULES.SESSION_API);
 
         return reply.send({
           success: true,
           message: 'Session deleted successfully'
         });
       } catch (error) {
-        logger.error('Failed to delete session:', error, { subModule: 'Session API' });
+        logger.error('Failed to delete session:', error, LOG_MODULES.SESSION_API);
         return reply.code(500).send({
           success: false,
           error: 'Failed to delete session'

@@ -3,16 +3,12 @@
  * This file provides backward-compatible exports for the refactored logger module.
  */
 
-// Re-export types - defined here for runtime compatibility
-export interface LogContext {
-  pid?: number;
-  serverName?: string;
-  subModule?: string;
-  traceId?: string;
-  spanId?: string;
-}
+// Re-export types
+export type { LogContext, LogOptions } from './log-context.js';
 
-export type LogOptions = Omit<LogContext, 'pid' | 'serverName'>;
+// Re-export log module constants
+export { LOG_MODULES } from './log-modules.js';
+export type { LogModuleKey, LogModule } from './log-modules.js';
 
 // Re-export color utilities
 export {
@@ -43,6 +39,7 @@ export { Logger } from './logger.js';
 // Create and export the default logger instance
 import { Logger } from './logger.js';
 import { createColoredLogMessage, createLogMessage } from './log-formatter.js';
+import type { LogContext } from './log-context.js';
 
 export const logger = new Logger();
 

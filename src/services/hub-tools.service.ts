@@ -4,7 +4,7 @@ import type { Tool } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import {
   MCP_HUB_LITE_SERVER,
@@ -318,9 +318,7 @@ export class HubToolsService {
                   ? Record<string, { tools: Tool[] }>
                   : never
   > {
-    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, {
-      subModule: 'HUB-TOOLS'
-    });
+    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, LOG_MODULES.HUB_TOOLS);
 
     try {
       let result;
@@ -364,7 +362,7 @@ export class HubToolsService {
           throw new Error(`System tool "${toolName}" not found`);
       }
 
-      logger.debug(`System tool SUCCESS: ${toolName}`, { subModule: 'HUB-TOOLS' });
+      logger.debug(`System tool SUCCESS: ${toolName}`, LOG_MODULES.HUB_TOOLS);
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL
         ? string[]
@@ -385,7 +383,7 @@ export class HubToolsService {
       logger.error(
         `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
         error,
-        { subModule: 'HUB-TOOLS' }
+        LOG_MODULES.HUB_TOOLS
       );
       throw error;
     }
@@ -411,7 +409,7 @@ export class HubToolsService {
     if (parsedTool) {
       logger.debug(
         `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
-        { subModule: 'HUB-TOOLS' }
+        LOG_MODULES.HUB_TOOLS
       );
       serverName = parsedTool.serverName;
       toolName = parsedTool.toolName;
@@ -430,7 +428,7 @@ export class HubToolsService {
       // Not a system tool - find it in all connected servers
       logger.info(
         `Looking for tool '${toolName}' in all connected servers (gateway mode)`,
-        { subModule: 'HUB-TOOLS' }
+        LOG_MODULES.HUB_TOOLS
       );
 
       // Find all servers that have this tool
@@ -452,14 +450,14 @@ export class HubToolsService {
       }
 
       if (matchingServers.length === 0) {
-        logger.error(`Tool '${toolName}' not found in any connected server`, { subModule: 'HUB-TOOLS' });
+        logger.error(`Tool '${toolName}' not found in any connected server`, LOG_MODULES.HUB_TOOLS);
         throw new Error(`Tool '${toolName}' not found`);
       }
 
       if (matchingServers.length > 1) {
         logger.warn(
           `Tool '${toolName}' found in multiple servers: ${matchingServers.join(', ')}. Using first match.`,
-          { subModule: 'HUB-TOOLS' }
+          LOG_MODULES.HUB_TOOLS
         );
       }
 
@@ -469,13 +467,13 @@ export class HubToolsService {
 
     logger.debug(
       `Tool call received: serverName=${serverName}, toolName=${toolName}, args=${stringifyForLogging(toolArgs)}`,
-      { subModule: 'HUB-TOOLS' }
+      LOG_MODULES.HUB_TOOLS
     );
 
     const serverInfo = selectBestInstance(serverName, requestOptions);
 
     if (!serverInfo) {
-      logger.error(`Server not found: ${serverName}`, { subModule: 'HUB-TOOLS' });
+      logger.error(`Server not found: ${serverName}`, LOG_MODULES.HUB_TOOLS);
       throw new Error(`Server not found: ${serverName}`);
     }
 
@@ -505,9 +503,7 @@ export class HubToolsService {
         result
       });
 
-      logger.debug(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, {
-        subModule: 'HUB-TOOLS'
-      });
+      logger.debug(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, LOG_MODULES.HUB_TOOLS);
       return result;
     } catch (error) {
       // Publish tool call error event
@@ -524,7 +520,7 @@ export class HubToolsService {
       logger.error(
         `Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
         error,
-        { subModule: 'HUB-TOOLS' }
+        LOG_MODULES.HUB_TOOLS
       );
       throw error;
     }
