@@ -53,9 +53,7 @@ describe('Logger', () => {
     logger.setLevel('debug' as LogLevel);
 
     // Verify level setting (via internal method simulation)
-    // @ts-expect-error - accessing private method for testing
     const shouldLogSpy = vi.spyOn(logger, 'shouldLog');
-    // @ts-expect-error - accessing private method for testing
     logger.shouldLog('debug');
     expect(shouldLogSpy).toHaveBeenCalledWith('debug');
   });
@@ -63,7 +61,6 @@ describe('Logger', () => {
   it('should format timestamp correctly', () => {
     logger = new Logger();
     const testDate = new Date('2025-12-01T10:30:45.123Z');
-    // @ts-expect-error - accessing private method for testing
     const formatted = logger.formatTimestamp(testDate);
     // Verify format is correct, but don't hardcode specific time values (timezone may affect)
     expect(formatted).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
@@ -71,23 +68,16 @@ describe('Logger', () => {
 
   it('should format log level correctly', () => {
     logger = new Logger();
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatLogLevel('debug')).toBe('DBG');
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatLogLevel('info')).toBe('INF');
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatLogLevel('warn')).toBe('WRN');
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatLogLevel('error')).toBe('ERR');
   });
 
   it('should format PID correctly', () => {
     logger = new Logger();
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatPid(123)).toBe('PID:     123');
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatPid(123456)).toBe('PID:  123456');
-    // @ts-expect-error - accessing private method for testing
     expect(logger.formatPid(123456789)).toBe('PID:12345678'); // Test long PID truncation
   });
 
@@ -95,13 +85,9 @@ describe('Logger', () => {
     logger = new Logger('info');
 
     // info level should log info, warn, error
-    // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('info')).toBe(true);
-    // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('warn')).toBe(true);
-    // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('error')).toBe(true);
-    // @ts-expect-error - accessing private method for testing
     expect(logger.shouldLog('debug')).toBe(false);
 
     // debug level should log all
@@ -111,7 +97,6 @@ describe('Logger', () => {
 
   it('should create colored log message with server name', () => {
     logger = new Logger();
-    // @ts-expect-error - accessing private method for testing
     const message = logger.createColoredLogMessage('info', 'test message', {
       pid: 123,
       serverName: 'test-server'
@@ -127,7 +112,6 @@ describe('Logger', () => {
 
   it('should create plain log message without server name', () => {
     logger = new Logger();
-    // @ts-expect-error - accessing private method for testing
     const message = logger.createLogMessage('info', 'test message', {
       pid: 123
     });
@@ -146,14 +130,12 @@ describe('Logger', () => {
     // Test Error object
     const error = new Error('Test error');
     error.stack = 'Error: Test error\n    at test (test.js:1:1)\n    at another (test.js:2:2)';
-    // @ts-expect-error - accessing private method for testing
     const formatted = logger.formatError(error);
     expect(formatted).toContain('Test error');
     expect(formatted).toContain('at test (test.js:1:1)');
 
     // Test non-Error object
     const stringError = 'string error';
-    // @ts-expect-error - accessing private method for testing
     const formattedString = logger.formatError(stringError);
     expect(formattedString).toBe('string error');
   });
@@ -190,7 +172,6 @@ describe('Logger', () => {
 
       logger = new Logger();
 
-      // @ts-expect-error - accessing private property for testing
       expect(logger.logFileStream).toBeDefined();
 
       // Verify file system operations were called
@@ -426,7 +407,6 @@ describe('Logger', () => {
       logger = new Logger();
       logger.enableDevLog();
 
-      // @ts-expect-error - accessing private property for testing
       expect(logger.devLogRotator).toBeDefined();
 
       createWriteStreamSpy.mockRestore();
@@ -478,7 +458,6 @@ describe('Logger', () => {
       logger = new Logger();
       logger.enableDevLog({ rotationAge: '14d' });
 
-      // @ts-expect-error - accessing private property for testing
       expect(logger.devLogRotator).toBeDefined();
 
       createWriteStreamSpy.mockRestore();
