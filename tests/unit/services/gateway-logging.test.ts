@@ -7,7 +7,6 @@ describe('GatewayService Logging Helpers', () => {
 
   test('formatToolArgs should handle simple objects', () => {
     const args = { foo: 'bar', num: 42 };
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolArgs(args);
     expect(result).toContain('foo');
     expect(result).toContain('bar');
@@ -16,7 +15,6 @@ describe('GatewayService Logging Helpers', () => {
 
   test('formatToolArgs should truncate long strings', () => {
     const args = { data: 'a'.repeat(1000) };
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolArgs(args);
     expect(result).toContain('... [truncated]');
     expect(result.length).toBeLessThan(1000);
@@ -26,7 +24,6 @@ describe('GatewayService Logging Helpers', () => {
     // Create object with circular reference for testing
     const obj = { name: 'test' } as unknown as { name: string; self?: unknown };
     obj.self = obj;
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolArgs(obj);
     expect(result).toContain('[Circular Reference]');
   });
@@ -38,21 +35,18 @@ describe('GatewayService Logging Helpers', () => {
         throw new Error('test error');
       }
     };
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolArgs(args);
     expect(result).toContain('[Error formatting args:');
   });
 
   test('formatToolResponse should handle valid responses', () => {
     const response = { content: [{ type: 'text', text: 'Hello' }] };
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolResponse(response);
     expect(result).toContain('Hello');
   });
 
   test('formatToolResponse should truncate large responses', () => {
     const response = { content: 'a'.repeat(3000) };
-    // @ts-expect-error - accessing private method for testing
     const result = gateway.formatToolResponse(response);
     expect(result).toContain('... [truncated]');
     expect(result.length).toBeLessThan(2500);
