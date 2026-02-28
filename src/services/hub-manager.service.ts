@@ -63,8 +63,6 @@ export class HubManagerService {
         eventBus.publish(EventTypes.SERVER_ADDED, { name, config: serverConfig });
       }
     }
-    // Save configuration (only once)
-    await this.configManager['saveConfig'](); // Call private method
   }
 
   /**
