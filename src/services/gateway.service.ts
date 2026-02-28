@@ -491,11 +491,12 @@ export class GatewayService {
       try {
         const { uri } = request.params;
         const content = await hubToolsService.readResource(uri);
-        // Convert to official MCP format: contents array
+        // Convert to official MCP format: contents array with required uri field
         return {
           contents: [
             {
-              type: 'text',
+              uri,
+              mimeType: 'application/json',
               text: typeof content === 'string' ? content : stringifyForLogging(content)
             }
           ]
