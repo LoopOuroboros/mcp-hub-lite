@@ -1,5 +1,12 @@
 # MCP Hub Lite - AI 编程助手指南
 
+## 变更记录 (Changelog)
+
+### 2026-02-28
+- 项目文档架构初始化与更新
+- 完善模块结构图与导航链接
+- 更新覆盖率报告与扫描状态
+
 完整变更记录请参见：[CHANGELOG_zh-CN.md](CHANGELOG_zh-CN.md)
 
 ## 项目概述
