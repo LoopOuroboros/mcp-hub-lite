@@ -4,7 +4,7 @@ import {
   ServerConfig,
   ServerInstanceConfig
 } from '@config/config-manager.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 
@@ -114,7 +114,7 @@ export class HubManagerService {
           try {
             await mcpConnectionManager.connect({ ...server, ...instance });
           } catch (error) {
-            logger.error(`Failed to connect server instance for ${name}:`, error);
+            logger.error(`Failed to connect server instance for ${name}:`, error, LOG_MODULES.HUB_MANAGER);
           }
         }
       }
@@ -265,7 +265,7 @@ export class HubManagerService {
    */
   async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
     const newServer = await this.configManager.addServer(name, config);
-    logger.info(`Server added: [${name}]`);
+    logger.info(`Server added: [${name}]`, LOG_MODULES.HUB_MANAGER);
 
     // Publish server added event
     eventBus.publish(EventTypes.SERVER_ADDED, { name, config: newServer });
@@ -298,7 +298,7 @@ export class HubManagerService {
     instance: Partial<ServerInstanceConfig>
   ): Promise<ServerInstanceConfig> {
     const newInstance = await this.configManager.addServerInstance(name, instance);
-    logger.info(`Server instance added for server: [${name}]`);
+    logger.info(`Server instance added for server: [${name}]`, LOG_MODULES.HUB_MANAGER);
 
     // If server config is enabled, attempt to connect
     const server = this.getServerByName(name);
@@ -306,7 +306,7 @@ export class HubManagerService {
       try {
         await mcpConnectionManager.connect({ ...server, ...newInstance });
       } catch (error) {
-        logger.error(`Failed to auto-connect server instance for ${name}:`, error);
+        logger.error(`Failed to auto-connect server instance for ${name}:`, error, LOG_MODULES.HUB_MANAGER);
       }
     }
 
@@ -338,12 +338,12 @@ export class HubManagerService {
   async updateServer(name: string, updates: Partial<ServerConfig>): Promise<ServerConfig | null> {
     const existing = this.getServerByName(name);
     if (!existing) {
-      logger.warn(`Attempted to update non-existent server: ${name}`);
+      logger.warn(`Attempted to update non-existent server: ${name}`, LOG_MODULES.HUB_MANAGER);
       return null;
     }
 
     await this.configManager.updateServer(name, updates);
-    logger.info(`Server updated: ${name}`);
+    logger.info(`Server updated: ${name}`, LOG_MODULES.HUB_MANAGER);
 
     const updatedServer = this.getServerByName(name) || null;
     if (updatedServer) {
@@ -380,7 +380,7 @@ export class HubManagerService {
     updates: Partial<ServerInstanceConfig>
   ): Promise<void> {
     await this.configManager.updateServerInstance(name, index, updates);
-    logger.info(`Server instance updated for server: [${name}] at index: ${index}`);
+    logger.info(`Server instance updated for server: [${name}] at index: ${index}`, LOG_MODULES.HUB_MANAGER);
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_UPDATED, { name, index, updates });
   }
@@ -416,7 +416,7 @@ export class HubManagerService {
     }
 
     await this.configManager.removeServer(name);
-    logger.info(`Server removed: ${name}`);
+    logger.info(`Server removed: ${name}`, LOG_MODULES.HUB_MANAGER);
 
     eventBus.publish(EventTypes.SERVER_DELETED, name);
 
@@ -450,7 +450,7 @@ export class HubManagerService {
     }
 
     await this.configManager.removeServerInstance(name, index);
-    logger.info(`Server instance removed for server: [${name}] at index: ${index}`);
+    logger.info(`Server instance removed for server: [${name}] at index: ${index}`, LOG_MODULES.HUB_MANAGER);
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_DELETED, { name, index });
   }

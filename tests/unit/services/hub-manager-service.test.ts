@@ -37,7 +37,8 @@ vi.mock('@utils/logger.js', () => ({
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn()
-  }
+  },
+  LOG_MODULES: {}
 }));
 
 describe('HubManagerService', () => {
