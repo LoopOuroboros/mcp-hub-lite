@@ -67,7 +67,7 @@ export class Logger {
    */
   public enableDevLog(rotatorConfig?: Parameters<DevLogger['enableDevLog']>[0]): void {
     this.devLogger.enableDevLog(rotatorConfig, (logFile) => {
-      this.debug(`Writing logs to: ${logFile} (appending to existing log)`, { module: 'DEV LOG' });
+      this.debug(`Writing logs to: ${logFile}`, { module: 'DEV LOG' });
     });
   }
 

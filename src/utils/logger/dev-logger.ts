@@ -36,7 +36,7 @@ export class DevLogger {
    * - Write all log output to a file in the logs/ directory
    * - Enable communication debug logging (MCP_COMM_DEBUG)
    * - Enable session debug logging (SESSION_DEBUG)
-   * - Use date-based log file naming (dev-server.YYYY-MM-DD.log)
+   * - Use timestamp-based log file naming (dev-server.YYYYMMDD_HHmmSSZZZ.log)
    * - Automatically clean up old log files (default: 7 days retention)
    *
    * @param rotatorConfig - Optional custom rotation configuration (default: 7 days retention)
@@ -62,7 +62,7 @@ export class DevLogger {
     this.devLogRotator = new LogRotator(logDir, 'dev-server', config);
     this.devLogRotator.rotateLogs();
 
-    const logFile = this.devLogRotator.getCurrentLogFilePath();
+    const logFile = this.devLogRotator.createNewLogFilePath();
     this.logFileStream = fs.createWriteStream(logFile, { flags: 'a' });
 
     if (onLogEnabled) {

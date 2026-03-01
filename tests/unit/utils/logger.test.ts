@@ -412,7 +412,7 @@ describe('Logger', () => {
       createWriteStreamSpy.mockRestore();
     });
 
-    it('should use date-based log file naming for dev logs', () => {
+    it('should use timestamp-based log file naming for dev logs', () => {
       // Mock fs modules
       vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
       vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
@@ -430,14 +430,8 @@ describe('Logger', () => {
       logger = new Logger();
       logger.enableDevLog();
 
-      // Verify the log path contains today's date
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const expectedDateString = `${year}-${month}-${day}`;
-
-      expect(capturedLogPath).toContain(`dev-server.${expectedDateString}.log`);
+      // Verify the log path uses the new timestamp format: dev-server.YYYYMMDD_HHmmSSZZZ.log
+      expect(capturedLogPath).toMatch(/dev-server\.\d{8}_\d{9}\.log$/);
 
       createWriteStreamSpy.mockRestore();
     });

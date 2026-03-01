@@ -16,13 +16,14 @@ type ConfigGetter = () => { system: { logging: { rotationAge: string } } };
 /**
  * Manages log file rotation and cleanup for MCP Hub Lite.
  *
- * This class provides automated log rotation functionality that creates daily log files
- * with date-based naming and automatically cleans up old log files based on the configured
- * retention period. It ensures that log storage doesn't grow indefinitely while maintaining
- * a configurable history of log files for debugging and monitoring purposes.
+ * This class provides automated log rotation functionality that creates log files
+ * with timestamp-based naming on each startup and automatically cleans up old log files
+ * based on the configured retention period. It ensures that log storage doesn't grow
+ * indefinitely while maintaining a configurable history of log files for debugging
+ * and monitoring purposes.
  *
  * The log rotator works by:
- * 1. Creating log files with format: `{logBaseName}.{YYYY-MM-DD}.log`
+ * 1. Creating log files with format: `{logBaseName}.{YYYYMMDD_HHmmSSZZZ}.log` on each startup
  * 2. Automatically cleaning up log files older than the configured retention period
  * 3. Providing utilities to retrieve and manage existing log files
  *
@@ -31,8 +32,11 @@ type ConfigGetter = () => { system: { logging: { rotationAge: string } } };
  * const logDir = path.join(os.homedir(), '.mcp-hub-lite', 'logs');
  * const rotator = new LogRotator(logDir, 'mcp-hub');
  *
- * // Get current log file path for today
- * const currentLogPath = rotator.getCurrentLogFilePath();
+ * // Create a new log file with timestamp (for startup)
+ * const newLogPath = rotator.createNewLogFilePath();
+ *
+ * // Get the latest existing log file
+ * const latestLogPath = rotator.getLatestLogFilePath();
  *
  * // Perform log rotation (cleanup old files)
  * rotator.rotateLogs();
@@ -120,30 +124,83 @@ export class LogRotator {
   }
 
   /**
-   * Gets the current log file path for today's date.
+   * Generates a timestamp string in YYYYMMDD_HHmmSSZZZ format.
+   *
+   * @param date - The date to format, defaults to current date/time
+   * @returns {string} Formatted timestamp string
+   * @private
+   */
+  private formatTimestamp(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+    return `${year}${month}${day}_${hours}${minutes}${seconds}${milliseconds}`;
+  }
+
+  /**
+   * Creates a new log file path with the current timestamp.
    *
    * This method generates a log file path using the configured log directory and base name,
-   * combined with today's date in YYYY-MM-DD format. The resulting path follows the pattern:
-   * `{logDir}/{logBaseName}.{YYYY-MM-DD}.log`
+   * combined with the current timestamp in YYYYMMDD_HHmmSSZZZ format. The resulting path
+   * follows the pattern: `{logDir}/{logBaseName}.{YYYYMMDD_HHmmSSZZZ}.log`
    *
-   * This method is typically used by the logging system to determine which log file
-   * should receive new log entries for the current day.
+   * This method should be called on application startup to create a new log file
+   * for each session.
    *
-   * @returns {string} The absolute file path for today's log file.
+   * @returns {string} The absolute file path for the new log file.
+   * @example
+   * ```typescript
+   * const rotator = new LogRotator('/var/log/mcp-hub', 'mcp-hub');
+   * const logPath = rotator.createNewLogFilePath();
+   * // Returns: '/var/log/mcp-hub/mcp-hub.20260301_143022123.log' (with current timestamp)
+   * ```
+   */
+  public createNewLogFilePath(): string {
+    const timestamp = this.formatTimestamp();
+    return path.join(this.logDir, `${this.logBaseName}.${timestamp}.log`);
+  }
+
+  /**
+   * Gets the latest existing log file path.
+   *
+   * This method scans the log directory and returns the path to the most recent
+   * log file based on the timestamp in the filename. If no log files exist,
+   * it returns null.
+   *
+   * @returns {string | null} The absolute file path to the latest log file, or null if none exist.
+   * @example
+   * ```typescript
+   * const rotator = new LogRotator('/var/log/mcp-hub', 'mcp-hub');
+   * const latestLog = rotator.getLatestLogFilePath();
+   * // Returns: '/var/log/mcp-hub/mcp-hub.20260301_143022123.log' or null
+   * ```
+   */
+  public getLatestLogFilePath(): string | null {
+    const logFiles = this.getLogFiles();
+    return logFiles.length > 0 ? logFiles[0] : null;
+  }
+
+  /**
+   * Gets the current log file path (backward compatibility).
+   *
+   * This method is maintained for backward compatibility. It first tries to get
+   * the latest existing log file. If none exists, it creates a new one.
+   *
+   * @returns {string} The absolute file path for the current log file.
+   * @deprecated Use createNewLogFilePath() or getLatestLogFilePath() instead
    * @example
    * ```typescript
    * const rotator = new LogRotator('/var/log/mcp-hub', 'mcp-hub');
    * const logPath = rotator.getCurrentLogFilePath();
-   * // Returns: '/var/log/mcp-hub/mcp-hub.2026-02-16.log' (for today's date)
    * ```
    */
   public getCurrentLogFilePath(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const dateString = `${year}-${month}-${day}`;
-    return path.join(this.logDir, `${this.logBaseName}.${dateString}.log`);
+    const latest = this.getLatestLogFilePath();
+    return latest ?? this.createNewLogFilePath();
   }
 
   /**
@@ -250,20 +307,45 @@ export class LogRotator {
   /**
    * Extracts the date from a log filename.
    *
-   * Parses filenames that match the pattern `{logBaseName}.{YYYY-MM-DD}.log`
+   * Parses filenames that match either:
+   * - New format: `{logBaseName}.{YYYYMMDD_HHmmSSZZZ}.log` (preferred)
+   * - Old format: `{logBaseName}.{YYYY-MM-DD}.log` (for backward compatibility)
+   *
    * and extracts the date portion, converting it to a Date object.
    *
-   * @param {string} filename - The log filename to parse (e.g., "mcp-hub.2026-02-16.log")
+   * @param {string} filename - The log filename to parse
+   *                             (e.g., "mcp-hub.20260301_143022123.log" or "mcp-hub.2026-02-16.log")
    * @returns {Date | null} A Date object representing the extracted date, or null
    *                        if the filename doesn't match the expected pattern or
    *                        contains an invalid date.
    * @private
    */
   private extractDateFromFilename(filename: string): Date | null {
-    const match = filename.match(new RegExp(`${this.logBaseName}\\.(\\d{4}-\\d{2}-\\d{2})\\.log$`));
-    if (match && match[1]) {
-      return new Date(match[1]);
+    // Try new format first: YYYYMMDD_HHmmSSZZZ
+    const newFormatMatch = filename.match(
+      new RegExp(`${this.logBaseName}\\.(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2})(\\d{3})\\.log$`)
+    );
+    if (newFormatMatch) {
+      const [, year, month, day, hours, minutes, seconds, ms] = newFormatMatch;
+      return new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1, // months are 0-indexed
+        parseInt(day, 10),
+        parseInt(hours, 10),
+        parseInt(minutes, 10),
+        parseInt(seconds, 10),
+        parseInt(ms, 10)
+      );
     }
+
+    // Try old format: YYYY-MM-DD (backward compatibility)
+    const oldFormatMatch = filename.match(
+      new RegExp(`${this.logBaseName}\\.(\\d{4}-\\d{2}-\\d{2})\\.log$`)
+    );
+    if (oldFormatMatch && oldFormatMatch[1]) {
+      return new Date(oldFormatMatch[1]);
+    }
+
     return null;
   }
 }
