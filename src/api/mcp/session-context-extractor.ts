@@ -28,11 +28,14 @@ export interface RequestBody {
  * Extracts session context from incoming MCP requests to establish client identity and session management.
  *
  * This function implements a sophisticated session ID resolution strategy with multiple fallback mechanisms:
- * 1. Query parameter sessionId (for SSE connections)
- * 2. Initialize request parameters (for JSON-RPC initialization)
- * 3. Existing client tracker information (for subsequent requests)
- * 4. Persisted session states (for service restart recovery)
- * 5. New unique session ID generation (fallback)
+ * 1. Header parameter mcp-session-id/Mcp-Session-Id (highest priority)
+ * 2. Query parameter sessionId (for SSE connections)
+ * 3. URL pattern match for sessionId (always runs, even if query worked)
+ * 4. Initialize request parameters (for JSON-RPC initialization)
+ * 5. Existing client tracker information (for subsequent requests)
+ * 6. Persisted session states (for service restart recovery)
+ * 7. Client name matching for existing sessions
+ * 8. New unique session ID generation (fallback)
  *
  * The function also extracts and enriches client context including name, version, working directory,
  * project information, IP address, and user agent for comprehensive session tracking.
@@ -53,14 +56,27 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   const headers = request.headers;
 
   // Fully use the original clientId generation logic as sessionId
-  // Priority 1: Session ID from Query (Standard MCP SSE)
-  let sessionId = (request.query as { sessionId?: string })?.sessionId;
+  // Priority 1: Session ID from Header (highest priority)
+  let sessionId: string | undefined = (headers['mcp-session-id'] as string) || (headers['Mcp-Session-Id'] as string);
+  if (sessionId) {
+    logger.debug(`Extracted sessionId from header: ${sessionId}`, LOG_MODULES.CONTEXT);
+  }
 
+  // Priority 2: Session ID from Query (Standard MCP SSE)
+  if (!sessionId) {
+    sessionId = (request.query as { sessionId?: string })?.sessionId;
+  }
+
+  // Priority 3: URL pattern match for sessionId (always check, even if query gave us one)
+  // This ensures we get the sessionId even if query parsing fails
   if (request.url.includes('sessionId=')) {
     const match = request.url.match(/sessionId=([^&]+)/);
     if (match) {
-      sessionId = match[1];
-      logger.debug(`Extracted sessionId from URL: ${sessionId}`, LOG_MODULES.CONTEXT);
+      const urlSessionId = match[1];
+      if (sessionId !== urlSessionId) {
+        sessionId = urlSessionId;
+        logger.debug(`Extracted sessionId from URL: ${sessionId}`, LOG_MODULES.CONTEXT);
+      }
     }
   }
 
@@ -74,7 +90,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     LOG_MODULES.CONTEXT
   );
 
-  // Priority 2: For JSON-RPC requests like initialize, maintain session consistency
+  // Priority 4: For JSON-RPC requests like initialize, maintain session consistency
   if (!sessionId && request.body) {
     if (request.body.method === 'initialize' && request.body.params?.clientInfo) {
       const { name, version } = request.body.params.clientInfo;
@@ -151,7 +167,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  // Priority 3: For any request without sessionId, try to find latest session
+  // Priority 5: For any request without sessionId, try to find latest session
   // This handles cases like GET /mcp without query params and POST /mcp with tools/list
   if (!sessionId && clients.length > 0) {
     const latestClient = clients.reduce((latest, current) => {
@@ -161,7 +177,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     logger.debug(`Extracted sessionId from latest client: ${sessionId}`, LOG_MODULES.CONTEXT);
   }
 
-  // Priority 4: Simplified session matching - only match exact sessionId or clientName
+  // Priority 6: Simplified session matching - only match exact sessionId or clientName
   if (!sessionId) {
     if (clientName) {
       const existingClient = clients.find((c) => c.clientName === clientName);
@@ -172,7 +188,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  // Priority 4.5: Try to find from persisted session states (when clientTracker has no clients but sessions are persisted)
+  // Priority 7: Try to find from persisted session states (when clientTracker has no clients but sessions are persisted)
   if (!sessionId && existingSessionStates.length > 0) {
     logger.debug(`ClientTracker has no clients, using persisted session states`, LOG_MODULES.CONTEXT);
     // First, try to find matching clientName
@@ -194,7 +210,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  // Priority 5: Generate new unique session ID only if no other method works
+  // Priority 8: Generate new unique session ID only if no other method works
   if (!sessionId) {
     const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
     sessionId = `${prefix}${randomUUID().substring(0, 8)}`;
