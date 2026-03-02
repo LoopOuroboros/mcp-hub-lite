@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { configManager } from '@config/config-manager.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
@@ -48,9 +49,17 @@ const __dirname = path.dirname(__filename);
  * ```
  */
 export async function buildApp() {
+  const config = configManager.getConfig();
   const fastify = Fastify({
     logger: false // We use our own logger
   });
+
+  // Set HTTP connection timeouts for SSE long-lived connections
+  // Use idleConnectionTimeout from config (default 5 minutes)
+  // Add extra buffer to prevent premature disconnect
+  const idleTimeout = config.security.idleConnectionTimeout;
+  fastify.server.keepAliveTimeout = idleTimeout;
+  fastify.server.headersTimeout = idleTimeout + 5000; // headersTimeout must be longer than keepAliveTimeout
 
   // Simple CORS for dev
   fastify.addHook('onRequest', (request, reply, done) => {

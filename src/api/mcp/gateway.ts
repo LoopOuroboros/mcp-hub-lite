@@ -15,6 +15,10 @@ import { cleanupStaleSseStreams } from './sse-stream-manager.js';
 import { extractSessionContext, type RequestBody } from './session-context-extractor.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
 
+// Track last SSE connection time per session for reconnection detection
+const sseConnectionTimestamps = new Map<string, number>();
+const SSE_RECONNECT_THRESHOLD = 60000; // 60 seconds - within this window considered a reconnect
+
 /**
  * MCP Gateway routes registration.
  *
@@ -42,6 +46,22 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     logger.info(initialLogMsg, LOG_MODULES.GATEWAY);
 
     const { sessionId, clientContext } = extractSessionContext(request);
+
+    // Detect and log SSE reconnection (DEBUG level only)
+    if (request.method === 'GET') {
+      const lastConnectionTime = sseConnectionTimestamps.get(sessionId);
+      if (lastConnectionTime) {
+        const timeSinceLastConnection = Date.now() - lastConnectionTime;
+        if (timeSinceLastConnection < SSE_RECONNECT_THRESHOLD) {
+          logger.debug(
+            `SSE reconnection detected for session ${sessionId}: ${Math.round(timeSinceLastConnection / 1000)}s after last connection`,
+            LOG_MODULES.GATEWAY
+          );
+        }
+      }
+      // Update the timestamp for this session
+      sseConnectionTimestamps.set(sessionId, Date.now());
+    }
 
     // Update client tracking information
     clientTrackerService.updateClient(clientContext);
