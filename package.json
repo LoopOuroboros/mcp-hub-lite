@@ -35,16 +35,9 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.frontend.json --composite false"
   },
   "dependencies": {
-    "@fastify/otel": "^0.16.0",
     "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.2.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
-    "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.211.0",
-    "@opentelemetry/instrumentation-fastify": "^0.55.0",
-    "@opentelemetry/instrumentation-http": "^0.211.0",
-    "@opentelemetry/sdk-node": "^0.211.0",
-    "@opentelemetry/sdk-trace-base": "^2.5.0",
     "commander": "^14.0.2",
     "element-plus": "^2.13.0",
     "eventsource": "^4.1.0",

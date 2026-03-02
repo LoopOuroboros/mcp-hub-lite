@@ -19,7 +19,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { logger, withSpan, createMcpSpanOptions } from '@utils/index.js';
+import { logger } from '@utils/index.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import {
   registerInitializeHandlers,
@@ -125,15 +125,9 @@ export class GatewayService {
    * @returns {Promise<void>} Resolves when the gateway is successfully started on stdio
    */
   public async start() {
-    return withSpan<void>(
-      'mcp.gateway.start',
-      createMcpSpanOptions('gateway_start', 'gateway'),
-      async () => {
-        this.transport = new StdioServerTransport();
-        await this.server.connect(this.transport);
-        logger.info('MCP Gateway started on stdio');
-      }
-    );
+    this.transport = new StdioServerTransport();
+    await this.server.connect(this.transport);
+    logger.info('MCP Gateway started on stdio');
   }
 }
 

@@ -106,15 +106,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -157,15 +149,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -211,15 +195,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -276,15 +252,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -348,15 +316,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
@@ -442,15 +402,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -511,15 +463,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -576,15 +520,7 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {},
-        observability: {
-          tracing: {
-            enabled: false,
-            exporter: 'console' as const,
-            endpoint: 'http://localhost:4318/v1/traces',
-            sampleRate: 1.0
-          }
-        }
+        servers: {}
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 

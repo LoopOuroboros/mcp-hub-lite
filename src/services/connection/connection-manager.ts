@@ -2,7 +2,6 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { TransportFactory } from '@utils/transports/transport-factory.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import { withSpan, createMcpSpanOptions } from '@utils/index.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { logStorage } from '@services/log-storage.service.js';
@@ -11,7 +10,6 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { ServerConfig } from '@config/config.schema.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
 import type { ServerStatus } from './types.js';
 import { ToolCache } from './tool-cache.js';
 
@@ -99,213 +97,198 @@ export class McpConnectionManager {
    * ```
    */
   public async connect(server: ServerConfig & ServerInstanceConfig): Promise<boolean> {
-    // Use trace helper to wrap the entire connection process
-    return withSpan<boolean>(
-      'mcp.connection.connect',
-      createMcpSpanOptions('connect', server.id || 'unknown', undefined, {
-        'mcp.server.type': server.type,
-        'mcp.server.name': 'unknown' // Will be updated with actual name after serverInfo is retrieved
-      }),
-      async () => {
-        let serverInfo:
-          | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
-          | undefined;
-        try {
-          logger.info(
-            `Connecting to server [${server.id || 'unknown'}]...`,
-            LOG_MODULES.CONNECTION_MANAGER
-          );
+    let serverInfo:
+      | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
+      | undefined;
+    try {
+      logger.info(
+        `Connecting to server [${server.id || 'unknown'}]...`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
 
-          // Validate server configuration
-          if (!server.id) {
-            throw new Error('Server ID is required');
-          }
-
-          // First set starting state (connected: false, no error)
-          this.serverStatus.set(server.id, {
-            connected: false,
-            lastCheck: Date.now(),
-            toolsCount: 0,
-            resourcesCount: 0
-          });
-
-          // Get server name from server instance ID (via hubManager.getServerById)
-          serverInfo = hubManager.getServerById(server.id);
-          if (!serverInfo) {
-            throw new Error(`Server not found for instance: ${server.id}`);
-          }
-
-          if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
-            throw new Error('STDIO server requires a valid command');
-          }
-
-          if (
-            (server.type === 'sse' ||
-              server.type === 'streamable-http' ||
-              server.type === 'http') &&
-            (!server.url || server.url.trim() === '')
-          ) {
-            const displayType = server.type === 'http' ? 'streamable-http' : server.type;
-            throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
-          }
-
-          // Create transport based on server type
-          const transport = TransportFactory.createTransport({
-            ...server,
-            name: serverInfo.name
-          });
-
-          // Handle transport close events
-          if ('onclose' in transport) {
-            transport.onclose = () => {
-              logger.info(
-                `Transport closed for server [${server.id}]`,
-                LOG_MODULES.CONNECTION_MANAGER
-              );
-              const currentStatus = this.serverStatus.get(server.id!);
-              // Only update status if it was previously connected or starting
-              if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-                this.serverStatus.set(server.id!, {
-                  connected: false,
-                  lastCheck: Date.now(),
-                  toolsCount: 0,
-                  resourcesCount: 0,
-                  error: 'Connection closed unexpectedly'
-                });
-              }
-            };
-          }
-
-          // Add log listeners
-          if ('onstdout' in transport) {
-            transport.onstdout = () => {
-              // Don't log raw JSON-RPC communication to logs or console to avoid log noise
-              // Only view raw communication during development debugging
-            };
-          }
-          if ('onstderr' in transport) {
-            transport.onstderr = (data: string) => {
-              // Use server ID and name for log storage
-              const serverId = server?.id ?? 'unknown';
-              const serverName = serverInfo!.name;
-              logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
-            };
-          }
-
-          const client = new Client(
-            {
-              name: MCP_HUB_LITE_SERVER,
-              version: '1.0.0'
-            },
-            {
-              capabilities: {}
-            }
-          );
-
-          await client.connect(transport);
-
-          this.clients.set(server.id, client);
-          this.transports.set(server.id, transport);
-          this._toolCache.setNameMapping(serverInfo.name, server.id);
-
-          // Get PID if available (only for stdio transport)
-          let pid: number | undefined;
-          if ('pid' in transport && typeof transport.pid === 'number') {
-            pid = transport.pid;
-          }
-
-          // Get server version
-          const clientServerInfo = client.getServerVersion();
-          const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
-
-          // Update server instance info (merge pid and startTime)
-          const serverName = serverInfo.name;
-          const instances = hubManager.getServerInstanceByName(serverName);
-          const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
-          if (instanceIndex !== -1) {
-            hubManager.updateServerInstance(serverName, instanceIndex, {
-              pid: pid,
-              startTime: Date.now() // Startup time is the same as timestamp
-            });
-          }
-
-          this.serverStatus.set(server.id, {
-            connected: true,
-            lastCheck: Date.now(),
-            toolsCount: 0,
-            resourcesCount: 0,
-            pid: pid,
-            startTime: Date.now(),
-            version: serverVersion,
-            hash: server.hash
-          });
-
-          logger.info(`Connected to server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
-
-          // Publish server connected event
-          eventBus.publish(EventTypes.SERVER_CONNECTED, {
-            serverId: server.id,
-            status: 'online',
-            timestamp: Date.now()
-          });
-
-          // Publish server status change event
-          eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-            serverId: server.id,
-            status: 'online',
-            timestamp: Date.now()
-          });
-
-          // Fetch tools and resources immediately (only for bidirectional transports)
-          if (server.type !== 'sse') {
-            const tools = await this.refreshTools(server.id);
-            const resources = await this.refreshResources(server.id);
-
-            // Publish tools and resources updated event
-            eventBus.publish(EventTypes.TOOLS_UPDATED, {
-              serverId: server.id,
-              tools
-            });
-
-            eventBus.publish(EventTypes.RESOURCES_UPDATED, {
-              serverId: server.id,
-              resources
-            });
-          } else {
-            logger.info(
-              'SSE transport is unidirectional, skipping tool/resource refresh',
-              LOG_MODULES.CONNECTION_MANAGER
-            );
-          }
-
-          return true;
-        } catch (error) {
-          logger.error(
-            `Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`,
-            error,
-            LOG_MODULES.CONNECTION_MANAGER
-          );
-          const serverId = server.id || 'unknown';
-          this.serverStatus.set(serverId, {
-            connected: false,
-            error: error instanceof Error ? error.message : String(error),
-            lastCheck: Date.now(),
-            toolsCount: 0,
-            resourcesCount: 0
-          });
-
-          // Publish server status change event (error state)
-          eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-            serverId,
-            status: 'error',
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: Date.now()
-          });
-
-          return false;
-        }
+      // Validate server configuration
+      if (!server.id) {
+        throw new Error('Server ID is required');
       }
-    );
+
+      // First set starting state (connected: false, no error)
+      this.serverStatus.set(server.id, {
+        connected: false,
+        lastCheck: Date.now(),
+        toolsCount: 0,
+        resourcesCount: 0
+      });
+
+      // Get server name from server instance ID (via hubManager.getServerById)
+      serverInfo = hubManager.getServerById(server.id);
+      if (!serverInfo) {
+        throw new Error(`Server not found for instance: ${server.id}`);
+      }
+
+      if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
+        throw new Error('STDIO server requires a valid command');
+      }
+
+      if (
+        (server.type === 'sse' || server.type === 'streamable-http' || server.type === 'http') &&
+        (!server.url || server.url.trim() === '')
+      ) {
+        const displayType = server.type === 'http' ? 'streamable-http' : server.type;
+        throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
+      }
+
+      // Create transport based on server type
+      const transport = TransportFactory.createTransport({
+        ...server,
+        name: serverInfo.name
+      });
+
+      // Handle transport close events
+      if ('onclose' in transport) {
+        transport.onclose = () => {
+          logger.info(`Transport closed for server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
+          const currentStatus = this.serverStatus.get(server.id!);
+          // Only update status if it was previously connected or starting
+          if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
+            this.serverStatus.set(server.id!, {
+              connected: false,
+              lastCheck: Date.now(),
+              toolsCount: 0,
+              resourcesCount: 0,
+              error: 'Connection closed unexpectedly'
+            });
+          }
+        };
+      }
+
+      // Add log listeners
+      if ('onstdout' in transport) {
+        transport.onstdout = () => {
+          // Don't log raw JSON-RPC communication to logs or console to avoid log noise
+          // Only view raw communication during development debugging
+        };
+      }
+      if ('onstderr' in transport) {
+        transport.onstderr = (data: string) => {
+          // Use server ID and name for log storage
+          const serverId = server?.id ?? 'unknown';
+          const serverName = serverInfo!.name;
+          logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
+        };
+      }
+
+      const client = new Client(
+        {
+          name: MCP_HUB_LITE_SERVER,
+          version: '1.0.0'
+        },
+        {
+          capabilities: {}
+        }
+      );
+
+      await client.connect(transport);
+
+      this.clients.set(server.id, client);
+      this.transports.set(server.id, transport);
+      this._toolCache.setNameMapping(serverInfo.name, server.id);
+
+      // Get PID if available (only for stdio transport)
+      let pid: number | undefined;
+      if ('pid' in transport && typeof transport.pid === 'number') {
+        pid = transport.pid;
+      }
+
+      // Get server version
+      const clientServerInfo = client.getServerVersion();
+      const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
+
+      // Update server instance info (merge pid and startTime)
+      const serverName = serverInfo.name;
+      const instances = hubManager.getServerInstanceByName(serverName);
+      const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
+      if (instanceIndex !== -1) {
+        hubManager.updateServerInstance(serverName, instanceIndex, {
+          pid: pid,
+          startTime: Date.now() // Startup time is the same as timestamp
+        });
+      }
+
+      this.serverStatus.set(server.id, {
+        connected: true,
+        lastCheck: Date.now(),
+        toolsCount: 0,
+        resourcesCount: 0,
+        pid: pid,
+        startTime: Date.now(),
+        version: serverVersion,
+        hash: server.hash
+      });
+
+      logger.info(`Connected to server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
+
+      // Publish server connected event
+      eventBus.publish(EventTypes.SERVER_CONNECTED, {
+        serverId: server.id,
+        status: 'online',
+        timestamp: Date.now()
+      });
+
+      // Publish server status change event
+      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+        serverId: server.id,
+        status: 'online',
+        timestamp: Date.now()
+      });
+
+      // Fetch tools and resources immediately (only for bidirectional transports)
+      if (server.type !== 'sse') {
+        const tools = await this.refreshTools(server.id);
+        const resources = await this.refreshResources(server.id);
+
+        // Publish tools and resources updated event
+        eventBus.publish(EventTypes.TOOLS_UPDATED, {
+          serverId: server.id,
+          tools
+        });
+
+        eventBus.publish(EventTypes.RESOURCES_UPDATED, {
+          serverId: server.id,
+          resources
+        });
+      } else {
+        logger.info(
+          'SSE transport is unidirectional, skipping tool/resource refresh',
+          LOG_MODULES.CONNECTION_MANAGER
+        );
+      }
+
+      return true;
+    } catch (error) {
+      logger.error(
+        `Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`,
+        error,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      const serverId = server.id || 'unknown';
+      this.serverStatus.set(serverId, {
+        connected: false,
+        error: error instanceof Error ? error.message : String(error),
+        lastCheck: Date.now(),
+        toolsCount: 0,
+        resourcesCount: 0
+      });
+
+      // Publish server status change event (error state)
+      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+        serverId,
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: Date.now()
+      });
+
+      return false;
+    }
   }
 
   /**
@@ -960,34 +943,25 @@ export class McpConnectionManager {
     toolName: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
-    // Use trace helper to wrap the tool call
-    return withSpan<unknown>(
-      'mcp.tool.call',
-      createMcpSpanOptions('call', serverId, toolName, {
-        'mcp.tool.args': stringifyForLogging(args)
-      }),
-      async () => {
-        const client = this.clients.get(serverId);
-        if (!client) {
-          throw new Error(`Server ${serverId} not connected`);
-        }
+    const client = this.clients.get(serverId);
+    if (!client) {
+      throw new Error(`Server ${serverId} not connected`);
+    }
 
-        try {
-          const result = await client.callTool({
-            name: toolName,
-            arguments: args
-          });
-          return result;
-        } catch (error) {
-          logger.error(
-            `Failed to call tool ${toolName} on server [${serverId}]:`,
-            error,
-            LOG_MODULES.CONNECTION_MANAGER
-          );
-          throw error;
-        }
-      }
-    );
+    try {
+      const result = await client.callTool({
+        name: toolName,
+        arguments: args
+      });
+      return result;
+    } catch (error) {
+      logger.error(
+        `Failed to call tool ${toolName} on server [${serverId}]:`,
+        error,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      throw error;
+    }
   }
 
   /**

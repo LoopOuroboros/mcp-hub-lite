@@ -34,15 +34,9 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import {
   SystemConfigSchema,
   ServerConfigSchema,
-  ServerInstanceConfigSchema,
-  ObservabilityConfigSchema
+  ServerInstanceConfigSchema
 } from './config.schema.js';
-import type {
-  ServerConfig,
-  SystemConfig,
-  ServerInstanceConfig,
-  ObservabilityConfig
-} from './config.schema.js';
+import type { ServerConfig, SystemConfig, ServerInstanceConfig } from './config.schema.js';
 import { loadConfig } from './config-loader.js';
 import { saveConfig } from './config-saver.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
@@ -62,11 +56,9 @@ export {
   ServerConfig,
   SystemConfig,
   ServerInstanceConfig,
-  ObservabilityConfig,
   SystemConfigSchema,
   ServerConfigSchema,
-  ServerInstanceConfigSchema,
-  ObservabilityConfigSchema
+  ServerInstanceConfigSchema
 };
 
 export class ConfigManager {

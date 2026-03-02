@@ -4,7 +4,6 @@ import { configManager } from '@config/config-manager.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
-import { telemetryManager } from '@utils/telemetry/index.js';
 
 // Set log level to debug for development server
 logger.setLevel('debug');
@@ -73,9 +72,6 @@ async function startDevServer() {
 
     app = await buildApp();
     const config = configManager.getConfig();
-
-    // Initialize OpenTelemetry tracing
-    telemetryManager.initialize(config);
 
     // Auto-connect to enabled servers
     logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
@@ -159,8 +155,6 @@ const shutdown = async (signal: string) => {
     if (app) {
       await app.close();
     }
-    // Shutdown OpenTelemetry gracefully
-    await telemetryManager.shutdown();
     PidManager.removePid();
     logger.info('Dev server stopped gracefully', LOG_MODULES.DEV_SERVER);
   } catch (error) {

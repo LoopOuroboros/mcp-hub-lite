@@ -111,70 +111,6 @@
             </div>
           </el-tab-pane>
 
-          <!-- Observability Settings -->
-          <el-tab-pane name="observability">
-            <template #label>
-              <span class="flex items-center gap-2">
-                <el-icon><DataAnalysis /></el-icon>
-                <span>{{ $t('settings.observability') }}</span>
-              </span>
-            </template>
-
-            <div class="pt-4">
-              <el-form
-                :model="config.observability"
-                label-position="left"
-                v-if="config.observability"
-              >
-                <div class="flex items-center my-4">
-                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100 mr-4">{{
-                    $t('settings.tracing')
-                  }}</span>
-                  <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
-                </div>
-
-                <el-form-item>
-                  <el-checkbox v-model="config.observability.tracing.enabled">{{
-                    $t('settings.tracingEnabled')
-                  }}</el-checkbox>
-                </el-form-item>
-
-                <div class="flex flex-col gap-2" v-if="config.observability.tracing.enabled">
-                  <el-form-item :label="$t('settings.exporter')">
-                    <el-select
-                      v-model="config.observability.tracing.exporter"
-                      class="w-full md:w-64"
-                    >
-                      <el-option :label="$t('settings.exporterConsole')" value="console" />
-                      <el-option :label="$t('settings.exporterOtlp')" value="otlp" />
-                    </el-select>
-                  </el-form-item>
-
-                  <el-form-item
-                    :label="$t('settings.endpoint')"
-                    v-if="config.observability.tracing.exporter !== 'console'"
-                  >
-                    <el-input
-                      v-model="config.observability.tracing.endpoint"
-                      class="w-full md:w-64"
-                    />
-                  </el-form-item>
-
-                  <el-form-item :label="$t('settings.sampleRate')">
-                    <el-slider
-                      v-model="config.observability.tracing.sampleRate"
-                      :min="0"
-                      :max="1"
-                      :step="0.01"
-                      :format-tooltip="formatSampleRate"
-                      class="w-full md:w-64"
-                    />
-                  </el-form-item>
-                </div>
-              </el-form>
-            </div>
-          </el-tab-pane>
-
           <!-- Security Settings -->
           <el-tab-pane name="security">
             <template #label>
@@ -332,16 +268,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import {
-  Check,
-  Document,
-  Lock,
-  Setting,
-  Sunny,
-  Moon,
-  Monitor,
-  DataAnalysis
-} from '@element-plus/icons-vue';
+import { Check, Document, Lock, Setting, Sunny, Moon, Monitor } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
@@ -504,11 +431,6 @@ watch(sessionFlushIntervalUnit, (newUnit, oldUnit) => {
     sessionFlushIntervalValue.value = Math.round(currentValue / factor);
   }
 });
-
-// Format sample rate for slider tooltip
-const formatSampleRate = (value: number) => {
-  return `${Math.round(value * 100)}%`;
-};
 
 onMounted(async () => {
   // Config is already fetched by App.vue usually

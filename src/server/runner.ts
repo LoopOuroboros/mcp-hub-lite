@@ -2,7 +2,6 @@ import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
-import { telemetryManager } from '@utils/telemetry/index.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { gateway } from '@services/gateway.service.js';
 import { PidManager } from '@pid/manager.js';
@@ -22,7 +21,6 @@ import { checkPort } from '@utils/port-checker.js';
  *    MCP-compatible clients like IDEs or AI assistants.
  *
  * The function performs the following key operations:
- * - Initializes OpenTelemetry tracing for observability
  * - Validates and checks port availability (HTTP mode only)
  * - Automatically connects to all enabled MCP servers from configuration
  * - Sets up graceful shutdown handlers for SIGTERM and SIGINT signals
@@ -57,8 +55,7 @@ import { checkPort } from '@utils/port-checker.js';
  *   and provide detailed error messages for port conflicts
  * - In stdio mode, port checking is skipped as no network ports are used
  * - The function automatically connects to all enabled servers configured in .mcp-hub.json
- * - Graceful shutdown ensures proper cleanup of connections, OpenTelemetry resources,
- *   and PID files when receiving termination signals
+ * - Graceful shutdown ensures proper cleanup of connections and PID files when receiving termination signals
  * - This function is typically called from the CLI entry point (`src/index.ts`)
  */
 export async function runServer(options: { stdio?: boolean; port?: number; host?: string } = {}) {
@@ -74,9 +71,6 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
 
     // Set config getter for json-utils to use config from configManager
     setJsonPrettyConfigGetter(() => configManager.getConfig());
-
-    // Initialize OpenTelemetry tracing
-    telemetryManager.initialize(config);
 
     const app = isStdio ? null : await buildApp();
 
@@ -143,8 +137,6 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
         if (!isStdio && app) {
           await app.close();
         }
-        // Shutdown OpenTelemetry gracefully
-        await telemetryManager.shutdown();
         PidManager.removePid();
         logger.info('Server stopped gracefully', LOG_MODULES.SERVER);
         process.exit(0);

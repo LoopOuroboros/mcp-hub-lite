@@ -306,26 +306,11 @@ npm run test
 
 ## 质量要求
 
-### 代码修改验证流程
-
-**每轮代码修改结束后，只需执行一个命令完成所有验证：**
-
-```bash
-# 完整检查（构建 + 测试 + 代码检查）
-npm run full:check
-```
-
-该命令会自动执行以下验证步骤：
-
-1. **编译检查**：完整的 TypeScript 编译和类型检查
-2. **测试验证**：运行所有单元测试（自动包含结果摘要）
-3. **代码检查**：执行 ESLint 和代码规范检查
-
-详细规范参见：[`.claude/rules/development.md`](.claude/rules/development.md)
+详细的代码修改验证流程和代码格式化要求参见：[`.claude/rules/development.md`](.claude/rules/development.md)
 
 ## Git 提交规范
 
-详细规范参见：[`.claude/rules/git.md`](.claude/rules/git.md)
+详细的 Git 提交规范和提交前检查清单参见：[`.claude/rules/git.md`](.claude/rules/git.md)
 
 ## 完整变更记录
 

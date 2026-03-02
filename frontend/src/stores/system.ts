@@ -51,14 +51,6 @@ export interface SystemConfig {
     sessionFlushInterval: number;
     maxConnections: number;
   };
-  observability: {
-    tracing: {
-      enabled: boolean;
-      exporter: 'console' | 'otlp';
-      endpoint: string;
-      sampleRate: number;
-    };
-  };
   [key: string]: unknown;
 }
 
@@ -83,14 +75,6 @@ export const useSystemStore = defineStore('system', () => {
       sessionTimeout: 30 * 60 * 1000,
       sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
-    },
-    observability: {
-      tracing: {
-        enabled: false,
-        exporter: 'console',
-        endpoint: 'http://localhost:4318/v1/traces',
-        sampleRate: 1.0
-      }
     }
   });
 

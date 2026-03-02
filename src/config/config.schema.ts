@@ -76,34 +76,6 @@ export const SecurityConfigSchema = z
   });
 
 /**
- * Observability Configuration Schema
- */
-export const ObservabilityConfigSchema = z
-  .object({
-    tracing: z
-      .object({
-        enabled: z.boolean().default(false),
-        exporter: z.enum(['console', 'otlp']).default('console'),
-        endpoint: z.string().default('http://localhost:4318/v1/traces'),
-        sampleRate: z.number().min(0).max(1).default(1.0)
-      })
-      .default({
-        enabled: false,
-        exporter: 'console',
-        endpoint: 'http://localhost:4318/v1/traces',
-        sampleRate: 1.0
-      })
-  })
-  .default({
-    tracing: {
-      enabled: false,
-      exporter: 'console',
-      endpoint: 'http://localhost:4318/v1/traces',
-      sampleRate: 1.0
-    }
-  });
-
-/**
  * System Configuration Schema
  */
 export const SystemConfigSchema = z.object({
@@ -128,12 +100,10 @@ export const SystemConfigSchema = z.object({
       }
     }),
   security: SecurityConfigSchema,
-  servers: z.record(z.string(), ServerConfigSchema).default({}),
-  observability: ObservabilityConfigSchema
+  servers: z.record(z.string(), ServerConfigSchema).default({})
 });
 
 // Export types
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
 export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
-export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;
