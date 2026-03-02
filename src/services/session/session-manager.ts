@@ -326,6 +326,19 @@ export class McpSessionManager {
         try {
           // Validate individual session state
           const validatedState = SessionStateSchema.parse(state);
+
+          // Check if session has expired
+          const now = Date.now();
+          if (now - validatedState.lastAccessedAt > this.SESSION_TIMEOUT) {
+            if (process.env.SESSION_DEBUG) {
+              logger.debug(
+                `Skipping expired session: ${sessionId} (last accessed ${formatDuration(now - validatedState.lastAccessedAt)} ago)`,
+                LOG_MODULES.SESSION_MANAGER
+              );
+            }
+            continue;
+          }
+
           this.sessionStates.set(sessionId, validatedState);
           restoredCount++;
 
