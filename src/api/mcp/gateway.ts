@@ -7,7 +7,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import { stringifyForLogging, stringifyRawHeadersForLogging } from '@utils/json-utils.js';
+import { stringifyForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
@@ -25,23 +25,32 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     request: FastifyRequest<{ Body: RequestBody | null }>,
     reply: FastifyReply
   ) => {
+    // First, log that we received the request (before extracting session context)
+    let initialLogMsg = `MCP Gateway ${request.method} ${request.url}`;
+
+    // Combine headers and body into one log block
+    initialLogMsg += `\n  Request headers: ${stringifyForLogging(request.headers)}`;
+
+    if (request.body) {
+      try {
+        const preview = stringifyForLogging(request.body);
+        initialLogMsg += `\n  Body: ${preview}`;
+      } catch {
+        initialLogMsg += `\n  Body: [Unserializable]`;
+      }
+    }
+    logger.info(initialLogMsg, LOG_MODULES.GATEWAY);
+
     const { sessionId, clientContext } = extractSessionContext(request);
 
     // Update client tracking information
     clientTrackerService.updateClient(clientContext);
 
-    let logMsg = `MCP Gateway ${request.method} ${request.url} [Session: ${sessionId}]`;
-    if (clientContext.cwd) logMsg += ` [CWD: ${clientContext.cwd}]`;
-
-    if (request.body) {
-      try {
-        const preview = stringifyForLogging(request.body);
-        logMsg += ` Body: ${preview}`;
-      } catch {
-        logMsg += ` Body: [Unserializable]`;
-      }
-    }
-    logger.info(logMsg, LOG_MODULES.GATEWAY);
+    // Log the session context after extraction
+    let sessionLogMsg = `MCP Gateway Session Context [Session: ${sessionId}]`;
+    if (clientContext.cwd) sessionLogMsg += ` [CWD: ${clientContext.cwd}]`;
+    if (clientContext.clientName) sessionLogMsg += ` [Client: ${clientContext.clientName}]`;
+    logger.debug(sessionLogMsg, LOG_MODULES.GATEWAY);
 
     reply.header('Content-Type', 'application/json');
     if (!request.headers['accept']) {
@@ -76,51 +85,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       }
 
       await requestContext.run(clientContext, async () => {
-        if (
-          request.method === 'GET' &&
-          request.raw.url &&
-          !request.raw.url.includes('sessionId=')
-        ) {
-          const separator = request.raw.url.includes('?') ? '&' : '?';
-          request.raw.url = `${request.raw.url}${separator}sessionId=${sessionId}`;
-          logger.debug(`Rewrote request URL with sessionId: ${request.raw.url}`, LOG_MODULES.GATEWAY);
-        }
-
-        // Add Mcp-Session-Id header to request for proper SDK session validation
-        // Ensure headers object is modifiable (Node.js incoming message headers may be read-only)
-        if (typeof request.headers === 'object' && request.headers !== null) {
-          // Create a new modifiable headers object
-          const modifiableHeaders = Object.assign({}, request.headers);
-          modifiableHeaders['mcp-session-id'] = sessionId;
-          modifiableHeaders['Mcp-Session-Id'] = sessionId;  // Add case-insensitive version
-          request.headers = modifiableHeaders;
-        }
-
-        // Also modify request.raw.headers (Node.js original request object)
-        if (request.raw && request.raw.headers) {
-          request.raw.headers['mcp-session-id'] = sessionId;
-          request.raw.headers['Mcp-Session-Id'] = sessionId;
-        }
-
-        // Also modify request.raw.rawHeaders directly, because @hono/node-server uses it
-        // to create the Web Standard Headers object
-        if (request.raw && request.raw.rawHeaders) {
-          // Remove any existing mcp-session-id headers
-          const filteredHeaders = [];
-          for (let i = 0; i < request.raw.rawHeaders.length; i += 2) {
-            const key = request.raw.rawHeaders[i];
-            const value = request.raw.rawHeaders[i + 1];
-            if (!key.toLowerCase().includes('mcp-session-id')) {
-              filteredHeaders.push(key, value);
-            }
-          }
-          // Add the new mcp-session-id header
-          filteredHeaders.push('mcp-session-id', sessionId);
-          request.raw.rawHeaders = filteredHeaders;
-
-          logger.debug(`Modified rawHeaders: ${stringifyRawHeadersForLogging(request.raw.rawHeaders)}`, LOG_MODULES.GATEWAY);
-        }
-
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
 
