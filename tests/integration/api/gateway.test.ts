@@ -48,8 +48,8 @@ vi.mock('@utils/logger.js', () => ({
     debug: vi.fn()
   },
   LOG_MODULES: {
-    SYSTEM_TOOL: { module: 'SYSTEM-TOOL' },
-    GATEWAY: { module: 'GATEWAY' }
+    SYSTEM_TOOL: { module: 'SystemTool' },
+    GATEWAY: { module: 'Gateway' }
   }
 }));
 

@@ -24,7 +24,7 @@ export const LOG_MODULES = {
   // Core system modules
   SERVER: { module: 'Server' } satisfies LogOptions,
   DEV_SERVER: { module: 'DevServer' } satisfies LogOptions,
-  DEV_LOG: { module: 'DEV LOG' } satisfies LogOptions,
+  DEV_LOG: { module: 'DevLog' } satisfies LogOptions,
 
   // Config management
   CONFIG_MANAGER: { module: 'ConfigManager' } satisfies LogOptions,
@@ -41,12 +41,12 @@ export const LOG_MODULES = {
   HUB_MANAGER: { module: 'HubManager' } satisfies LogOptions,
 
   // Gateway related
-  GATEWAY: { module: 'GATEWAY' } satisfies LogOptions,
+  GATEWAY: { module: 'Gateway' } satisfies LogOptions,
   GATEWAY_SERVICE: { module: 'GatewayService' } satisfies LogOptions,
 
   // Tool handling
-  HUB_TOOLS: { module: 'HUB-TOOLS' } satisfies LogOptions,
-  SYSTEM_TOOL: { module: 'SYSTEM-TOOL' } satisfies LogOptions,
+  HUB_TOOLS: { module: 'HubTools' } satisfies LogOptions,
+  SYSTEM_TOOL: { module: 'SystemTool' } satisfies LogOptions,
   TOOL_LIST: { module: 'ToolList' } satisfies LogOptions,
 
   // Gateway request handlers

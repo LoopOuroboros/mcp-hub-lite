@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { logger } from '@utils/index.js';
+import { logger, LOG_MODULES } from '@utils/index.js';
 import { getClientContext } from '@utils/request-context.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
@@ -49,7 +49,7 @@ export function registerInitializeHandlers(server: McpServer): void {
     const context = getClientContext();
     if (context && request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
-      logger.info(`Initialized client: ${name} v${version} (ID: ${context.sessionId})`);
+      logger.info(`Initialized client: ${name} v${version} (ID: ${context.sessionId})`, LOG_MODULES.GATEWAY);
 
       // Update client info in tracker
       clientTrackerService.updateClient({
