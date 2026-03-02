@@ -1,6 +1,6 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { URL } from 'url';
 
@@ -129,12 +129,12 @@ export class StreamableHttpTransport implements Transport {
       };
 
       this.transport.onerror = (error: Error) => {
-        logger.error('Streamable HTTP transport error:', error);
+        logger.error('Streamable HTTP transport error:', error, LOG_MODULES.HTTP_TRANSPORT);
         this.onerror?.(error);
       };
 
       this.transport.onclose = () => {
-        logger.info('Streamable HTTP transport closed');
+        logger.info('Streamable HTTP transport closed', LOG_MODULES.HTTP_TRANSPORT);
         if (!this.isClosing) {
           // Unexpected close, trigger error
           const error = new Error('Streamable HTTP transport closed unexpectedly');
@@ -144,9 +144,9 @@ export class StreamableHttpTransport implements Transport {
       };
 
       await this.transport.start();
-      logger.info(`Streamable HTTP transport initialized for ${this.url}`);
+      logger.info(`Streamable HTTP transport initialized for ${this.url}`, LOG_MODULES.HTTP_TRANSPORT);
     } catch (error) {
-      logger.error('Failed to create Streamable HTTP transport:', error);
+      logger.error('Failed to create Streamable HTTP transport:', error, LOG_MODULES.HTTP_TRANSPORT);
       throw error;
     }
   }
@@ -220,7 +220,7 @@ export class StreamableHttpTransport implements Transport {
     try {
       await this.transport.send(message);
     } catch (error) {
-      logger.error('Failed to send message via Streamable HTTP:', error);
+      logger.error('Failed to send message via Streamable HTTP:', error, LOG_MODULES.HTTP_TRANSPORT);
       throw error;
     }
   }

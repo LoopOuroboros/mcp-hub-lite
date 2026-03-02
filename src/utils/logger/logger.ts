@@ -30,6 +30,7 @@
 import type { LogLevel } from '@shared-types/common.types.js';
 import type { LogContext, LogOptions } from './log-context.js';
 import { DevLogger } from './dev-logger.js';
+import { LOG_MODULES } from './log-modules.js';
 import {
   createColoredLogMessage,
   createLogMessage,
@@ -67,7 +68,7 @@ export class Logger {
    */
   public enableDevLog(rotatorConfig?: Parameters<DevLogger['enableDevLog']>[0]): void {
     this.devLogger.enableDevLog(rotatorConfig, (logFile) => {
-      this.debug(`Writing logs to: ${logFile}`, { module: 'DevLog' });
+      this.debug(`Writing logs to: ${logFile}`, LOG_MODULES.DEV_SERVER);
     });
   }
 

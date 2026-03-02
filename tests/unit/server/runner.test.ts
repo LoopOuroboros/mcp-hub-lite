@@ -31,6 +31,9 @@ vi.mock('@utils/logger.js', () => ({
     setUseStderr: vi.fn(),
     enableDevLog: vi.fn(),
     setLevel: vi.fn()
+  },
+  LOG_MODULES: {
+    SERVER: { module: 'Server' }
   }
 }));
 
@@ -125,7 +128,8 @@ describe('Server Runner', () => {
       expect(mockApp.listen).toHaveBeenCalledWith({ port: 3000, host: 'localhost' });
       expect(PidManager.writePid).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
-        'MCP Hub Lite Server running at http://localhost:3000'
+        'MCP Hub Lite Server running at http://localhost:3000',
+        expect.any(Object)
       );
     });
 
@@ -174,7 +178,7 @@ describe('Server Runner', () => {
       expect(gateway.start).toHaveBeenCalled();
       expect(PidManager.writePid).toHaveBeenCalled();
       expect(logger.setUseStderr).toHaveBeenCalledWith(true);
-      expect(logger.info).toHaveBeenCalledWith('Starting in MCP Gateway mode (stdio)...');
+      expect(logger.info).toHaveBeenCalledWith('Starting in MCP Gateway mode (stdio)...', expect.any(Object));
     });
 
     it('should handle port already in use by self project', async () => {
@@ -467,7 +471,7 @@ describe('Server Runner', () => {
       expect(mcpConnectionManager.disconnectAll).toHaveBeenCalled();
       expect(mockApp.close).toHaveBeenCalled();
       expect(PidManager.removePid).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Server stopped gracefully');
+      expect(logger.info).toHaveBeenCalledWith('Server stopped gracefully', expect.any(Object));
       expect(exitSpy).toHaveBeenCalledWith(0);
 
       // Restore
@@ -536,7 +540,7 @@ describe('Server Runner', () => {
       expect(mcpConnectionManager.disconnectAll).toHaveBeenCalled();
       expect(mockApp.close).toHaveBeenCalled();
       expect(PidManager.removePid).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Server stopped gracefully');
+      expect(logger.info).toHaveBeenCalledWith('Server stopped gracefully', expect.any(Object));
       expect(exitSpy).toHaveBeenCalledWith(0);
 
       // Restore
@@ -592,7 +596,7 @@ describe('Server Runner', () => {
       );
 
       // Verify
-      expect(logger.error).toHaveBeenCalledWith('Failed to start server:', expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith('Failed to start server:', expect.any(Error), expect.any(Object));
       expect(PidManager.removePid).toHaveBeenCalled();
       expect(exitSpy).toHaveBeenCalledWith(1);
 

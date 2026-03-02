@@ -1,6 +1,6 @@
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { telemetryManager } from '@utils/telemetry/index.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
@@ -67,7 +67,7 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
 
     if (isStdio) {
       logger.setUseStderr(true);
-      logger.info('Starting in MCP Gateway mode (stdio)...');
+      logger.info('Starting in MCP Gateway mode (stdio)...', LOG_MODULES.SERVER);
     }
 
     const config = configManager.getConfig();
@@ -107,7 +107,7 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
     }
 
     // Auto-connect to enabled servers
-    logger.info('Initializing server connections...');
+    logger.info('Initializing server connections...', LOG_MODULES.SERVER);
     const serverConfigs = configManager.getServers();
     for (const { name: serverName, config: serverConfig } of serverConfigs) {
       if (serverConfig.enabled) {
@@ -119,16 +119,16 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
             const newInstance = await configManager.addServerInstance(serverName, {});
             // Connect the new instance
             mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.SERVER);
             });
           } catch (err) {
-            logger.error(`Failed to create instance for ${serverName}:`, err);
+            logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.SERVER);
           }
         } else {
           // Connect existing instances
           existingInstances.forEach((instance) => {
             mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.SERVER);
             });
           });
         }
@@ -137,7 +137,7 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
 
     // Setup signal handlers for graceful shutdown
     const shutdown = async (signal: string) => {
-      logger.info(`Received ${signal}, shutting down...`);
+      logger.info(`Received ${signal}, shutting down...`, LOG_MODULES.SERVER);
       try {
         await mcpConnectionManager.disconnectAll();
         if (!isStdio && app) {
@@ -146,10 +146,10 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
         // Shutdown OpenTelemetry gracefully
         await telemetryManager.shutdown();
         PidManager.removePid();
-        logger.info('Server stopped gracefully');
+        logger.info('Server stopped gracefully', LOG_MODULES.SERVER);
         process.exit(0);
       } catch (error) {
-        logger.error('Error during shutdown:', error);
+        logger.error('Error during shutdown:', error, LOG_MODULES.SERVER);
         process.exit(1);
       }
     };
@@ -163,12 +163,12 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
       PidManager.writePid();
     } else {
       await app!.listen({ port, host });
-      logger.info(`MCP Hub Lite Server running at http://${host}:${port}`);
+      logger.info(`MCP Hub Lite Server running at http://${host}:${port}`, LOG_MODULES.SERVER);
       // Write PID after server starts successfully
       PidManager.writePid();
     }
   } catch (err) {
-    logger.error('Failed to start server:', err);
+    logger.error('Failed to start server:', err, LOG_MODULES.SERVER);
     // Clean up PID file if it exists
     PidManager.removePid();
     process.exit(1);

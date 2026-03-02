@@ -1,7 +1,7 @@
 import { buildApp } from '@src/app.js';
 import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
 import { telemetryManager } from '@utils/telemetry/index.js';
@@ -66,10 +66,10 @@ let app: FastifyInstance | null = null;
 async function startDevServer() {
   try {
     // Log startup separator
-    logger.info('------------------------------------------------');
-    logger.info('MCP Hub Lite Dev Server Starting...');
-    logger.info(`Start Time: ${new Date().toISOString()}`);
-    logger.info('------------------------------------------------');
+    logger.info('------------------------------------------------', LOG_MODULES.DEV_SERVER);
+    logger.info('MCP Hub Lite Dev Server Starting...', LOG_MODULES.DEV_SERVER);
+    logger.info(`Start Time: ${new Date().toISOString()}`, LOG_MODULES.DEV_SERVER);
+    logger.info('------------------------------------------------', LOG_MODULES.DEV_SERVER);
 
     app = await buildApp();
     const config = configManager.getConfig();
@@ -78,7 +78,7 @@ async function startDevServer() {
     telemetryManager.initialize(config);
 
     // Auto-connect to enabled servers
-    logger.info('Initializing server connections...');
+    logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
     const serverConfigs = configManager.getServers();
     for (const { name: serverName, config: serverConfig } of serverConfigs) {
       if (serverConfig.enabled) {
@@ -90,16 +90,16 @@ async function startDevServer() {
             const newInstance = await configManager.addServerInstance(serverName, {});
             // Connect the new instance
             mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
             });
           } catch (err) {
-            logger.error(`Failed to create instance for ${serverName}:`, err);
+            logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
           }
         } else {
           // Connect existing instances
           existingInstances.forEach((instance) => {
             mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err);
+              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
             });
           });
         }
@@ -112,13 +112,13 @@ async function startDevServer() {
       host: config.system.host
     });
     logger.info(
-      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`
+      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`, LOG_MODULES.DEV_SERVER
     );
 
     // Write PID file after server starts successfully
     PidManager.writePid();
   } catch (err) {
-    logger.error('Failed to start dev server:', err);
+    logger.error('Failed to start dev server:', err, LOG_MODULES.DEV_SERVER);
     // Clean up PID file if it exists
     PidManager.removePid();
     process.exit(1);
@@ -148,7 +148,7 @@ async function startDevServer() {
  */
 // Handle graceful shutdown for better restart experience
 const shutdown = async (signal: string) => {
-  logger.info(`Received ${signal}, shutting down gracefully...`);
+  logger.info(`Received ${signal}, shutting down gracefully...`, LOG_MODULES.DEV_SERVER);
   try {
     await mcpConnectionManager.disconnectAll();
     if (app) {
@@ -157,9 +157,9 @@ const shutdown = async (signal: string) => {
     // Shutdown OpenTelemetry gracefully
     await telemetryManager.shutdown();
     PidManager.removePid();
-    logger.info('Dev server stopped gracefully');
+    logger.info('Dev server stopped gracefully', LOG_MODULES.DEV_SERVER);
   } catch (error) {
-    logger.error('Error during shutdown:', error);
+    logger.error('Error during shutdown:', error, LOG_MODULES.DEV_SERVER);    
     PidManager.removePid();
   }
   process.exit(0);
@@ -167,27 +167,27 @@ const shutdown = async (signal: string) => {
 
 process.on('SIGTERM', () =>
   shutdown('SIGTERM').catch((err) => {
-    logger.error('Shutdown failed:', err);
+    logger.error('Shutdown failed:', err, LOG_MODULES.DEV_SERVER);
     process.exit(1);
   })
 );
 
 process.on('SIGINT', () =>
   shutdown('SIGINT').catch((err) => {
-    logger.error('Shutdown failed:', err);
+    logger.error('Shutdown failed:', err, LOG_MODULES.DEV_SERVER);
     process.exit(1);
   })
 );
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
+  logger.error('Uncaught Exception:', err, LOG_MODULES.DEV_SERVER);
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason, LOG_MODULES.DEV_SERVER);
   process.exit(1);
 });
 

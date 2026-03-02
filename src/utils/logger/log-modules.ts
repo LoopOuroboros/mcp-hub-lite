@@ -24,7 +24,6 @@ export const LOG_MODULES = {
   // Core system modules
   SERVER: { module: 'Server' } satisfies LogOptions,
   DEV_SERVER: { module: 'DevServer' } satisfies LogOptions,
-  DEV_LOG: { module: 'DevLog' } satisfies LogOptions,
 
   // Config management
   CONFIG_MANAGER: { module: 'ConfigManager' } satisfies LogOptions,
