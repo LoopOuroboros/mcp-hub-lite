@@ -3,6 +3,55 @@
  */
 
 /**
+ * Post-process pretty-printed JSON to convert \n to actual newlines in string values.
+ * This makes multi-line text more readable in logs.
+ *
+ * @param jsonStr - The JSON string to process
+ * @returns Processed JSON string with actual newlines in string values
+ */
+function processPrettyJsonForLogging(jsonStr: string): string {
+  // Only process if we have actual newlines in the string
+  if (!jsonStr.includes('\\n')) {
+    return jsonStr;
+  }
+
+  // Replace \n with actual newlines, but be careful not to break JSON structure
+  // We need to track whether we're inside a string
+  let result = '';
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < jsonStr.length; i++) {
+    const char = jsonStr[i];
+
+    if (escapeNext) {
+      if (inString && char === 'n') {
+        // Replace \n with actual newline inside strings
+        result += '\n';
+      } else {
+        // Keep other escaped characters as-is
+        result += '\\' + char;
+      }
+      escapeNext = false;
+    } else if (char === '\\') {
+      escapeNext = true;
+    } else if (char === '"') {
+      inString = !inString;
+      result += char;
+    } else {
+      result += char;
+    }
+  }
+
+  // Handle any trailing escape
+  if (escapeNext) {
+    result += '\\';
+  }
+
+  return result;
+}
+
+/**
  * Type for the config getter function to avoid direct import dependency.
  */
 type ConfigGetter = () => { system: { logging: { jsonPretty: boolean } } };
@@ -17,9 +66,9 @@ let _configGetter: ConfigGetter | null = null;
  * Set the config getter for jsonPretty setting.
  * This allows retrieving the setting from config without direct import dependency.
  *
- * @param getter - Function that returns the config object
+ * @param getter - Function that returns the config object, or null to reset
  */
-export function setJsonPrettyConfigGetter(getter: ConfigGetter): void {
+export function setJsonPrettyConfigGetter(getter: ConfigGetter | null): void {
   _configGetter = getter;
 }
 
@@ -82,7 +131,8 @@ export function getJsonPrettySetting(): boolean {
 export function stringifyForLogging(obj: unknown): string {
   const jsonPretty = getJsonPrettySetting();
   if (jsonPretty) {
-    return JSON.stringify(obj, null, 2);
+    const jsonStr = JSON.stringify(obj, null, 2);
+    return processPrettyJsonForLogging(jsonStr);
   }
   return JSON.stringify(obj);
 }
@@ -99,7 +149,8 @@ export function stringifyForLoggingWithReplacer(
 ): string {
   const jsonPretty = getJsonPrettySetting();
   if (jsonPretty) {
-    return JSON.stringify(obj, replacer, 2);
+    const jsonStr = JSON.stringify(obj, replacer, 2);
+    return processPrettyJsonForLogging(jsonStr);
   }
   return JSON.stringify(obj, replacer);
 }
