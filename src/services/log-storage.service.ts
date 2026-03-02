@@ -252,7 +252,11 @@ export class LogStorageService {
         try {
           listener(log);
         } catch (error) {
-          logger.error(`Error in log listener for server ${serverId}:`, error, LOG_MODULES.dynamic(serverId));
+          logger.error(
+            `Error in log listener for server ${serverId}:`,
+            error,
+            LOG_MODULES.dynamic(serverId)
+          );
         }
       });
     }

@@ -211,6 +211,7 @@ curl -X POST http://localhost:7788/web/servers \
 ### Q: 会话持久化如何工作？
 
 A: 会话状态自动保存到 `~/.mcp-hub-lite/sessions/` 目录：
+
 - 服务重启后自动恢复会话状态
 - 脏数据追踪，5秒批量刷新，减少 I/O
 - 可配置的会话超时（默认 30 分钟）
@@ -218,6 +219,7 @@ A: 会话状态自动保存到 `~/.mcp-hub-lite/sessions/` 目录：
 ### Q: 如何配置传输协议？
 
 A: 支持三种传输协议：
+
 - **stdio**: 本地进程，通过 `command` 和 `args` 配置
 - **sse**: Server-Sent Events，通过 `url` 配置
 - **streamable-http**: HTTP 流传输，通过 `url` 配置
@@ -239,16 +241,16 @@ A: 在配置文件中设置日志相关参数：
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-| -------- | ---- |
-| `src/index.ts` | CLI 主入口 |
-| `src/app.ts` | Fastify 应用配置 |
-| `src/server/runner.ts` | 服务器启动器 |
-| `src/api/` | API 路由模块 |
-| `src/services/` | 业务逻辑服务 |
-| `src/models/` | 数据模型 |
-| `src/config/` | 配置管理 |
-| `src/utils/` | 工具函数 |
+| 文件路径               | 描述             |
+| ---------------------- | ---------------- |
+| `src/index.ts`         | CLI 主入口       |
+| `src/app.ts`           | Fastify 应用配置 |
+| `src/server/runner.ts` | 服务器启动器     |
+| `src/api/`             | API 路由模块     |
+| `src/services/`        | 业务逻辑服务     |
+| `src/models/`          | 数据模型         |
+| `src/config/`          | 配置管理         |
+| `src/utils/`           | 工具函数         |
 
 ## 变更记录 (Changelog)
 

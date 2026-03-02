@@ -2,7 +2,11 @@
  * Call tool request handler for Gateway service.
  */
 
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  McpError
+} from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
@@ -54,13 +58,27 @@ export function registerCallToolHandler(
       );
 
       // Check if it's a system tool call
-      if (parsedTool.serverName === MCP_HUB_LITE_SERVER && SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)) {
-        logger.info(`System tool called via prefixed name: ${parsedTool.toolName}`, LOG_MODULES.GATEWAY);
+      if (
+        parsedTool.serverName === MCP_HUB_LITE_SERVER &&
+        SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)
+      ) {
+        logger.info(
+          `System tool called via prefixed name: ${parsedTool.toolName}`,
+          LOG_MODULES.GATEWAY
+        );
 
         try {
-          const result = await SystemToolHandler.handleSystemToolCall(parsedTool.toolName, toolArgs);
+          const result = await SystemToolHandler.handleSystemToolCall(
+            parsedTool.toolName,
+            toolArgs
+          );
 
-          if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
+          if (
+            result &&
+            typeof result === 'object' &&
+            'content' in result &&
+            Array.isArray(result.content)
+          ) {
             return result;
           }
 
@@ -90,12 +108,20 @@ export function registerCallToolHandler(
 
     // Handle system tools
     if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-      logger.debug(`System tool called: ${toolName}, args=${formatToolArgs(toolArgs)}`, LOG_MODULES.GATEWAY);
+      logger.debug(
+        `System tool called: ${toolName}, args=${formatToolArgs(toolArgs)}`,
+        LOG_MODULES.GATEWAY
+      );
 
       try {
         const result = await SystemToolHandler.handleSystemToolCall(toolName, toolArgs);
 
-        if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
+        if (
+          result &&
+          typeof result === 'object' &&
+          'content' in result &&
+          Array.isArray(result.content)
+        ) {
           return result;
         }
 
@@ -133,7 +159,10 @@ export function registerCallToolHandler(
       const cwd = getClientCwd();
       if (cwd && !toolArgs.cwd) {
         toolArgs.cwd = cwd;
-        logger.debug(`Injected CWD into tool call ${toolName}: ${cwd}`, LOG_MODULES.dynamic(toolName));
+        logger.debug(
+          `Injected CWD into tool call ${toolName}: ${cwd}`,
+          LOG_MODULES.dynamic(toolName)
+        );
       }
       logger.debug(
         `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,

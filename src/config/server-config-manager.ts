@@ -3,10 +3,7 @@
  * Handles CRUD operations for server configurations and instances.
  */
 
-import {
-  ServerConfigSchema,
-  ServerInstanceConfigSchema
-} from './config.schema.js';
+import { ServerConfigSchema, ServerInstanceConfigSchema } from './config.schema.js';
 import type { ServerConfig, ServerInstanceConfig } from './config.schema.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
 
@@ -42,9 +39,7 @@ export function addServers(
   }
 
   // Ensure server configurations are sorted by name
-  return Object.fromEntries(
-    Object.entries(currentServers).sort(([a], [b]) => a.localeCompare(b))
-  );
+  return Object.fromEntries(Object.entries(currentServers).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 /**

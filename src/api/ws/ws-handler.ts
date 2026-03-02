@@ -101,7 +101,10 @@ export class WebSocketHandler {
           this.handleFetchLogs(message);
           break;
         default:
-          logger.warn(`Unknown message type: ${(message as ClientMessage).type}`, LOG_MODULES.WEBSOCKET);
+          logger.warn(
+            `Unknown message type: ${(message as ClientMessage).type}`,
+            LOG_MODULES.WEBSOCKET
+          );
       }
     } catch (error) {
       logger.error(`Failed to parse WebSocket message: ${error}`, LOG_MODULES.WEBSOCKET);

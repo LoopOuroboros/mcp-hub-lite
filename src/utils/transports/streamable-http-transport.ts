@@ -144,9 +144,16 @@ export class StreamableHttpTransport implements Transport {
       };
 
       await this.transport.start();
-      logger.info(`Streamable HTTP transport initialized for ${this.url}`, LOG_MODULES.HTTP_TRANSPORT);
+      logger.info(
+        `Streamable HTTP transport initialized for ${this.url}`,
+        LOG_MODULES.HTTP_TRANSPORT
+      );
     } catch (error) {
-      logger.error('Failed to create Streamable HTTP transport:', error, LOG_MODULES.HTTP_TRANSPORT);
+      logger.error(
+        'Failed to create Streamable HTTP transport:',
+        error,
+        LOG_MODULES.HTTP_TRANSPORT
+      );
       throw error;
     }
   }
@@ -220,7 +227,11 @@ export class StreamableHttpTransport implements Transport {
     try {
       await this.transport.send(message);
     } catch (error) {
-      logger.error('Failed to send message via Streamable HTTP:', error, LOG_MODULES.HTTP_TRANSPORT);
+      logger.error(
+        'Failed to send message via Streamable HTTP:',
+        error,
+        LOG_MODULES.HTTP_TRANSPORT
+      );
       throw error;
     }
   }

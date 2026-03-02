@@ -27,8 +27,14 @@ export class SystemToolHandler {
   /**
    * Handles system tool calls
    */
-  static async handleSystemToolCall(toolName: string, toolArgs: Record<string, unknown>): Promise<unknown> {
-    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, LOG_MODULES.SYSTEM_TOOL);
+  static async handleSystemToolCall(
+    toolName: string,
+    toolArgs: Record<string, unknown>
+  ): Promise<unknown> {
+    logger.debug(
+      `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
+      LOG_MODULES.SYSTEM_TOOL
+    );
 
     try {
       let result;
@@ -44,16 +50,12 @@ export class SystemToolHandler {
         }
         case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
           const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
-          result = await hubToolsService.listAllToolsInServer(
-            listAllToolsArgs
-          );
+          result = await hubToolsService.listAllToolsInServer(listAllToolsArgs);
           break;
         }
         case FIND_TOOLS_IN_SERVER_TOOL: {
           const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
-          result = await hubToolsService.findToolsInServer(
-            findToolsInServerArgs
-          );
+          result = await hubToolsService.findToolsInServer(findToolsInServerArgs);
           break;
         }
         case GET_TOOL_TOOL: {
@@ -75,9 +77,7 @@ export class SystemToolHandler {
         }
         case FIND_TOOLS_TOOL: {
           const findToolsArgs = toolArgs as unknown as FindToolsParams;
-          result = await hubToolsService.findTools(
-            findToolsArgs
-          );
+          result = await hubToolsService.findTools(findToolsArgs);
           break;
         }
         default:
@@ -87,7 +87,11 @@ export class SystemToolHandler {
       logger.info(`System tool SUCCESS: ${toolName}`, LOG_MODULES.SYSTEM_TOOL);
       return result;
     } catch (error: unknown) {
-      logger.error(`System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`, error, LOG_MODULES.SYSTEM_TOOL);
+      logger.error(
+        `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+        error,
+        LOG_MODULES.SYSTEM_TOOL
+      );
 
       if (error instanceof McpError) {
         throw error;

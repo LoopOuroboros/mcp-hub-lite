@@ -101,9 +101,10 @@ export class LogRotator {
    * @private
    */
   private getRetentionDays(): number {
-    const maxAge = this.customConfig?.rotationAge
-      ?? (this.configGetter ? this.configGetter().system.logging.rotationAge : null)
-      ?? '7d';
+    const maxAge =
+      this.customConfig?.rotationAge ??
+      (this.configGetter ? this.configGetter().system.logging.rotationAge : null) ??
+      '7d';
     // Parse maxAge like "7d", "30d", etc.
     const match = maxAge.match(/^(\d+)([dhm])$/);
     if (match) {
@@ -323,7 +324,9 @@ export class LogRotator {
   private extractDateFromFilename(filename: string): Date | null {
     // Try new format first: YYYYMMDD_HHmmSSZZZ
     const newFormatMatch = filename.match(
-      new RegExp(`${this.logBaseName}\\.(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2})(\\d{3})\\.log$`)
+      new RegExp(
+        `${this.logBaseName}\\.(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2})(\\d{3})\\.log$`
+      )
     );
     if (newFormatMatch) {
       const [, year, month, day, hours, minutes, seconds, ms] = newFormatMatch;

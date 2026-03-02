@@ -216,14 +216,14 @@ try {
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-| -------- | ---- |
-| `frontend/src/main.ts` | 应用入口 |
-| `frontend/src/App.vue` | 根组件 |
-| `frontend/src/router/index.ts` | 路由配置 |
+| 文件路径                        | 描述           |
+| ------------------------------- | -------------- |
+| `frontend/src/main.ts`          | 应用入口       |
+| `frontend/src/App.vue`          | 根组件         |
+| `frontend/src/router/index.ts`  | 路由配置       |
 | `frontend/src/stores/server.ts` | 服务器状态管理 |
-| `frontend/src/components/` | UI 组件 |
-| `frontend/src/views/` | 页面视图 |
+| `frontend/src/components/`      | UI 组件        |
+| `frontend/src/views/`           | 页面视图       |
 
 ## 变更记录 (Changelog)
 

@@ -193,7 +193,10 @@ export class ToolCache {
       this.updateServerNameCache(serverName);
     }
 
-    logger.debug(`ToolCache: Cleared tools for server [${serverId}]`, LOG_MODULES.CONNECTION_MANAGER);
+    logger.debug(
+      `ToolCache: Cleared tools for server [${serverId}]`,
+      LOG_MODULES.CONNECTION_MANAGER
+    );
   }
 
   /**

@@ -394,7 +394,9 @@ const maxAgeDays = computed({
 });
 
 // Connection timeout
-const connectionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.connectionTimeout || 30000) / 1000));
+const connectionTimeoutUnit = ref<TimeUnit>(
+  getOptimalUnit((config.value?.security?.connectionTimeout || 30000) / 1000)
+);
 const connectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.connectionTimeout || 30000;
@@ -412,7 +414,9 @@ const connectionTimeoutValue = computed({
 });
 
 // Idle connection timeout
-const idleConnectionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.idleConnectionTimeout || 300000) / 1000));
+const idleConnectionTimeoutUnit = ref<TimeUnit>(
+  getOptimalUnit((config.value?.security?.idleConnectionTimeout || 300000) / 1000)
+);
 const idleConnectionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.idleConnectionTimeout || 300000;
@@ -430,7 +434,9 @@ const idleConnectionTimeoutValue = computed({
 });
 
 // Session timeout
-const sessionTimeoutUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.sessionTimeout || 30 * 60 * 1000) / 1000));
+const sessionTimeoutUnit = ref<TimeUnit>(
+  getOptimalUnit((config.value?.security?.sessionTimeout || 30 * 60 * 1000) / 1000)
+);
 const sessionTimeoutValue = computed({
   get: () => {
     const ms = config.value?.security?.sessionTimeout || 30 * 60 * 1000;
@@ -447,7 +453,9 @@ const sessionTimeoutValue = computed({
 });
 
 // Session flush interval
-const sessionFlushIntervalUnit = ref<TimeUnit>(getOptimalUnit((config.value?.security?.sessionFlushInterval || 15 * 60 * 1000) / 1000));
+const sessionFlushIntervalUnit = ref<TimeUnit>(
+  getOptimalUnit((config.value?.security?.sessionFlushInterval || 15 * 60 * 1000) / 1000)
+);
 const sessionFlushIntervalValue = computed({
   get: () => {
     const ms = config.value?.security?.sessionFlushInterval || 15 * 60 * 1000;
@@ -458,7 +466,8 @@ const sessionFlushIntervalValue = computed({
   },
   set: (val: number | undefined | null) => {
     if (config.value?.security && val) {
-      config.value.security.sessionFlushInterval = val * unitFactors[sessionFlushIntervalUnit.value] * 1000;
+      config.value.security.sessionFlushInterval =
+        val * unitFactors[sessionFlushIntervalUnit.value] * 1000;
     }
   }
 });
@@ -509,10 +518,18 @@ onMounted(async () => {
 
   // Initialize time units based on actual config values
   if (config.value?.security) {
-    connectionTimeoutUnit.value = getOptimalUnit((config.value.security.connectionTimeout || 30000) / 1000);
-    idleConnectionTimeoutUnit.value = getOptimalUnit((config.value.security.idleConnectionTimeout || 300000) / 1000);
-    sessionTimeoutUnit.value = getOptimalUnit((config.value.security.sessionTimeout || 30 * 60 * 1000) / 1000);
-    sessionFlushIntervalUnit.value = getOptimalUnit((config.value.security.sessionFlushInterval || 15 * 60 * 1000) / 1000);
+    connectionTimeoutUnit.value = getOptimalUnit(
+      (config.value.security.connectionTimeout || 30000) / 1000
+    );
+    idleConnectionTimeoutUnit.value = getOptimalUnit(
+      (config.value.security.idleConnectionTimeout || 300000) / 1000
+    );
+    sessionTimeoutUnit.value = getOptimalUnit(
+      (config.value.security.sessionTimeout || 30 * 60 * 1000) / 1000
+    );
+    sessionFlushIntervalUnit.value = getOptimalUnit(
+      (config.value.security.sessionFlushInterval || 15 * 60 * 1000) / 1000
+    );
   }
 });
 

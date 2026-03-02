@@ -1,6 +1,11 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { gateway } from '@services/gateway.service.js';
-import { logger, LOG_MODULES, isToolsListResponse, simplifyToolsListResponse } from '@utils/logger.js';
+import {
+  logger,
+  LOG_MODULES,
+  isToolsListResponse,
+  simplifyToolsListResponse
+} from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
 import { formatDuration } from '@utils/format-utils.js';
@@ -79,7 +84,11 @@ export class McpSessionManager {
 
     // Initialize by restoring sessions
     this.restoreSessions().catch((error) => {
-      logger.error('Failed to restore sessions during initialization:', error, LOG_MODULES.SESSION_MANAGER);
+      logger.error(
+        'Failed to restore sessions during initialization:',
+        error,
+        LOG_MODULES.SESSION_MANAGER
+      );
     });
   }
 
@@ -178,7 +187,10 @@ export class McpSessionManager {
     try {
       if (!fs.existsSync(this.sessionsPath)) {
         if (process.env.SESSION_DEBUG) {
-          logger.debug('Sessions directory not found, creating new one', LOG_MODULES.SESSION_MANAGER);
+          logger.debug(
+            'Sessions directory not found, creating new one',
+            LOG_MODULES.SESSION_MANAGER
+          );
         }
         fs.mkdirSync(this.sessionsPath, { recursive: true });
         return createEmptySessionStore();
@@ -187,7 +199,10 @@ export class McpSessionManager {
       const indexPath = path.join(this.sessionsPath, 'index.json');
       if (!fs.existsSync(indexPath)) {
         if (process.env.SESSION_DEBUG) {
-          logger.debug('Sessions index file not found, creating new one', LOG_MODULES.SESSION_MANAGER);
+          logger.debug(
+            'Sessions index file not found, creating new one',
+            LOG_MODULES.SESSION_MANAGER
+          );
         }
         return createEmptySessionStore();
       }
@@ -217,7 +232,10 @@ export class McpSessionManager {
       }
 
       if (process.env.SESSION_DEBUG) {
-        logger.debug(`Loaded ${Object.keys(store.sessions).length} sessions from store`, LOG_MODULES.SESSION_MANAGER);
+        logger.debug(
+          `Loaded ${Object.keys(store.sessions).length} sessions from store`,
+          LOG_MODULES.SESSION_MANAGER
+        );
       }
 
       return store;
@@ -315,7 +333,11 @@ export class McpSessionManager {
             logger.debug(`Restored session state: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
           }
         } catch (error) {
-          logger.warn(`Skipping invalid session state for ${sessionId}:`, error, LOG_MODULES.SESSION_MANAGER);
+          logger.warn(
+            `Skipping invalid session state for ${sessionId}:`,
+            error,
+            LOG_MODULES.SESSION_MANAGER
+          );
         }
       }
 
@@ -352,7 +374,10 @@ export class McpSessionManager {
     }
 
     try {
-      logger.info(`Flushing ${this.dirtySessions.size} dirty session(s) to disk`, LOG_MODULES.SESSION_MANAGER);
+      logger.info(
+        `Flushing ${this.dirtySessions.size} dirty session(s) to disk`,
+        LOG_MODULES.SESSION_MANAGER
+      );
 
       // Load current store
       const currentStore = await this.loadSessionStore();
@@ -565,7 +590,8 @@ export class McpSessionManager {
 
       // Always ensure sessionId is set on transport, regardless of initialization status
       // This fixes the "Session not found" error for non-initialization requests
-      const webTransport = (session.transport as unknown as TransportWithWebStandard)._webStandardTransport;
+      const webTransport = (session.transport as unknown as TransportWithWebStandard)
+        ._webStandardTransport;
       if (webTransport) {
         const currentSessionId = webTransport.sessionId;
         const isInitialized = webTransport._initialized;
@@ -738,7 +764,10 @@ export class McpSessionManager {
     sessionId: string,
     requireInitialize: boolean = true
   ): Promise<Session> {
-    logger.info(`Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`, LOG_MODULES.SESSION_MANAGER);
+    logger.info(
+      `Creating new MCP session: ${sessionId}, requireInitialize: ${requireInitialize}`,
+      LOG_MODULES.SESSION_MANAGER
+    );
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => sessionId,
@@ -806,7 +835,10 @@ export class McpSessionManager {
           );
         }
       } else {
-        logger.error(`Failed to get _webStandardTransport from transport!`, LOG_MODULES.SESSION_MANAGER);
+        logger.error(
+          `Failed to get _webStandardTransport from transport!`,
+          LOG_MODULES.SESSION_MANAGER
+        );
         // Even if we can't manually initialize, continue with normal initialization
         // The transport will be initialized when the first request arrives
       }
@@ -859,7 +891,10 @@ export class McpSessionManager {
     // when the first actual request (GET /mcp) arrives, not during connect().
     // Therefore, we don't need to wait for this event - the transport is ready to receive requests.
     if (process.env.SESSION_DEBUG) {
-      logger.debug(`StreamableHTTPServerTransport ready for session: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
+      logger.debug(
+        `StreamableHTTPServerTransport ready for session: ${sessionId}`,
+        LOG_MODULES.SESSION_MANAGER
+      );
     }
 
     // Create/update session state
@@ -903,7 +938,10 @@ export class McpSessionManager {
     // Cleanup in-memory session objects
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.lastAccessed > this.SESSION_TIMEOUT) {
-        logger.debug(`Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`, LOG_MODULES.SESSION_MANAGER);
+        logger.debug(
+          `Removing stale session: ${sessionId}. Last accessed ${formatDuration(now - session.lastAccessed)} ago, timeout ${formatDuration(this.SESSION_TIMEOUT)}`,
+          LOG_MODULES.SESSION_MANAGER
+        );
         try {
           session.server.close();
           cleanedCount++;
@@ -926,12 +964,15 @@ export class McpSessionManager {
     for (const sessionId of expiredSessionIds) {
       this.sessionStates.delete(sessionId);
       this.markAsDirty(sessionId);
-      logger.debug(`Marking expired session for deletion: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
+      logger.debug(
+        `Marking expired session for deletion: ${sessionId}`,
+        LOG_MODULES.SESSION_MANAGER
+      );
     }
 
     // Immediately flush to delete session files from disk
     if (expiredSessionIds.length > 0) {
-      this.flushDirtySessions().catch(error => {
+      this.flushDirtySessions().catch((error) => {
         logger.error('Failed to flush expired sessions:', error, LOG_MODULES.SESSION_MANAGER);
       });
     }

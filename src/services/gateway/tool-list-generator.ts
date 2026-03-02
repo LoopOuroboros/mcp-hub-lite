@@ -25,9 +25,7 @@ import type { ToolMapEntry, GatewayTool } from './types.js';
  * @param {Map<string, ToolMapEntry>} toolMap - Map to populate with gateway tool name to actual tool mappings
  * @returns {Array<GatewayTool>} Array of gateway tools with resolved names and descriptions
  */
-export function generateGatewayToolsList(
-  toolMap: Map<string, ToolMapEntry>
-): Array<GatewayTool> {
+export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Array<GatewayTool> {
   const gatewayTools: Array<GatewayTool> = [];
   toolMap.clear();
 

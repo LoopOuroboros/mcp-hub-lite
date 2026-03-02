@@ -100,7 +100,10 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       // Proactive cleanup: For GET requests (SSE connections), clean up stale streams first
       // This prevents "Only one SSE stream is allowed per session" errors
       if (request.method === 'GET') {
-        logger.debug(`Proactive SSE stream cleanup for session ${sessionId} before handling request`, LOG_MODULES.GATEWAY);
+        logger.debug(
+          `Proactive SSE stream cleanup for session ${sessionId} before handling request`,
+          LOG_MODULES.GATEWAY
+        );
         cleanupStaleSseStreams(session.transport, sessionId);
       }
 
@@ -109,7 +112,10 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       });
 
       const duration = Date.now() - startTime;
-      logger.info(`MCP Gateway response for ${sessionId}: handled in ${duration}ms`, LOG_MODULES.GATEWAY);
+      logger.info(
+        `MCP Gateway response for ${sessionId}: handled in ${duration}ms`,
+        LOG_MODULES.GATEWAY
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 

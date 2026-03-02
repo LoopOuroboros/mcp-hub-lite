@@ -118,9 +118,7 @@ export function generateDynamicResources(): Resource[] {
  * const tools = await readResource('hub://servers/my-mcp-server/tools');
  * ```
  */
-export async function readResource(uri: string): Promise<
-  ServerMetadata | Resource[]
-> {
+export async function readResource(uri: string): Promise<ServerMetadata | Resource[]> {
   // Validate URI format
   if (!uri.startsWith('hub://')) {
     throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);

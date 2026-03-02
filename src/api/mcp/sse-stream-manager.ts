@@ -16,20 +16,25 @@ export function cleanupStaleSseStreams(transport: unknown, sessionId: string): v
   try {
     // Access internal SDK structures to clean up stream mapping
     // The transport wraps a WebStandardStreamableHTTPServerTransport internally
-    const webTransport = (transport as {
-      _webStandardTransport?: {
-        _streamMapping?: Map<string, unknown>;
-        _standaloneSseStreamId?: string;
-        close?: () => Promise<void>;
-      };
-    })._webStandardTransport;
+    const webTransport = (
+      transport as {
+        _webStandardTransport?: {
+          _streamMapping?: Map<string, unknown>;
+          _standaloneSseStreamId?: string;
+          close?: () => Promise<void>;
+        };
+      }
+    )._webStandardTransport;
 
     if (webTransport?._streamMapping) {
       const streamId = webTransport._standaloneSseStreamId || '_GET_stream';
       const existingStream = webTransport._streamMapping.get(streamId);
 
       if (existingStream) {
-        logger.debug(`Cleaning up stale SSE stream for session ${sessionId} (preserving session state)`, LOG_MODULES.GATEWAY);
+        logger.debug(
+          `Cleaning up stale SSE stream for session ${sessionId} (preserving session state)`,
+          LOG_MODULES.GATEWAY
+        );
 
         // Try to call cleanup if available on the stream object
         const streamWithCleanup = existingStream as { cleanup?: () => void };
@@ -40,11 +45,17 @@ export function cleanupStaleSseStreams(transport: unknown, sessionId: string): v
           webTransport._streamMapping.delete(streamId);
         }
 
-        logger.debug(`Successfully cleaned up SSE stream mapping for session ${sessionId}`, LOG_MODULES.GATEWAY);
+        logger.debug(
+          `Successfully cleaned up SSE stream mapping for session ${sessionId}`,
+          LOG_MODULES.GATEWAY
+        );
       }
     }
   } catch (error) {
     // Non-critical error - if we can't clean up, just continue
-    logger.debug(`Error cleaning up SSE streams (non-critical, continuing): ${error}`, LOG_MODULES.GATEWAY);
+    logger.debug(
+      `Error cleaning up SSE streams (non-critical, continuing): ${error}`,
+      LOG_MODULES.GATEWAY
+    );
   }
 }

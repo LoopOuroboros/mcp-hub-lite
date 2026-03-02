@@ -215,27 +215,48 @@ describe('Session Persistence', () => {
     const session1Path = path.join(sessionsPath, 'session-1.json');
     const session2Path = path.join(sessionsPath, 'session-2.json');
 
-    fs.writeFileSync(session1Path, JSON.stringify({
-      sessionId: 'session-1',
-      clientName: 'test-client',
-      createdAt: 1234567890,
-      lastAccessedAt: 1234567890,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session1Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-1',
+          clientName: 'test-client',
+          createdAt: 1234567890,
+          lastAccessedAt: 1234567890,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
-    fs.writeFileSync(session2Path, JSON.stringify({
-      sessionId: 'session-2',
-      clientName: 'another-client',
-      createdAt: 9876543210,
-      lastAccessedAt: 9876543210,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session2Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-2',
+          clientName: 'another-client',
+          createdAt: 9876543210,
+          lastAccessedAt: 9876543210,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
     // Create index file
     const indexPath = path.join(sessionsPath, 'index.json');
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['session-1', 'session-2']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['session-1', 'session-2']
+        },
+        null,
+        2
+      )
+    );
 
     // Simulate load operation
     const indexContent = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
@@ -282,9 +303,16 @@ describe('Session Persistence', () => {
 
     // Create index file
     const indexPath = path.join(sessionsPath, 'index.json');
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['invalid-session']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['invalid-session']
+        },
+        null,
+        2
+      )
+    );
 
     const content = fs.readFileSync(sessionPath, 'utf-8');
     expect(() => JSON.parse(content)).toThrow();
@@ -303,32 +331,60 @@ describe('Session Persistence', () => {
 
     // Initial session
     const session1Path = path.join(sessionsPath, 'session-1.json');
-    fs.writeFileSync(session1Path, JSON.stringify({
-      sessionId: 'session-1',
-      createdAt: 1234567890,
-      lastAccessedAt: 1234567890,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session1Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-1',
+          createdAt: 1234567890,
+          lastAccessedAt: 1234567890,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
     // Create initial index
     const indexPath = path.join(sessionsPath, 'index.json');
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['session-1']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['session-1']
+        },
+        null,
+        2
+      )
+    );
 
     // Add second session
     const session2Path = path.join(sessionsPath, 'session-2.json');
-    fs.writeFileSync(session2Path, JSON.stringify({
-      sessionId: 'session-2',
-      createdAt: 9876543210,
-      lastAccessedAt: 9876543210,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session2Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-2',
+          createdAt: 9876543210,
+          lastAccessedAt: 9876543210,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
     // Update index to include both sessions
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['session-1', 'session-2']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['session-1', 'session-2']
+        },
+        null,
+        2
+      )
+    );
 
     // Verify both sessions exist
     expect(fs.existsSync(session1Path)).toBe(true);
@@ -351,33 +407,61 @@ describe('Session Persistence', () => {
     const session1Path = path.join(sessionsPath, 'session-1.json');
     const session2Path = path.join(sessionsPath, 'session-2.json');
 
-    fs.writeFileSync(session1Path, JSON.stringify({
-      sessionId: 'session-1',
-      createdAt: 1234567890,
-      lastAccessedAt: 1234567890,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session1Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-1',
+          createdAt: 1234567890,
+          lastAccessedAt: 1234567890,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
-    fs.writeFileSync(session2Path, JSON.stringify({
-      sessionId: 'session-2',
-      createdAt: 9876543210,
-      lastAccessedAt: 9876543210,
-      metadata: {}
-    }, null, 2));
+    fs.writeFileSync(
+      session2Path,
+      JSON.stringify(
+        {
+          sessionId: 'session-2',
+          createdAt: 9876543210,
+          lastAccessedAt: 9876543210,
+          metadata: {}
+        },
+        null,
+        2
+      )
+    );
 
     // Create initial index
     const indexPath = path.join(sessionsPath, 'index.json');
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['session-1', 'session-2']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['session-1', 'session-2']
+        },
+        null,
+        2
+      )
+    );
 
     // Delete session-1 (remove file and update index)
     fs.unlinkSync(session1Path);
 
     // Update index to only include session-2
-    fs.writeFileSync(indexPath, JSON.stringify({
-      sessions: ['session-2']
-    }, null, 2));
+    fs.writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          sessions: ['session-2']
+        },
+        null,
+        2
+      )
+    );
 
     // Verify session-1 has been deleted
     expect(fs.existsSync(session1Path)).toBe(false);

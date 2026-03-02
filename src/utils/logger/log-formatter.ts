@@ -113,11 +113,7 @@ export function createColoredLogMessage(
  * @param context - Optional log context
  * @returns Plain text log message string
  */
-export function createLogMessage(
-  level: LogLevel,
-  message: string,
-  context?: LogContext
-): string {
+export function createLogMessage(level: LogLevel, message: string, context?: LogContext): string {
   const timestamp = formatTimestamp(new Date());
   const processPid = context?.pid ?? process.pid;
   const formattedLevel = formatLogLevel(level);

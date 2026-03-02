@@ -202,7 +202,11 @@ export class StdioTransport implements Transport {
           trimmedData.includes('Started')
         ) {
           logLevel = 'info';
-        } else if (trimmedData.includes('WARN:') || trimmedData.includes('Warning') || trimmedData.includes('warning')) {
+        } else if (
+          trimmedData.includes('WARN:') ||
+          trimmedData.includes('Warning') ||
+          trimmedData.includes('warning')
+        ) {
           logLevel = 'warn';
         }
 

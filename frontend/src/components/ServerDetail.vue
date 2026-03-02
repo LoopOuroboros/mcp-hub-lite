@@ -96,8 +96,12 @@
             </el-form-item>
 
             <el-form-item :label="$t('serverDetail.config.description')">
-              <el-input v-model="server.config.description" type="textarea" :rows="3"
-                :placeholder="$t('serverDetail.config.descriptionPlaceholder')" />
+              <el-input
+                v-model="server.config.description"
+                type="textarea"
+                :rows="3"
+                :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
+              />
             </el-form-item>
 
             <el-form-item :label="$t('serverDetail.config.autoStart')">

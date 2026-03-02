@@ -42,10 +42,7 @@ export class DevLogger {
    * @param rotatorConfig - Optional custom rotation configuration (default: 7 days retention)
    * @param onLogEnabled - Optional callback when log is enabled, receives the log file path
    */
-  enableDevLog(
-    rotatorConfig?: RotatorConfig,
-    onLogEnabled?: (logFilePath: string) => void
-  ): void {
+  enableDevLog(rotatorConfig?: RotatorConfig, onLogEnabled?: (logFilePath: string) => void): void {
     if (this.logFileStream) return;
 
     process.env.DEV_LOG_FILE = '1';

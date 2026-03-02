@@ -141,7 +141,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       const tool = await hubToolsService.getTool(request.params);
 
       if (!tool) {
-        throw new McpError(-32801, `Tool "${request.params.toolName}" not found on server "${request.params.serverName}"`);
+        throw new McpError(
+          -32801,
+          `Tool "${request.params.toolName}" not found on server "${request.params.serverName}"`
+        );
       }
 
       return { tool };

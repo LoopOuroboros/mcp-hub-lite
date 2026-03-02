@@ -27,11 +27,7 @@ export class ErrorHandler {
   /**
    * Handles tool call errors
    */
-  static handleToolCallError(
-    serverId: string,
-    realToolName: string,
-    error: unknown
-  ): never {
+  static handleToolCallError(serverId: string, realToolName: string, error: unknown): never {
     if (error instanceof Error) {
       logger.error(
         `Tool call FAILED: serverId=${serverId}, realToolName=${realToolName}, error=${error.message}`,

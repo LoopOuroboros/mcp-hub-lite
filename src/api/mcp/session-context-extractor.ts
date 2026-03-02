@@ -52,7 +52,8 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   const headers = request.headers;
 
   // Priority 1: Session ID from Header (highest priority)
-  let sessionId: string | undefined = (headers['mcp-session-id'] as string) || (headers['Mcp-Session-Id'] as string);
+  let sessionId: string | undefined =
+    (headers['mcp-session-id'] as string) || (headers['Mcp-Session-Id'] as string);
   if (sessionId) {
     logger.debug(`Extracted sessionId from header: ${sessionId}`, LOG_MODULES.CONTEXT);
   }
@@ -80,7 +81,10 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     if (persistedSession) {
       logger.debug(`Session ${sessionId} found in persisted sessions`, LOG_MODULES.CONTEXT);
     } else {
-      logger.debug(`Session ${sessionId} not found in persisted sessions (will create new)`, LOG_MODULES.CONTEXT);
+      logger.debug(
+        `Session ${sessionId} not found in persisted sessions (will create new)`,
+        LOG_MODULES.CONTEXT
+      );
     }
   }
 
@@ -127,7 +131,10 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     const prefix = clientName ? `${clientName.replace(/[^a-zA-Z0-9-]/g, '')}-` : 'session-';
     sessionId = `${prefix}${randomUUID().substring(0, 8)}`;
     if (!clientName && !request.body) {
-      logger.debug(`Initial StreamableHttp connection - created new sessionId: ${sessionId}`, LOG_MODULES.CONTEXT);
+      logger.debug(
+        `Initial StreamableHttp connection - created new sessionId: ${sessionId}`,
+        LOG_MODULES.CONTEXT
+      );
     } else {
       logger.debug(`Generated new sessionId: ${sessionId}`, LOG_MODULES.CONTEXT);
     }
@@ -137,7 +144,10 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   if (sessionId && mcpSessionManager.getSessionState(sessionId)) {
     const hasSessionObject = mcpSessionManager.hasSession(sessionId);
     if (!hasSessionObject) {
-      logger.warn(`Session state exists but session object missing for ${sessionId}`, LOG_MODULES.CONTEXT);
+      logger.warn(
+        `Session state exists but session object missing for ${sessionId}`,
+        LOG_MODULES.CONTEXT
+      );
     }
   }
 

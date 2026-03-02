@@ -11,11 +11,7 @@ export { LOG_MODULES } from './log-modules.js';
 export type { LogModuleKey, LogModule } from './log-modules.js';
 
 // Re-export color utilities
-export {
-  COLORS,
-  getColorCodeForLevel,
-  getResetColor
-} from './log-colors.js';
+export { COLORS, getColorCodeForLevel, getResetColor } from './log-colors.js';
 
 // Re-export formatter utilities
 export {
@@ -28,10 +24,7 @@ export {
 } from './log-formatter.js';
 
 // Re-export output utilities
-export {
-  isToolsListResponse,
-  simplifyToolsListResponse
-} from './log-output.js';
+export { isToolsListResponse, simplifyToolsListResponse } from './log-output.js';
 
 // Re-export main Logger class
 export { Logger } from './logger.js';

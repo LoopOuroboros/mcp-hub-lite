@@ -97,7 +97,11 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
-      const results = await hubToolsService.findServers({ pattern: 'server', searchIn: 'name', caseSensitive: false });
+      const results = await hubToolsService.findServers({
+        pattern: 'server',
+        searchIn: 'name',
+        caseSensitive: false
+      });
 
       // Assert
       expect(results).toEqual(['Test Server 1', 'Production Server', 'Development Server']);
@@ -134,7 +138,11 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
-      const results = await hubToolsService.findServers({ pattern: 'Server', searchIn: 'name', caseSensitive: true });
+      const results = await hubToolsService.findServers({
+        pattern: 'Server',
+        searchIn: 'name',
+        caseSensitive: true
+      });
 
       // Assert
       expect(results).toEqual(['Test Server 1']);
@@ -434,9 +442,9 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
 
       // Act & Assert
-      await expect(hubToolsService.callTool({ serverName, toolName: 'readFile', toolArgs: {} })).rejects.toThrow(
-        `Server not found: ${serverName}`
-      );
+      await expect(
+        hubToolsService.callTool({ serverName, toolName: 'readFile', toolArgs: {} })
+      ).rejects.toThrow(`Server not found: ${serverName}`);
     });
   });
 
@@ -543,7 +551,11 @@ describe('HubToolsService', () => {
       vi.spyOn(hubToolsService, 'listAllTools').mockResolvedValue(mockTools);
 
       // Act
-      const results = await hubToolsService.findTools({ pattern: 'File', searchIn: 'both', caseSensitive: false });
+      const results = await hubToolsService.findTools({
+        pattern: 'File',
+        searchIn: 'both',
+        caseSensitive: false
+      });
 
       // Assert
       expect(results).toEqual(mockTools);

@@ -49,7 +49,10 @@ export function registerInitializeHandlers(server: McpServer): void {
     const context = getClientContext();
     if (context && request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
-      logger.info(`Initialized client: ${name} v${version} (ID: ${context.sessionId})`, LOG_MODULES.GATEWAY);
+      logger.info(
+        `Initialized client: ${name} v${version} (ID: ${context.sessionId})`,
+        LOG_MODULES.GATEWAY
+      );
 
       // Update client info in tracker
       clientTrackerService.updateClient({

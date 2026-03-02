@@ -71,9 +71,7 @@ export class GatewayService {
    * @param {Map<string, ToolMapEntry>} toolMap - Map to populate with gateway tool name to actual tool mappings
    * @returns {Array<GatewayTool>} Array of gateway tools with resolved names and descriptions
    */
-  public generateGatewayToolsList(
-    toolMap: Map<string, ToolMapEntry>
-  ): Array<GatewayTool> {
+  public generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Array<GatewayTool> {
     return generateGatewayToolsList(toolMap);
   }
 

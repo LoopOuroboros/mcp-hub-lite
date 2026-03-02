@@ -154,6 +154,9 @@ export class SearchCacheService {
   updateTool(): void {
     // Since serverId field has been removed from Tool interface, this method needs refactoring
     // Currently kept but not performing any operations, or modify according to actual requirements
-    logger.warn('updateTool method is deprecated because serverId field is removed from Tool', LOG_MODULES.SEARCH);
+    logger.warn(
+      'updateTool method is deprecated because serverId field is removed from Tool',
+      LOG_MODULES.SEARCH
+    );
   }
 }

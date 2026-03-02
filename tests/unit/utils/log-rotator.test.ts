@@ -5,9 +5,9 @@ import os from 'node:os';
 import { LogRotator } from '@utils/log-rotator.js';
 
 // Helper function to create a complete system config with custom logging rotation
-function createTestConfig(
-  rotationConfig: Partial<{ rotationAge: string }> = {}
-): { system: { logging: { rotationAge: string } } } {
+function createTestConfig(rotationConfig: Partial<{ rotationAge: string }> = {}): {
+  system: { logging: { rotationAge: string } };
+} {
   return {
     system: {
       logging: {
@@ -207,11 +207,7 @@ describe('LogRotator', () => {
 
   it('should get log files sorted by date (newest first)', () => {
     // Create mock log files with new format
-    const newFormatDates = [
-      '20260301_100000000',
-      '20260301_120000000',
-      '20260301_110000000'
-    ];
+    const newFormatDates = ['20260301_100000000', '20260301_120000000', '20260301_110000000'];
     for (const date of newFormatDates) {
       const filePath = path.join(tempLogDir, `mcp-hub.${date}.log`);
       fs.writeFileSync(filePath, 'test content');

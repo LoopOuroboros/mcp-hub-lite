@@ -21,19 +21,27 @@
       >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.uri') }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {{ $t('resources.uri') }}
+            </div>
             <div class="font-mono text-sm break-all select-all">{{ resourceUri }}</div>
           </div>
           <div>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.mimeType') }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {{ $t('resources.mimeType') }}
+            </div>
             <div class="font-mono text-sm">{{ resourceMimeType }}</div>
           </div>
           <div class="md:col-span-2">
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.description') }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {{ $t('resources.description') }}
+            </div>
             <div class="text-sm">{{ resourceDescription }}</div>
           </div>
           <div class="md:col-span-2">
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('resources.server') }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {{ $t('resources.server') }}
+            </div>
             <div class="text-sm">{{ serverName }}</div>
           </div>
         </div>
@@ -56,13 +64,18 @@
                 <el-icon class="mr-1"><Document /></el-icon> {{ $t('resources.source') }}
               </el-radio-button>
             </el-radio-group>
-            <el-button size="small" :icon="Download" @click="downloadResource">{{ $t('resources.download') }}</el-button>
+            <el-button size="small" :icon="Download" @click="downloadResource">{{
+              $t('resources.download')
+            }}</el-button>
           </div>
         </div>
 
         <div class="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#0f172a]">
           <!-- Resource Description -->
-          <div v-if="resourceDescription && resourceDescription !== 'No description available'" class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div
+            v-if="resourceDescription && resourceDescription !== 'No description available'"
+            class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-800"
+          >
             <div class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">Description</div>
             <div class="text-sm text-blue-700 dark:text-blue-300">{{ resourceDescription }}</div>
           </div>
@@ -150,7 +163,7 @@ const resourceMimeType = computed(
   () => (route.query.mimeType as string) || 'application/octet-stream'
 );
 const resourceDescription = computed(() => {
-  return route.query.description as string || $t('resources.noDescription');
+  return (route.query.description as string) || $t('resources.noDescription');
 });
 
 const loading = ref(false);

@@ -93,7 +93,11 @@ async function startDevServer() {
               logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
             });
           } catch (err) {
-            logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
+            logger.error(
+              `Failed to create instance for ${serverName}:`,
+              err,
+              LOG_MODULES.DEV_SERVER
+            );
           }
         } else {
           // Connect existing instances
@@ -112,7 +116,8 @@ async function startDevServer() {
       host: config.system.host
     });
     logger.info(
-      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`, LOG_MODULES.DEV_SERVER
+      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`,
+      LOG_MODULES.DEV_SERVER
     );
 
     // Write PID file after server starts successfully
@@ -159,7 +164,7 @@ const shutdown = async (signal: string) => {
     PidManager.removePid();
     logger.info('Dev server stopped gracefully', LOG_MODULES.DEV_SERVER);
   } catch (error) {
-    logger.error('Error during shutdown:', error, LOG_MODULES.DEV_SERVER);    
+    logger.error('Error during shutdown:', error, LOG_MODULES.DEV_SERVER);
     PidManager.removePid();
   }
   process.exit(0);

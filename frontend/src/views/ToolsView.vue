@@ -169,7 +169,10 @@ function toggleServer(serverName: string) {
 
 async function fetchSystemTools() {
   try {
-    const tools = await http.get<{ name: string; description: string; inputSchema: JsonSchema }[]>('/web/hub-tools/system');
+    const tools =
+      await http.get<{ name: string; description: string; inputSchema: JsonSchema }[]>(
+        '/web/hub-tools/system'
+      );
     // Convert system tools to complete Tool objects
     systemTools.value = tools
       .map((tool) => ({

@@ -80,7 +80,9 @@ program
       if (options.host) args.push('--host', options.host);
 
       const logDir = path.join(os.homedir(), '.mcp-hub-lite', 'logs');
-      const logRotator = new LogRotator(logDir, 'mcp-hub', undefined, () => configManager.getConfig());
+      const logRotator = new LogRotator(logDir, 'mcp-hub', undefined, () =>
+        configManager.getConfig()
+      );
 
       // Rotate old logs before starting
       logRotator.rotateLogs();

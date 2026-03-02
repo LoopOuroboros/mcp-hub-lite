@@ -216,11 +216,12 @@ export class Logger {
   }
 
   private extractOptionsAndArgs(args: unknown[]): [LogOptions | undefined, unknown[]] {
-    const optionsIndex = args.findIndex(arg =>
-      typeof arg === 'object' &&
-      arg !== null &&
-      !Array.isArray(arg) &&
-      ('module' in arg || 'traceId' in arg || 'spanId' in arg)
+    const optionsIndex = args.findIndex(
+      (arg) =>
+        typeof arg === 'object' &&
+        arg !== null &&
+        !Array.isArray(arg) &&
+        ('module' in arg || 'traceId' in arg || 'spanId' in arg)
     );
 
     if (optionsIndex !== -1) {

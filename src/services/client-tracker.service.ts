@@ -198,7 +198,9 @@ class ClientTrackerService {
     const now = Date.now();
     for (const [id, info] of this.clients.entries()) {
       if (now - info.lastSeen > this.TIMEOUT_MS) {
-        logger.debug(`Removing stale client: ${id}. Last seen ${formatDuration(now - info.lastSeen)} ago, timeout ${formatDuration(this.TIMEOUT_MS)}`);
+        logger.debug(
+          `Removing stale client: ${id}. Last seen ${formatDuration(now - info.lastSeen)} ago, timeout ${formatDuration(this.TIMEOUT_MS)}`
+        );
         this.clients.delete(id);
 
         eventBus.publish('client-disconnected', {

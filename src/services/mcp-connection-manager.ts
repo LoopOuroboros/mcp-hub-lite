@@ -4,8 +4,5 @@
  */
 
 // Re-export everything from the new modular implementation
-export {
-  McpConnectionManager,
-  mcpConnectionManager
-} from './connection/index.js';
+export { McpConnectionManager, mcpConnectionManager } from './connection/index.js';
 export type { ServerStatus } from './connection/index.js';

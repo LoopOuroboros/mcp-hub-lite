@@ -103,4 +103,4 @@ export type LogModuleKey = keyof Omit<typeof LOG_MODULES, 'dynamic'>;
 /**
  * Type representing a log module object.
  */
-export type LogModule = typeof LOG_MODULES[LogModuleKey];
+export type LogModule = (typeof LOG_MODULES)[LogModuleKey];

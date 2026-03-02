@@ -114,7 +114,11 @@ export class HubManagerService {
           try {
             await mcpConnectionManager.connect({ ...server, ...instance });
           } catch (error) {
-            logger.error(`Failed to connect server instance for ${name}:`, error, LOG_MODULES.HUB_MANAGER);
+            logger.error(
+              `Failed to connect server instance for ${name}:`,
+              error,
+              LOG_MODULES.HUB_MANAGER
+            );
           }
         }
       }
@@ -306,7 +310,11 @@ export class HubManagerService {
       try {
         await mcpConnectionManager.connect({ ...server, ...newInstance });
       } catch (error) {
-        logger.error(`Failed to auto-connect server instance for ${name}:`, error, LOG_MODULES.HUB_MANAGER);
+        logger.error(
+          `Failed to auto-connect server instance for ${name}:`,
+          error,
+          LOG_MODULES.HUB_MANAGER
+        );
       }
     }
 
@@ -380,7 +388,10 @@ export class HubManagerService {
     updates: Partial<ServerInstanceConfig>
   ): Promise<void> {
     await this.configManager.updateServerInstance(name, index, updates);
-    logger.info(`Server instance updated for server: [${name}] at index: ${index}`, LOG_MODULES.HUB_MANAGER);
+    logger.info(
+      `Server instance updated for server: [${name}] at index: ${index}`,
+      LOG_MODULES.HUB_MANAGER
+    );
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_UPDATED, { name, index, updates });
   }
@@ -450,7 +461,10 @@ export class HubManagerService {
     }
 
     await this.configManager.removeServerInstance(name, index);
-    logger.info(`Server instance removed for server: [${name}] at index: ${index}`, LOG_MODULES.HUB_MANAGER);
+    logger.info(
+      `Server instance removed for server: [${name}] at index: ${index}`,
+      LOG_MODULES.HUB_MANAGER
+    );
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_DELETED, { name, index });
   }

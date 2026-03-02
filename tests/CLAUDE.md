@@ -32,6 +32,7 @@ tests/
 **目标**: 测试代码中的最小可测试单元（函数、类、模块）
 
 **覆盖范围**:
+
 - 服务器运行时 (`server/runner.test.ts`)
 - 服务层 (`services/hub-manager-service.test.ts`, `services/session-manager.test.ts`)
 - 工具层 (`utils/logger.test.ts`, `utils/config.test.ts`)
@@ -44,6 +45,7 @@ tests/
 **目标**: 测试多个组件之间的交互
 
 **覆盖范围**:
+
 - API 集成 (`api/gateway.test.ts`)
 - Gateway 集成 (`gateway/fault-tolerance.test.ts`, `gateway/mcp-connection.test.ts`)
 
@@ -54,6 +56,7 @@ tests/
 **目标**: 验证 MCP Hub Lite 与外部 MCP 服务器之间的协议兼容性
 
 **覆盖范围**:
+
 - MCP 初始化协议 (`mcp-protocol/initialize.test.ts`)
 - 工具列表协议 (`mcp-protocol/tools-list.test.ts`)
 - 工具调用协议 (`mcp-protocol/tools-call.test.ts`)
@@ -122,11 +125,13 @@ npm run test:coverage
 3. **查看结果**: 摘要包含测试文件统计、用例统计、失败详情等
 
 **日志文件**:
+
 - `logs/test-summary.log` - 测试摘要汇总
 - `logs/test-backend.log` - 后端测试详细输出
 - `logs/test-frontend.log` - 前端测试详细输出
 
 **查看实时输出（带颜色）**:
+
 ```bash
 # 开发模式带热重载
 npx vitest
@@ -138,11 +143,11 @@ npm run test:frontend
 
 ## 测试覆盖
 
-| 类型 | 状态 | 文件数 |
-| ---- | ---- | ------ |
-| 单元测试 | 部分实现 | 15 |
-| 集成测试 | 部分实现 | 3 |
-| 契约测试 | 完整实现 | 3 |
+| 类型     | 状态     | 文件数 |
+| -------- | -------- | ------ |
+| 单元测试 | 部分实现 | 15     |
+| 集成测试 | 部分实现 | 3      |
+| 契约测试 | 完整实现 | 3      |
 
 ## 质量要求
 
@@ -166,6 +171,7 @@ npm run test:frontend
 ### Q: 如何运行特定测试文件？
 
 A:
+
 ```bash
 # 运行特定后端测试文件
 npx vitest tests/unit/services/hub-manager-service.test.ts
@@ -188,6 +194,7 @@ test.only('should handle error', () => {
 ### Q: 如何添加新的测试？
 
 A:
+
 1. 在相应的测试目录创建新的测试文件（如 `*.test.ts`）
 2. 导入被测模块
 3. 编写测试用例
@@ -199,13 +206,13 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 
 ## 相关文件清单
 
-| 文件路径 | 描述 |
-| -------- | ---- |
-| `vitest.config.ts` | 后端测试配置 |
+| 文件路径                    | 描述         |
+| --------------------------- | ------------ |
+| `vitest.config.ts`          | 后端测试配置 |
 | `vitest.frontend.config.ts` | 前端测试配置 |
-| `tests/setup.ts` | 测试全局设置 |
-| `tests/helpers/` | 测试辅助函数 |
-| `logs/test-summary.log` | 测试结果摘要 |
+| `tests/setup.ts`            | 测试全局设置 |
+| `tests/helpers/`            | 测试辅助函数 |
+| `logs/test-summary.log`     | 测试结果摘要 |
 
 ## 变更记录 (Changelog)
 

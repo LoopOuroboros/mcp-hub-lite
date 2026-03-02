@@ -53,7 +53,11 @@ export class McpConnectionManager {
       const serverInstances = hubManager.getServerInstanceByName(serverName);
       serverInstances.forEach((instance) => {
         this.disconnect(instance.id!).catch((err) => {
-          logger.warn(`Failed to disconnect deleted server instance ${instance.id}:`, err, LOG_MODULES.CONNECTION_MANAGER);
+          logger.warn(
+            `Failed to disconnect deleted server instance ${instance.id}:`,
+            err,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
         });
       });
     });
@@ -107,7 +111,10 @@ export class McpConnectionManager {
           | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
           | undefined;
         try {
-          logger.info(`Connecting to server [${server.id || 'unknown'}]...`, LOG_MODULES.CONNECTION_MANAGER);
+          logger.info(
+            `Connecting to server [${server.id || 'unknown'}]...`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
 
           // Validate server configuration
           if (!server.id) {
@@ -151,7 +158,10 @@ export class McpConnectionManager {
           // Handle transport close events
           if ('onclose' in transport) {
             transport.onclose = () => {
-              logger.info(`Transport closed for server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
+              logger.info(
+                `Transport closed for server [${server.id}]`,
+                LOG_MODULES.CONNECTION_MANAGER
+              );
               const currentStatus = this.serverStatus.get(server.id!);
               // Only update status if it was previously connected or starting
               if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
@@ -262,7 +272,10 @@ export class McpConnectionManager {
               resources
             });
           } else {
-            logger.info('SSE transport is unidirectional, skipping tool/resource refresh', LOG_MODULES.CONNECTION_MANAGER);
+            logger.info(
+              'SSE transport is unidirectional, skipping tool/resource refresh',
+              LOG_MODULES.CONNECTION_MANAGER
+            );
           }
 
           return true;
@@ -335,7 +348,11 @@ export class McpConnectionManager {
         await transport.close();
       }
     } catch (error) {
-      logger.error(`Error disconnecting server [${serverId}]:`, error, LOG_MODULES.CONNECTION_MANAGER);
+      logger.error(
+        `Error disconnecting server [${serverId}]:`,
+        error,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
     } finally {
       this.clients.delete(serverId);
       this.transports.delete(serverId);
@@ -446,10 +463,17 @@ export class McpConnectionManager {
         status.lastCheck = Date.now();
       }
 
-      logger.info(`Refreshed tools for server [${serverId}]: ${tools.length} tools found`, LOG_MODULES.CONNECTION_MANAGER);
+      logger.info(
+        `Refreshed tools for server [${serverId}]: ${tools.length} tools found`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
       return tools;
     } catch (error) {
-      logger.error(`Failed to list tools for server [${serverId}]:`, error, LOG_MODULES.CONNECTION_MANAGER);
+      logger.error(
+        `Failed to list tools for server [${serverId}]:`,
+        error,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
       throw error;
     }
   }
@@ -486,7 +510,10 @@ export class McpConnectionManager {
       // Check if client actually supports listResources method
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof (client as any).listResources !== 'function') {
-        logger.warn(`Server [${serverId}] does not support resources listing`, LOG_MODULES.CONNECTION_MANAGER);
+        logger.warn(
+          `Server [${serverId}] does not support resources listing`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
         return [];
       }
 
@@ -518,7 +545,10 @@ export class McpConnectionManager {
       // Check if error is "Method not found" (MCP error -32601), which means server doesn't implement resources
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (error && typeof error === 'object' && 'code' in error && (error as any).code === -32601) {
-        logger.info(`Server [${serverId}] does not support resources functionality`, LOG_MODULES.CONNECTION_MANAGER);
+        logger.info(
+          `Server [${serverId}] does not support resources functionality`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
       } else if (
         error &&
         typeof error === 'object' &&
@@ -528,9 +558,16 @@ export class McpConnectionManager {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (error as any).message.includes('Method not found')
       ) {
-        logger.info(`Server [${serverId}] does not support resources functionality`, LOG_MODULES.CONNECTION_MANAGER);
+        logger.info(
+          `Server [${serverId}] does not support resources functionality`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
       } else {
-        logger.warn(`Failed to list resources for server [${serverId}]:`, error, LOG_MODULES.CONNECTION_MANAGER);
+        logger.warn(
+          `Failed to list resources for server [${serverId}]:`,
+          error,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
       }
 
       // Even if server doesn't support resources, store empty array in cache to ensure subsequent calls hit cache
@@ -608,7 +645,10 @@ export class McpConnectionManager {
   public getResources(serverId: string): Resource[] {
     const resources = this.resourceCache.get(serverId) || [];
     const fromCache = this.resourceCache.has(serverId);
-    logger.debug(`getResources for [${serverId}]: returned ${resources.length} resources (${fromCache ? 'from cache' : 'no cache'})`, LOG_MODULES.CONNECTION_MANAGER);
+    logger.debug(
+      `getResources for [${serverId}]: returned ${resources.length} resources (${fromCache ? 'from cache' : 'no cache'})`,
+      LOG_MODULES.CONNECTION_MANAGER
+    );
     return resources;
   }
 
@@ -939,7 +979,11 @@ export class McpConnectionManager {
           });
           return result;
         } catch (error) {
-          logger.error(`Failed to call tool ${toolName} on server [${serverId}]:`, error, LOG_MODULES.CONNECTION_MANAGER);
+          logger.error(
+            `Failed to call tool ${toolName} on server [${serverId}]:`,
+            error,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
           throw error;
         }
       }

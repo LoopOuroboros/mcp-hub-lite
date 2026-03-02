@@ -176,9 +176,7 @@ export class HubToolsService {
    * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and tools array
    * @throws {Error} If the specified server is not found or not connected
    */
-  async listAllToolsInServer(
-    args: ListAllToolsInServerParams
-  ): Promise<{
+  async listAllToolsInServer(args: ListAllToolsInServerParams): Promise<{
     serverName: string;
     tools: Tool[];
   }> {
@@ -233,9 +231,7 @@ export class HubToolsService {
    * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and matching tools
    * @throws {Error} If the specified server is not found or not connected
    */
-  async findToolsInServer(
-    args: FindToolsInServerParams
-  ): Promise<{
+  async findToolsInServer(args: FindToolsInServerParams): Promise<{
     serverName: string;
     tools: Tool[];
   }> {
@@ -259,9 +255,7 @@ export class HubToolsService {
    * @returns {Promise<Tool | undefined>} Complete tool schema or undefined if not found
    * @throws {Error} If the specified server is not found or not connected
    */
-  async getTool(
-    args: GetToolParams
-  ): Promise<Tool | undefined> {
+  async getTool(args: GetToolParams): Promise<Tool | undefined> {
     const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
 
     if (!serverInfo) {
@@ -318,7 +312,10 @@ export class HubToolsService {
                   ? Record<string, { tools: Tool[] }>
                   : never
   > {
-    logger.debug(`System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`, LOG_MODULES.HUB_TOOLS);
+    logger.debug(
+      `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
+      LOG_MODULES.HUB_TOOLS
+    );
 
     try {
       let result;
@@ -443,7 +440,7 @@ export class HubToolsService {
         const serverInfo = selectBestInstance(server.name, requestOptions);
         if (serverInfo && serverInfo.instance.id) {
           const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
-          if (tools.some(tool => tool.name === toolName)) {
+          if (tools.some((tool) => tool.name === toolName)) {
             matchingServers.push(server.name);
           }
         }
@@ -503,7 +500,10 @@ export class HubToolsService {
         result
       });
 
-      logger.debug(`Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`, LOG_MODULES.HUB_TOOLS);
+      logger.debug(
+        `Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`,
+        LOG_MODULES.HUB_TOOLS
+      );
       return result;
     } catch (error) {
       // Publish tool call error event
@@ -586,9 +586,7 @@ export class HubToolsService {
    * @param {FindToolsParams} args - Search parameters
    * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to matching tools
    */
-  async findTools(
-    args: FindToolsParams
-  ): Promise<
+  async findTools(args: FindToolsParams): Promise<
     Record<
       string,
       {
@@ -596,7 +594,9 @@ export class HubToolsService {
       }
     >
   > {
-    return findToolsUtil(args.pattern, args.searchIn, args.caseSensitive, () => this.listAllTools());
+    return findToolsUtil(args.pattern, args.searchIn, args.caseSensitive, () =>
+      this.listAllTools()
+    );
   }
 
   /**

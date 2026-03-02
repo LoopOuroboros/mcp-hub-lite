@@ -178,7 +178,10 @@ describe('Server Runner', () => {
       expect(gateway.start).toHaveBeenCalled();
       expect(PidManager.writePid).toHaveBeenCalled();
       expect(logger.setUseStderr).toHaveBeenCalledWith(true);
-      expect(logger.info).toHaveBeenCalledWith('Starting in MCP Gateway mode (stdio)...', expect.any(Object));
+      expect(logger.info).toHaveBeenCalledWith(
+        'Starting in MCP Gateway mode (stdio)...',
+        expect.any(Object)
+      );
     });
 
     it('should handle port already in use by self project', async () => {
@@ -596,7 +599,11 @@ describe('Server Runner', () => {
       );
 
       // Verify
-      expect(logger.error).toHaveBeenCalledWith('Failed to start server:', expect.any(Error), expect.any(Object));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to start server:',
+        expect.any(Error),
+        expect.any(Object)
+      );
       expect(PidManager.removePid).toHaveBeenCalled();
       expect(exitSpy).toHaveBeenCalledWith(1);
 
