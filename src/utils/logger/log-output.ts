@@ -6,6 +6,8 @@
 import type { LogLevel } from '@shared-types/common.types.js';
 import { stringifyForLogging } from '../json-utils.js';
 import { logger } from './index.js';
+import { LOG_MODULES } from './log-modules.js';
+import { logStorage } from '@services/log-storage.service.js';
 
 /**
  * Interface for notifications/message parameters.
@@ -62,8 +64,9 @@ function extractMessageFromData(data: unknown): string {
  *
  * @param message - The notification message
  * @param context - Optional context (server name, session ID, etc.)
+ * @param serverId - Optional server ID for log storage (for frontend display)
  */
-export function logNotificationMessage(message: unknown, context: string): void {
+export function logNotificationMessage(message: unknown, context: string, serverId?: string): void {
   if (!isNotificationMessage(message)) {
     return;
   }
@@ -103,8 +106,15 @@ export function logNotificationMessage(message: unknown, context: string): void 
       logLevel = 'info';
   }
 
-  // Use serverLog to log with only server name context, no module prefix
-  logger.serverLog(logLevel, serverName, messageContent);
+  // Use serverLog to log with server name and module context
+  logger.serverLog(logLevel, serverName, messageContent, {
+    module: LOG_MODULES.NOTIFICATIONS_MESSAGE.module
+  });
+
+  // Store in logStorage for frontend display if serverId is provided
+  if (serverId) {
+    logStorage.append(serverId, logLevel, `[${serverName}] ${messageContent}`);
+  }
 }
 
 /**

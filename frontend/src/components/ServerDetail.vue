@@ -364,7 +364,9 @@ import {
   Document,
   ArrowLeft,
   Memo,
-  Files
+  Files,
+  Setting,
+  Tools
 } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';

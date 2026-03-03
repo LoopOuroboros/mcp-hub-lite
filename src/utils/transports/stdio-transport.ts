@@ -3,6 +3,7 @@ import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
+import type { LogStorageService } from '@services/log-storage.service.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
 class ReadBuffer {
@@ -42,6 +43,11 @@ export interface StdioServerParameters {
   cwd?: string;
 }
 
+export interface StdioTransportOptions {
+  serverId?: string;
+  logStorage?: LogStorageService;
+}
+
 /**
  * A transport implementation for communicating with MCP (Model Context Protocol) servers
  * via standard input/output streams. This transport spawns a child process and establishes
@@ -65,6 +71,8 @@ export class StdioTransport implements Transport {
   private _stderrStream: PassThrough | null = null;
   private _serverParams: StdioServerParameters;
   private _serverName?: string;
+  private _serverId?: string;
+  private _logStorage?: LogStorageService;
 
   /**
    * Gets the process ID of the spawned child process.
@@ -86,10 +94,13 @@ export class StdioTransport implements Transport {
    *
    * @param {StdioServerParameters} server - Configuration parameters for the child process
    * @param {string} [serverName] - Optional name for the server used in logging
+   * @param {StdioTransportOptions} [options] - Additional options for the transport
    */
-  constructor(server: StdioServerParameters, serverName?: string) {
+  constructor(server: StdioServerParameters, serverName?: string, options?: StdioTransportOptions) {
     this._serverParams = server;
     this._serverName = serverName;
+    this._serverId = options?.serverId;
+    this._logStorage = options?.logStorage;
     if (server.stderr === 'pipe') {
       this._stderrStream = new PassThrough();
     }
@@ -224,6 +235,15 @@ export class StdioTransport implements Transport {
           logger.serverLog(logLevel, 'Unknown Server', trimmedData, {
             pid: this._process?.pid
           });
+        }
+
+        // Store in logStorage for frontend display if available
+        if (this._logStorage && this._serverId) {
+          this._logStorage.append(
+            this._serverId,
+            logLevel,
+            `[${this._serverName || 'Unknown Server'}] [STDERR] ${trimmedData}`
+          );
         }
 
         // Optionally write to PassThrough stream if configured

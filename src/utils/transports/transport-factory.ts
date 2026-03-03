@@ -3,6 +3,7 @@ import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
 import type { ServerConfig } from '@config/config.schema.js';
+import { logStorage } from '@services/log-storage.service.js';
 
 /**
  * Transport Factory - creates appropriate transport client based on server configuration
@@ -11,11 +12,13 @@ export class TransportFactory {
   /**
    * Create transport client
    * @param server Server configuration, including base configuration and instance configuration
+   * @param serverId Optional server ID for log storage integration
    * @returns Transport client instance
    * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
-    server: ServerConfig & { name: string }
+    server: ServerConfig & { name: string },
+    serverId?: string
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
@@ -35,7 +38,11 @@ export class TransportFactory {
             cwd: process.cwd(),
             stderr: 'pipe'
           },
-          server.name
+          server.name,
+          {
+            serverId,
+            logStorage: serverId ? logStorage : undefined
+          }
         );
 
       case 'sse':

@@ -145,10 +145,13 @@ export class McpConnectionManager {
 
       // Create transport based on server type
       const serverName = serverInfo.name;
-      const transport = TransportFactory.createTransport({
-        ...server,
-        name: serverName
-      });
+      const transport = TransportFactory.createTransport(
+        {
+          ...server,
+          name: serverName
+        },
+        server.id
+      );
 
       // Always set up message handler for notifications/message
       transport.onmessage = (message) => {
@@ -159,7 +162,7 @@ export class McpConnectionManager {
         }
 
         // Log notifications/message to application logs (always enabled)
-        logNotificationMessage(message, serverName);
+        logNotificationMessage(message, serverName, server.id);
       };
 
       // Wrap send method for debug logging (if enabled)
@@ -201,9 +204,30 @@ export class McpConnectionManager {
 
       // Add log listeners
       if ('onstdout' in transport) {
-        transport.onstdout = () => {
-          // Don't log raw JSON-RPC communication to logs or console to avoid log noise
-          // Only view raw communication during development debugging
+        transport.onstdout = (data: string) => {
+          // Skip JSON-RPC communication to avoid log noise
+          const trimmedData = data.trim();
+          if (trimmedData) {
+            // Check if it's a valid JSON-RPC message
+            let isJsonRpc = false;
+            if (trimmedData.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(trimmedData) as Record<string, unknown>;
+                // Only consider it JSON-RPC if it has valid jsonrpc field
+                isJsonRpc =
+                  typeof parsed.jsonrpc === 'string' &&
+                  (parsed.jsonrpc === '2.0' || parsed.jsonrpc === '1.0');
+              } catch {
+                // Not valid JSON, treat as log output
+                isJsonRpc = false;
+              }
+            }
+            if (!isJsonRpc) {
+              // Use server ID and name for log storage
+              const serverId = server?.id ?? 'unknown';
+              logStorage.append(serverId, 'info', `[${serverName}] [STDOUT] ${data}`);
+            }
+          }
         };
       }
       if ('onstderr' in transport) {

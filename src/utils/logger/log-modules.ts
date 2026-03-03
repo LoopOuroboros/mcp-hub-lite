@@ -80,6 +80,9 @@ export const LOG_MODULES = {
   SERVER_API: { module: 'ServerAPI' } satisfies LogOptions,
   MCP_STATUS: { module: 'MCPStatus' } satisfies LogOptions,
 
+  // Notifications
+  NOTIFICATIONS_MESSAGE: { module: 'notifications/message' } satisfies LogOptions,
+
   /**
    * Creates a dynamic log module for custom or runtime-generated module names.
    * Use this for server-specific logging or other dynamic contexts.
