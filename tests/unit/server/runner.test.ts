@@ -94,7 +94,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -137,7 +140,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -183,7 +189,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -240,7 +249,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -304,7 +316,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -390,7 +405,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -451,7 +469,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -508,7 +529,10 @@ describe('Server Runner', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {

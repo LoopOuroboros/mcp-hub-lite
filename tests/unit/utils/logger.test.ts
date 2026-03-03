@@ -6,28 +6,25 @@ import { Logger, logWithColor } from '@utils/logger.js';
 import type { LogLevel } from '@shared-types/common.types.js';
 import type { WriteStream } from 'node:fs';
 import type { LoggerWithPrivateMethods } from '@tests/types/logger-test-helpers.js';
+import { setJsonPrettyConfigGetter, setDevModeEnabled } from '@utils/json-utils.js';
 
 describe('Logger', () => {
   let logger: Logger;
   let tempLogDir: string;
-  let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    // Save original environment variables
-    originalEnv = { ...process.env };
-
     // Create temporary log directory
     tempLogDir = path.join(os.tmpdir(), `logger-test-${Date.now()}`);
     fs.mkdirSync(tempLogDir, { recursive: true });
 
-    // Reset environment variables
-    delete process.env.DEV_LOG_FILE;
+    // Reset config getter
+    setJsonPrettyConfigGetter(null);
+
+    // Reset dev mode flag
+    setDevModeEnabled(false);
   });
 
   afterEach(() => {
-    // Restore environment variables
-    process.env = { ...originalEnv };
-
     // Clean up temporary directory
     if (fs.existsSync(tempLogDir)) {
       fs.rmSync(tempLogDir, { recursive: true, force: true });
@@ -140,12 +137,19 @@ describe('Logger', () => {
     expect(formattedString).toBe('string error');
   });
 
-  it('should enable dev log when DEV_LOG_FILE is set', () => {
-    // Save original environment variables
-    const originalDevLogFile = process.env.DEV_LOG_FILE;
-
+  it('should enable dev log when devLogFile setting is true', () => {
     try {
-      process.env.DEV_LOG_FILE = 'true';
+      // Enable dev log file via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: true,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
 
       // Mock fs and path modules to avoid file system operations
       const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
@@ -178,9 +182,6 @@ describe('Logger', () => {
       expect(mkdirSyncSpy).toHaveBeenCalled();
       expect(createWriteStreamSpy).toHaveBeenCalled();
     } finally {
-      // Restore original environment variables
-      process.env.DEV_LOG_FILE = originalDevLogFile;
-
       // Restore mocks
       vi.restoreAllMocks();
     }
@@ -356,6 +357,68 @@ describe('Logger', () => {
     consoleInfoSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should split multi-line messages in serverLog and log each line individually', () => {
+    logger = new Logger('info');
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const multiLineMessage = 'line 1\nline 2\r\nline 3\n\n  \nline 4 (after empty lines)';
+
+    logger.serverLog('info', 'test-server', multiLineMessage);
+
+    // Should log 4 non-empty lines (empty lines and whitespace-only lines should be skipped)
+    expect(consoleInfoSpy).toHaveBeenCalledTimes(4);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('line 1'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('line 2'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('line 3'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining('line 4 (after empty lines)')
+    );
+
+    consoleInfoSpy.mockRestore();
+  });
+
+  it('should handle single-line messages normally in serverLog', () => {
+    logger = new Logger('info');
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    logger.serverLog('info', 'test-server', 'single line message');
+
+    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('single line message'));
+
+    consoleInfoSpy.mockRestore();
+  });
+
+  it('should write multi-line messages to file stream individually', () => {
+    logger = new Logger('info');
+
+    // Enable dev log to get a file stream
+    vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+    const writeSpy = vi.fn();
+    vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
+      return {
+        write: writeSpy,
+        end: vi.fn(),
+        close: vi.fn(),
+        destroyed: false
+      } as unknown as WriteStream;
+    });
+
+    logger.enableDevLog();
+
+    const multiLineMessage = 'file line 1\nfile line 2\nfile line 3';
+    logger.serverLog('info', 'test-server', multiLineMessage);
+
+    // Should write 3 lines to the file stream
+    expect(writeSpy).toHaveBeenCalledTimes(3);
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('file line 1'));
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('file line 2'));
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('file line 3'));
+
+    vi.restoreAllMocks();
   });
 
   it('should handle logWithColor function with traceId and spanId', () => {

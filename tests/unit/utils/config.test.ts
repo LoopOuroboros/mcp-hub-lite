@@ -177,7 +177,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info',
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         }
       });
@@ -236,7 +239,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         }
       });
@@ -282,7 +288,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         }
       };
@@ -567,7 +576,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {
@@ -602,7 +614,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         }
       });
@@ -653,7 +668,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         }
       });
@@ -669,7 +687,10 @@ describe('ConfigManager', () => {
           logging: {
             level: 'info' as const,
             rotationAge: '7d',
-            jsonPretty: true
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
           }
         },
         security: {

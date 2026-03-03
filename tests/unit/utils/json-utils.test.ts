@@ -1,30 +1,36 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   stringifyForLogging,
   stringifyForLoggingWithReplacer,
   setJsonPrettyConfigGetter,
   rawHeadersToObject,
   stringifyRawHeadersForLogging,
-  getJsonPrettySetting
+  getJsonPrettySetting,
+  getDevLogFileSetting,
+  getMcpCommDebugSetting,
+  getSessionDebugSetting
 } from '@utils/json-utils.js';
 
 describe('json-utils', () => {
-  let originalEnv: NodeJS.ProcessEnv;
-
   beforeEach(() => {
-    originalEnv = { ...process.env };
-    // Enable pretty mode for tests
-    process.env.LOG_JSON_PRETTY = 'true';
     // Reset config getter
     setJsonPrettyConfigGetter(null);
   });
 
-  afterEach(() => {
-    process.env = { ...originalEnv };
-  });
-
   describe('processPrettyJsonForLogging (internal)', () => {
     it('should convert \\n to actual newlines in string values (basic newline processing)', () => {
+      // Enable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
+
       const obj = {
         text: 'line1\nline2\nline3'
       };
@@ -39,6 +45,18 @@ describe('json-utils', () => {
     });
 
     it('should keep escaped newlines (\\\\n) unchanged', () => {
+      // Enable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
+
       const obj = {
         text: 'literal backslash n: \\n'
       };
@@ -49,6 +67,18 @@ describe('json-utils', () => {
     });
 
     it('should handle mixed scenario with both \\n and \\\\n', () => {
+      // Enable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
+
       const obj = {
         text: 'first line\nsecond line with \\n literal'
       };
@@ -60,6 +90,18 @@ describe('json-utils', () => {
     });
 
     it('should preserve JSON structure integrity', () => {
+      // Enable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
+
       const obj = {
         key1: 'value\\nwith\\nnewlines',
         key2: 'normal value',
@@ -83,8 +125,17 @@ describe('json-utils', () => {
     });
 
     it('should not affect compact mode (non-PRETTY mode)', () => {
-      // Disable pretty mode
-      process.env.LOG_JSON_PRETTY = 'false';
+      // Disable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: false,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
 
       const obj = {
         text: 'line1\nline2'
@@ -168,31 +219,78 @@ describe('json-utils', () => {
 
   describe('getJsonPrettySetting', () => {
     it('should return true by default', () => {
-      delete process.env.LOG_JSON_PRETTY;
-      expect(getJsonPrettySetting()).toBe(true);
-    });
-
-    it('should respect environment variable', () => {
-      process.env.LOG_JSON_PRETTY = 'false';
-      expect(getJsonPrettySetting()).toBe(false);
-
-      process.env.LOG_JSON_PRETTY = 'true';
-      expect(getJsonPrettySetting()).toBe(true);
-
-      process.env.LOG_JSON_PRETTY = '1';
       expect(getJsonPrettySetting()).toBe(true);
     });
 
     it('should use config getter if available', () => {
       setJsonPrettyConfigGetter(() => ({
-        system: { logging: { jsonPretty: false } }
+        system: {
+          logging: {
+            jsonPretty: false,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
       }));
       expect(getJsonPrettySetting()).toBe(false);
 
       setJsonPrettyConfigGetter(() => ({
-        system: { logging: { jsonPretty: true } }
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
       }));
       expect(getJsonPrettySetting()).toBe(true);
+    });
+
+    it('should fall back to default value when config getter fails', () => {
+      setJsonPrettyConfigGetter(() => {
+        throw new Error('Config getter failed');
+      });
+      expect(getJsonPrettySetting()).toBe(true);
+    });
+  });
+
+  describe('all setting getters', () => {
+    it('should return correct defaults when no config getter is set', () => {
+      expect(getJsonPrettySetting()).toBe(true);
+      expect(getDevLogFileSetting()).toBe(false);
+      expect(getMcpCommDebugSetting()).toBe(false);
+      expect(getSessionDebugSetting()).toBe(false);
+    });
+
+    it('should return values from config getter when available', () => {
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: false,
+            devLogFile: true,
+            mcpCommDebug: true,
+            sessionDebug: true
+          }
+        }
+      }));
+
+      expect(getJsonPrettySetting()).toBe(false);
+      expect(getDevLogFileSetting()).toBe(true);
+      expect(getMcpCommDebugSetting()).toBe(true);
+      expect(getSessionDebugSetting()).toBe(true);
+    });
+
+    it('should fall back to defaults when config getter fails', () => {
+      setJsonPrettyConfigGetter(() => {
+        throw new Error('Config getter failed');
+      });
+
+      expect(getJsonPrettySetting()).toBe(true);
+      expect(getDevLogFileSetting()).toBe(false);
+      expect(getMcpCommDebugSetting()).toBe(false);
+      expect(getSessionDebugSetting()).toBe(false);
     });
   });
 
@@ -230,6 +328,18 @@ describe('json-utils', () => {
 
   describe('integration tests', () => {
     it('should work with realistic debug response scenario', () => {
+      // Enable pretty mode via config getter
+      setJsonPrettyConfigGetter(() => ({
+        system: {
+          logging: {
+            jsonPretty: true,
+            devLogFile: false,
+            mcpCommDebug: false,
+            sessionDebug: false
+          }
+        }
+      }));
+
       const debugResponse = {
         jsonrpc: '2.0',
         id: 1,
