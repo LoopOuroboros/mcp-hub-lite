@@ -21,6 +21,11 @@ import { stringifyForLogging } from '@utils/json-utils.js';
  * @param sessionId - Current session ID for logging
  */
 export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void {
+  // Only wrap for debug logging if MCP_COMM_DEBUG is enabled
+  if (!process.env.MCP_COMM_DEBUG) {
+    return;
+  }
+
   const originalWrite = reply.raw.write.bind(reply.raw);
   const originalEnd = reply.raw.end.bind(reply.raw);
   let responseBuffer = '';

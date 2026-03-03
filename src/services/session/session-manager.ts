@@ -872,48 +872,50 @@ export class McpSessionManager {
       }
     }
 
-    // Communication debug logs: always set, controlled by logger.debug output level
-    transport.onmessage = (message) => {
-      try {
-        const messageStr = stringifyForLogging(message);
-        logger.debug(`MCP message received: ${messageStr}`, LOG_MODULES.COMMUNICATION);
-      } catch {
-        logger.debug(`MCP message received: [Unserializable]`, LOG_MODULES.COMMUNICATION);
-      }
-    };
-
-    // Wrap send method to log responses
-    const originalSend = transport.send;
-    transport.send = async (message, options) => {
-      try {
-        // Log response messages, simplify tools/list responses and image content
-        // First get raw JSON for detection
-        const rawJson = JSON.stringify(message);
-        let logMessage: string;
-
-        if (isToolsListResponse(rawJson)) {
-          logMessage = simplifyToolsListResponse(rawJson);
-        } else if (hasImageContent(rawJson)) {
-          const simplified = simplifyImageContent(rawJson);
-          try {
-            // Try to format the simplified JSON for better readability
-            const parsed = JSON.parse(simplified);
-            logMessage = stringifyForLogging(parsed);
-          } catch {
-            logMessage = simplified;
-          }
-        } else {
-          // Format regular JSON responses
-          logMessage = stringifyForLogging(message);
+    // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
+    if (process.env.MCP_COMM_DEBUG) {
+      transport.onmessage = (message) => {
+        try {
+          const messageStr = stringifyForLogging(message);
+          logger.debug(`MCP message received: ${messageStr}`, LOG_MODULES.COMMUNICATION);
+        } catch {
+          logger.debug(`MCP message received: [Unserializable]`, LOG_MODULES.COMMUNICATION);
         }
-        logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
-      } catch {
-        logger.debug(`MCP message sent: [Error formatting response]`, LOG_MODULES.COMMUNICATION);
-      }
+      };
 
-      // Call original send method
-      return await originalSend.call(transport, message, options);
-    };
+      // Wrap send method to log responses
+      const originalSend = transport.send;
+      transport.send = async (message, options) => {
+        try {
+          // Log response messages, simplify tools/list responses and image content
+          // First get raw JSON for detection
+          const rawJson = JSON.stringify(message);
+          let logMessage: string;
+
+          if (isToolsListResponse(rawJson)) {
+            logMessage = simplifyToolsListResponse(rawJson);
+          } else if (hasImageContent(rawJson)) {
+            const simplified = simplifyImageContent(rawJson);
+            try {
+              // Try to format the simplified JSON for better readability
+              const parsed = JSON.parse(simplified);
+              logMessage = stringifyForLogging(parsed);
+            } catch {
+              logMessage = simplified;
+            }
+          } else {
+            // Format regular JSON responses
+            logMessage = stringifyForLogging(message);
+          }
+          logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
+        } catch {
+          logger.debug(`MCP message sent: [Error formatting response]`, LOG_MODULES.COMMUNICATION);
+        }
+
+        // Call original send method
+        return await originalSend.call(transport, message, options);
+      };
+    }
 
     const server = gateway.createConnectionServer();
 

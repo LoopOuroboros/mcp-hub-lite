@@ -46,7 +46,7 @@ export class DevLogger {
     if (this.logFileStream) return;
 
     process.env.DEV_LOG_FILE = '1';
-    process.env.MCP_COMM_DEBUG = '0';
+    process.env.MCP_COMM_DEBUG = '1';
     process.env.SESSION_DEBUG = '1';
     process.env.LOG_JSON_PRETTY = '1';
 
