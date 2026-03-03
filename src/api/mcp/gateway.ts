@@ -11,13 +11,9 @@ import { stringifyForLogging } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
 import { mcpSessionManager } from '@services/mcp-session-manager.js';
-import { configManager } from '@config/config-manager.js';
 import { cleanupStaleSseStreams } from './sse-stream-manager.js';
 import { extractSessionContext, type RequestBody } from './session-context-extractor.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
-
-// Track last SSE connection time per session for reconnection detection
-const sseConnectionTimestamps = new Map<string, number>();
 
 /**
  * MCP Gateway routes registration.
@@ -46,30 +42,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     logger.info(initialLogMsg, LOG_MODULES.GATEWAY);
 
     const { sessionId, clientContext } = extractSessionContext(request);
-
-    // Detect and log SSE reconnection (DEBUG level only)
-    if (request.method === 'GET') {
-      const lastConnectionTime = sseConnectionTimestamps.get(sessionId);
-      const reconnectThreshold = configManager.getConfig().security.sessionTimeout;
-      if (lastConnectionTime) {
-        const timeSinceLastConnection = Date.now() - lastConnectionTime;
-        if (timeSinceLastConnection < reconnectThreshold) {
-          logger.debug(
-            `SSE reconnection detected for session ${sessionId}: ${Math.round(timeSinceLastConnection / 1000)}s after last connection`,
-            LOG_MODULES.GATEWAY
-          );
-        } else {
-          logger.debug(
-            `SSE new connection for session ${sessionId}: ${Math.round(timeSinceLastConnection / 1000)}s after last connection (exceeds threshold of ${Math.round(reconnectThreshold / 1000)}s)`,
-            LOG_MODULES.GATEWAY
-          );
-        }
-      } else {
-        logger.debug(`SSE first connection for session ${sessionId}`, LOG_MODULES.GATEWAY);
-      }
-      // Update the timestamp for this session
-      sseConnectionTimestamps.set(sessionId, Date.now());
-    }
 
     // Update client tracking information
     clientTrackerService.updateClient(clientContext);
