@@ -7,6 +7,7 @@ import {
   formatMcpMessageForLogging,
   logNotificationMessage
 } from '@utils/logger.js';
+import { getMcpCommDebugSetting } from '@utils/json-utils.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { logStorage } from '@services/log-storage.service.js';
@@ -152,7 +153,7 @@ export class McpConnectionManager {
       // Always set up message handler for notifications/message
       transport.onmessage = (message) => {
         // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
-        if (process.env.MCP_COMM_DEBUG) {
+        if (getMcpCommDebugSetting()) {
           const logMessage = formatMcpMessageForLogging(message);
           logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
         }
@@ -162,7 +163,7 @@ export class McpConnectionManager {
       };
 
       // Wrap send method for debug logging (if enabled)
-      if (process.env.MCP_COMM_DEBUG) {
+      if (getMcpCommDebugSetting()) {
         const originalSend = transport.send;
         transport.send = async (message, options) => {
           try {
