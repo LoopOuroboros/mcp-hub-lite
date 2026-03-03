@@ -68,6 +68,10 @@ export class McpSessionManager {
     return configManager.getConfig().security.sessionTimeout;
   }
 
+  private get CLEANUP_INTERVAL(): number {
+    return configManager.getConfig().security.sessionFlushInterval;
+  }
+
   constructor() {
     // Initialize sessions directory path
     const configPath =
@@ -79,7 +83,7 @@ export class McpSessionManager {
     logger.info(`Using sessions directory: ${this.sessionsPath}`, LOG_MODULES.SESSION_MANAGER);
 
     // Start cleanup interval
-    setInterval(() => this.cleanup(), 60000);
+    setInterval(() => this.cleanup(), this.CLEANUP_INTERVAL);
 
     // Register graceful shutdown handler
     this.registerShutdownHandler();
@@ -323,6 +327,8 @@ export class McpSessionManager {
 
       const store = await this.loadSessionStore();
       let restoredCount = 0;
+      let expiredCount = 0;
+      const now = Date.now();
 
       for (const [sessionId, state] of Object.entries(store.sessions)) {
         try {
@@ -330,19 +336,20 @@ export class McpSessionManager {
           const validatedState = SessionStateSchema.parse(state);
 
           // Check if session has expired
-          const now = Date.now();
           if (now - validatedState.lastAccessedAt > this.SESSION_TIMEOUT) {
+            expiredCount++;
             if (process.env.SESSION_DEBUG) {
               logger.debug(
-                `Skipping expired session: ${sessionId} (last accessed ${formatDuration(now - validatedState.lastAccessedAt)} ago)`,
+                `Expired session: ${sessionId} (last accessed ${formatDuration(now - validatedState.lastAccessedAt)} ago)`,
                 LOG_MODULES.SESSION_MANAGER
               );
             }
-            continue;
+          } else {
+            restoredCount++;
           }
 
+          // Always restore to memory - cleanup() will handle deletion
           this.sessionStates.set(sessionId, validatedState);
-          restoredCount++;
 
           if (process.env.SESSION_DEBUG) {
             logger.debug(`Restored session state: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
@@ -357,7 +364,13 @@ export class McpSessionManager {
       }
 
       this.isInitialized = true;
-      logger.info(`Successfully restored ${restoredCount} session(s)`, LOG_MODULES.SESSION_MANAGER);
+      logger.info(
+        `Successfully restored ${restoredCount} valid, ${expiredCount} expired session(s)`,
+        LOG_MODULES.SESSION_MANAGER
+      );
+
+      // Immediately run cleanup on startup to clean up any expired sessions
+      this.cleanup();
     } catch (error) {
       logger.error('Failed to restore sessions:', error, LOG_MODULES.SESSION_MANAGER);
       // Continue with empty state rather than failing
