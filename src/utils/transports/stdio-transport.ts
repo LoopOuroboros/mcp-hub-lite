@@ -189,23 +189,29 @@ export class StdioTransport implements Transport {
         this.onstderr?.(dataStr);
 
         const trimmedData = dataStr.trim();
-        let logLevel: 'error' | 'warn' | 'info' = 'error';
+        let logLevel: 'error' | 'warn' | 'info' = 'info';
 
-        // Identify normal information patterns
+        // Identify log levels by keywords: only explicit error/warning markers
+        // use corresponding levels, everything else defaults to info
+        const lowerData = trimmedData.toLowerCase();
+
+        // Error level keywords
         if (
-          trimmedData.includes('Installed') ||
-          trimmedData.includes('running on') ||
-          trimmedData.includes('Server running') ||
-          trimmedData.includes('INFO:') ||
-          trimmedData.includes('Loaded') ||
-          trimmedData.includes('Ready') ||
-          trimmedData.includes('Started')
+          lowerData.includes('error') ||
+          lowerData.includes('err') ||
+          lowerData.includes('exception') ||
+          lowerData.includes('fatal') ||
+          lowerData.includes('critical')
         ) {
-          logLevel = 'info';
-        } else if (
-          trimmedData.includes('WARN:') ||
-          trimmedData.includes('Warning') ||
-          trimmedData.includes('warning')
+          logLevel = 'error';
+        }
+        // Warn level keywords
+        else if (
+          lowerData.includes('warn') ||
+          lowerData.includes('wrn') ||
+          lowerData.includes('warning') ||
+          lowerData.includes('deprecation') ||
+          lowerData.includes('deprecated')
         ) {
           logLevel = 'warn';
         }
