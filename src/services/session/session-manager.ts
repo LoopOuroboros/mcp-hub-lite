@@ -4,7 +4,9 @@ import {
   logger,
   LOG_MODULES,
   isToolsListResponse,
-  simplifyToolsListResponse
+  simplifyToolsListResponse,
+  hasImageContent,
+  simplifyImageContent
 } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
@@ -871,20 +873,25 @@ export class McpSessionManager {
     const originalSend = transport.send;
     transport.send = async (message, options) => {
       try {
-        // Log response messages, simplify tools/list responses
-        let logMessage = stringifyForLogging(message);
-        if (isToolsListResponse(logMessage)) {
-          logMessage = simplifyToolsListResponse(logMessage);
-        } else {
+        // Log response messages, simplify tools/list responses and image content
+        // First get raw JSON for detection
+        const rawJson = JSON.stringify(message);
+        let logMessage: string;
+
+        if (isToolsListResponse(rawJson)) {
+          logMessage = simplifyToolsListResponse(rawJson);
+        } else if (hasImageContent(rawJson)) {
+          const simplified = simplifyImageContent(rawJson);
           try {
-            // Try to format other JSON responses to improve readability
-            const parsed = JSON.parse(logMessage);
+            // Try to format the simplified JSON for better readability
+            const parsed = JSON.parse(simplified);
             logMessage = stringifyForLogging(parsed);
           } catch {
-            // If not valid JSON, output as-is and truncate long content
-            logMessage =
-              logMessage.length > 500 ? logMessage.substring(0, 500) + '...' : logMessage;
+            logMessage = simplified;
           }
+        } else {
+          // Format regular JSON responses
+          logMessage = stringifyForLogging(message);
         }
         logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       } catch {

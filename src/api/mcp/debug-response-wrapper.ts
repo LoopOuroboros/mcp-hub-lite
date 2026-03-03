@@ -8,7 +8,9 @@ import {
   logger,
   LOG_MODULES,
   isToolsListResponse,
-  simplifyToolsListResponse
+  simplifyToolsListResponse,
+  hasImageContent,
+  simplifyImageContent
 } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 
@@ -96,11 +98,33 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
       return;
     }
 
-    // Log response content, simplify tools/list responses
+    // Log response content, simplify tools/list responses and image content
     let logResponse = primaryBuffer;
     try {
       if (isToolsListResponse(logResponse)) {
         logResponse = simplifyToolsListResponse(logResponse);
+      } else if (hasImageContent(logResponse)) {
+        // Simplify image content first
+        const simplified = simplifyImageContent(logResponse);
+        // Then format for logging
+        if (simplified.includes('event: message') && simplified.includes('data:')) {
+          const dataMatch = simplified.match(/data: ([^\n]+)/);
+          if (dataMatch) {
+            const jsonData = dataMatch[1].trim();
+            try {
+              const parsed = JSON.parse(jsonData);
+              const formattedData = stringifyForLogging(parsed);
+              logResponse = `event: message\ndata: ${formattedData}`;
+            } catch {
+              logResponse = simplified;
+            }
+          } else {
+            logResponse = simplified;
+          }
+        } else {
+          const parsed = JSON.parse(simplified);
+          logResponse = stringifyForLogging(parsed);
+        }
       } else {
         // Handle SSE format responses (event: message followed by data: JSON)
         if (primaryBuffer.includes('event: message') && primaryBuffer.includes('data:')) {

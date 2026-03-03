@@ -24,7 +24,12 @@ export {
 } from './log-formatter.js';
 
 // Re-export output utilities
-export { isToolsListResponse, simplifyToolsListResponse } from './log-output.js';
+export {
+  isToolsListResponse,
+  simplifyToolsListResponse,
+  hasImageContent,
+  simplifyImageContent
+} from './log-output.js';
 
 // Re-export main Logger class
 export { Logger } from './logger.js';
