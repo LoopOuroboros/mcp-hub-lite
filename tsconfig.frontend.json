@@ -1,6 +1,12 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["frontend/src/**/*", "frontend/src/**/*.vue", "shared/**/*"],
+  "include": [
+    "frontend/src/**/*",
+    "frontend/src/**/*.vue",
+    "shared/**/*",
+    "frontend/src/auto-imports.d.ts",
+    "frontend/src/components.d.ts"
+  ],
   "exclude": ["src/**", "tests/**", "node_modules"],
   "compilerOptions": {
     "composite": true,

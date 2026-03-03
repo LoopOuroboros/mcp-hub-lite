@@ -4,6 +4,9 @@ import { fileURLToPath, URL } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import AutoImport from 'unplugin-auto-import/vite';
+import Components from 'unplugin-vue-components/vite';
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 
 // Dynamically get backend port: prioritize environment variables, then look for config files
 function getBackendPort(): string {
@@ -84,7 +87,23 @@ const backendHost = getBackendHost();
 console.log('[Vite Config] Backend target:', `http://${backendHost}:${backendPort}`);
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+      imports: ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+      dts: '../frontend/src/auto-imports.d.ts',
+      eslintrc: {
+        enabled: true,
+        filepath: '../.eslintrc-auto-import.json'
+      }
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()],
+      dts: '../frontend/src/components.d.ts',
+      dirs: ['src/components']
+    })
+  ],
   root: 'frontend',
   resolve: {
     alias: {
@@ -132,6 +151,22 @@ export default defineConfig({
   },
   build: {
     outDir: '../dist/client',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vue 生态核心库
+          if (
+            id.includes('node_modules/vue') ||
+            id.includes('node_modules/vue-router') ||
+            id.includes('node_modules/pinia') ||
+            id.includes('node_modules/vue-i18n')
+          ) {
+            return 'vue-vendor';
+          }
+          return undefined;
+        }
+      }
+    }
   }
 });

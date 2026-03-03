@@ -62,6 +62,11 @@ coverage/
 # ESLint
 .eslintcache
 
+# Auto-generated files
+.eslintrc-auto-import.json
+frontend/src/auto-imports.d.ts
+frontend/src/components.d.ts
+
 # MCP Hub specific
 .mcp-hub.json
 mcp-hub-config.json

@@ -2,12 +2,13 @@ import globals from 'globals';
 import pluginJs from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
+import autoImportGlobals from './.eslintrc-auto-import.json' with { type: 'json' };
 
 export default [
   {
     files: ['**/*.{js,mjs,cjs,ts,vue}'],
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node }
+      globals: { ...globals.browser, ...globals.node, ...autoImportGlobals.globals }
     }
   },
   pluginJs.configs.recommended,
