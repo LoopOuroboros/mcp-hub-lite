@@ -155,7 +155,7 @@
                       v-model="config.security.maxConcurrentConnections"
                       :min="1"
                       :max="1000"
-                      style="width: 128px; flex-shrink: 0;"
+                      style="width: 128px; flex-shrink: 0"
                     />
                   </div>
 
@@ -168,7 +168,7 @@
                       v-model="config.security.maxConnections"
                       :min="1"
                       :max="1000"
-                      style="width: 128px; flex-shrink: 0;"
+                      style="width: 128px; flex-shrink: 0"
                     />
                   </div>
 
@@ -182,9 +182,12 @@
                         v-model="connectionTimeoutValue"
                         :min="1"
                         :step="1"
-                        style="width: 128px; flex-shrink: 0;"
+                        style="width: 128px; flex-shrink: 0"
                       />
-                      <el-select v-model="connectionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
+                      <el-select
+                        v-model="connectionTimeoutUnit"
+                        style="width: 128px; flex-shrink: 0"
+                      >
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -203,9 +206,12 @@
                         v-model="idleConnectionTimeoutValue"
                         :min="1"
                         :step="1"
-                        style="width: 128px; flex-shrink: 0;"
+                        style="width: 128px; flex-shrink: 0"
                       />
-                      <el-select v-model="idleConnectionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
+                      <el-select
+                        v-model="idleConnectionTimeoutUnit"
+                        style="width: 128px; flex-shrink: 0"
+                      >
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -224,9 +230,9 @@
                         v-model="sessionTimeoutValue"
                         :min="1"
                         :step="1"
-                        style="width: 128px; flex-shrink: 0;"
+                        style="width: 128px; flex-shrink: 0"
                       />
-                      <el-select v-model="sessionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
+                      <el-select v-model="sessionTimeoutUnit" style="width: 128px; flex-shrink: 0">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -245,9 +251,12 @@
                         v-model="sessionFlushIntervalValue"
                         :min="1"
                         :step="1"
-                        style="width: 128px; flex-shrink: 0;"
+                        style="width: 128px; flex-shrink: 0"
                       />
-                      <el-select v-model="sessionFlushIntervalUnit" style="width: 128px; flex-shrink: 0;">
+                      <el-select
+                        v-model="sessionFlushIntervalUnit"
+                        style="width: 128px; flex-shrink: 0"
+                      >
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -378,7 +387,8 @@ const sessionTimeoutValue = computed({
   },
   set: (val: number | undefined | null) => {
     if (config.value?.security && val !== undefined && val !== null) {
-      config.value.security.sessionTimeout = Number(val) * unitFactors[sessionTimeoutUnit.value] * 1000;
+      config.value.security.sessionTimeout =
+        Number(val) * unitFactors[sessionTimeoutUnit.value] * 1000;
     }
   }
 });
