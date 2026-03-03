@@ -155,7 +155,7 @@
                       v-model="config.security.maxConcurrentConnections"
                       :min="1"
                       :max="1000"
-                      class="w-32"
+                      style="width: 128px; flex-shrink: 0;"
                     />
                   </div>
 
@@ -168,7 +168,7 @@
                       v-model="config.security.maxConnections"
                       :min="1"
                       :max="1000"
-                      class="w-32"
+                      style="width: 128px; flex-shrink: 0;"
                     />
                   </div>
 
@@ -182,9 +182,9 @@
                         v-model="connectionTimeoutValue"
                         :min="1"
                         :step="1"
-                        class="w-32"
+                        style="width: 128px; flex-shrink: 0;"
                       />
-                      <el-select v-model="connectionTimeoutUnit" class="w-32">
+                      <el-select v-model="connectionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -203,9 +203,9 @@
                         v-model="idleConnectionTimeoutValue"
                         :min="1"
                         :step="1"
-                        class="w-32"
+                        style="width: 128px; flex-shrink: 0;"
                       />
-                      <el-select v-model="idleConnectionTimeoutUnit" class="w-32">
+                      <el-select v-model="idleConnectionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -224,9 +224,9 @@
                         v-model="sessionTimeoutValue"
                         :min="1"
                         :step="1"
-                        class="w-32"
+                        style="width: 128px; flex-shrink: 0;"
                       />
-                      <el-select v-model="sessionTimeoutUnit" class="w-32">
+                      <el-select v-model="sessionTimeoutUnit" style="width: 128px; flex-shrink: 0;">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -245,9 +245,9 @@
                         v-model="sessionFlushIntervalValue"
                         :min="1"
                         :step="1"
-                        class="w-32"
+                        style="width: 128px; flex-shrink: 0;"
                       />
-                      <el-select v-model="sessionFlushIntervalUnit" class="w-32">
+                      <el-select v-model="sessionFlushIntervalUnit" style="width: 128px; flex-shrink: 0;">
                         <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
                         <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
                         <el-option :label="$t('settings.timeUnits.hours')" value="hours" />
@@ -311,10 +311,11 @@ const getOptimalUnit = (seconds: number): TimeUnit => {
 const maxAgeDays = computed({
   get: () => {
     const val = config.value?.system?.logging?.rotationAge || '7d';
-    return parseInt(val.replace(/[^\d]/g, '')) || 7;
+    const result = parseInt(val.replace(/[^\d]/g, '')) || 7;
+    return Number(Math.round(result));
   },
   set: (val: number | undefined | null) => {
-    if (config.value?.system?.logging && val) {
+    if (config.value?.system?.logging && val !== undefined && val !== null) {
       config.value.system.logging.rotationAge = `${val}d`;
     }
   }
@@ -330,12 +331,13 @@ const connectionTimeoutValue = computed({
     const seconds = ms / 1000;
     // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
-    return seconds / unitFactors[optimalUnit];
+    const value = seconds / unitFactors[optimalUnit];
+    return Number(Math.round(value));
   },
   set: (val: number | undefined | null) => {
-    if (config.value?.security && val) {
+    if (config.value?.security && val !== undefined && val !== null) {
       config.value.security.connectionTimeout =
-        val * unitFactors[connectionTimeoutUnit.value] * 1000;
+        Number(val) * unitFactors[connectionTimeoutUnit.value] * 1000;
     }
   }
 });
@@ -350,12 +352,13 @@ const idleConnectionTimeoutValue = computed({
     const seconds = ms / 1000;
     // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
-    return seconds / unitFactors[optimalUnit];
+    const value = seconds / unitFactors[optimalUnit];
+    return Number(Math.round(value));
   },
   set: (val: number | undefined | null) => {
-    if (config.value?.security && val) {
+    if (config.value?.security && val !== undefined && val !== null) {
       config.value.security.idleConnectionTimeout =
-        val * unitFactors[idleConnectionTimeoutUnit.value] * 1000;
+        Number(val) * unitFactors[idleConnectionTimeoutUnit.value] * 1000;
     }
   }
 });
@@ -370,11 +373,12 @@ const sessionTimeoutValue = computed({
     const seconds = ms / 1000;
     // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
-    return seconds / unitFactors[optimalUnit];
+    const value = seconds / unitFactors[optimalUnit];
+    return Number(Math.round(value));
   },
   set: (val: number | undefined | null) => {
-    if (config.value?.security && val) {
-      config.value.security.sessionTimeout = val * unitFactors[sessionTimeoutUnit.value] * 1000;
+    if (config.value?.security && val !== undefined && val !== null) {
+      config.value.security.sessionTimeout = Number(val) * unitFactors[sessionTimeoutUnit.value] * 1000;
     }
   }
 });
@@ -389,12 +393,13 @@ const sessionFlushIntervalValue = computed({
     const seconds = ms / 1000;
     // Automatically select the most appropriate unit
     const optimalUnit = getOptimalUnit(seconds);
-    return seconds / unitFactors[optimalUnit];
+    const value = seconds / unitFactors[optimalUnit];
+    return Number(Math.round(value));
   },
   set: (val: number | undefined | null) => {
-    if (config.value?.security && val) {
+    if (config.value?.security && val !== undefined && val !== null) {
       config.value.security.sessionFlushInterval =
-        val * unitFactors[sessionFlushIntervalUnit.value] * 1000;
+        Number(val) * unitFactors[sessionFlushIntervalUnit.value] * 1000;
     }
   }
 });
