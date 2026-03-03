@@ -107,6 +107,18 @@
                 <el-form-item :label="$t('settings.jsonPretty')">
                   <el-switch v-model="config.system.logging.jsonPretty" />
                 </el-form-item>
+
+                <el-form-item :label="$t('settings.devLogFile')">
+                  <el-switch v-model="config.system.logging.devLogFile" />
+                </el-form-item>
+
+                <el-form-item :label="$t('settings.mcpCommDebug')">
+                  <el-switch v-model="config.system.logging.mcpCommDebug" />
+                </el-form-item>
+
+                <el-form-item :label="$t('settings.sessionDebug')">
+                  <el-switch v-model="config.system.logging.sessionDebug" />
+                </el-form-item>
               </el-form>
             </div>
           </el-tab-pane>

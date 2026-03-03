@@ -40,6 +40,9 @@ export interface SystemConfig {
       level: string;
       rotationAge: string;
       jsonPretty: boolean;
+      devLogFile: boolean;
+      mcpCommDebug: boolean;
+      sessionDebug: boolean;
     };
   };
   security: {
@@ -64,7 +67,10 @@ export const useSystemStore = defineStore('system', () => {
       logging: {
         level: 'info',
         rotationAge: '7d',
-        jsonPretty: true
+        jsonPretty: true,
+        devLogFile: false,
+        mcpCommDebug: false,
+        sessionDebug: false
       }
     },
     security: {
