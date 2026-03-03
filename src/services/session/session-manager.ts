@@ -3,12 +3,9 @@ import { gateway } from '@services/gateway.service.js';
 import {
   logger,
   LOG_MODULES,
-  isToolsListResponse,
-  simplifyToolsListResponse,
-  hasImageContent,
-  simplifyImageContent
+  formatMcpMessageForLogging,
+  logNotificationMessage
 } from '@utils/logger.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
 import { configManager } from '@config/config-manager.js';
 import { formatDuration } from '@utils/format-utils.js';
 import {
@@ -872,41 +869,24 @@ export class McpSessionManager {
       }
     }
 
-    // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
-    if (process.env.MCP_COMM_DEBUG) {
-      transport.onmessage = (message) => {
-        try {
-          const messageStr = stringifyForLogging(message);
-          logger.debug(`MCP message received: ${messageStr}`, LOG_MODULES.COMMUNICATION);
-        } catch {
-          logger.debug(`MCP message received: [Unserializable]`, LOG_MODULES.COMMUNICATION);
-        }
-      };
+    // Always set up message handler for notifications/message
+    transport.onmessage = (message) => {
+      // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
+      if (process.env.MCP_COMM_DEBUG) {
+        const logMessage = formatMcpMessageForLogging(message);
+        logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.COMMUNICATION);
+      }
 
-      // Wrap send method to log responses
+      // Log notifications/message to application logs (always enabled)
+      logNotificationMessage(message, sessionId);
+    };
+
+    // Wrap send method for debug logging (if enabled)
+    if (process.env.MCP_COMM_DEBUG) {
       const originalSend = transport.send;
       transport.send = async (message, options) => {
         try {
-          // Log response messages, simplify tools/list responses and image content
-          // First get raw JSON for detection
-          const rawJson = JSON.stringify(message);
-          let logMessage: string;
-
-          if (isToolsListResponse(rawJson)) {
-            logMessage = simplifyToolsListResponse(rawJson);
-          } else if (hasImageContent(rawJson)) {
-            const simplified = simplifyImageContent(rawJson);
-            try {
-              // Try to format the simplified JSON for better readability
-              const parsed = JSON.parse(simplified);
-              logMessage = stringifyForLogging(parsed);
-            } catch {
-              logMessage = simplified;
-            }
-          } else {
-            // Format regular JSON responses
-            logMessage = stringifyForLogging(message);
-          }
+          const logMessage = formatMcpMessageForLogging(message);
           logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
         } catch {
           logger.debug(`MCP message sent: [Error formatting response]`, LOG_MODULES.COMMUNICATION);

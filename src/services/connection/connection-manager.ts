@@ -1,7 +1,12 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { TransportFactory } from '@utils/transports/transport-factory.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import {
+  logger,
+  LOG_MODULES,
+  formatMcpMessageForLogging,
+  logNotificationMessage
+} from '@utils/logger.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { logStorage } from '@services/log-storage.service.js';
@@ -138,10 +143,42 @@ export class McpConnectionManager {
       }
 
       // Create transport based on server type
+      const serverName = serverInfo.name;
       const transport = TransportFactory.createTransport({
         ...server,
-        name: serverInfo.name
+        name: serverName
       });
+
+      // Always set up message handler for notifications/message
+      transport.onmessage = (message) => {
+        // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
+        if (process.env.MCP_COMM_DEBUG) {
+          const logMessage = formatMcpMessageForLogging(message);
+          logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+        }
+
+        // Log notifications/message to application logs (always enabled)
+        logNotificationMessage(message, serverName);
+      };
+
+      // Wrap send method for debug logging (if enabled)
+      if (process.env.MCP_COMM_DEBUG) {
+        const originalSend = transport.send;
+        transport.send = async (message, options) => {
+          try {
+            const logMessage = formatMcpMessageForLogging(message);
+            logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+          } catch {
+            logger.debug(
+              `MCP message sent: [Error formatting response]`,
+              LOG_MODULES.CONNECTION_MANAGER
+            );
+          }
+
+          // Call original send method
+          return await originalSend.call(transport, message, options);
+        };
+      }
 
       // Handle transport close events
       if ('onclose' in transport) {
@@ -172,7 +209,6 @@ export class McpConnectionManager {
         transport.onstderr = (data: string) => {
           // Use server ID and name for log storage
           const serverId = server?.id ?? 'unknown';
-          const serverName = serverInfo!.name;
           logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
         };
       }
@@ -204,7 +240,6 @@ export class McpConnectionManager {
       const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
 
       // Update server instance info (merge pid and startTime)
-      const serverName = serverInfo.name;
       const instances = hubManager.getServerInstanceByName(serverName);
       const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
       if (instanceIndex !== -1) {

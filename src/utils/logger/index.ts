@@ -28,7 +28,10 @@ export {
   isToolsListResponse,
   simplifyToolsListResponse,
   hasImageContent,
-  simplifyImageContent
+  simplifyImageContent,
+  formatMcpMessageForLogging,
+  isNotificationMessage,
+  logNotificationMessage
 } from './log-output.js';
 
 // Re-export main Logger class

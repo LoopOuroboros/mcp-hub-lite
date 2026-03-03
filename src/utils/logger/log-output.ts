@@ -3,6 +3,141 @@
  * This file contains MCP response detection and simplification functions.
  */
 
+import type { LogLevel } from '@shared-types/common.types.js';
+import { stringifyForLogging } from '../json-utils.js';
+import { logger } from './index.js';
+
+/**
+ * Interface for notifications/message parameters.
+ */
+interface NotificationMessageParams {
+  level?: string;
+  logger?: string;
+  data?: unknown;
+}
+
+/**
+ * Interface for notifications/message.
+ */
+interface NotificationMessage {
+  method: string;
+  params?: NotificationMessageParams;
+}
+
+/**
+ * Check if a message is a notifications/message.
+ *
+ * @param message - The message to check
+ * @returns true if the message is a notifications/message
+ */
+export function isNotificationMessage(message: unknown): message is NotificationMessage {
+  if (typeof message === 'object' && message !== null) {
+    const msg = message as Record<string, unknown>;
+    return msg.method === 'notifications/message';
+  }
+  return false;
+}
+
+/**
+ * Extract message content from notification data.
+ *
+ * @param data - The notification data
+ * @returns The extracted message string
+ */
+function extractMessageFromData(data: unknown): string {
+  if (typeof data === 'string') {
+    return data;
+  }
+  if (typeof data === 'object' && data !== null) {
+    const dataObj = data as Record<string, unknown>;
+    if (typeof dataObj.message === 'string') {
+      return dataObj.message;
+    }
+  }
+  return stringifyForLogging(data);
+}
+
+/**
+ * Log a notifications/message to the application logs.
+ *
+ * @param message - The notification message
+ * @param context - Optional context (server name, session ID, etc.)
+ */
+export function logNotificationMessage(message: unknown, context: string): void {
+  if (!isNotificationMessage(message)) {
+    return;
+  }
+
+  const params = message.params;
+  if (!params) {
+    return;
+  }
+
+  const level = params.level || 'info';
+  const messageContent = params.data ? extractMessageFromData(params.data) : '';
+
+  if (!messageContent) {
+    return;
+  }
+
+  // Use params.logger as server name if available, otherwise use context
+  const serverName = params.logger || context;
+
+  // Map notification level to logger level
+  let logLevel: LogLevel = 'info';
+  switch (level.toLowerCase()) {
+    case 'debug':
+      logLevel = 'debug';
+      break;
+    case 'info':
+      logLevel = 'info';
+      break;
+    case 'warn':
+    case 'warning':
+      logLevel = 'warn';
+      break;
+    case 'error':
+      logLevel = 'error';
+      break;
+    default:
+      logLevel = 'info';
+  }
+
+  // Use serverLog to log with only server name context, no module prefix
+  logger.serverLog(logLevel, serverName, messageContent);
+}
+
+/**
+ * Format an MCP message for logging, with simplification for tools/list,
+ * resources/list, capabilities responses, and image content.
+ *
+ * @param message - The MCP message object to format
+ * @returns Formatted log message string
+ */
+export function formatMcpMessageForLogging(message: unknown): string {
+  try {
+    const rawJson = JSON.stringify(message);
+    let logMessage: string;
+
+    if (isToolsListResponse(rawJson)) {
+      logMessage = simplifyToolsListResponse(rawJson);
+    } else if (hasImageContent(rawJson)) {
+      const simplified = simplifyImageContent(rawJson);
+      try {
+        const parsed = JSON.parse(simplified);
+        logMessage = stringifyForLogging(parsed);
+      } catch {
+        logMessage = simplified;
+      }
+    } else {
+      logMessage = stringifyForLogging(message);
+    }
+    return logMessage;
+  } catch {
+    return '[Unserializable]';
+  }
+}
+
 /**
  * Check if data contains image content with binary data.
  * @param data - stdout or response data
