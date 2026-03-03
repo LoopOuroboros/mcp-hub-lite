@@ -233,7 +233,10 @@
                 </div>
                 <el-switch
                   :model-value="isToolAllowed(tool.name)"
-                  @update:model-value="(val: boolean) => updateToolVisibility(tool.name, val)"
+                  @update:model-value="
+                    (val: string | number | boolean) =>
+                      updateToolVisibility(tool.name, Boolean(val))
+                  "
                   class="mr-4"
                   :active-text="$t('serverDetail.tools.aggregated')"
                 />
