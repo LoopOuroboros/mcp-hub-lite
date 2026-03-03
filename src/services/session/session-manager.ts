@@ -15,6 +15,7 @@ import {
   createEmptySessionStore
 } from '@shared-models/session.model.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
+import { getSessionDebugSetting, getMcpCommDebugSetting } from '@utils/json-utils.js';
 import * as fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -152,7 +153,7 @@ export class McpSessionManager {
    */
   private markAsDirty(sessionId: string): void {
     this.dirtySessions.add(sessionId);
-    if (process.env.SESSION_DEBUG) {
+    if (getSessionDebugSetting()) {
       logger.debug(`Session marked as dirty: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
     }
 
@@ -189,7 +190,7 @@ export class McpSessionManager {
   private async loadSessionStore(): Promise<SessionStore> {
     try {
       if (!fs.existsSync(this.sessionsPath)) {
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(
             'Sessions directory not found, creating new one',
             LOG_MODULES.SESSION_MANAGER
@@ -201,7 +202,7 @@ export class McpSessionManager {
 
       const indexPath = path.join(this.sessionsPath, 'index.json');
       if (!fs.existsSync(indexPath)) {
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(
             'Sessions index file not found, creating new one',
             LOG_MODULES.SESSION_MANAGER
@@ -234,7 +235,7 @@ export class McpSessionManager {
         }
       }
 
-      if (process.env.SESSION_DEBUG) {
+      if (getSessionDebugSetting()) {
         logger.debug(
           `Loaded ${Object.keys(store.sessions).length} sessions from store`,
           LOG_MODULES.SESSION_MANAGER
@@ -335,7 +336,7 @@ export class McpSessionManager {
           // Check if session has expired
           if (now - validatedState.lastAccessedAt > this.SESSION_TIMEOUT) {
             expiredCount++;
-            if (process.env.SESSION_DEBUG) {
+            if (getSessionDebugSetting()) {
               logger.debug(
                 `Expired session: ${sessionId} (last accessed ${formatDuration(now - validatedState.lastAccessedAt)} ago)`,
                 LOG_MODULES.SESSION_MANAGER
@@ -348,7 +349,7 @@ export class McpSessionManager {
           // Always restore to memory - cleanup() will handle deletion
           this.sessionStates.set(sessionId, validatedState);
 
-          if (process.env.SESSION_DEBUG) {
+          if (getSessionDebugSetting()) {
             logger.debug(`Restored session state: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
           }
         } catch (error) {
@@ -548,7 +549,7 @@ export class McpSessionManager {
       this.sessionStates.set(sessionId, updated);
       this.markAsDirty(sessionId);
 
-      if (process.env.SESSION_DEBUG) {
+      if (getSessionDebugSetting()) {
         logger.debug(`Updated metadata for session: ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
       }
     }
@@ -578,7 +579,7 @@ export class McpSessionManager {
    * ```
    */
   public async getSession(sessionId: string, requireInitialize: boolean = true): Promise<Session> {
-    if (process.env.SESSION_DEBUG) {
+    if (getSessionDebugSetting()) {
       const hasSessionState = this.sessionStates.has(sessionId);
       const hasSessionObject = this.sessions.has(sessionId);
       logger.debug(
@@ -595,7 +596,7 @@ export class McpSessionManager {
 
     if (hasSessionState && !hasSessionObject) {
       // Session state exists but session object is missing - recreate session
-      if (process.env.SESSION_DEBUG) {
+      if (getSessionDebugSetting()) {
         logger.debug(
           `Session state exists but session object missing for ${sessionId}, recreating...`,
           LOG_MODULES.SESSION_MANAGER
@@ -621,7 +622,7 @@ export class McpSessionManager {
         const currentSessionId = webTransport.sessionId;
         const isInitialized = webTransport._initialized;
 
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(
             `Transport state check - Expected: ${sessionId} (initialized: ${shouldManuallyInitialize}), Actual: ${currentSessionId} (initialized: ${isInitialized})`,
             LOG_MODULES.SESSION_MANAGER
@@ -660,7 +661,7 @@ export class McpSessionManager {
       this.upsertSessionState(sessionId);
     }
 
-    if (process.env.SESSION_DEBUG) {
+    if (getSessionDebugSetting()) {
       logger.debug(`Returning session for ${sessionId}`, LOG_MODULES.SESSION_MANAGER);
     }
 
@@ -797,12 +798,12 @@ export class McpSessionManager {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => sessionId,
       onsessioninitialized: (id) => {
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(`Session initialized: ${id}`, LOG_MODULES.SESSION_MANAGER);
         }
       },
       onsessionclosed: (id) => {
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(`Session closed: ${id}`, LOG_MODULES.SESSION_MANAGER);
         }
         this.sessions.delete(id);
@@ -816,7 +817,7 @@ export class McpSessionManager {
       webTransport.sessionId = sessionId;
       // Do not set _initialized = true here because it will cause initialize request to fail
       // _initialized flag will be set as needed in the shouldManuallyInitialize logic
-      if (process.env.SESSION_DEBUG) {
+      if (getSessionDebugSetting()) {
         logger.debug(
           `Directly set sessionId on transport: ${sessionId}`,
           LOG_MODULES.SESSION_MANAGER
@@ -833,7 +834,7 @@ export class McpSessionManager {
     // For restored sessions or when explicitly requested to skip initialization, manually set the initialized flag
     // This allows sending requests like tools/list directly without needing to initialize first
     const shouldManuallyInitialize = !requireInitialize || !!restoredState;
-    if (process.env.SESSION_DEBUG) {
+    if (getSessionDebugSetting()) {
       logger.debug(
         `shouldManuallyInitialize: ${shouldManuallyInitialize} (!requireInitialize: ${!requireInitialize} || restored: ${!!restoredState})`,
         LOG_MODULES.SESSION_MANAGER
@@ -849,7 +850,7 @@ export class McpSessionManager {
         if (webTransport._session !== undefined) {
           webTransport._session = sessionId;
         }
-        if (process.env.SESSION_DEBUG) {
+        if (getSessionDebugSetting()) {
           logger.debug(
             `Manually initialized transport for session: ${sessionId} (skipInitialize: ${!requireInitialize}, restored: ${!!restoredState})`,
             LOG_MODULES.SESSION_MANAGER
@@ -872,7 +873,7 @@ export class McpSessionManager {
     // Always set up message handler for notifications/message
     transport.onmessage = (message) => {
       // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
-      if (process.env.MCP_COMM_DEBUG) {
+      if (getMcpCommDebugSetting()) {
         const logMessage = formatMcpMessageForLogging(message);
         logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       }
@@ -882,7 +883,7 @@ export class McpSessionManager {
     };
 
     // Wrap send method for debug logging (if enabled)
-    if (process.env.MCP_COMM_DEBUG) {
+    if (getMcpCommDebugSetting()) {
       const originalSend = transport.send;
       transport.send = async (message, options) => {
         try {
@@ -905,7 +906,7 @@ export class McpSessionManager {
     // Note: StreamableHTTPServerTransport's onsessioninitialized callback is triggered
     // when the first actual request (GET /mcp) arrives, not during connect().
     // Therefore, we don't need to wait for this event - the transport is ready to receive requests.
-    if (process.env.SESSION_DEBUG) {
+    if (getSessionDebugSetting()) {
       logger.debug(
         `StreamableHTTPServerTransport ready for session: ${sessionId}`,
         LOG_MODULES.SESSION_MANAGER

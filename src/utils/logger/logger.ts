@@ -39,6 +39,7 @@ import {
   formatLogLevel,
   formatPid
 } from './log-formatter.js';
+import { getDevLogFileSetting, setDevModeEnabled } from '../json-utils.js';
 
 export class Logger {
   private level: LogLevel = 'info';
@@ -48,7 +49,7 @@ export class Logger {
   constructor(level: LogLevel = 'info') {
     this.level = level;
 
-    if (process.env.DEV_LOG_FILE) {
+    if (getDevLogFileSetting()) {
       this.enableDevLog();
     }
   }
@@ -67,6 +68,7 @@ export class Logger {
    * ```
    */
   public enableDevLog(rotatorConfig?: Parameters<DevLogger['enableDevLog']>[0]): void {
+    setDevModeEnabled(true);
     this.devLogger.enableDevLog(rotatorConfig, (logFile) => {
       this.debug(`Writing logs to: ${logFile}`, LOG_MODULES.DEV_SERVER);
     });
@@ -239,6 +241,7 @@ export class Logger {
 
   /**
    * Method specifically for MCP Server logging.
+   * Handles multi-line messages by splitting them into individual log entries.
    */
   serverLog(
     level: LogLevel,
@@ -246,37 +249,67 @@ export class Logger {
     message: string,
     context?: Omit<LogContext, 'serverName'>
   ): void {
-    if (this.shouldLog(level)) {
-      const logContext: LogContext = {
-        ...context,
-        serverName
-      };
-      const coloredLogMsg = createColoredLogMessage(level, message, logContext);
-      const plainLogMsg = createLogMessage(level, message, logContext);
+    if (!this.shouldLog(level)) {
+      return;
+    }
 
-      if (this.useStderr) {
-        console.error(coloredLogMsg);
-      } else {
-        switch (level) {
-          case 'debug':
-            console.debug(coloredLogMsg);
-            break;
-          case 'info':
-            console.info(coloredLogMsg);
-            break;
-          case 'warn':
-            console.warn(coloredLogMsg);
-            break;
-          case 'error':
-            console.error(coloredLogMsg);
-            break;
+    // Check if message contains newlines
+    if (message.includes('\n')) {
+      // Split by newline characters, supporting both \n and \r\n
+      const lines = message.split(/\r?\n/);
+
+      // Log each non-empty line individually
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          this.logSingleServerLine(level, serverName, trimmedLine, context);
         }
       }
+    } else {
+      // Single line message, log as is
+      this.logSingleServerLine(level, serverName, message, context);
+    }
+  }
 
-      const logFileStream = this.devLogger.stream;
-      if (logFileStream) {
-        logFileStream.write(plainLogMsg + '\n');
+  /**
+   * Internal helper to log a single line for serverLog.
+   * Contains the core logging logic originally in serverLog.
+   */
+  private logSingleServerLine(
+    level: LogLevel,
+    serverName: string,
+    message: string,
+    context?: Omit<LogContext, 'serverName'>
+  ): void {
+    const logContext: LogContext = {
+      ...context,
+      serverName
+    };
+    const coloredLogMsg = createColoredLogMessage(level, message, logContext);
+    const plainLogMsg = createLogMessage(level, message, logContext);
+
+    if (this.useStderr) {
+      console.error(coloredLogMsg);
+    } else {
+      switch (level) {
+        case 'debug':
+          console.debug(coloredLogMsg);
+          break;
+        case 'info':
+          console.info(coloredLogMsg);
+          break;
+        case 'warn':
+          console.warn(coloredLogMsg);
+          break;
+        case 'error':
+          console.error(coloredLogMsg);
+          break;
       }
+    }
+
+    const logFileStream = this.devLogger.stream;
+    if (logFileStream) {
+      logFileStream.write(plainLogMsg + '\n');
     }
   }
 

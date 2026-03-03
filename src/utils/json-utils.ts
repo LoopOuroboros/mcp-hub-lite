@@ -3,6 +3,36 @@
  */
 
 /**
+ * Flag to track if dev mode is enabled.
+ * Set by logger.enableDevLog() to avoid circular dependencies.
+ */
+let _isDevModeEnabled = false;
+
+/**
+ * Set the dev mode flag.
+ * Called by logger.enableDevLog() to indicate we're in dev mode.
+ *
+ * @param enabled - Whether dev mode is enabled
+ */
+export function setDevModeEnabled(enabled: boolean): void {
+  _isDevModeEnabled = enabled;
+}
+
+/**
+ * Get default value for config settings based on dev mode.
+ * In dev mode, debugging settings default to true if not explicitly configured.
+ *
+ * @param defaultValue - The default value for production mode
+ * @returns The appropriate default value based on current mode
+ */
+function getDefaultForDevMode(defaultValue: boolean): boolean {
+  if (_isDevModeEnabled) {
+    return true;
+  }
+  return defaultValue;
+}
+
+/**
  * Post-process pretty-printed JSON to convert \n to actual newlines in string values.
  * This makes multi-line text more readable in logs.
  *
@@ -54,7 +84,16 @@ function processPrettyJsonForLogging(jsonStr: string): string {
 /**
  * Type for the config getter function to avoid direct import dependency.
  */
-type ConfigGetter = () => { system: { logging: { jsonPretty: boolean } } };
+type ConfigGetter = () => {
+  system: {
+    logging: {
+      jsonPretty: boolean;
+      devLogFile: boolean;
+      mcpCommDebug: boolean;
+      sessionDebug: boolean;
+    };
+  };
+};
 
 /**
  * Optional config getter to retrieve jsonPretty setting from config.
@@ -101,26 +140,71 @@ export function stringifyRawHeadersForLogging(rawHeaders: string[]): string {
 }
 
 /**
- * Get JSON pretty setting from config getter if available, otherwise from environment variable.
+ * Get JSON pretty setting from config getter.
  *
  * @returns boolean indicating whether to use pretty JSON formatting
  */
 export function getJsonPrettySetting(): boolean {
-  // Try config getter first
   if (_configGetter) {
     try {
       const config = _configGetter();
       return config.system.logging.jsonPretty;
     } catch {
-      // Fall through to environment variable if config getter fails
+      // Fall through to default if config getter fails
     }
   }
-  // Fall back to environment variable
-  const envValue = process.env.LOG_JSON_PRETTY;
-  if (envValue !== undefined) {
-    return envValue.toLowerCase() === 'true' || envValue === '1';
-  }
   return true; // Default to true (matches current default in config schema)
+}
+
+/**
+ * Get dev log file setting from config getter.
+ *
+ * @returns boolean indicating whether to enable development log file output
+ */
+export function getDevLogFileSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.devLogFile;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return getDefaultForDevMode(false);
+}
+
+/**
+ * Get MCP communication debug setting from config getter.
+ *
+ * @returns boolean indicating whether to enable MCP communication debug logging
+ */
+export function getMcpCommDebugSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.mcpCommDebug;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return getDefaultForDevMode(false);
+}
+
+/**
+ * Get session debug setting from config getter.
+ *
+ * @returns boolean indicating whether to enable session debug logging
+ */
+export function getSessionDebugSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.sessionDebug;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return getDefaultForDevMode(false);
 }
 
 /**

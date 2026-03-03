@@ -12,7 +12,7 @@ import {
   hasImageContent,
   simplifyImageContent
 } from '@utils/logger.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
+import { stringifyForLogging, getMcpCommDebugSetting } from '@utils/json-utils.js';
 
 /**
  * Wraps Fastify reply to capture and log response content in development mode.
@@ -22,7 +22,7 @@ import { stringifyForLogging } from '@utils/json-utils.js';
  */
 export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void {
   // Only wrap for debug logging if MCP_COMM_DEBUG is enabled
-  if (!process.env.MCP_COMM_DEBUG) {
+  if (!getMcpCommDebugSetting()) {
     return;
   }
 

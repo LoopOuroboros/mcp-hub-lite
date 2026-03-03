@@ -3,6 +3,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { configManager } from '@config/config-manager.js';
+import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
@@ -53,6 +54,9 @@ export async function buildApp() {
   const fastify = Fastify({
     logger: false // We use our own logger
   });
+
+  // Set up config getters for json-utils
+  setJsonPrettyConfigGetter(() => configManager.getConfig());
 
   // Set HTTP connection timeouts for SSE long-lived connections
   // Use idleConnectionTimeout from config (default 5 minutes)
