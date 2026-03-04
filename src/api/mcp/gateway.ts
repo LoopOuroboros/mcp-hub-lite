@@ -39,9 +39,14 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         initialLogMsg += `\n  Body: [Unserializable]`;
       }
     }
-    logger.info(initialLogMsg, LOG_MODULES.GATEWAY);
+    logger.debug(initialLogMsg, LOG_MODULES.GATEWAY);
 
     const { sessionId, clientContext } = extractSessionContext(request);
+
+    logger.info(
+      `MCP Gateway ${request.method} ${request.url} [Session: ${sessionId}]`,
+      LOG_MODULES.GATEWAY
+    );
 
     // Update client tracking information
     clientTrackerService.updateClient(clientContext);
@@ -99,7 +104,11 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      logger.error(`Error handling MCP request for session ${sessionId}: ${errorMessage}`, error);
+      logger.error(
+        `Error handling MCP request for session ${sessionId}: ${errorMessage}`,
+        error,
+        LOG_MODULES.GATEWAY
+      );
       if (!reply.raw.headersSent) {
         reply.raw.writeHead(500, { 'Content-Type': 'application/json' });
         reply.raw.end(
