@@ -53,6 +53,7 @@ export const restartCommand = new Command('restart')
         configPath: options.config
       });
       console.log('MCP Hub Lite server restarted successfully');
+      process.exit(0);
     } catch (error) {
       console.error('Failed to restart server:', error);
       process.exit(1);

@@ -40,6 +40,7 @@ export const stopCommand = new Command('stop')
     try {
       await stopServer(options.pid);
       console.log('MCP Hub Lite server stopped successfully');
+      process.exit(0);
     } catch (error) {
       console.error('Failed to stop server:', error);
       process.exit(1);

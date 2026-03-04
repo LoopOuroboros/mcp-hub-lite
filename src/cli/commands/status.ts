@@ -45,6 +45,7 @@ export const statusCommand = new Command('status')
     try {
       const status = await getServerStatus(options.pid);
       printFormattedStatus(status);
+      process.exit(0);
     } catch (error) {
       console.error('Failed to get server status:', error);
       process.exit(1);

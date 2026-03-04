@@ -12,18 +12,26 @@ describe('CLI Commands Options', () => {
       expect(startCommand).toBeDefined();
     });
 
-    it('should have port option with default value', () => {
-      // Check if port option exists and has correct default
+    it('should have port option without hardcoded default (reads from config)', () => {
       const portOption = startCommand.options.find((opt) => opt.long === '--port');
       expect(portOption).toBeDefined();
-      expect(portOption?.defaultValue).toBe(3000);
+      expect(portOption?.defaultValue).toBeUndefined();
     });
 
-    it('should have host option with default value', () => {
-      // Check if host option exists and has correct default
+    it('should have host option without hardcoded default (reads from config)', () => {
       const hostOption = startCommand.options.find((opt) => opt.long === '--host');
       expect(hostOption).toBeDefined();
-      expect(hostOption?.defaultValue).toBe('localhost');
+      expect(hostOption?.defaultValue).toBeUndefined();
+    });
+
+    it('should have foreground option', () => {
+      const foregroundOption = startCommand.options.find((opt) => opt.long === '--foreground');
+      expect(foregroundOption).toBeDefined();
+    });
+
+    it('should have stdio option', () => {
+      const stdioOption = startCommand.options.find((opt) => opt.long === '--stdio');
+      expect(stdioOption).toBeDefined();
     });
   });
 
@@ -42,16 +50,16 @@ describe('CLI Commands Options', () => {
   });
 
   describe('UI Command', () => {
-    it('should have port option with default value', () => {
+    it('should have port option without hardcoded default (reads from config)', () => {
       const portOption = uiCommand.options.find((opt) => opt.long === '--port');
       expect(portOption).toBeDefined();
-      expect(portOption?.defaultValue).toBe('3000');
+      expect(portOption?.defaultValue).toBeUndefined();
     });
 
-    it('should have host option with default value', () => {
+    it('should have host option without hardcoded default (reads from config)', () => {
       const hostOption = uiCommand.options.find((opt) => opt.long === '--host');
       expect(hostOption).toBeDefined();
-      expect(hostOption?.defaultValue).toBe('localhost');
+      expect(hostOption?.defaultValue).toBeUndefined();
     });
   });
 

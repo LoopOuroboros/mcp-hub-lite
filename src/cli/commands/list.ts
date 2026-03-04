@@ -91,6 +91,7 @@ export const listCommand = new Command('list')
           }))
         );
       }
+      process.exit(0);
     } catch (error) {
       console.error('Failed to list servers:', error);
       process.exit(1);
