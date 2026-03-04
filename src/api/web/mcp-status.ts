@@ -37,13 +37,20 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     try {
       const servers = hubManager.getAllServers();
       const serverInstances = hubManager.getServerInstances();
-      const statusList: Array<{ id: string; status: ServerStatus }> = [];
+      const statusList: Array<{
+        id: string;
+        name: string;
+        type: string;
+        status: ServerStatus;
+      }> = [];
 
       servers.forEach((server) => {
         const instances = serverInstances[server.name] || [];
         instances.forEach((instance) => {
           statusList.push({
             id: instance.id || '',
+            name: server.name,
+            type: server.config.type,
             status: mcpConnectionManager.getStatus(instance.id || '') || {
               connected: false,
               lastCheck: Date.now(),

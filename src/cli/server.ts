@@ -4,11 +4,32 @@
  */
 
 import { PidManager } from '@pid/manager.js';
+import { getConfigManager } from '@config/config-manager.js';
+import { getPidFilePath } from '@pid/file.js';
 
 interface ServerOptions {
   port: number;
   host: string;
   configPath?: string;
+}
+
+interface McpServerStatus {
+  name: string;
+  type: string;
+  connected: boolean;
+  toolsCount: number;
+  resourcesCount: number;
+  error?: string;
+}
+
+export interface EnhancedServerStatus {
+  running: boolean;
+  pid?: string;
+  host: string;
+  port: number;
+  message?: string;
+  pidFilePath: string;
+  mcpServers?: McpServerStatus[];
 }
 
 /**
@@ -103,41 +124,126 @@ export async function stopServer(pid?: string) {
  * This function checks if the server is running by:
  * - Reading the PID from the PID file (or using provided PID)
  * - Verifying if the process with that PID is still active
- * - If running, returns detailed status including connected server count
- * - If not running, returns appropriate status message
+ * - If running, attempts to fetch additional runtime status via HTTP API
+ * - Returns enhanced status with configuration and runtime information
  *
  * The function uses `process.kill(pid, 0)` which doesn't actually kill the process
  * but checks if a process with the given PID exists and is accessible.
  *
  * @param pid - Optional specific process ID to check. If not provided, uses PID from PID file.
- * @returns {Promise<{running: boolean, message?: string, pid?: string, servers?: number}>}
- *          Status object with running flag and additional details if applicable
+ * @returns {Promise<EnhancedServerStatus>} Enhanced status object with full details
  *
  * @example
  * ```typescript
  * const status = await getServerStatus();
  * if (status.running) {
- *   console.log(`Server running with PID ${status.pid} and ${status.servers} connected servers`);
- * } else {
- *   console.log(`Server not running: ${status.message}`);
+ *   console.log(`Server running on ${status.host}:${status.port} with PID ${status.pid}`);
  * }
  * ```
  */
-export async function getServerStatus(pid?: string) {
+export async function getServerStatus(pid?: string): Promise<EnhancedServerStatus> {
+  const configManager = getConfigManager();
+  const config = configManager.getConfig();
+  const host = process.env.HOST || config.system.host;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : config.system.port;
+  const pidFilePath = getPidFilePath();
+
   const actualPid = pid || PidManager.getPid()?.toString();
 
   if (!actualPid) {
-    return { running: false, message: 'Server not running' };
+    return {
+      running: false,
+      host,
+      port,
+      pidFilePath,
+      message: 'Server not running'
+    };
   }
 
   try {
     process.kill(parseInt(actualPid), 0); // Signal 0 just checks if process exists
+
+    // Try to fetch runtime status via HTTP API
+    const mcpServers = await fetchRuntimeStatus(host, port);
+
     return {
       running: true,
-      pid: actualPid
+      pid: actualPid,
+      host,
+      port,
+      pidFilePath,
+      mcpServers
     };
   } catch {
-    return { running: false, message: 'Server process not found' };
+    return {
+      running: false,
+      host,
+      port,
+      pidFilePath,
+      message: 'Server process not found'
+    };
+  }
+}
+
+/**
+ * Fetches runtime status from the running server via HTTP API.
+ *
+ * This function attempts to connect to the local server API to retrieve
+ * real-time status information about connected MCP servers. It uses a
+ * short timeout to ensure the status command remains responsive even
+ * if the server is unresponsive.
+ *
+ * @param host - The host address to connect to
+ * @param port - The port number to connect to
+ * @returns Promise with array of MCP server status, or undefined if API call fails
+ */
+async function fetchRuntimeStatus(
+  host: string,
+  port: number
+): Promise<McpServerStatus[] | undefined> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 500);
+
+    const response = await fetch(`http://${host}:${port}/web/mcp/status`, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const statusData = (await response.json()) as Array<{
+      id: string;
+      name: string;
+      type: string;
+      status: {
+        connected: boolean;
+        error?: string;
+        toolsCount: number;
+        resourcesCount: number;
+      };
+    }>;
+
+    // Map status data directly (API now includes name and type)
+    const result: McpServerStatus[] = statusData.map((item) => ({
+      name: item.name,
+      type: item.type,
+      connected: item.status.connected,
+      toolsCount: item.status.toolsCount,
+      resourcesCount: item.status.resourcesCount,
+      error: item.status.error
+    }));
+
+    return result;
+  } catch {
+    // Silent failure - API not available, just return undefined
+    return undefined;
   }
 }
 
