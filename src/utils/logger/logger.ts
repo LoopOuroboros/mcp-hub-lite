@@ -44,6 +44,7 @@ import { setDevModeEnabled } from '../json-utils.js';
 export class Logger {
   private level: LogLevel = 'info';
   private useStderr: boolean = false;
+  private useColor: boolean = true;
   private devLogger: DevLogger = new DevLogger();
 
   constructor(level: LogLevel = 'info') {
@@ -52,6 +53,11 @@ export class Logger {
     const devLogFileEnv = process.env.DEV_LOG_FILE;
     if (devLogFileEnv === 'true' || devLogFileEnv === '1') {
       this.enableDevLog();
+    }
+
+    const noColorEnv = process.env.NO_COLOR;
+    if (noColorEnv === 'true' || noColorEnv === '1' || noColorEnv === '') {
+      this.setUseColor(false);
     }
   }
 
@@ -77,6 +83,20 @@ export class Logger {
 
   public setUseStderr(use: boolean): void {
     this.useStderr = use;
+  }
+
+  /**
+   * Enable or disable ANSI color output.
+   * When disabled, logs will be plain text without color codes.
+   *
+   * @param use - Whether to use color in output
+   * @example
+   * ```typescript
+   * logger.setUseColor(false); // Plain text output for files
+   * ```
+   */
+  public setUseColor(use: boolean): void {
+    this.useColor = use;
   }
 
   /**
@@ -112,22 +132,23 @@ export class Logger {
 
     const coloredLogMsg = createColoredLogMessage(level, fullMessage, context);
     const plainLogMsg = createLogMessage(level, fullMessage, context);
+    const consoleLogMsg = this.useColor ? coloredLogMsg : plainLogMsg;
 
     if (this.useStderr) {
-      console.error(coloredLogMsg);
+      console.error(consoleLogMsg);
     } else {
       switch (level) {
         case 'debug':
-          console.debug(coloredLogMsg);
+          console.debug(consoleLogMsg);
           break;
         case 'info':
-          console.info(coloredLogMsg);
+          console.info(consoleLogMsg);
           break;
         case 'warn':
-          console.warn(coloredLogMsg);
+          console.warn(consoleLogMsg);
           break;
         case 'error':
-          console.error(coloredLogMsg);
+          console.error(consoleLogMsg);
           break;
       }
     }
@@ -288,22 +309,23 @@ export class Logger {
     };
     const coloredLogMsg = createColoredLogMessage(level, message, logContext);
     const plainLogMsg = createLogMessage(level, message, logContext);
+    const consoleLogMsg = this.useColor ? coloredLogMsg : plainLogMsg;
 
     if (this.useStderr) {
-      console.error(coloredLogMsg);
+      console.error(consoleLogMsg);
     } else {
       switch (level) {
         case 'debug':
-          console.debug(coloredLogMsg);
+          console.debug(consoleLogMsg);
           break;
         case 'info':
-          console.info(coloredLogMsg);
+          console.info(consoleLogMsg);
           break;
         case 'warn':
-          console.warn(coloredLogMsg);
+          console.warn(consoleLogMsg);
           break;
         case 'error':
-          console.error(coloredLogMsg);
+          console.error(consoleLogMsg);
           break;
       }
     }

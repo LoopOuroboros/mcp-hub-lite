@@ -6,6 +6,7 @@
 import { PidManager } from '@pid/manager.js';
 import { getConfigManager } from '@config/config-manager.js';
 import { getPidFilePath } from '@pid/file.js';
+import { runServer } from '@server/runner.js';
 
 interface ServerOptions {
   port: number;
@@ -35,15 +36,12 @@ export interface EnhancedServerStatus {
 /**
  * Starts the MCP Hub Lite server with the specified configuration options.
  *
- * This function initializes and starts the Fastify HTTP server that serves as the
- * core of the MCP Hub Lite application. It handles both the web interface and
- * the MCP (Model Context Protocol) gateway functionality.
- *
- * The server provides:
- * - Web API endpoints for server management and configuration
- * - WebSocket endpoints for real-time client communication
- * - MCP JSON-RPC 2.0 protocol endpoints for MCP tool integration
- * - Static file serving for the Vue.js frontend application
+ * This function initializes and starts the full MCP Hub Lite server, including:
+ * - Fastify HTTP server with web interface and API
+ * - Automatic connection to enabled MCP servers
+ * - Port conflict detection
+ * - Graceful shutdown handlers
+ * - PID file management
  *
  * After successful startup, the process ID is written to a PID file for
  * process management and monitoring purposes.
@@ -56,33 +54,27 @@ export interface EnhancedServerStatus {
  * @param {number} options.port - The port number to listen on (e.g., 7788)
  * @param {string} options.host - The host address to bind to (e.g., 'localhost', '0.0.0.0')
  * @param {string} [options.configPath] - Optional path to custom configuration file (currently unused)
- * @returns {Promise<import('fastify').FastifyInstance>} A promise that resolves to the Fastify application instance
+ * @returns {Promise<void>} A promise that resolves when the server is successfully started
  * @throws {Error} If the server fails to start due to port conflicts, permission issues, or configuration errors
  *
  * @example
  * ```typescript
- * const server = await startServer({
+ * await startServer({
  *   port: 7788,
  *   host: 'localhost'
  * });
- * console.log(`Server running on http://${options.host}:${options.port}`);
+ * console.log(`Server running on http://localhost:7788`);
  * ```
  *
- * @see {@link buildApp} for Fastify application configuration details
+ * @see {@link runServer} for the full server startup implementation
  * @see {@link PidManager} for process ID management
  */
-export async function startServer(options: ServerOptions) {
-  // Dynamic import to avoid loading heavyweight services for simple commands
-  const { buildApp } = await import('@src/app.js');
-  const app = await buildApp();
-
-  // Start the server
-  await app.listen({ port: options.port, host: options.host });
-
-  // Save PID
-  PidManager.writePid();
-
-  return app;
+export async function startServer(options: ServerOptions): Promise<void> {
+  // Use the full runServer implementation which includes auto-connection of MCP servers
+  await runServer({
+    port: options.port,
+    host: options.host
+  });
 }
 
 /**
@@ -261,19 +253,19 @@ async function fetchRuntimeStatus(
  * @param {number} options.port - The port number to listen on
  * @param {string} options.host - The host address to bind to
  * @param {string} [options.configPath] - Optional path to custom configuration file
- * @returns {Promise<import('fastify').FastifyInstance>} A promise that resolves to the new Fastify application instance
+ * @returns {Promise<void>} A promise that resolves when the server is successfully restarted
  *
  * @example
  * ```typescript
- * const newServer = await restartServer({
+ * await restartServer({
  *   port: 7788,
  *   host: 'localhost'
  * });
  * ```
  */
-export async function restartServer(options: ServerOptions) {
+export async function restartServer(options: ServerOptions): Promise<void> {
   await stopServer();
-  return await startServer(options);
+  await startServer(options);
 }
 
 /**
