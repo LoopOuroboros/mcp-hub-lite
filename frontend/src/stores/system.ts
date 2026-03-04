@@ -40,7 +40,6 @@ export interface SystemConfig {
       level: string;
       rotationAge: string;
       jsonPretty: boolean;
-      devLogFile: boolean;
       mcpCommDebug: boolean;
       sessionDebug: boolean;
     };
@@ -54,6 +53,7 @@ export interface SystemConfig {
     sessionFlushInterval: number;
     maxConnections: number;
   };
+  isDevMode?: boolean;
   [key: string]: unknown;
 }
 
@@ -68,7 +68,6 @@ export const useSystemStore = defineStore('system', () => {
         level: 'info',
         rotationAge: '7d',
         jsonPretty: true,
-        devLogFile: false,
         mcpCommDebug: false,
         sessionDebug: false
       }
@@ -81,7 +80,8 @@ export const useSystemStore = defineStore('system', () => {
       sessionTimeout: 30 * 60 * 1000,
       sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
-    }
+    },
+    isDevMode: false
   });
 
   const loading = ref(false);

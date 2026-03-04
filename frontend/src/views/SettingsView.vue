@@ -21,7 +21,7 @@
             </template>
 
             <div class="pt-4">
-              <el-form :model="config" label-position="left">
+              <el-form :model="config" label-position="left" label-width="260px">
                 <div class="flex flex-col gap-2">
                   <el-form-item :label="$t('settings.host')">
                     <el-input v-model="config.system.host" class="w-[200px]" />
@@ -89,6 +89,7 @@
               <el-form
                 :model="config.system.logging"
                 label-position="left"
+                label-width="260px"
                 v-if="config.system.logging"
               >
                 <el-form-item :label="$t('settings.logLevel')">
@@ -104,21 +105,26 @@
                   <el-input-number v-model="maxAgeDays" :min="1" class="w-[150px]" />
                 </el-form-item>
 
-                <el-form-item :label="$t('settings.jsonPretty')">
-                  <el-switch v-model="config.system.logging.jsonPretty" />
-                </el-form-item>
+                <div class="flex items-center my-4">
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100 mr-4">{{
+                    $t('settings.debugOptions')
+                  }}</span>
+                  <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                </div>
 
-                <el-form-item :label="$t('settings.devLogFile')">
-                  <el-switch v-model="config.system.logging.devLogFile" />
-                </el-form-item>
+                <template v-if="config.system.logging.level === 'debug' || config.isDevMode">
+                  <el-form-item :label="$t('settings.jsonPretty')">
+                    <el-switch v-model="config.system.logging.jsonPretty" />
+                  </el-form-item>
 
-                <el-form-item :label="$t('settings.mcpCommDebug')">
-                  <el-switch v-model="config.system.logging.mcpCommDebug" />
-                </el-form-item>
+                  <el-form-item :label="$t('settings.mcpCommDebug')">
+                    <el-switch v-model="config.system.logging.mcpCommDebug" />
+                  </el-form-item>
 
-                <el-form-item :label="$t('settings.sessionDebug')">
-                  <el-switch v-model="config.system.logging.sessionDebug" />
-                </el-form-item>
+                  <el-form-item :label="$t('settings.sessionDebug')">
+                    <el-switch v-model="config.system.logging.sessionDebug" />
+                  </el-form-item>
+                </template>
               </el-form>
             </div>
           </el-tab-pane>
@@ -133,7 +139,12 @@
             </template>
 
             <div class="pt-4">
-              <el-form :model="config.security" label-position="left" v-if="config.security">
+              <el-form
+                :model="config.security"
+                label-position="left"
+                label-width="260px"
+                v-if="config.security"
+              >
                 <el-form-item :label="$t('settings.allowedNetworks')">
                   <el-select
                     v-model="config.security.allowedNetworks"
@@ -160,7 +171,7 @@
                 <div class="space-y-4">
                   <!-- Maximum concurrent connections -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.maxConcurrentConnections')
                     }}</span>
                     <el-input-number
@@ -173,7 +184,7 @@
 
                   <!-- Maximum connections -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.maxConnections')
                     }}</span>
                     <el-input-number
@@ -186,7 +197,7 @@
 
                   <!-- Connection timeout -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.connectionTimeout')
                     }}</span>
                     <div class="flex items-center gap-2">
@@ -210,7 +221,7 @@
 
                   <!-- Idle connection timeout -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.idleConnectionTimeout')
                     }}</span>
                     <div class="flex items-center gap-2">
@@ -234,7 +245,7 @@
 
                   <!-- Session timeout -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.sessionTimeout')
                     }}</span>
                     <div class="flex items-center gap-2">
@@ -255,7 +266,7 @@
 
                   <!-- Session flush interval -->
                   <div class="flex items-center gap-4">
-                    <span class="w-40 text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
                       $t('settings.sessionFlushInterval')
                     }}</span>
                     <div class="flex items-center gap-2">
