@@ -37,7 +37,6 @@ export const LoggingConfigSchema = z
     level: z.custom<LogLevel>().default('info'),
     rotationAge: z.string().default('7d'), // e.g., "7d", "30d"
     jsonPretty: z.boolean().default(true), // Enable pretty JSON formatting in logs
-    devLogFile: z.boolean().default(false), // Enable development log file output
     mcpCommDebug: z.boolean().default(false), // Enable MCP communication debug logging
     sessionDebug: z.boolean().default(false) // Enable session debug logging
   })
@@ -45,7 +44,6 @@ export const LoggingConfigSchema = z
     level: 'info',
     rotationAge: '7d',
     jsonPretty: true,
-    devLogFile: false,
     mcpCommDebug: false,
     sessionDebug: false
   });
@@ -103,7 +101,6 @@ export const SystemConfigSchema = z.object({
         level: 'info',
         rotationAge: '7d',
         jsonPretty: true,
-        devLogFile: false,
         mcpCommDebug: false,
         sessionDebug: false
       }

@@ -137,19 +137,10 @@ describe('Logger', () => {
     expect(formattedString).toBe('string error');
   });
 
-  it('should enable dev log when devLogFile setting is true', () => {
+  it('should enable dev log when DEV_LOG_FILE environment variable is "true"', () => {
     try {
-      // Enable dev log file via config getter
-      setJsonPrettyConfigGetter(() => ({
-        system: {
-          logging: {
-            jsonPretty: true,
-            devLogFile: true,
-            mcpCommDebug: false,
-            sessionDebug: false
-          }
-        }
-      }));
+      // Set DEV_LOG_FILE environment variable
+      process.env.DEV_LOG_FILE = 'true';
 
       // Mock fs and path modules to avoid file system operations
       const mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
@@ -182,7 +173,64 @@ describe('Logger', () => {
       expect(mkdirSyncSpy).toHaveBeenCalled();
       expect(createWriteStreamSpy).toHaveBeenCalled();
     } finally {
+      // Restore environment variable and mocks
+      delete process.env.DEV_LOG_FILE;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('should enable dev log when DEV_LOG_FILE environment variable is "1"', () => {
+    try {
+      // Set DEV_LOG_FILE environment variable to "1"
+      process.env.DEV_LOG_FILE = '1';
+
+      // Mock fs and path modules to avoid file system operations
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      vi.spyOn(fs, 'createWriteStream').mockImplementation(() => {
+        return {
+          write: vi.fn(),
+          end: vi.fn(),
+          close: vi.fn(),
+          destroyed: false
+        } as unknown as WriteStream;
+      });
+
+      logger = new Logger();
+
+      expect(logger.logFileStream).toBeDefined();
+    } finally {
+      // Restore environment variable and mocks
+      delete process.env.DEV_LOG_FILE;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('should NOT enable dev log when DEV_LOG_FILE environment variable is not set', () => {
+    try {
+      // Ensure DEV_LOG_FILE is not set
+      delete process.env.DEV_LOG_FILE;
+
+      logger = new Logger();
+
+      expect(logger.logFileStream).toBeNull();
+    } finally {
       // Restore mocks
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('should NOT enable dev log when DEV_LOG_FILE environment variable is other values', () => {
+    try {
+      // Set DEV_LOG_FILE to a value that should not enable
+      process.env.DEV_LOG_FILE = 'false';
+
+      logger = new Logger();
+
+      expect(logger.logFileStream).toBeNull();
+    } finally {
+      // Restore environment variable
+      delete process.env.DEV_LOG_FILE;
       vi.restoreAllMocks();
     }
   });

@@ -6,7 +6,6 @@ import {
   rawHeadersToObject,
   stringifyRawHeadersForLogging,
   getJsonPrettySetting,
-  getDevLogFileSetting,
   getMcpCommDebugSetting,
   getSessionDebugSetting
 } from '@utils/json-utils.js';
@@ -24,7 +23,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -50,7 +48,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -72,7 +69,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -95,7 +91,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -130,7 +125,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: false,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -227,7 +221,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: false,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -239,7 +232,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -259,7 +251,6 @@ describe('json-utils', () => {
   describe('all setting getters', () => {
     it('should return correct defaults when no config getter is set', () => {
       expect(getJsonPrettySetting()).toBe(true);
-      expect(getDevLogFileSetting()).toBe(false);
       expect(getMcpCommDebugSetting()).toBe(false);
       expect(getSessionDebugSetting()).toBe(false);
     });
@@ -269,7 +260,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: false,
-            devLogFile: true,
             mcpCommDebug: true,
             sessionDebug: true
           }
@@ -277,7 +267,6 @@ describe('json-utils', () => {
       }));
 
       expect(getJsonPrettySetting()).toBe(false);
-      expect(getDevLogFileSetting()).toBe(true);
       expect(getMcpCommDebugSetting()).toBe(true);
       expect(getSessionDebugSetting()).toBe(true);
     });
@@ -288,7 +277,6 @@ describe('json-utils', () => {
       });
 
       expect(getJsonPrettySetting()).toBe(true);
-      expect(getDevLogFileSetting()).toBe(false);
       expect(getMcpCommDebugSetting()).toBe(false);
       expect(getSessionDebugSetting()).toBe(false);
     });
@@ -333,7 +321,6 @@ describe('json-utils', () => {
         system: {
           logging: {
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }

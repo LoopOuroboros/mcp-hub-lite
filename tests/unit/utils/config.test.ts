@@ -178,7 +178,6 @@ describe('ConfigManager', () => {
             level: 'info',
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -240,7 +239,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -289,7 +287,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -577,7 +574,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -615,7 +611,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -669,7 +664,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -688,7 +682,6 @@ describe('ConfigManager', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }

@@ -39,7 +39,7 @@ import {
   formatLogLevel,
   formatPid
 } from './log-formatter.js';
-import { getDevLogFileSetting, setDevModeEnabled } from '../json-utils.js';
+import { setDevModeEnabled } from '../json-utils.js';
 
 export class Logger {
   private level: LogLevel = 'info';
@@ -49,7 +49,8 @@ export class Logger {
   constructor(level: LogLevel = 'info') {
     this.level = level;
 
-    if (getDevLogFileSetting()) {
+    const devLogFileEnv = process.env.DEV_LOG_FILE;
+    if (devLogFileEnv === 'true' || devLogFileEnv === '1') {
       this.enableDevLog();
     }
   }

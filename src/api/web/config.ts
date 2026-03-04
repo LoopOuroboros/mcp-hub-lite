@@ -21,6 +21,7 @@ import { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
 import type { SystemConfig, ServerConfig } from '@config/config-manager.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
+import { isDevModeEnabled } from '@utils/json-utils.js';
 
 interface ServersUpdateRequest {
   servers: Record<string, ServerConfig>;
@@ -31,7 +32,11 @@ export async function configRoutes(fastify: FastifyInstance) {
   fastify.get('/web/config', async (_request, reply) => {
     try {
       const config = configManager.getConfig();
-      return reply.send(config);
+      const isDevMode = isDevModeEnabled();
+      return reply.send({
+        ...config,
+        isDevMode
+      });
     } catch (error: unknown) {
       const errorObj = error as Error;
       return reply.code(500).send({

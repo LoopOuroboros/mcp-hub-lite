@@ -95,7 +95,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -141,7 +140,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -190,7 +188,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -250,7 +247,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -317,7 +313,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -406,7 +401,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -470,7 +464,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }
@@ -530,7 +523,6 @@ describe('Server Runner', () => {
             level: 'info' as const,
             rotationAge: '7d',
             jsonPretty: true,
-            devLogFile: false,
             mcpCommDebug: false,
             sessionDebug: false
           }

@@ -19,6 +19,16 @@ export function setDevModeEnabled(enabled: boolean): void {
 }
 
 /**
+ * Get the dev mode flag.
+ * Returns true if we're in dev mode (dev log is enabled).
+ *
+ * @returns boolean indicating whether dev mode is enabled
+ */
+export function isDevModeEnabled(): boolean {
+  return _isDevModeEnabled;
+}
+
+/**
  * Get default value for config settings based on dev mode.
  * In dev mode, debugging settings default to true if not explicitly configured.
  *
@@ -88,7 +98,6 @@ type ConfigGetter = () => {
   system: {
     logging: {
       jsonPretty: boolean;
-      devLogFile: boolean;
       mcpCommDebug: boolean;
       sessionDebug: boolean;
     };
@@ -154,23 +163,6 @@ export function getJsonPrettySetting(): boolean {
     }
   }
   return true; // Default to true (matches current default in config schema)
-}
-
-/**
- * Get dev log file setting from config getter.
- *
- * @returns boolean indicating whether to enable development log file output
- */
-export function getDevLogFileSetting(): boolean {
-  if (_configGetter) {
-    try {
-      const config = _configGetter();
-      return config.system.logging.devLogFile;
-    } catch {
-      // Fall through to default if config getter fails
-    }
-  }
-  return getDefaultForDevMode(false);
 }
 
 /**
