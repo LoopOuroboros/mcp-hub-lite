@@ -1,0 +1,38 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "include": [
+    "frontend/src/**/*",
+    "frontend/src/**/*.vue",
+    "shared/**/*",
+    "frontend/src/auto-imports.d.ts",
+    "frontend/src/components.d.ts"
+  ],
+  "exclude": ["src/**", "tests/**", "node_modules"],
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "outDir": "./dist/frontend-types",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.frontend.tsbuildinfo",
+    "baseUrl": ".",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./frontend/src/*"],
+      "@composables/*": ["./frontend/src/composables/*"],
+      "@components/*": ["./frontend/src/components/*"],
+      "@i18n/*": ["./frontend/src/i18n/*"],
+      "@locales/*": ["./frontend/src/locales/*"],
+      "@router/*": ["./frontend/src/router/*"],
+      "@shared/*": ["./shared/*"],
+      "@shared-models/*": ["./shared/models/*"],
+      "@shared-types/*": ["./shared/types/*"],
+      "@stores/*": ["./frontend/src/stores/*"],
+      "@utils/*": ["./frontend/src/utils/*"],
+      "@views/*": ["./frontend/src/views/*"]
+    }
+  }
+}
