@@ -55,6 +55,21 @@ MCP-HUB-LITE is an MCP server gateway designed specifically for independent deve
 
 ### Installation
 
+#### Install from npm
+
+```bash
+# Install from npm
+npm install -g @loop_ouroboros/mcp-hub-lite
+
+# Start the service
+mcp-hub-lite start
+
+# Open UI
+mcp-hub-lite ui
+```
+
+#### Build from source
+
 ```bash
 # Install dependencies
 npm install
