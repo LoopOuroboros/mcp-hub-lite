@@ -12,6 +12,9 @@ out/
 coverage/
 /config/
 
+# Vite cache
+.vite/
+
 # Environment files
 .env
 .env.local
