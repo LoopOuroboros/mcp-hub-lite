@@ -53,7 +53,7 @@
           {{ $t('dashboard.running') }}
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-white">
-          {{ store.stats.running }}
+          {{ store.stats.online }}
         </div>
       </div>
       <div
@@ -231,9 +231,11 @@ function formatTimestamp(timestamp: number) {
  */
 function getStatusIcon(status: string) {
   switch (status) {
-    case 'running':
+    case 'online':
       return VideoPlay;
-    case 'stopped':
+    case 'offline':
+      return CircleClose;
+    case 'stopping':
       return CircleClose;
     case 'error':
       return Warning;
@@ -252,9 +254,11 @@ function getStatusIcon(status: string) {
  */
 function getStatusColor(status: string) {
   switch (status) {
-    case 'running':
+    case 'online':
       return 'text-green-500';
-    case 'stopped':
+    case 'offline':
+      return 'text-gray-400';
+    case 'stopping':
       return 'text-gray-400';
     case 'error':
       return 'text-yellow-500';

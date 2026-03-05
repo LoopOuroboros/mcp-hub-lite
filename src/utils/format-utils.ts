@@ -5,11 +5,11 @@
 /**
  * Format uptime duration in HH:MM:SS format
  * @param startTime - The start timestamp in milliseconds
- * @param status - The server status (only 'running' will show actual uptime)
+ * @param status - The server status (only 'online' will show actual uptime)
  * @returns Formatted uptime string in HH:MM:SS format
  */
 export function formatUptime(startTime?: number, status?: string): string {
-  if (!startTime || status !== 'running') {
+  if (!startTime || status !== 'online') {
     return '00:00:00';
   }
 

@@ -9,7 +9,7 @@ const mockServerStore = {
   loading: false,
   stats: {
     total: 0,
-    running: 0,
+    online: 0,
     errors: 0
   },
   fetchAllLogs: vi.fn()
@@ -69,7 +69,7 @@ describe('Dashboard Component', () => {
       {
         id: '1',
         name: 'test-server',
-        status: 'running',
+        status: 'online',
         type: 'local',
         config: { type: 'stdio' },
         instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
@@ -78,7 +78,7 @@ describe('Dashboard Component', () => {
     ];
     mockServerStore.stats = {
       total: 1,
-      running: 1,
+      online: 1,
       errors: 0
     };
 
@@ -101,7 +101,7 @@ describe('Dashboard Component', () => {
       {
         id: '1',
         name: 'test-server',
-        status: 'running',
+        status: 'online',
         type: 'local',
         config: { type: 'stdio' },
         instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
@@ -110,7 +110,7 @@ describe('Dashboard Component', () => {
     ];
     mockServerStore.stats = {
       total: 1,
-      running: 1,
+      online: 1,
       errors: 0
     };
 
@@ -133,7 +133,7 @@ describe('Dashboard Component', () => {
       {
         id: '1',
         name: 'test-server',
-        status: 'running',
+        status: 'online',
         type: 'local',
         config: { type: 'stdio' },
         instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
@@ -142,7 +142,7 @@ describe('Dashboard Component', () => {
     ];
     mockServerStore.stats = {
       total: 1,
-      running: 1,
+      online: 1,
       errors: 0
     };
 

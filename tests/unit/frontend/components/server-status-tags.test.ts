@@ -7,7 +7,7 @@ describe('ServerStatusTags', () => {
   const mockServer = {
     id: 'test-server',
     name: 'Test Server',
-    status: 'running' as const,
+    status: 'online' as const,
     version: '1.0.0',
     pid: 12345,
     config: {
@@ -30,7 +30,7 @@ describe('ServerStatusTags', () => {
     });
 
     // Check status badge
-    expect(wrapper.text()).toContain('running');
+    expect(wrapper.text()).toContain('online');
 
     // Check transport info
     expect(wrapper.text()).toContain('stdio');
@@ -60,7 +60,7 @@ describe('ServerStatusTags', () => {
   });
 
   test('handles different server statuses', () => {
-    const statuses = ['running', 'stopped', 'error', 'starting'] as const;
+    const statuses = ['online', 'offline', 'error', 'starting', 'stopping'] as const;
 
     for (const status of statuses) {
       const wrapper = mount(ServerStatusTags, {

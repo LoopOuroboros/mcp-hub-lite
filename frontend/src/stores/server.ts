@@ -72,11 +72,11 @@ export const useServerStore = defineStore('server', () => {
   /**
    * Computed property that provides server statistics
    *
-   * @returns {Object} Statistics object with total, running, and error counts
+   * @returns {Object} Statistics object with total, online, and error counts
    */
   const stats = computed(() => ({
     total: servers.value.length,
-    running: servers.value.filter((s) => s.status === 'online').length,
+    online: servers.value.filter((s) => s.status === 'online').length,
     errors: servers.value.filter((s) => s.status === 'error').length
   }));
 

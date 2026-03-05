@@ -36,7 +36,7 @@ describe('Server Store', () => {
   it('should have correct stats when no servers', () => {
     const store = useServerStore();
     expect(store.stats.total).toBe(0);
-    expect(store.stats.running).toBe(0);
+    expect(store.stats.online).toBe(0);
     expect(store.stats.errors).toBe(0);
   });
 
@@ -190,7 +190,7 @@ describe('Server Store', () => {
     ];
 
     expect(store.stats.total).toBe(3);
-    expect(store.stats.running).toBe(1);
+    expect(store.stats.online).toBe(1);
     expect(store.stats.errors).toBe(1);
   });
 });

@@ -102,7 +102,6 @@ const props = defineProps<ServerStatusTagsProps>();
  */
 function getStatusBadgeClass(status: string) {
   switch (status) {
-    case 'running':
     case 'online':
       return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
     case 'error':
@@ -110,6 +109,7 @@ function getStatusBadgeClass(status: string) {
     case 'starting':
     case 'stopping':
       return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800';
+    case 'offline':
     default:
       return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
   }
@@ -123,7 +123,6 @@ function getStatusBadgeClass(status: string) {
  */
 function getStatusDotClass(status: string) {
   switch (status) {
-    case 'running':
     case 'online':
       return 'bg-green-500';
     case 'error':
@@ -131,6 +130,7 @@ function getStatusDotClass(status: string) {
     case 'starting':
     case 'stopping':
       return 'bg-yellow-500';
+    case 'offline':
     default:
       return 'bg-gray-400';
   }
