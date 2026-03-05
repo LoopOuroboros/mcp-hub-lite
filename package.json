@@ -1,10 +1,9 @@
 {
-  "name": "mcp-hub-lite",
+  "name": "@loop_ouroboros/mcp-hub-lite",
   "version": "1.0.0",
-  "private": false,
   "description": "A lightweight MCP management platform designed for independent developers",
   "license": "MIT",
-  "author": "LoopOuroboros <36392404+LoopOuroboros@users.noreply.github.com>",
+  "author": "loop_ouroboros",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -27,21 +26,14 @@
   "type": "module",
   "main": "dist/server/src/cli/index.js",
   "bin": {
-    "mcp-hub-lite": "./dist/server/src/cli/index.js"
+    "mcp-hub-lite": "dist/server/src/cli/index.js"
   },
   "files": [
-    "dist/server/src",
-    "dist/server/shared",
-    "dist/client",
+    "dist",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
-  "exports": {
-    ".": {
-      "import": "./dist/server/src/cli/index.js"
-    }
-  },
   "scripts": {
     "start": "node dist/server/src/cli/index.js start",
     "stop": "node dist/server/src/cli/index.js stop",
