@@ -1,5 +1,92 @@
 # Changelog
 
+## 2026-03-04
+
+- **CLI Fix**: Ensure CLI commands exit properly after execution
+- **CLI/Logger Fix**: Fix server startup and log ANSI color issues
+- **CLI Enhancement**: Enhance status command with formatted output
+- **UI Enhancement**: Improve settings page UI and dev mode handling
+- **Logging Refactor**: Improve MCP gateway logging
+- **Logging Refactor**: Unify dev mode detection, remove devLogFile config
+- **Logging Enhancement**: Enhance stdio transport with log store integration
+
+## 2026-03-03
+
+- **Test Update**: Update tests for new log config system
+- **Logging Fix**: Use getMcpCommDebugSetting() in connection-manager
+- **Logging Refactor**: Unify logging configuration system
+- **Config Enhancement**: Extend config schema with new log options
+- **UI Enhancement**: Add new logging config options in settings
+- **Logging Refactor**: Extract and unify MCP notification message handling
+- **Logging Fix**: Improve stderr log level detection logic
+- **Logging Refactor**: Use MCP_COMM_DEBUG environment variable for communication logs
+- **Gateway Refactor**: Remove SSE connection timestamp tracking
+- **Session Enhancement**: Count expired sessions and use configured flush interval
+- **Logging Enhancement**: Filter binary image data in MCP response logs
+- **UI Styling**: Remove trailing semicolon in SettingsView style
+- **Refactor**: Improve type handling and SSE logging
+- **Documentation**: Update project documentation
+- **UI Refactor**: Implement Element Plus auto-import
+- **UI Fix**: Fix el-input-number width issue in SettingsView
+
+## 2026-03-02
+
+- **Session Enhancement**: Skip expired sessions during recovery
+- **Telemetry Removal**: Remove OpenTelemetry and telemetry features
+- **Styling**: Format codebase with prettier
+- **SSE Enhancement**: Add connection timeout config and reconnection detection
+- **Logging Enhancement**: Enhance JSON pretty-printing with newline handling
+- **Logging Styling**: Unify LOG_MODULES format as PascalCase
+- **Session Refactor**: Simplify session matching logic
+
+## 2026-03-01
+
+- **Logging Refactor**: Change log file naming to timestamp-based format
+- **Refactor**: Add LOG_MODULES context and update hub-manager service tests
+- **Session Enhancement**: Enhance sessionId extraction with header support and improved fallback logic
+- **Session Refactor**: Extract session manager to modular structure
+- **Connection Refactor**: Extract connection manager to modular structure
+
+## 2026-02-28
+
+- **Documentation**: Update CLAUDE.md with project initialization summary
+- **Logging Refactor**: Rename subModule to module, add LOG_MODULES constants
+- **Hub-Tools Refactor**: Extract hub-tools.service.ts to modular structure
+- **Gateway Refactor**: Extract gateway.service.ts to modular structure
+- **API/MCP Refactor**: Extract gateway module to separate files
+- **Config Refactor**: Split config-manager to modular structure
+- **Logging Refactor**: Add missing subModule context to log statements
+- **Logging Refactor**: Split monolithic logger to modular structure
+- **Gateway Fix**: Add missing uri field in ReadMcpResourceTool response
+
+## 2026-02-27
+
+- **Gateway Refactor**: Enhance SSE stream management and response logging
+- **Refactor**: Remove duplicate debug logging in gateway
+- **Refactor**: Resolve config-logger circular dependency with config getter pattern
+- **Logging Fix**: Use stringifyForLogging for gateway header, improve rawHeaders readability
+
+## 2026-02-26
+
+- **Refactor**: Fix ESM imports and optimize CLI startup performance
+- **Frontend Enhancement**: Add type safety for JsonSchema in frontend ToolsView
+- **Documentation**: Update docs for config path and logging
+- **Enhancement**: Enhance dev server startup logging
+- **Refactor**: Optimize logging verbosity
+- **Enhancement**: Add rawHeaders operation for session header propagation
+- **Enhancement**: Enhance session persistence and cleanup logic
+- **Enhancement**: Introduce unified system tools processor and prefix tool name support
+- **Enhancement**: Enhance session management with consistency check and request header handling
+- **Refactor**: Optimize logger options extraction
+- **Enhancement**: Improve tool call dialog and system tools display
+
+## 2026-02-25
+
+- **Enhancement**: Enhance documentation and system configuration
+- **MCP Connection Manager Refactor**: Optimize getTools/getResources logging with cache hit indicator and resource cache improvements
+- **Refactor**: Extract common stderr handling logic to reduce code duplication
+- **Enhancement**: Add server description field and resource detail improvements
+
 ## 2026-02-15
 
 - **Session Persistence Feature**: Implement session state persistence to disk with dirty tracking and batch flushing
