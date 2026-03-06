@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-03-06
+
+- **System Tool Fix**: Fix system tool call validation errors when requestOptions.sessionId is null
+- **Frontend Fix**: Change system tool serverName from 'system' to 'mcp-hub-lite' for consistency
+- **Zod Schema Enhancement**: Enhance sessionId schema to accept null and transform to undefined
+- **ToolCallDialog Improvement**: Only include requestOptions when selectedInstanceId has value
+- **Version Bump**: Update package.json version to 1.0.1
+
+## 2026-03-05
+
+- **Project Initialization**: Execute full project documentation architecture initialization and update
+- **Root CLAUDE.md Update**: Add 2026-03-05 changelog entry, verify module structure diagram and navigation link integrity
+- **Module Documentation Status Check**: Confirm CLAUDE.md document status for all 20 major modules
+- **Coverage Report Verification**: Verify project scan coverage and scan status
+
 ## 2026-03-04
 
 - **CLI Fix**: Ensure CLI commands exit properly after execution

@@ -31,7 +31,7 @@
       </div>
 
       <!-- Server Instance Selection -->
-      <div v-if="serverName && serverName !== 'system'" class="mb-4 flex items-center">
+      <div v-if="serverName && serverName !== 'mcp-hub-lite'" class="mb-4 flex items-center">
         <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
           t('toolCallDialog.instance')
         }}</span>
@@ -402,17 +402,18 @@ async function handleCall() {
     showInputSchema.value = false;
 
     let response;
-    if (props.serverName) {
+    if (props.serverName && props.serverName !== 'mcp-hub-lite') {
       response = await http.post(
         `/web/hub-tools/servers/${props.serverName}/tools/${props.toolName}/call`,
         {
           toolArgs: args,
-          requestOptions: {
-            sessionId: selectedInstanceId.value // Use selected instance ID as sessionId
-          }
+          requestOptions: selectedInstanceId.value
+            ? { sessionId: selectedInstanceId.value }
+            : undefined
         }
       );
     } else {
+      // Call system tool (either no serverName or serverName is 'mcp-hub-lite')
       response = await http.post(`/web/hub-tools/system/${props.toolName}/call`, {
         toolArgs: args
       });
