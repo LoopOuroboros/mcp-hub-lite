@@ -61,7 +61,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       serverName: z.string(),
       requestOptions: z
         .object({
-          sessionId: z.string().optional(),
+          sessionId: z
+            .union([z.string(), z.null()])
+            .optional()
+            .transform((val) => val ?? undefined),
           tags: z.record(z.string(), z.string()).optional()
         })
         .optional()
@@ -95,7 +98,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       caseSensitive: z.boolean().optional().default(false),
       requestOptions: z
         .object({
-          sessionId: z.string().optional(),
+          sessionId: z
+            .union([z.string(), z.null()])
+            .optional()
+            .transform((val) => val ?? undefined),
           tags: z.record(z.string(), z.string()).optional()
         })
         .optional()
@@ -127,7 +133,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       toolName: z.string(),
       requestOptions: z
         .object({
-          sessionId: z.string().optional(),
+          sessionId: z
+            .union([z.string(), z.null()])
+            .optional()
+            .transform((val) => val ?? undefined),
           tags: z.record(z.string(), z.string()).optional()
         })
         .optional()
@@ -169,7 +178,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       toolArgs: z.record(z.string(), z.unknown()),
       requestOptions: z
         .object({
-          sessionId: z.string().optional(),
+          sessionId: z
+            .union([z.string(), z.null()])
+            .optional()
+            .transform((val) => val ?? undefined),
           tags: z.record(z.string(), z.string()).optional()
         })
         .optional()

@@ -177,7 +177,7 @@ async function fetchSystemTools() {
     systemTools.value = tools
       .map((tool) => ({
         ...tool,
-        serverName: 'system'
+        serverName: 'mcp-hub-lite'
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {

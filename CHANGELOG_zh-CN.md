@@ -1,5 +1,13 @@
 # 变更记录 (Changelog)
 
+## 2026-03-06
+
+- **系统工具修复**：修复 requestOptions.sessionId 为 null 时的系统工具调用验证错误
+- **前端修复**：将系统工具的 serverName 从 'system' 改为 'mcp-hub-lite' 以保持一致性
+- **Zod Schema 增强**：增强 sessionId schema 以接受 null 并转换为 undefined
+- **ToolCallDialog 改进**：仅在 selectedInstanceId 有值时才包含 requestOptions
+- **版本更新**：将 package.json 版本更新至 1.0.1
+
 ## 2026-03-05
 
 - **项目初始化任务执行**：执行全项目文档架构初始化与更新
