@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { getClientContext } from '@utils/request-context.js';
 import { clientTrackerService } from '@services/client-tracker.service.js';
@@ -35,9 +36,15 @@ export function registerInitializeHandlers(server: McpServer): void {
                 execute: z.boolean().optional()
               })
               .optional(),
+            roots: z
+              .object({
+                list: z.boolean().optional()
+              })
+              .optional(),
             experimental: z.record(z.string(), z.any()).optional()
           })
-          .optional()
+          .optional(),
+        protocolVersion: z.string().optional()
       })
       .optional(),
     id: z.union([z.string(), z.number()]),
@@ -49,15 +56,24 @@ export function registerInitializeHandlers(server: McpServer): void {
     const context = getClientContext();
     if (context && request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
+      const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
+
       logger.info(
         `Initialized client: ${name} v${version} (ID: ${context.sessionId})`,
         LOG_MODULES.GATEWAY
       );
 
-      // Update client info in tracker
+      if (clientCapabilities?.roots) {
+        logger.debug(`Client ${name} supports roots capability`, LOG_MODULES.GATEWAY);
+      }
+
+      // Update client info in tracker with capabilities
       clientTrackerService.updateClient({
         ...context,
-        clientName: name
+        clientName: name,
+        clientVersion: version,
+        protocolVersion: request.params?.protocolVersion,
+        capabilities: clientCapabilities
       });
     }
 
@@ -92,5 +108,37 @@ export function registerInitializeHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(PingRequestSchema, async () => {
     return { pong: true }; // Response format compliant with MCP specification
+  });
+
+  // MCP initialized notification handler
+  const InitializedNotificationSchema = z.object({
+    method: z.literal('notifications/initialized'),
+    params: z.any().optional(),
+    jsonrpc: z.literal('2.0')
+  });
+
+  server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
+    const context = getClientContext();
+    if (!context) {
+      logger.warn(
+        'Received initialized notification but no client context available',
+        LOG_MODULES.GATEWAY
+      );
+      return;
+    }
+
+    const clientInfo = clientTrackerService.getClient(context.sessionId);
+    if (!clientInfo) {
+      logger.warn(
+        `Received initialized notification but no client info for session ${context.sessionId}`,
+        LOG_MODULES.GATEWAY
+      );
+      return;
+    }
+
+    logger.debug(
+      `Received initialized notification from client ${clientInfo.clientName || 'unknown'} (${context.sessionId})`,
+      LOG_MODULES.GATEWAY
+    );
   });
 }
