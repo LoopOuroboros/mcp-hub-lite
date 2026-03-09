@@ -110,17 +110,22 @@
 
             <el-form-item :label="$t('serverDetail.config.env')">
               <div class="w-full flex flex-col gap-2">
-                <div v-for="(_, key) in server.config.env" :key="key" class="flex gap-2 w-full">
+                <div
+                  v-for="(_, key) in server.config.env"
+                  :key="key"
+                  class="flex gap-2 w-full"
+                  style="display: flex; gap: 0.5rem; width: 100%"
+                >
                   <el-input
                     v-model="envKeys[key as string]"
                     :placeholder="$t('addServer.keyPlaceholder')"
-                    class="w-1/3"
+                    style="width: 30%; min-width: 150px"
                     @change="(val: string) => updateEnvKey(key as string, val)"
                   />
                   <el-input
                     v-model="server.config.env![key]"
                     :placeholder="$t('addServer.valuePlaceholder')"
-                    class="flex-1"
+                    style="flex: 1"
                   />
                   <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
                 </div>
