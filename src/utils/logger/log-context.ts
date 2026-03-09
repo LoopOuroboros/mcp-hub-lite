@@ -9,6 +9,7 @@ export interface LogContext {
   module?: string;
   traceId?: string;
   spanId?: string;
+  caller?: string;
 }
 
 export type LogOptions = Omit<LogContext, 'pid' | 'serverName'>;

@@ -246,6 +246,100 @@ describe('json-utils', () => {
       });
       expect(getJsonPrettySetting()).toBe(true);
     });
+
+    it('should respect LOG_JSON_PRETTY environment variable when set to "true"', () => {
+      try {
+        process.env.LOG_JSON_PRETTY = 'true';
+        setJsonPrettyConfigGetter(() => ({
+          system: {
+            logging: {
+              jsonPretty: false, // Config says false, but env should override
+              mcpCommDebug: false,
+              sessionDebug: false
+            }
+          }
+        }));
+        expect(getJsonPrettySetting()).toBe(true);
+      } finally {
+        delete process.env.LOG_JSON_PRETTY;
+        setJsonPrettyConfigGetter(null);
+      }
+    });
+
+    it('should respect LOG_JSON_PRETTY environment variable when set to "1"', () => {
+      try {
+        process.env.LOG_JSON_PRETTY = '1';
+        setJsonPrettyConfigGetter(() => ({
+          system: {
+            logging: {
+              jsonPretty: false, // Config says false, but env should override
+              mcpCommDebug: false,
+              sessionDebug: false
+            }
+          }
+        }));
+        expect(getJsonPrettySetting()).toBe(true);
+      } finally {
+        delete process.env.LOG_JSON_PRETTY;
+        setJsonPrettyConfigGetter(null);
+      }
+    });
+
+    it('should respect LOG_JSON_PRETTY environment variable when set to "false"', () => {
+      try {
+        process.env.LOG_JSON_PRETTY = 'false';
+        setJsonPrettyConfigGetter(() => ({
+          system: {
+            logging: {
+              jsonPretty: true, // Config says true, but env should override
+              mcpCommDebug: false,
+              sessionDebug: false
+            }
+          }
+        }));
+        expect(getJsonPrettySetting()).toBe(false);
+      } finally {
+        delete process.env.LOG_JSON_PRETTY;
+        setJsonPrettyConfigGetter(null);
+      }
+    });
+
+    it('should respect LOG_JSON_PRETTY environment variable when set to "0"', () => {
+      try {
+        process.env.LOG_JSON_PRETTY = '0';
+        setJsonPrettyConfigGetter(() => ({
+          system: {
+            logging: {
+              jsonPretty: true, // Config says true, but env should override
+              mcpCommDebug: false,
+              sessionDebug: false
+            }
+          }
+        }));
+        expect(getJsonPrettySetting()).toBe(false);
+      } finally {
+        delete process.env.LOG_JSON_PRETTY;
+        setJsonPrettyConfigGetter(null);
+      }
+    });
+
+    it('should use config getter when LOG_JSON_PRETTY is not set', () => {
+      try {
+        delete process.env.LOG_JSON_PRETTY;
+        setJsonPrettyConfigGetter(() => ({
+          system: {
+            logging: {
+              jsonPretty: false,
+              mcpCommDebug: false,
+              sessionDebug: false
+            }
+          }
+        }));
+        expect(getJsonPrettySetting()).toBe(false);
+      } finally {
+        setJsonPrettyConfigGetter(null);
+      }
+    });
   });
 
   describe('all setting getters', () => {

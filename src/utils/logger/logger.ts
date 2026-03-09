@@ -10,6 +10,7 @@
  * - Error formatting with stack trace truncation to prevent overly verbose logs
  * - MCP server-specific logging with serverName context
  * - Log rotation with date-based file naming and automatic cleanup
+ * - Caller location information (file name and line number)
  *
  * The logger supports four log levels: debug, info, warn, and error, with configurable
  * minimum log level threshold.
@@ -37,7 +38,9 @@ import {
   formatError,
   formatTimestamp,
   formatLogLevel,
-  formatPid
+  formatPid,
+  getCallerInfo,
+  formatCallerInfo
 } from './log-formatter.js';
 import { setDevModeEnabled } from '../json-utils.js';
 
@@ -45,6 +48,7 @@ export class Logger {
   private level: LogLevel = 'info';
   private useStderr: boolean = false;
   private useColor: boolean = true;
+  private showCaller: boolean = true;
   private devLogger: DevLogger = new DevLogger();
 
   constructor(level: LogLevel = 'info') {
@@ -59,6 +63,26 @@ export class Logger {
     if (noColorEnv === 'true' || noColorEnv === '1' || noColorEnv === '') {
       this.setUseColor(false);
     }
+
+    // Check LOG_CALLER environment variable
+    const logCallerEnv = process.env.LOG_CALLER;
+    if (logCallerEnv === 'false' || logCallerEnv === '0') {
+      this.setShowCaller(false);
+    }
+  }
+
+  /**
+   * Enable or disable caller information in logs.
+   * When enabled, logs will show the file name and line number where the log was called.
+   *
+   * @param show - Whether to show caller information
+   * @example
+   * ```typescript
+   * logger.setShowCaller(false); // Disable caller info
+   * ```
+   */
+  public setShowCaller(show: boolean): void {
+    this.showCaller = show;
   }
 
   /**
@@ -122,13 +146,20 @@ export class Logger {
       fullMessage = `${message} ${formattedArgs}`;
     }
 
-    const context: LogContext | undefined = options
-      ? {
-          module: options.module,
-          traceId: options.traceId,
-          spanId: options.spanId
-        }
-      : undefined;
+    // Build context object
+    const context: LogContext = {
+      ...(options?.module && { module: options.module }),
+      ...(options?.traceId && { traceId: options.traceId }),
+      ...(options?.spanId && { spanId: options.spanId })
+    };
+
+    // Add caller info if enabled
+    if (this.showCaller) {
+      const callerInfo = getCallerInfo(4); // Skip 4 frames to get to the actual caller
+      if (callerInfo) {
+        context.caller = formatCallerInfo(callerInfo);
+      }
+    }
 
     const coloredLogMsg = createColoredLogMessage(level, fullMessage, context);
     const plainLogMsg = createLogMessage(level, fullMessage, context);
@@ -303,10 +334,21 @@ export class Logger {
     message: string,
     context?: Omit<LogContext, 'serverName'>
   ): void {
+    // Build log context with server name
     const logContext: LogContext = {
       ...context,
       serverName
     };
+
+    // Add caller info if enabled (only once per serverLog call would be better,
+    // but for consistency with multi-line logging, we add it for each line)
+    if (this.showCaller) {
+      const callerInfo = getCallerInfo(5); // Skip 5 frames to get to the actual caller
+      if (callerInfo) {
+        logContext.caller = formatCallerInfo(callerInfo);
+      }
+    }
+
     const coloredLogMsg = createColoredLogMessage(level, message, logContext);
     const plainLogMsg = createLogMessage(level, message, logContext);
     const consoleLogMsg = this.useColor ? coloredLogMsg : plainLogMsg;

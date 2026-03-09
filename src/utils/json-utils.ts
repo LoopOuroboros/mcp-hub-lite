@@ -154,6 +154,13 @@ export function stringifyRawHeadersForLogging(rawHeaders: string[]): string {
  * @returns boolean indicating whether to use pretty JSON formatting
  */
 export function getJsonPrettySetting(): boolean {
+  // Check environment variable first (highest priority)
+  const envValue = process.env.LOG_JSON_PRETTY;
+  if (envValue !== undefined) {
+    return envValue === 'true' || envValue === '1';
+  }
+
+  // Then check config getter
   if (_configGetter) {
     try {
       const config = _configGetter();

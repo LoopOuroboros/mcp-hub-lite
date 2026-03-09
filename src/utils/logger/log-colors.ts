@@ -14,7 +14,8 @@ export const COLORS = {
   red: '\x1b[31m',
   gray: '\x1b[90m',
   brightCyan: '\x1b[96m',
-  brightMagenta: '\x1b[95m'
+  brightMagenta: '\x1b[95m',
+  brightBlue: '\x1b[94m'
 } as const;
 
 /**
