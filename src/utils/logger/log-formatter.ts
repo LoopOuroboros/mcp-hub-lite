@@ -135,7 +135,9 @@ function getCallerInfoFromStackString(skipFrames: number): CallerInfo | null {
     // at ... (file:///D:/path/src/file.ts:123:45)
     // at ... (D:\path\src\file.ts:123:45)
     // at file:///D:/path/src/file.ts:123:45
-    const match = line.match(/(?:\(|at\s+)([^:\s]+\/src\/[^:\s\)]+|\S+\\src\\[^:\s\)]+):(\d+)(?::(\d+))?/);
+    const match = line.match(
+      /(?:\(|at\s+)([^:\s]+\/src\/[^:\s)]+|\S+\\src\\[^:\s)]+):(\d+)(?::(\d+))?/
+    );
 
     if (match) {
       let filePath = match[1];
