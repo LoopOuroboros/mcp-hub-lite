@@ -82,6 +82,7 @@ class ClientTrackerService {
       clientName: context.clientName || existing?.clientName,
       clientVersion: context.clientVersion || existing?.clientVersion,
       protocolVersion: context.protocolVersion || existing?.protocolVersion,
+      capabilities: context.capabilities || existing?.capabilities,
       project: context.project || existing?.project,
       cwd: context.cwd || existing?.cwd, // Preserve CWD if not provided in new request (e.g. inferred from roots)
       userAgent: context.userAgent || existing?.userAgent,
@@ -141,6 +142,28 @@ class ClientTrackerService {
           client.cwd = root.uri;
         }
         logger.debug(`Inferred CWD for session ${sessionId} from roots: ${client.cwd}`);
+      }
+
+      // If project is missing, try to infer from roots (use name or last path segment)
+      if (!client.project && roots.length > 0) {
+        const root = roots[0];
+        if (root.name) {
+          client.project = root.name;
+        } else if (root.uri.startsWith('file://')) {
+          try {
+            const localPath = fileURLToPath(root.uri);
+            const pathSegments = localPath.split(/[/\\]/);
+            const lastSegment = pathSegments.filter(Boolean).pop();
+            if (lastSegment) {
+              client.project = lastSegment;
+            }
+          } catch {
+            // If path parsing fails, don't set project
+          }
+        }
+        if (client.project) {
+          logger.debug(`Inferred project for session ${sessionId} from roots: ${client.project}`);
+        }
       }
     }
   }
