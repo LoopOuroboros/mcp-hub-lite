@@ -3,11 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Define mocks first
 const mocks = vi.hoisted(() => {
   const mockToolCache = new Map();
+  const mockListRoots = vi.fn();
 
   return {
     setRequestHandler: vi.fn(),
     setNotificationHandler: vi.fn(),
     request: vi.fn(),
+    listRoots: mockListRoots,
     connect: vi.fn(),
     getAllTools: vi.fn(),
     callTool: vi.fn(),
@@ -22,6 +24,11 @@ const mocks = vi.hoisted(() => {
     findServers: vi.fn(),
     getSystemTools: vi.fn().mockReturnValue([]),
     updateClientRoots: vi.fn(),
+    updateClient: vi.fn(),
+    getClient: vi.fn().mockReturnValue({
+      sessionId: 'test-session',
+      capabilities: { roots: { list: true } }
+    }),
     getClientContext: vi.fn().mockReturnValue({ sessionId: 'test-session' }),
     mockToolCache
   };
@@ -31,6 +38,8 @@ const mocks = vi.hoisted(() => {
 vi.mock('@services/client-tracker.service.js', () => ({
   clientTrackerService: {
     updateClientRoots: mocks.updateClientRoots,
+    updateClient: mocks.updateClient,
+    getClient: mocks.getClient,
     getClients: vi.fn().mockReturnValue([])
   }
 }));
@@ -90,7 +99,8 @@ vi.mock('@modelcontextprotocol/sdk/server/mcp.js', () => {
       server = {
         setRequestHandler: mocks.setRequestHandler,
         setNotificationHandler: mocks.setNotificationHandler,
-        request: mocks.request
+        request: mocks.request,
+        listRoots: mocks.listRoots
       };
       connect = mocks.connect;
     }
@@ -325,33 +335,32 @@ describe('GatewayService', () => {
     expect(result.tools.some((t: Tool) => t.name === 'list_servers')).toBe(true);
   });
 
-  // it('should fetch roots on initialized notification', async () => {
-  //   // Find initialized notification handler
-  //   let initializedHandler: Function | undefined;
-  //   for (const call of mocks.setNotificationHandler.mock.calls) {
-  //       const schemaStr = JSON.stringify(call[0]);
-  //       if (schemaStr.includes('"notifications/initialized"')) {
-  //           initializedHandler = call[1];
-  //           break;
-  //       }
-  //   }
-  //   expect(initializedHandler).toBeDefined();
-  //
-  //   // Mock server.request returning roots
-  //   vi.mocked(mocks.request).mockResolvedValue({ roots: [{ uri: 'file:///test/path' }] });
-  //
-  //   // Call the handler
-  //   await initializedHandler!();
-  //
-  //   // Verify request was made
-  //   expect(mocks.request).toHaveBeenCalledWith(
-  //       expect.objectContaining({ method: 'roots/list' }),
-  //       expect.anything()
-  //   );
-  //
-  //   // Verify client tracker was updated
-  //   expect(mocks.updateClientRoots).toHaveBeenCalledWith('test-session', [{ uri: 'file:///test/path' }]);
-  // });
+  it('should fetch roots on initialized notification', async () => {
+    // Find initialized notification handler
+    let initializedHandler: (() => Promise<void>) | undefined;
+    for (const call of mocks.setNotificationHandler.mock.calls) {
+      const schemaStr = JSON.stringify(call[0]);
+      if (schemaStr.includes('"notifications/initialized"')) {
+        initializedHandler = call[1];
+        break;
+      }
+    }
+    expect(initializedHandler).toBeDefined();
+
+    // Mock server.server.listRoots returning roots
+    vi.mocked(mocks.listRoots).mockResolvedValue({ roots: [{ uri: 'file:///test/path' }] });
+
+    // Call the handler
+    await initializedHandler!();
+
+    // Verify listRoots was called
+    expect(mocks.listRoots).toHaveBeenCalled();
+
+    // Verify client tracker was updated
+    expect(mocks.updateClientRoots).toHaveBeenCalledWith('test-session', [
+      { uri: 'file:///test/path' }
+    ]);
+  });
 
   it('should call system tools', async () => {
     // Find call tool handler
