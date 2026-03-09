@@ -61,6 +61,7 @@ export default {
     clientName: 'Client Name',
     clientVersion: 'Client Version',
     protocolVersion: 'Protocol Version',
+    capabilities: 'Capabilities',
     userAgent: 'User Agent',
     cwd: 'CWD',
     project: 'Project',

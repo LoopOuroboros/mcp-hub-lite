@@ -61,6 +61,7 @@ export default {
     clientName: '客户端名称',
     clientVersion: '客户端版本',
     protocolVersion: '协议版本',
+    capabilities: '能力',
     userAgent: '用户代理',
     cwd: '工作目录',
     project: '项目',
