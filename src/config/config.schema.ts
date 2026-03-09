@@ -11,6 +11,7 @@ export const ServerConfigSchema = z.object({
   command: z.string().optional(),
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().default(true),
   tags: z.record(z.string(), z.string()).optional(),
   type: z.enum(['stdio', 'sse', 'streamable-http', 'http']).default('stdio'),
