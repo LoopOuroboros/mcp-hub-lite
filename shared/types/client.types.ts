@@ -3,6 +3,8 @@
  * Shared client session types between frontend and backend
  */
 
+import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
+
 /**
  * Workspace root information
  */
@@ -24,6 +26,7 @@ export interface ClientContext {
   project?: string;
   ip?: string;
   userAgent?: string;
+  capabilities?: ClientCapabilities;
   timestamp: number;
 }
 

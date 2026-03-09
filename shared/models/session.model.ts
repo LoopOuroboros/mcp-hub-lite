@@ -13,6 +13,7 @@ export const SessionStateSchema = z.object({
   project: z.string().optional(),
   userAgent: z.string().optional(),
   ip: z.string().optional(),
+  capabilities: z.any().optional(),
   createdAt: z.number(),
   lastAccessedAt: z.number(),
   metadata: z.record(z.string(), z.any()).default({})
