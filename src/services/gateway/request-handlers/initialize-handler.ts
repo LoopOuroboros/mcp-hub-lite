@@ -6,8 +6,8 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
-import { getClientContext } from '@utils/request-context.js';
-import { clientTrackerService } from '@services/client-tracker.service.js';
+import { getSessionContext } from '@utils/request-context.js';
+import { sessionTrackerService } from '@services/session-tracker.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 
 /**
@@ -52,8 +52,8 @@ export function registerInitializeHandlers(server: McpServer): void {
   });
 
   server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
-    // Capture client info
-    const context = getClientContext();
+    // Capture session info
+    const context = getSessionContext();
     if (context && request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
       const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
@@ -67,8 +67,8 @@ export function registerInitializeHandlers(server: McpServer): void {
         logger.debug(`Client ${name} supports roots capability`, LOG_MODULES.GATEWAY);
       }
 
-      // Update client info in tracker with capabilities
-      clientTrackerService.updateClient({
+      // Update session info in tracker with capabilities
+      sessionTrackerService.updateSession({
         ...context,
         clientName: name,
         clientVersion: version,
@@ -118,26 +118,26 @@ export function registerInitializeHandlers(server: McpServer): void {
   });
 
   server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
-    const context = getClientContext();
+    const context = getSessionContext();
     if (!context) {
       logger.warn(
-        'Received initialized notification but no client context available',
+        'Received initialized notification but no session context available',
         LOG_MODULES.GATEWAY
       );
       return;
     }
 
-    const clientInfo = clientTrackerService.getClient(context.sessionId);
-    if (!clientInfo) {
+    const sessionInfo = sessionTrackerService.getSession(context.sessionId);
+    if (!sessionInfo) {
       logger.warn(
-        `Received initialized notification but no client info for session ${context.sessionId}`,
+        `Received initialized notification but no session info for session ${context.sessionId}`,
         LOG_MODULES.GATEWAY
       );
       return;
     }
 
     logger.debug(
-      `Received initialized notification from client ${clientInfo.clientName || 'unknown'} (${context.sessionId})`,
+      `Received initialized notification from client ${sessionInfo.clientName || 'unknown'} (${context.sessionId})`,
       LOG_MODULES.GATEWAY
     );
   });
