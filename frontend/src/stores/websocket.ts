@@ -11,7 +11,7 @@ import { useServerStore } from '@stores/server';
 import type { ServerStatus } from '@stores/server';
 import { useToolCallsStore } from '@stores/tool-calls';
 import { useSystemStore } from '@stores/system';
-import { useClientStore } from '@stores/client';
+import { useSessionStore } from '@stores/session';
 
 // Import WebSocket event type constants from shared types
 import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
@@ -111,7 +111,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
   const toolCallsStore = useToolCallsStore();
   const systemStore = useSystemStore();
-  const clientStore = useClientStore();
+  const sessionStore = useSessionStore();
 
   function handleServerMessage(message: ServerMessage): void {
     console.log('Received WebSocket message:', message);
@@ -177,12 +177,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
   function handleClientConnected(message: ClientConnectedEvent): void {
     console.log('Client connected:', message.data);
-    clientStore.fetchClients();
+    sessionStore.fetchSessions();
   }
 
   function handleClientDisconnected(message: ClientDisconnectedEvent): void {
     console.log('Client disconnected:', message.data);
-    clientStore.fetchClients();
+    sessionStore.fetchSessions();
   }
 
   function handleServerStatusChange(message: ServerStatusEvent): void {
