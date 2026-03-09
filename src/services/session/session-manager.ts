@@ -14,7 +14,7 @@ import {
   SessionStateSchema,
   createEmptySessionStore
 } from '@shared-models/session.model.js';
-import { clientTrackerService } from '@services/client-tracker.service.js';
+import { sessionTrackerService } from '@services/session-tracker.service.js';
 import { getSessionDebugSetting, getMcpCommDebugSetting } from '@utils/json-utils.js';
 import * as fs from 'fs';
 import path from 'path';
@@ -458,16 +458,16 @@ export class McpSessionManager {
    * ```
    */
   private updateSessionMetadataFromClient(sessionId: string): Partial<SessionState> {
-    const clientInfo = clientTrackerService.getClient(sessionId);
+    const sessionInfo = sessionTrackerService.getSession(sessionId);
     return {
-      clientName: clientInfo?.clientName,
-      clientVersion: clientInfo?.clientVersion,
-      protocolVersion: clientInfo?.protocolVersion,
-      capabilities: clientInfo?.capabilities,
-      cwd: clientInfo?.cwd,
-      project: clientInfo?.project,
-      userAgent: clientInfo?.userAgent,
-      ip: clientInfo?.ip
+      clientName: sessionInfo?.clientName,
+      clientVersion: sessionInfo?.clientVersion,
+      protocolVersion: sessionInfo?.protocolVersion,
+      capabilities: sessionInfo?.capabilities,
+      cwd: sessionInfo?.cwd,
+      project: sessionInfo?.project,
+      userAgent: sessionInfo?.userAgent,
+      ip: sessionInfo?.ip
     };
   }
 

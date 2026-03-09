@@ -6,8 +6,8 @@
 import type { FastifyRequest } from 'fastify';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { randomUUID } from 'crypto';
-import type { ClientContext } from '@shared-types/client.types.js';
-import { mcpSessionManager } from '@services/mcp-session-manager.js';
+import type { SessionContext } from '@shared-types/session-context.types.js';
+import { mcpSessionManager } from '@services/session/index.js';
 
 // MCP Protocol Request Body Types
 export interface RequestBody {
@@ -37,17 +37,17 @@ export interface RequestBody {
  * project information, IP address, and user agent for comprehensive session tracking.
  *
  * @param {FastifyRequest<{ Body: RequestBody | null }>} request - Incoming Fastify request object
- * @returns {{ sessionId: string; clientContext: ClientContext }} Object containing resolved session ID and enriched client context
+ * @returns {{ sessionId: string; sessionContext: SessionContext }} Object containing resolved session ID and enriched session context
  *
  * @example
  * ```typescript
- * const { sessionId, clientContext } = extractSessionContext(request);
- * console.log(`Session: ${sessionId}, Client: ${clientContext.clientName}`);
+ * const { sessionId, sessionContext } = extractSessionContext(request);
+ * console.log(`Session: ${sessionId}, Client: ${sessionContext.clientName}`);
  * ```
  */
 export function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | null }>): {
   sessionId: string;
-  clientContext: ClientContext;
+  sessionContext: SessionContext;
 } {
   const headers = request.headers;
 
@@ -137,7 +137,7 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  const clientContext: ClientContext = {
+  const sessionContext: SessionContext = {
     sessionId,
     clientName,
     clientVersion,
@@ -149,5 +149,5 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     timestamp: Date.now()
   };
 
-  return { sessionId, clientContext };
+  return { sessionId, sessionContext };
 }

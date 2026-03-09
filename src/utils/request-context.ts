@@ -6,7 +6,7 @@
  * every function call. It uses Node.js AsyncLocalStorage to maintain context
  * throughout the request lifecycle.
  *
- * The primary use case is storing client context information (sessionId, clientName,
+ * The primary use case is storing session context information (sessionId, clientName,
  * cwd, project, etc.) that needs to be accessible from any part of the application
  * during request processing.
  *
@@ -14,45 +14,45 @@
  */
 
 import { AsyncLocalStorage } from 'async_hooks';
-import type { ClientContext } from '@shared-types/client.types.js';
+import type { SessionContext } from '@shared-types/session-context.types.js';
 
 /**
  * AsyncLocalStorage instance for storing request context.
  *
- * This storage holds the ClientContext object for the current request and
+ * This storage holds the SessionContext object for the current request and
  * makes it available throughout the entire request processing chain,
  * including asynchronous operations and nested function calls.
  *
  * @example
  * ```typescript
  * // In route handler
- * await requestContext.run(clientContext, async () => {
- *   // Any code executed here can access the client context
- *   const ctx = getClientContext();
+ * await requestContext.run(sessionContext, async () => {
+ *   // Any code executed here can access the session context
+ *   const ctx = getSessionContext();
  *   console.log(ctx.sessionId);
  * });
  * ```
  */
-export const requestContext = new AsyncLocalStorage<ClientContext>();
+export const requestContext = new AsyncLocalStorage<SessionContext>();
 
 /**
- * Retrieves the current request's client context.
+ * Retrieves the current request's session context.
  *
- * This function returns the ClientContext object stored in the AsyncLocalStorage
+ * This function returns the SessionContext object stored in the AsyncLocalStorage
  * for the current request. It should only be called within a request context
  * that has been established using requestContext.run().
  *
- * @returns {ClientContext | undefined} The current request's client context, or undefined if not in a request context
+ * @returns {SessionContext | undefined} The current request's session context, or undefined if not in a request context
  *
  * @example
  * ```typescript
- * const context = getClientContext();
+ * const context = getSessionContext();
  * if (context) {
  *   console.log(`Processing request for session: ${context.sessionId}`);
  * }
  * ```
  */
-export function getClientContext(): ClientContext | undefined {
+export function getSessionContext(): SessionContext | undefined {
   return requestContext.getStore();
 }
 
@@ -60,19 +60,19 @@ export function getClientContext(): ClientContext | undefined {
  * Retrieves the current request's working directory (cwd).
  *
  * This is a convenience function that extracts the cwd property from the
- * current request's client context. It's commonly used in file operations
- * that need to respect the client's current working directory.
+ * current request's session context. It's commonly used in file operations
+ * that need to respect the session's current working directory.
  *
  * @returns {string | undefined} The current request's working directory, or undefined if not available
  *
  * @example
  * ```typescript
- * const cwd = getClientCwd();
+ * const cwd = getSessionCwd();
  * if (cwd) {
  *   const fullPath = path.join(cwd, relativePath);
  * }
  * ```
  */
-export function getClientCwd(): string | undefined {
+export function getSessionCwd(): string | undefined {
   return requestContext.getStore()?.cwd;
 }

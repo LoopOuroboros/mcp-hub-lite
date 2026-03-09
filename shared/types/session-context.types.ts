@@ -1,6 +1,6 @@
 /**
- * Client Types
- * Shared client session types between frontend and backend
+ * Session Context Types
+ * Shared session context types between frontend and backend
  */
 
 import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
@@ -8,7 +8,7 @@ import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 /**
  * Workspace root information
  */
-export interface ClientRoot {
+export interface SessionRoot {
   uri: string;
   name?: string;
 }
@@ -17,7 +17,7 @@ export interface ClientRoot {
  * Basic request context - for AsyncLocalStorage
  * Contains the minimal set of fields required for requests
  */
-export interface ClientContext {
+export interface SessionContext {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
@@ -31,10 +31,10 @@ export interface ClientContext {
 }
 
 /**
- * Complete client information - for tracking and display
- * Extends ClientContext with runtime state
+ * Complete session information - for tracking and display
+ * Extends SessionContext with runtime state
  */
-export interface ClientInfo extends ClientContext {
+export interface SessionInfo extends SessionContext {
   lastSeen: number;
-  roots?: ClientRoot[];
+  roots?: SessionRoot[];
 }
