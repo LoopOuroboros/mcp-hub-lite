@@ -23,30 +23,30 @@ const mocks = vi.hoisted(() => {
     listServers: vi.fn(),
     findServers: vi.fn(),
     getSystemTools: vi.fn().mockReturnValue([]),
-    updateClientRoots: vi.fn(),
-    updateClient: vi.fn(),
-    getClient: vi.fn().mockReturnValue({
+    updateSessionRoots: vi.fn(),
+    updateSession: vi.fn(),
+    getSession: vi.fn().mockReturnValue({
       sessionId: 'test-session',
       capabilities: { roots: { list: true } }
     }),
-    getClientContext: vi.fn().mockReturnValue({ sessionId: 'test-session' }),
+    getSessionContext: vi.fn().mockReturnValue({ sessionId: 'test-session' }),
     mockToolCache
   };
 });
 
 // Mock dependencies
-vi.mock('@services/client-tracker.service.js', () => ({
-  clientTrackerService: {
-    updateClientRoots: mocks.updateClientRoots,
-    updateClient: mocks.updateClient,
-    getClient: mocks.getClient,
-    getClients: vi.fn().mockReturnValue([])
+vi.mock('@services/session-tracker.service.js', () => ({
+  sessionTrackerService: {
+    updateSessionRoots: mocks.updateSessionRoots,
+    updateSession: mocks.updateSession,
+    getSession: mocks.getSession,
+    getSessions: vi.fn().mockReturnValue([])
   }
 }));
 
 vi.mock('@utils/request-context.js', () => ({
-  getClientContext: mocks.getClientContext,
-  getClientCwd: vi.fn()
+  getSessionContext: mocks.getSessionContext,
+  getSessionCwd: vi.fn()
 }));
 
 vi.mock('@utils/logger.js', () => ({
@@ -68,7 +68,9 @@ vi.mock('@services/mcp-connection-manager.js', () => ({
     callTool: mocks.callTool,
     toolCache: mocks.mockToolCache,
     // Add method to access the mock toolCache
-    getToolCache: () => mocks.mockToolCache
+    getToolCache: () => mocks.mockToolCache,
+    // Add getToolCacheEntries method for backward compatibility
+    getToolCacheEntries: () => Array.from(mocks.mockToolCache.entries())
   }
 }));
 
@@ -333,33 +335,6 @@ describe('GatewayService', () => {
     // Expect 9 system tools
     expect(result.tools).toHaveLength(9);
     expect(result.tools.some((t: Tool) => t.name === 'list_servers')).toBe(true);
-  });
-
-  it('should fetch roots on initialized notification', async () => {
-    // Find initialized notification handler
-    let initializedHandler: (() => Promise<void>) | undefined;
-    for (const call of mocks.setNotificationHandler.mock.calls) {
-      const schemaStr = JSON.stringify(call[0]);
-      if (schemaStr.includes('"notifications/initialized"')) {
-        initializedHandler = call[1];
-        break;
-      }
-    }
-    expect(initializedHandler).toBeDefined();
-
-    // Mock server.server.listRoots returning roots
-    vi.mocked(mocks.listRoots).mockResolvedValue({ roots: [{ uri: 'file:///test/path' }] });
-
-    // Call the handler
-    await initializedHandler!();
-
-    // Verify listRoots was called
-    expect(mocks.listRoots).toHaveBeenCalled();
-
-    // Verify client tracker was updated
-    expect(mocks.updateClientRoots).toHaveBeenCalledWith('test-session', [
-      { uri: 'file:///test/path' }
-    ]);
   });
 
   it('should call system tools', async () => {

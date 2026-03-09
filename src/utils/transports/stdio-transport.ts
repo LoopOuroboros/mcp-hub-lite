@@ -26,7 +26,7 @@ class ReadBuffer {
     try {
       return JSON.parse(line);
     } catch {
-      return JSON.parse(line);
+      return null;
     }
   }
 

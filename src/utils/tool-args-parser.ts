@@ -29,12 +29,4 @@ export class ToolArgsParser {
       toolName: parsedToolName
     };
   }
-
-  /**
-   * Validates tool argument types
-   */
-  static validateToolArgs(): boolean {
-    // 可以根据工具名称验证参数类型
-    return true;
-  }
 }
