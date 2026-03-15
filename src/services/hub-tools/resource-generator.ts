@@ -21,13 +21,10 @@ export interface ServerMetadata {
  * Generates dynamic Hub resources based on currently connected MCP servers.
  *
  * This method creates virtual resources that represent the current state of connected
- * servers, including server metadata, available tools, and server resources. Each
- * resource has a unique URI following the hub://servers/{serverName}[/type] pattern.
+ * servers. Each resource has a unique URI following the hub://servers/{serverName} pattern.
  *
  * The generated resources include:
  * - Server metadata: hub://servers/{serverName}
- * - Tools list: hub://servers/{serverName}/tools
- * - Resources list: hub://servers/{serverName}/resources (only if server has resources)
  *
  * @returns {Resource[]} Array of dynamically generated MCP resource objects
  *
@@ -63,30 +60,6 @@ export function generateDynamicResources(): Resource[] {
       mimeType: 'application/json',
       serverId: instanceId
     });
-
-    // Tools resource - only add if server has tools
-    const tools = mcpConnectionManager.getTools(instanceId);
-    if (tools.length > 0) {
-      resources.push({
-        uri: `hub://servers/${server.name}/tools`,
-        name: `Tools: ${server.name}`,
-        description: `${tools.length} tools available from ${server.name}`,
-        mimeType: 'application/json',
-        serverId: instanceId
-      });
-    }
-
-    // Resources resource - only add if server has resources
-    const serverResources = mcpConnectionManager.getResources(instanceId);
-    if (serverResources.length > 0) {
-      resources.push({
-        uri: `hub://servers/${server.name}/resources`,
-        name: `Resources: ${server.name}`,
-        description: `${serverResources.length} resources available from ${server.name}`,
-        mimeType: 'application/json',
-        serverId: instanceId
-      });
-    }
   }
 
   return resources;
