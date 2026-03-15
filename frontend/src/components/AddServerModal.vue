@@ -122,6 +122,39 @@
           </div>
         </div>
       </el-form-item>
+
+      <template v-if="form.transport !== 'stdio'">
+        <el-form-item label="Headers">
+          <div
+            class="w-full flex flex-col gap-2"
+            style="display: flex; flex-direction: column; width: 100%"
+          >
+            <div
+              v-for="(item, index) in headerItems"
+              :key="index"
+              class="flex gap-2 w-full"
+              style="display: flex; gap: 0.5rem; width: 100%"
+            >
+              <el-input
+                v-model="item.key"
+                :placeholder="$t('addServer.keyPlaceholder')"
+                style="width: 30%; min-width: 150px"
+              />
+              <el-input
+                v-model="item.value"
+                :placeholder="$t('addServer.valuePlaceholder')"
+                style="flex: 1"
+              />
+              <el-button :icon="Delete" circle plain @click="removeHeader(index)" />
+            </div>
+            <div>
+              <el-button :icon="Plus" plain size="small" @click="addHeader"
+                >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+              >
+            </div>
+          </div>
+        </el-form-item>
+      </template>
     </el-form>
 
     <template #footer>
@@ -171,7 +204,7 @@
         v-model="batchJsonConfig"
         type="textarea"
         :rows="12"
-        placeholder='{ "mcpServers": { "server1": { "command": "npx @anthropic-ai/mcp", "args": ["--model", "claude-3-opus-20250620"] }, "server2": { "url": "http://localhost:3000" } } }'
+        placeholder='{ "mcpServers": { "server1": { "command": "npx @anthropic-ai/mcp", "args": ["--model", "claude-3-opus-20250620"] }, "server2": { "url": "http://localhost:3000", "headers": { "Authorization": "Bearer token" } } } }'
       />
       <template #footer>
         <el-button @click="showBatchImport = false">{{ $t('action.cancel') }}</el-button>
@@ -275,7 +308,7 @@ watch(dialogVisible, (val) => {
 const defaultJsonConfig = `{\n  "mcpServers": {\n  }\n}`;
 const jsonConfig = ref(defaultJsonConfig);
 const batchJsonConfig = ref(
-  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "enabled": true\n    }\n  }\n}`
+  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`
 );
 
 const importResult = ref({
@@ -294,6 +327,7 @@ const form = ref({
 });
 
 const envItems = ref<{ key: string; value: string }[]>([]);
+const headerItems = ref<{ key: string; value: string }[]>([]);
 
 function importJson() {
   try {
@@ -319,12 +353,8 @@ function importJson() {
       form.value.command = configToUse.command;
       form.value.args = configToUse.args || [];
     } else if (configToUse.url) {
-      // Check if it's Streamable HTTP transport based on type or other indicators
-      if (configToUse.type === 'streamable-http' || configToUse.type === 'http') {
-        form.value.transport = 'streamable-http';
-      } else {
-        form.value.transport = 'sse';
-      }
+      // Only use sse if explicitly specified, otherwise default to streamable-http
+      form.value.transport = configToUse.type === 'sse' ? 'sse' : 'streamable-http';
       form.value.url = configToUse.url;
     }
 
@@ -338,6 +368,13 @@ function importJson() {
 
     if (configToUse.env) {
       envItems.value = Object.entries(configToUse.env).map(([key, value]) => ({
+        key,
+        value: String(value)
+      }));
+    }
+
+    if (configToUse.headers) {
+      headerItems.value = Object.entries(configToUse.headers).map(([key, value]) => ({
         key,
         value: String(value)
       }));
@@ -403,6 +440,14 @@ function removeEnv(index: number) {
   envItems.value.splice(index, 1);
 }
 
+function addHeader() {
+  headerItems.value.push({ key: '', value: '' });
+}
+
+function removeHeader(index: number) {
+  headerItems.value.splice(index, 1);
+}
+
 function handleClose() {
   dialogVisible.value = false;
   resetForm();
@@ -419,8 +464,9 @@ function resetForm() {
     autoStart: true
   };
   envItems.value = [];
+  headerItems.value = [];
   jsonConfig.value = defaultJsonConfig;
-  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "enabled": true\n    }\n  }\n}`;
+  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`;
   importResult.value = {
     success: [],
     errors: []
@@ -444,6 +490,14 @@ async function createServer() {
     {} as Record<string, string>
   );
 
+  const headers = headerItems.value.reduce(
+    (acc, item) => {
+      if (item.key) acc[item.key] = item.value;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
   try {
     await store.addServer({
       name: form.value.name || 'Unnamed Server',
@@ -457,7 +511,8 @@ async function createServer() {
         timeout: form.value.timeout * 1000,
         enabled: form.value.autoStart,
         allowedTools: [],
-        env
+        env,
+        headers: Object.keys(headers).length > 0 ? headers : undefined
       },
       logs: []
     });

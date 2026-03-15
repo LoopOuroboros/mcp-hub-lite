@@ -6,8 +6,8 @@
 import type { FastifyRequest } from 'fastify';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { randomUUID } from 'crypto';
-import type { ClientContext } from '@shared-types/client.types.js';
-import { mcpSessionManager } from '@services/mcp-session-manager.js';
+import type { SessionContext } from '@shared-types/session-context.types.js';
+import { mcpSessionManager } from '@services/session/index.js';
 
 // MCP Protocol Request Body Types
 export interface RequestBody {
@@ -37,17 +37,17 @@ export interface RequestBody {
  * project information, IP address, and user agent for comprehensive session tracking.
  *
  * @param {FastifyRequest<{ Body: RequestBody | null }>} request - Incoming Fastify request object
- * @returns {{ sessionId: string; clientContext: ClientContext }} Object containing resolved session ID and enriched client context
+ * @returns {{ sessionId: string; sessionContext: SessionContext }} Object containing resolved session ID and enriched session context
  *
  * @example
  * ```typescript
- * const { sessionId, clientContext } = extractSessionContext(request);
- * console.log(`Session: ${sessionId}, Client: ${clientContext.clientName}`);
+ * const { sessionId, sessionContext } = extractSessionContext(request);
+ * console.log(`Session: ${sessionId}, Client: ${sessionContext.clientName}`);
  * ```
  */
 export function extractSessionContext(request: FastifyRequest<{ Body: RequestBody | null }>): {
   sessionId: string;
-  clientContext: ClientContext;
+  sessionContext: SessionContext;
 } {
   const headers = request.headers;
 
@@ -98,25 +98,11 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
   if (!sessionId && isInitializeRequest && request.body?.params?.clientInfo) {
     const { name, version } = request.body.params.clientInfo;
     protocolVersion = request.body.params.protocolVersion;
-    const cwd = (headers['x-mcp-cwd'] as string) || (headers['x-cwd'] as string);
 
-    // Generate sessionId from client info
-    let baseId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
-    if (cwd) {
-      const cwdHash = cwd
-        .split('')
-        .reduce((acc, char) => {
-          acc = (acc << 5) - acc + char.charCodeAt(0);
-          return acc & acc;
-        }, 0)
-        .toString(16)
-        .replace('-', '');
-      baseId = `${baseId}-${cwdHash}`;
-    } else {
-      const randomHash = randomUUID().substring(0, 8);
-      baseId = `${baseId}-${randomHash}`;
-    }
-    sessionId = baseId;
+    // Generate sessionId from client info with random hash (no cwd dependency)
+    const baseId = `${name.replace(/[^a-zA-Z0-9-]/g, '')}-${version.replace(/[^a-zA-Z0-9-]/g, '')}`;
+    const randomHash = randomUUID().substring(0, 8);
+    sessionId = `${baseId}-${randomHash}`;
     logger.debug(`Generated sessionId from initialize params: ${sessionId}`, LOG_MODULES.CONTEXT);
 
     // Save client version and protocol version information
@@ -151,17 +137,17 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  const clientContext: ClientContext = {
+  const sessionContext: SessionContext = {
     sessionId,
     clientName,
     clientVersion,
     protocolVersion,
-    cwd: (headers['x-mcp-cwd'] as string) || (headers['x-cwd'] as string),
-    project: (headers['x-mcp-project'] as string) || (headers['x-project'] as string),
+    cwd: undefined, // Will be populated from roots/list response later
+    project: undefined, // Will be populated from roots/list response later
     ip: request.ip,
     userAgent: headers['user-agent'],
     timestamp: Date.now()
   };
 
-  return { sessionId, clientContext };
+  return { sessionId, sessionContext };
 }

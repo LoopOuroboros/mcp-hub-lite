@@ -7,10 +7,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
+import { stringifyForLogging, getMcpCommDebugSetting } from '@utils/json-utils.js';
 import { requestContext } from '@utils/request-context.js';
-import { clientTrackerService } from '@services/client-tracker.service.js';
-import { mcpSessionManager } from '@services/mcp-session-manager.js';
+import { sessionTrackerService } from '@services/session-tracker.service.js';
+import { mcpSessionManager } from '@services/session/index.js';
 import { cleanupStaleSseStreams } from './sse-stream-manager.js';
 import { extractSessionContext, type RequestBody } from './session-context-extractor.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
@@ -26,36 +26,40 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     reply: FastifyReply
   ) => {
     // First, log that we received the request (before extracting session context)
-    let initialLogMsg = `MCP Gateway ${request.method} ${request.url}`;
+    if (getMcpCommDebugSetting()) {
+      let initialLogMsg = `MCP Gateway ${request.method} ${request.url}`;
 
-    // Combine headers and body into one log block
-    initialLogMsg += `\n  Request headers: ${stringifyForLogging(request.headers)}`;
+      // Combine headers and body into one log block
+      initialLogMsg += `\n  Request headers: ${stringifyForLogging(request.headers)}`;
 
-    if (request.body) {
-      try {
-        const preview = stringifyForLogging(request.body);
-        initialLogMsg += `\n  Body: ${preview}`;
-      } catch {
-        initialLogMsg += `\n  Body: [Unserializable]`;
+      if (request.body) {
+        try {
+          const preview = stringifyForLogging(request.body);
+          initialLogMsg += `\n  Body: ${preview}`;
+        } catch {
+          initialLogMsg += `\n  Body: [Unserializable]`;
+        }
       }
+      logger.debug(initialLogMsg, LOG_MODULES.COMMUNICATION);
     }
-    logger.debug(initialLogMsg, LOG_MODULES.GATEWAY);
 
-    const { sessionId, clientContext } = extractSessionContext(request);
+    const { sessionId, sessionContext } = extractSessionContext(request);
 
     logger.info(
       `MCP Gateway ${request.method} ${request.url} [Session: ${sessionId}]`,
       LOG_MODULES.GATEWAY
     );
 
-    // Update client tracking information
-    clientTrackerService.updateClient(clientContext);
+    // Update session tracking information
+    sessionTrackerService.updateSession(sessionContext);
 
     // Log the session context after extraction
-    let sessionLogMsg = `MCP Gateway Session Context [Session: ${sessionId}]`;
-    if (clientContext.cwd) sessionLogMsg += ` [CWD: ${clientContext.cwd}]`;
-    if (clientContext.clientName) sessionLogMsg += ` [Client: ${clientContext.clientName}]`;
-    logger.debug(sessionLogMsg, LOG_MODULES.GATEWAY);
+    if (getMcpCommDebugSetting()) {
+      let sessionLogMsg = `MCP Gateway Session Context [Session: ${sessionId}]`;
+      if (sessionContext.cwd) sessionLogMsg += ` [CWD: ${sessionContext.cwd}]`;
+      if (sessionContext.clientName) sessionLogMsg += ` [Client: ${sessionContext.clientName}]`;
+      logger.debug(sessionLogMsg, LOG_MODULES.COMMUNICATION);
+    }
 
     reply.header('Content-Type', 'application/json');
     if (!request.headers['accept']) {
@@ -92,7 +96,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         cleanupStaleSseStreams(session.transport, sessionId);
       }
 
-      await requestContext.run(clientContext, async () => {
+      await requestContext.run(sessionContext, async () => {
         await session.transport.handleRequest(request.raw, reply.raw, request.body);
       });
 

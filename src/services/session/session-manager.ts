@@ -14,7 +14,7 @@ import {
   SessionStateSchema,
   createEmptySessionStore
 } from '@shared-models/session.model.js';
-import { clientTrackerService } from '@services/client-tracker.service.js';
+import { sessionTrackerService } from '@services/session-tracker.service.js';
 import { getSessionDebugSetting, getMcpCommDebugSetting } from '@utils/json-utils.js';
 import * as fs from 'fs';
 import path from 'path';
@@ -458,15 +458,16 @@ export class McpSessionManager {
    * ```
    */
   private updateSessionMetadataFromClient(sessionId: string): Partial<SessionState> {
-    const clientInfo = clientTrackerService.getClient(sessionId);
+    const sessionInfo = sessionTrackerService.getSession(sessionId);
     return {
-      clientName: clientInfo?.clientName,
-      clientVersion: clientInfo?.clientVersion,
-      protocolVersion: clientInfo?.protocolVersion,
-      cwd: clientInfo?.cwd,
-      project: clientInfo?.project,
-      userAgent: clientInfo?.userAgent,
-      ip: clientInfo?.ip
+      clientName: sessionInfo?.clientName,
+      clientVersion: sessionInfo?.clientVersion,
+      protocolVersion: sessionInfo?.protocolVersion,
+      capabilities: sessionInfo?.capabilities,
+      cwd: sessionInfo?.cwd,
+      project: sessionInfo?.project,
+      userAgent: sessionInfo?.userAgent,
+      ip: sessionInfo?.ip
     };
   }
 
@@ -497,6 +498,7 @@ export class McpSessionManager {
       clientName: clientMetadata.clientName || existing?.clientName,
       clientVersion: clientMetadata.clientVersion || existing?.clientVersion,
       protocolVersion: clientMetadata.protocolVersion || existing?.protocolVersion,
+      capabilities: clientMetadata.capabilities || existing?.capabilities,
       cwd: clientMetadata.cwd || existing?.cwd,
       project: clientMetadata.project || existing?.project,
       userAgent: clientMetadata.userAgent || existing?.userAgent,

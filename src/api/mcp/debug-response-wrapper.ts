@@ -107,7 +107,29 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
     let logResponse = primaryBuffer;
     try {
       if (isToolsListResponse(logResponse)) {
-        logResponse = simplifyToolsListResponse(logResponse);
+        const simplified = simplifyToolsListResponse(logResponse);
+        if (simplified !== null) {
+          logResponse = simplified;
+        } else {
+          // Could not simplify, format as pretty JSON
+          try {
+            // Handle SSE format
+            if (logResponse.includes('event: message') && logResponse.includes('data:')) {
+              const dataMatch = logResponse.match(/data: ([^\n]+)/);
+              if (dataMatch) {
+                const jsonData = dataMatch[1].trim();
+                const parsed = JSON.parse(jsonData);
+                const formattedData = stringifyForLogging(parsed);
+                logResponse = `event: message\ndata: ${formattedData}`;
+              }
+            } else {
+              const parsed = JSON.parse(logResponse);
+              logResponse = stringifyForLogging(parsed);
+            }
+          } catch {
+            // If parsing fails, use original
+          }
+        }
       } else if (hasImageContent(logResponse)) {
         // Simplify image content first
         const simplified = simplifyImageContent(logResponse);

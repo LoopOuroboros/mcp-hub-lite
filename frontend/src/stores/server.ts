@@ -294,6 +294,7 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.command) payload.command = serverData.config.command;
         if (serverData.config.args) payload.args = serverData.config.args;
         if (serverData.config.env) payload.env = serverData.config.env;
+        if (serverData.config.headers !== undefined) payload.headers = serverData.config.headers;
         if (serverData.config.url) payload.url = serverData.config.url;
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout;
         if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled;

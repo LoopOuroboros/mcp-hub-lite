@@ -540,7 +540,7 @@ describe('McpSessionManager with Real SDK', () => {
     // Note: We don't actually create SDK instances (to avoid side effects), but verify type compatibility
     // Verify type import path exists
     const { McpSessionManager: McpSessionManagerClass } =
-      await import('@services/mcp-session-manager.js');
+      await import('@services/session/index.js');
 
     // 3. Create test instance and inject mock state
     // Use type assertion for testing purposes to access private members

@@ -46,7 +46,7 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
   // First pass: Count tool name frequencies to determine uniqueness
   const toolNameCounts = new Map<string, number>();
   // Iterate through toolCache to get all tools and their server IDs
-  for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
+  for (const [serverId, tools] of mcpConnectionManager.getToolCacheEntries()) {
     for (const tool of tools) {
       const serverConfig = hubManager.getServerById(serverId);
       if (serverConfig) {
@@ -62,7 +62,7 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
   }
 
   // Second pass: Generate gateway tools with proper naming
-  for (const [serverId, tools] of mcpConnectionManager.toolCache.entries()) {
+  for (const [serverId, tools] of mcpConnectionManager.getToolCacheEntries()) {
     const serverConfig = hubManager.getServerById(serverId);
 
     // Skip if server configuration not found

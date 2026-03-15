@@ -4,9 +4,10 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
-import { getClientContext } from '@utils/request-context.js';
-import { clientTrackerService } from '@services/client-tracker.service.js';
+import { getSessionContext } from '@utils/request-context.js';
+import { sessionTrackerService } from '@services/session-tracker.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 
 /**
@@ -35,9 +36,15 @@ export function registerInitializeHandlers(server: McpServer): void {
                 execute: z.boolean().optional()
               })
               .optional(),
+            roots: z
+              .object({
+                list: z.boolean().optional()
+              })
+              .optional(),
             experimental: z.record(z.string(), z.any()).optional()
           })
-          .optional()
+          .optional(),
+        protocolVersion: z.string().optional()
       })
       .optional(),
     id: z.union([z.string(), z.number()]),
@@ -45,19 +52,28 @@ export function registerInitializeHandlers(server: McpServer): void {
   });
 
   server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
-    // Capture client info
-    const context = getClientContext();
+    // Capture session info
+    const context = getSessionContext();
     if (context && request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
+      const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
+
       logger.info(
         `Initialized client: ${name} v${version} (ID: ${context.sessionId})`,
         LOG_MODULES.GATEWAY
       );
 
-      // Update client info in tracker
-      clientTrackerService.updateClient({
+      if (clientCapabilities?.roots) {
+        logger.debug(`Client ${name} supports roots capability`, LOG_MODULES.GATEWAY);
+      }
+
+      // Update session info in tracker with capabilities
+      sessionTrackerService.updateSession({
         ...context,
-        clientName: name
+        clientName: name,
+        clientVersion: version,
+        protocolVersion: request.params?.protocolVersion,
+        capabilities: clientCapabilities
       });
     }
 
@@ -92,5 +108,37 @@ export function registerInitializeHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(PingRequestSchema, async () => {
     return { pong: true }; // Response format compliant with MCP specification
+  });
+
+  // MCP initialized notification handler
+  const InitializedNotificationSchema = z.object({
+    method: z.literal('notifications/initialized'),
+    params: z.any().optional(),
+    jsonrpc: z.literal('2.0')
+  });
+
+  server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
+    const context = getSessionContext();
+    if (!context) {
+      logger.warn(
+        'Received initialized notification but no session context available',
+        LOG_MODULES.GATEWAY
+      );
+      return;
+    }
+
+    const sessionInfo = sessionTrackerService.getSession(context.sessionId);
+    if (!sessionInfo) {
+      logger.warn(
+        `Received initialized notification but no session info for session ${context.sessionId}`,
+        LOG_MODULES.GATEWAY
+      );
+      return;
+    }
+
+    logger.debug(
+      `Received initialized notification from client ${sessionInfo.clientName || 'unknown'} (${context.sessionId})`,
+      LOG_MODULES.GATEWAY
+    );
   });
 }

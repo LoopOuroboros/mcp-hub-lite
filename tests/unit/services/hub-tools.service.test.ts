@@ -613,25 +613,11 @@ describe('HubToolsService', () => {
       const resources = await hubToolsService.listResources();
 
       // Assert
-      expect(resources).toHaveLength(3);
+      expect(resources).toHaveLength(1);
       expect(resources[0]).toEqual({
         uri: 'hub://servers/Test Server',
         name: 'Server: Test Server',
         description: 'Connected MCP server: Test Server',
-        mimeType: 'application/json',
-        serverId: '1'
-      });
-      expect(resources[1]).toEqual({
-        uri: 'hub://servers/Test Server/tools',
-        name: 'Tools: Test Server',
-        description: '1 tools available from Test Server',
-        mimeType: 'application/json',
-        serverId: '1'
-      });
-      expect(resources[2]).toEqual({
-        uri: 'hub://servers/Test Server/resources',
-        name: 'Resources: Test Server',
-        description: '1 resources available from Test Server',
         mimeType: 'application/json',
         serverId: '1'
       });

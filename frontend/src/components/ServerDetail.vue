@@ -137,6 +137,37 @@
               </div>
             </el-form-item>
 
+            <template v-if="server.config.type !== 'stdio'">
+              <el-form-item label="Headers">
+                <div class="w-full flex flex-col gap-2">
+                  <div
+                    v-for="(_, key) in server.config.headers"
+                    :key="key"
+                    class="flex gap-2 w-full"
+                    style="display: flex; gap: 0.5rem; width: 100%"
+                  >
+                    <el-input
+                      v-model="headerKeys[key as string]"
+                      :placeholder="$t('addServer.keyPlaceholder')"
+                      style="width: 30%; min-width: 150px"
+                      @change="(val: string) => updateHeaderKey(key as string, val)"
+                    />
+                    <el-input
+                      v-model="server.config.headers![key]"
+                      :placeholder="$t('addServer.valuePlaceholder')"
+                      style="flex: 1"
+                    />
+                    <el-button :icon="Delete" circle plain @click="removeHeader(key as string)" />
+                  </div>
+                  <div>
+                    <el-button :icon="Plus" plain size="small" @click="addHeader"
+                      >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+                    >
+                  </div>
+                </div>
+              </el-form-item>
+            </template>
+
             <div class="flex gap-2">
               <el-button type="primary" class="mt-4" @click="saveConfig">{{
                 $t('serverDetail.config.save')
@@ -340,7 +371,7 @@
     <ToolCallDialog
       v-if="selectedTool"
       v-model="showCallDialog"
-      :server-id="server.id"
+      :server-name="server.name"
       :tool-name="selectedTool.name"
       :description="selectedTool.description"
       :input-schema="selectedTool.inputSchema"
@@ -444,6 +475,7 @@ const activeTab = ref('config');
 const autoScroll = ref(true);
 const logsContainer = ref<HTMLElement | null>(null);
 const envKeys = ref<Record<string, string>>({});
+const headerKeys = ref<Record<string, string>>({});
 const showEditJson = ref(false);
 const jsonConfig = ref('');
 const selectedTool = ref<Tool | null>(null);
@@ -480,6 +512,12 @@ watch(
       envKeys.value = {};
       Object.keys(newServer.config.env).forEach((k) => {
         envKeys.value[k] = k;
+      });
+    }
+    if (newServer?.config.headers) {
+      headerKeys.value = {};
+      Object.keys(newServer.config.headers).forEach((k) => {
+        headerKeys.value[k] = k;
       });
     }
   },
@@ -738,6 +776,10 @@ const openEditJson = () => {
     description: server.value.config.description
   };
 
+  if (server.value.config.headers && Object.keys(server.value.config.headers).length > 0) {
+    configObj.headers = server.value.config.headers;
+  }
+
   if (server.value.config.timeout) {
     configObj.timeout = server.value.config.timeout;
   }
@@ -779,11 +821,8 @@ const saveJsonConfig = async () => {
         updatedConfig.args = newConfig.args || [];
         delete (updatedConfig as Record<string, unknown>).url;
       } else if (newConfig.url) {
-        if (newConfig.type === 'streamable-http' || newConfig.type === 'http') {
-          updatedConfig.type = 'streamable-http';
-        } else {
-          updatedConfig.type = 'sse';
-        }
+        // Only use sse if explicitly specified, otherwise default to streamable-http
+        updatedConfig.type = newConfig.type === 'sse' ? 'sse' : 'streamable-http';
         updatedConfig.url = newConfig.url;
         delete (updatedConfig as Record<string, unknown>).command;
         delete (updatedConfig as Record<string, unknown>).args;
@@ -791,6 +830,13 @@ const saveJsonConfig = async () => {
 
       if (newConfig.env) {
         updatedConfig.env = newConfig.env;
+      }
+
+      if (newConfig.headers) {
+        updatedConfig.headers = newConfig.headers;
+      } else if (newConfig.headers === null || newConfig.headers === undefined) {
+        // Only clear headers if explicitly set to null/undefined in JSON
+        // This preserves existing headers when not specified in JSON
       }
 
       if (newConfig.timeout !== undefined) {
@@ -814,6 +860,13 @@ const saveJsonConfig = async () => {
         envKeys.value = {};
         Object.keys(updatedConfig.env).forEach((k) => {
           envKeys.value[k] = k;
+        });
+      }
+
+      if (updatedConfig.headers) {
+        headerKeys.value = {};
+        Object.keys(updatedConfig.headers).forEach((k) => {
+          headerKeys.value[k] = k;
         });
       }
 
@@ -858,6 +911,27 @@ const updateEnvKey = (oldKey: string, newKey: string) => {
   server.value!.config.env![newKey] = val;
   delete envKeys.value[oldKey];
   envKeys.value[newKey] = newKey;
+};
+
+const addHeader = () => {
+  if (!server.value!.config.headers) server.value!.config.headers = {};
+  const newKey = `NEW_HEADER_${Object.keys(server.value!.config.headers).length}`;
+  server.value!.config.headers[newKey] = '';
+  headerKeys.value[newKey] = newKey;
+};
+
+const removeHeader = (key: string) => {
+  delete server.value!.config.headers![key];
+  delete headerKeys.value[key];
+};
+
+const updateHeaderKey = (oldKey: string, newKey: string) => {
+  if (oldKey === newKey) return;
+  const val = server.value!.config.headers![oldKey] || '';
+  delete server.value!.config.headers![oldKey];
+  server.value!.config.headers![newKey] = val;
+  delete headerKeys.value[oldKey];
+  headerKeys.value[newKey] = newKey;
 };
 
 const clearLogs = async () => {

@@ -102,7 +102,7 @@ export class TransportFactory {
       return {
         type: 'sse',
         url: server.url || '',
-        headers: server.env, // Reuse env as headers for simplicity
+        headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
         reconnectInterval: 3000,
         maxReconnectAttempts: 5
       };
@@ -110,7 +110,7 @@ export class TransportFactory {
       return {
         type: 'streamable-http', // Unified conversion to streamable-http
         url: server.url || '',
-        headers: server.env,
+        headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
         timeout: server.timeout || 30000
       };
     } else {

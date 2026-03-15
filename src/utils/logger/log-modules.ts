@@ -34,6 +34,7 @@ export const LOG_MODULES = {
   SESSION_MANAGER: { module: 'SessionManager' } satisfies LogOptions,
   SESSION: { module: 'Session' } satisfies LogOptions,
   SESSION_API: { module: 'Session API' } satisfies LogOptions,
+  SESSION_TRACKER: { module: 'SessionTracker' } satisfies LogOptions,
 
   // Connection management
   CONNECTION_MANAGER: { module: 'ConnectionManager' } satisfies LogOptions,
@@ -71,10 +72,6 @@ export const LOG_MODULES = {
 
   // PID management
   PID_MANAGER: { module: 'PIDManager' } satisfies LogOptions,
-
-  // Client tracking
-  CLIENT_TRACKER: { module: 'ClientTracker' } satisfies LogOptions,
-  CLIENT_API: { module: 'ClientAPI' } satisfies LogOptions,
 
   // Server API
   SERVER_API: { module: 'ServerAPI' } satisfies LogOptions,

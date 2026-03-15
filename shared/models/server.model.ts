@@ -8,6 +8,7 @@ export interface ServerConfig {
   args?: string[];
   url?: string;
   env?: Record<string, string>;
+  headers?: Record<string, string>;
   timeout?: number;
   enabled?: boolean;
   allowedTools?: string[];

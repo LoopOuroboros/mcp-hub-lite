@@ -16,7 +16,6 @@ import { webMcpStatusRoutes } from '@api/web/mcp-status.js';
 import { configRoutes } from '@api/web/config.js';
 import { webLogRoutes } from '@api/web/logs.js';
 import { webHubToolsRoutes } from '@api/web/hub-tools.js';
-import { webClientRoutes } from '@api/web/clients.js';
 import { webResourceRoutes } from '@api/web/resources.js';
 import { webSessionRoutes } from '@api/web/sessions.js';
 
@@ -86,7 +85,6 @@ export async function buildApp() {
   fastify.register(configRoutes);
   fastify.register(webLogRoutes);
   fastify.register(webHubToolsRoutes);
-  fastify.register(webClientRoutes);
   fastify.register(webResourceRoutes);
   fastify.register(webSessionRoutes);
   fastify.register(webSocketRoutes);

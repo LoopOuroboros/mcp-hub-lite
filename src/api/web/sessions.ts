@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { mcpSessionManager } from '@services/mcp-session-manager.js';
+import { mcpSessionManager } from '@services/session/index.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 
 /**

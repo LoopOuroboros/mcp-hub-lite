@@ -87,7 +87,7 @@ program
       // Rotate old logs before starting
       logRotator.rotateLogs();
 
-      const logFile = logRotator.getCurrentLogFilePath();
+      const logFile = logRotator.createNewLogFilePath();
       const logStream = fs.openSync(logFile, 'a');
 
       console.log(`Starting server in background...`);

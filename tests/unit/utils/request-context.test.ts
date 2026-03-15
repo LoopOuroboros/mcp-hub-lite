@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { requestContext, getClientContext, getClientCwd } from '@utils/request-context.js';
+import { requestContext, getSessionContext, getSessionCwd } from '@utils/request-context.js';
 
 describe('Request Context', () => {
   beforeEach(() => {
@@ -13,11 +13,11 @@ describe('Request Context', () => {
   });
 
   it('should return undefined when no context is set', () => {
-    expect(getClientContext()).toBeUndefined();
-    expect(getClientCwd()).toBeUndefined();
+    expect(getSessionContext()).toBeUndefined();
+    expect(getSessionCwd()).toBeUndefined();
   });
 
-  it('should store and retrieve client context correctly', async () => {
+  it('should store and retrieve session context correctly', async () => {
     const testContext = {
       sessionId: 'test-session',
       clientName: 'Test Client',
@@ -29,10 +29,10 @@ describe('Request Context', () => {
     };
 
     await requestContext.run(testContext, () => {
-      const context = getClientContext();
+      const context = getSessionContext();
       expect(context).toEqual(testContext);
 
-      const cwd = getClientCwd();
+      const cwd = getSessionCwd();
       expect(cwd).toBe('/test/cwd');
     });
   });
@@ -44,10 +44,10 @@ describe('Request Context', () => {
     };
 
     await requestContext.run(partialContext, () => {
-      const context = getClientContext();
+      const context = getSessionContext();
       expect(context).toEqual(partialContext);
 
-      const cwd = getClientCwd();
+      const cwd = getSessionCwd();
       expect(cwd).toBeUndefined();
     });
   });
@@ -71,13 +71,13 @@ describe('Request Context', () => {
     const operation1 = requestContext.run(context1, async () => {
       // Simulate async operation
       await new Promise((resolve) => setTimeout(resolve, 10));
-      result1 = getClientCwd();
+      result1 = getSessionCwd();
     });
 
     const operation2 = requestContext.run(context2, async () => {
       // Simulate async operation
       await new Promise((resolve) => setTimeout(resolve, 5));
-      result2 = getClientCwd();
+      result2 = getSessionCwd();
     });
 
     await Promise.all([operation1, operation2]);
@@ -86,14 +86,14 @@ describe('Request Context', () => {
     expect(result2).toBe('/path/2');
   });
 
-  it('should return undefined for getClientCwd when cwd is not set', async () => {
+  it('should return undefined for getSessionCwd when cwd is not set', async () => {
     const contextWithoutCwd = {
       sessionId: 'no-cwd-session',
       timestamp: Date.now()
     };
 
     await requestContext.run(contextWithoutCwd, () => {
-      const cwd = getClientCwd();
+      const cwd = getSessionCwd();
       expect(cwd).toBeUndefined();
     });
   });

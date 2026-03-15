@@ -36,6 +36,27 @@
           :label="$t('sessions.protocolVersion')"
           min-width="120"
         />
+        <el-table-column :label="$t('sessions.capabilities')" min-width="200">
+          <template #default="scope">
+            <div class="flex flex-wrap gap-1">
+              <el-tag
+                v-for="key in getCapabilityKeys(scope.row.capabilities)"
+                :key="key"
+                size="small"
+                :type="getCapabilityType(key)"
+                effect="plain"
+              >
+                {{ key }}
+              </el-tag>
+              <span
+                v-if="getCapabilityKeys(scope.row.capabilities).length === 0"
+                class="text-gray-400 text-sm"
+              >
+                -
+              </span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column
           prop="cwd"
           :label="$t('sessions.cwd')"
@@ -69,6 +90,40 @@ import { onMounted } from 'vue';
 import { useSessionStore } from '@stores/session';
 
 const store = useSessionStore();
+
+type TagType = 'info' | 'primary' | 'success' | 'warning' | 'danger';
+
+interface Capabilities {
+  tools?: Record<string, unknown>;
+  resources?: Record<string, unknown>;
+  prompts?: Record<string, unknown>;
+  logging?: Record<string, unknown>;
+  roots?: Record<string, unknown>;
+  experimental?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+const capabilityTypeMap: Record<string, TagType> = {
+  tools: 'success',
+  resources: 'info',
+  prompts: 'warning',
+  logging: 'info',
+  roots: 'primary',
+  experimental: 'danger'
+};
+
+function getCapabilityType(key: string): TagType {
+  return capabilityTypeMap[key] || 'info';
+}
+
+function getCapabilityKeys(capabilities: Capabilities | undefined | null): string[] {
+  if (!capabilities || typeof capabilities !== 'object') {
+    return [];
+  }
+  return Object.keys(capabilities).filter(
+    (key) => capabilities[key] && typeof capabilities[key] === 'object'
+  );
+}
 
 function refresh() {
   store.fetchSessions();

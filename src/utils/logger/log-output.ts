@@ -130,7 +130,13 @@ export function formatMcpMessageForLogging(message: unknown): string {
     let logMessage: string;
 
     if (isToolsListResponse(rawJson)) {
-      logMessage = simplifyToolsListResponse(rawJson);
+      const simplified = simplifyToolsListResponse(rawJson);
+      if (simplified === null) {
+        // Could not simplify, use pretty JSON formatting
+        logMessage = stringifyForLogging(message);
+      } else {
+        logMessage = simplified;
+      }
     } else if (hasImageContent(rawJson)) {
       const simplified = simplifyImageContent(rawJson);
       try {
@@ -298,9 +304,9 @@ export function isToolsListResponse(data: string): boolean {
 /**
  * Simplify tools/list response log information.
  * @param data - Complete response data
- * @returns Simplified log information
+ * @returns Simplified log information, or null if cannot be simplified
  */
-export function simplifyToolsListResponse(data: string): string {
+export function simplifyToolsListResponse(data: string): string | null {
   try {
     const trimmed = data.trim();
 
@@ -309,6 +315,9 @@ export function simplifyToolsListResponse(data: string): string {
       if (dataMatch) {
         const jsonData = dataMatch[1].trim();
         const simplified = simplifyToolsListResponse(jsonData);
+        if (simplified === null) {
+          return null;
+        }
         return `event: message\ndata: ${simplified}`;
       }
     }
@@ -322,12 +331,20 @@ export function simplifyToolsListResponse(data: string): string {
 
           if ('tools' in result) {
             const toolsCount = Array.isArray(result.tools) ? result.tools.length : 0;
-            return `Returned ${toolsCount} tools`;
+            if (toolsCount > 0) {
+              return `Returned ${toolsCount} tools`;
+            }
+            // No tools, don't simplify
+            return null;
           }
 
           if ('resources' in result) {
             const resourcesCount = Array.isArray(result.resources) ? result.resources.length : 0;
-            return `Returned ${resourcesCount} resources`;
+            if (resourcesCount > 0) {
+              return `Returned ${resourcesCount} resources`;
+            }
+            // No resources, don't simplify
+            return null;
           }
 
           if (
@@ -364,13 +381,16 @@ export function simplifyToolsListResponse(data: string): string {
             } else if (resourcesCount > 0) {
               return `Returned ${resourcesCount} resources`;
             }
+            // No tools or resources, don't simplify
+            return null;
           }
         }
       }
     }
   } catch {
-    // Parsing failed, return truncated version of original data
+    // Parsing failed, don't simplify
   }
 
-  return data.length > 200 ? data.substring(0, 200) + '...' : data;
+  // Could not simplify
+  return null;
 }
