@@ -106,12 +106,12 @@
             <el-input
               v-model="item.key"
               :placeholder="$t('addServer.keyPlaceholder')"
-              class="w-1/3"
+              style="width: 30%; min-width: 150px"
             />
             <el-input
               v-model="item.value"
               :placeholder="$t('addServer.valuePlaceholder')"
-              class="flex-1"
+              style="flex: 1"
             />
             <el-button :icon="Delete" circle plain @click="removeEnv(index)" />
           </div>

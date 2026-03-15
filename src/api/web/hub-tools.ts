@@ -230,7 +230,10 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     toolArgs: z.record(z.string(), z.any()),
     requestOptions: z
       .object({
-        sessionId: z.string().optional(),
+        sessionId: z
+          .union([z.string(), z.null()])
+          .optional()
+          .transform((val) => val ?? undefined),
         tags: z.record(z.string(), z.string()).optional()
       })
       .optional()
