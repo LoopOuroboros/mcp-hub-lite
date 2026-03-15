@@ -371,7 +371,7 @@
     <ToolCallDialog
       v-if="selectedTool"
       v-model="showCallDialog"
-      :server-id="server.id"
+      :server-name="server.name"
       :tool-name="selectedTool.name"
       :description="selectedTool.description"
       :input-schema="selectedTool.inputSchema"
