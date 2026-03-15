@@ -1,0 +1,113 @@
+{
+  "name": "@loop_ouroboros/mcp-hub-lite",
+  "version": "1.0.0",
+  "description": "A lightweight MCP management platform designed for independent developers",
+  "license": "MIT",
+  "author": "loop_ouroboros",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "gateway",
+    "server-management",
+    "ai",
+    "cli"
+  ],
+  "homepage": "https://github.com/LoopOuroboros/mcp-hub-lite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoopOuroboros/mcp-hub-lite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LoopOuroboros/mcp-hub-lite/issues"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "type": "module",
+  "main": "dist/server/src/cli/index.js",
+  "bin": {
+    "mcp-hub-lite": "dist/server/src/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node dist/server/src/cli/index.js start",
+    "stop": "node dist/server/src/cli/index.js stop",
+    "restart": "node dist/server/src/cli/index.js restart",
+    "status": "node dist/server/src/cli/index.js status",
+    "list": "node dist/server/src/cli/index.js list",
+    "ui": "node dist/server/src/cli/index.js ui",
+    "dev": "run-p dev:client dev:server",
+    "dev:client": "vite",
+    "dev:server": "tsx src/server/dev-server.ts",
+    "build": "run-p type-check build:client build:server:dev",
+    "build:prod": "run-p type-check build:client build:server:prod",
+    "build:client": "vite build",
+    "build:server:dev": "tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
+    "build:server:prod": "tsc -p tsconfig.server.prod.json && tsc-alias -p tsconfig.server.prod.json",
+    "test": "node scripts/run-test.js",
+    "test:backend:silent": "vitest run --no-color --reporter=verbose --reporter=json --outputFile logs/test-backend-results.json > logs/test-backend.log 2>&1",
+    "test:frontend:silent": "vitest run --config vitest.frontend.config.ts --no-color --reporter=verbose --reporter=json --outputFile logs/test-frontend-results.json > logs/test-frontend.log 2>&1",
+    "test:backend": "vitest run",
+    "test:frontend": "vitest run --config vitest.frontend.config.ts",
+    "test:summary": "node scripts/generate-test-summary.js",
+    "lint": "eslint . --fix",
+    "lint:log": "node scripts/run-lint.js",
+    "full:check": "npm run build && npm run test && npm run lint:log && npm run format",
+    "format": "prettier --write --log-level silent .",
+    "prepare": "husky",
+    "validate:esm": "node --input-type=module -e \"console.log('ESM Environment Valid')\"",
+    "type-check": "vue-tsc --noEmit -p tsconfig.frontend.json --composite false"
+  },
+  "dependencies": {
+    "@fastify/static": "^9.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "commander": "^14.0.2",
+    "element-plus": "^2.13.0",
+    "eventsource": "^4.1.0",
+    "fastify": "^5.6.2",
+    "open": "^11.0.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.26",
+    "vue-i18n": "^11.2.7",
+    "vue-router": "^4.6.4",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.0.3",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "@vue/test-utils": "^2.4.6",
+    "@vue/tsconfig": "^0.8.1",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.2",
+    "eslint-plugin-vue": "^10.6.2",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.5.6",
+    "prettier": "^3.7.4",
+    "rimraf": "^6.1.2",
+    "tailwindcss": "^3.4.19",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.1",
+    "unplugin-auto-import": "^21.0.0",
+    "unplugin-vue-components": "^31.0.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16",
+    "vue-tsc": "^3.2.1"
+  }
+}

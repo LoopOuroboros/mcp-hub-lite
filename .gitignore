@@ -10,6 +10,10 @@ dist/
 build/
 out/
 coverage/
+/config/
+
+# Vite cache
+.vite/
 
 # Environment files
 .env
@@ -43,6 +47,7 @@ pids/
 # Temporary
 tmp/
 temp/
+test/temp/
 
 # OS
 .DS_Store
@@ -60,8 +65,15 @@ coverage/
 # ESLint
 .eslintcache
 
+# Auto-generated files
+.eslintrc-auto-import.json
+frontend/src/auto-imports.d.ts
+frontend/src/components.d.ts
+
 # MCP Hub specific
 .mcp-hub.json
+mcp-hub-config.json
+test-config.json
 !sample.mcp-hub.json
 *.backup
 *.bak
@@ -76,10 +88,11 @@ process-logs/
 
 # GitHub Spec Kit
 .specify/
-specs/
 
 # Analysis Docs
 docs/kaizen/
+docs/img/
+docs/plans/
 
 # Misc
 *.zip

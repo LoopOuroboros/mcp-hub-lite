@@ -1,0 +1,40 @@
+{
+  "extends": "@tsconfig/node22/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/server",
+    "rootDir": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vitest/globals"],
+    "target": "ES2022",
+    "downlevelIteration": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@api/*": ["./src/api/*"],
+      "@cli/*": ["./src/cli/*"],
+      "@config/*": ["./src/config/*"],
+      "@helpers/*": ["./tests/helpers/*"],
+      "@models/*": ["./src/models/*"],
+      "@pid/*": ["./src/pid/*"],
+      "@server/*": ["./src/server/*"],
+      "@services/*": ["./src/services/*"],
+      "@shared/*": ["./shared/*"],
+      "@shared-models/*": ["./shared/models/*"],
+      "@shared-types/*": ["./shared/types/*"],
+      "@src/*": ["./src/*"],
+      "@types/*": ["./src/types/*"],
+      "@tests/*": ["./tests/*"],
+      "@utils/*": ["./src/utils/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts", "shared/**/*"],
+  "exclude": ["frontend", "tests/unit/frontend", "node_modules", "dist"]
+}
