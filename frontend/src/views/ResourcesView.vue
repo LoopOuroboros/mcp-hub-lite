@@ -291,8 +291,7 @@ function viewResource(serverName: string, resource: Resource) {
     query: {
       uri: resource.uri,
       name: resource.name,
-      mimeType: resource.mimeType,
-      description: resource.description
+      mimeType: resource.mimeType
     }
   });
 }

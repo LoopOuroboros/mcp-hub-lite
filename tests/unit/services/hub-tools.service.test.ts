@@ -17,7 +17,7 @@ describe('HubToolsService', () => {
   });
 
   describe('listServers', () => {
-    it('should return array of server names only', async () => {
+    it('should return Record of server names to descriptions', async () => {
       // Arrange
       const mockServers = [
         {
@@ -28,7 +28,8 @@ describe('HubToolsService', () => {
             args: [],
             enabled: true,
             allowedTools: [],
-            timeout: 30000
+            timeout: 30000,
+            description: 'File system operations'
           }
         },
         {
@@ -50,42 +51,21 @@ describe('HubToolsService', () => {
       const servers = await hubToolsService.listServers();
 
       // Assert
-      expect(servers).toEqual(['Test Server 1', 'Test Server 2']);
+      expect(servers).toEqual({
+        'Test Server 1': 'File system operations',
+        'Test Server 2': 'Connected MCP server: Test Server 2'
+      });
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
-  });
 
-  describe('findServers', () => {
-    it('should find servers matching name pattern (case-insensitive)', async () => {
+    it('should use default description when server has no description', async () => {
       // Arrange
       const mockServers = [
         {
-          name: 'Test Server 1',
+          name: 'server1',
           config: {
             type: 'stdio' as const,
             command: 'test-command',
-            args: [],
-            enabled: true,
-            allowedTools: [],
-            timeout: 30000
-          }
-        },
-        {
-          name: 'Production Server',
-          config: {
-            type: 'sse' as const,
-            url: 'http://example.com',
-            args: [],
-            enabled: true,
-            allowedTools: [],
-            timeout: 30000
-          }
-        },
-        {
-          name: 'Development Server',
-          config: {
-            type: 'http' as const,
-            url: 'http://dev.example.com',
             args: [],
             enabled: true,
             allowedTools: [],
@@ -97,40 +77,39 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
-      const results = await hubToolsService.findServers({
-        pattern: 'server',
-        searchIn: 'name',
-        caseSensitive: false
-      });
+      const servers = await hubToolsService.listServers();
 
       // Assert
-      expect(results).toEqual(['Test Server 1', 'Production Server', 'Development Server']);
-      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
+      expect(servers).toEqual({
+        server1: 'Connected MCP server: server1'
+      });
     });
 
-    it('should find servers matching name pattern (case-sensitive)', async () => {
+    it('should use provided description when available', async () => {
       // Arrange
       const mockServers = [
         {
-          name: 'Test Server 1',
+          name: 'filesystem',
           config: {
             type: 'stdio' as const,
             command: 'test-command',
             args: [],
             enabled: true,
             allowedTools: [],
-            timeout: 30000
+            timeout: 30000,
+            description: 'File system operations'
           }
         },
         {
-          name: 'production server',
+          name: 'time',
           config: {
             type: 'sse' as const,
             url: 'http://example.com',
             args: [],
             enabled: true,
             allowedTools: [],
-            timeout: 30000
+            timeout: 30000,
+            description: 'Time and timezone utilities'
           }
         }
       ];
@@ -138,20 +117,18 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
 
       // Act
-      const results = await hubToolsService.findServers({
-        pattern: 'Server',
-        searchIn: 'name',
-        caseSensitive: true
-      });
+      const servers = await hubToolsService.listServers();
 
       // Assert
-      expect(results).toEqual(['Test Server 1']);
-      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
+      expect(servers).toEqual({
+        filesystem: 'File system operations',
+        time: 'Time and timezone utilities'
+      });
     });
   });
 
-  describe('listAllToolsInServer', () => {
-    it('should return tools from a specific server', async () => {
+  describe('listToolsInServer', () => {
+    it('should return tool summaries from a specific server (without inputSchema)', async () => {
       // Arrange
       const serverName = 'Test Server';
       const serverId = '1';
@@ -174,6 +151,12 @@ describe('HubToolsService', () => {
         }
       ];
 
+      // Expected tool summaries (without inputSchema)
+      const expectedToolSummaries = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Test Server' },
+        { name: 'writeFile', description: 'Write file contents', serverName: 'Test Server' }
+      ];
+
       // getServerInstanceByName should return ServerInstanceConfig objects (with id, timestamp, hash)
       const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
@@ -188,12 +171,12 @@ describe('HubToolsService', () => {
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
-      const result = await hubToolsService.listAllToolsInServer({ serverName });
+      const result = await hubToolsService.listToolsInServer({ serverName });
 
       // Assert
       expect(result).toEqual({
         serverName,
-        tools: mockTools
+        tools: expectedToolSummaries
       });
       expect(hubManager.getServerInstanceByName).toHaveBeenCalledTimes(1);
       expect(hubManager.getServerInstanceByName).toHaveBeenCalledWith(serverName);
@@ -207,128 +190,9 @@ describe('HubToolsService', () => {
       vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
 
       // Act & Assert
-      await expect(hubToolsService.listAllToolsInServer({ serverName })).rejects.toThrow(
+      await expect(hubToolsService.listToolsInServer({ serverName })).rejects.toThrow(
         `Server not found: ${serverName}`
       );
-    });
-  });
-
-  describe('findToolsInServer', () => {
-    it('should find tools matching pattern in server', async () => {
-      // Arrange
-      const serverName = 'Test Server';
-      const serverId = '1';
-      const mockTools = [
-        {
-          name: 'readFile',
-          description: 'Read file contents',
-          inputSchema: { type: 'object', properties: {}, required: [] },
-          serverName: 'Test Server'
-        },
-        {
-          name: 'writeFile',
-          description: 'Write file contents',
-          inputSchema: { type: 'object', properties: {}, required: [] },
-          serverName: 'Test Server'
-        },
-        {
-          name: 'listFiles',
-          description: 'List files in directory',
-          inputSchema: { type: 'object', properties: {}, required: [] },
-          serverName: 'Test Server'
-        }
-      ];
-
-      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
-      vi.mocked(hubManager.getServerByName).mockReturnValue({
-        type: 'stdio' as const,
-        command: 'test-command',
-        args: [],
-        enabled: true,
-        allowedTools: [],
-        timeout: 30000
-      });
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
-
-      // Act
-      const result = await hubToolsService.findToolsInServer({
-        serverName,
-        pattern: 'File',
-        searchIn: 'both',
-        caseSensitive: false
-      });
-
-      // Assert
-      expect(result).toEqual({
-        serverName,
-        tools: [
-          {
-            name: 'readFile',
-            description: 'Read file contents',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-            serverName: 'Test Server'
-          },
-          {
-            name: 'writeFile',
-            description: 'Write file contents',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-            serverName: 'Test Server'
-          },
-          {
-            name: 'listFiles',
-            description: 'List files in directory',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-            serverName: 'Test Server'
-          }
-        ]
-      });
-    });
-
-    it('should return empty array if no tools match', async () => {
-      // Arrange
-      const serverName = 'Test Server';
-      const serverId = '1';
-      const mockTools = [
-        {
-          name: 'unmatchedTool',
-          description: 'This should not match',
-          inputSchema: { type: 'object', properties: {}, required: [] },
-          serverName: 'Test Server'
-        },
-        {
-          name: 'anotherUnmatchedTool',
-          description: 'This should also not match',
-          inputSchema: { type: 'object', properties: {}, required: [] },
-          serverName: 'Test Server'
-        }
-      ];
-
-      const mockInstance = { id: serverId, timestamp: Date.now(), hash: 'hash1' };
-      vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
-      vi.mocked(hubManager.getServerByName).mockReturnValue({
-        type: 'stdio' as const,
-        command: 'test-command',
-        args: [],
-        enabled: true,
-        allowedTools: [],
-        timeout: 30000
-      });
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
-
-      // Act
-      const result = await hubToolsService.findToolsInServer({
-        serverName,
-        pattern: 'File',
-        searchIn: 'both',
-        caseSensitive: false
-      });
-
-      // Assert
-      expect(result).toEqual({
-        serverName,
-        tools: []
-      });
     });
   });
 
@@ -499,6 +363,16 @@ describe('HubToolsService', () => {
         }
       ];
 
+      // Expected tool summaries (without inputSchema)
+      const expectedToolSummariesServer1 = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' },
+        { name: 'writeFile', description: 'Write file contents', serverName: 'Server 1' }
+      ];
+      const expectedToolSummariesServer2 = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 2' },
+        { name: 'writeFile', description: 'Write file contents', serverName: 'Server 2' }
+      ];
+
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
       vi.mocked(hubManager.getServerInstanceByName).mockImplementation(
         (name: string) => mockServerInstances[name]
@@ -515,55 +389,22 @@ describe('HubToolsService', () => {
       expect(allTools).toHaveProperty('mcp-hub-lite');
       expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
 
-      // Assert system tools
+      // Assert system tools - should only have 4 tools now
       const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
-      expect(systemToolNames).toContain('find_servers');
-      expect(systemToolNames).toContain('list_all_tools_in_server');
-      expect(systemToolNames).toContain('find_tools_in_server');
+      expect(systemToolNames).toContain('list_tools_in_server');
       expect(systemToolNames).toContain('get_tool');
       expect(systemToolNames).toContain('call_tool');
-      expect(systemToolNames).toContain('find_tools');
+      expect(systemToolNames).toHaveLength(4);
 
       // Assert server tools - should have only name and description
-      expect(allTools['Server 1'].tools).toEqual(mockTools);
-      expect(allTools['Server 2'].tools).toEqual(mockTools);
-    });
-  });
-
-  describe('findTools', () => {
-    it('should find tools matching pattern across all servers', async () => {
-      // Arrange
-      const mockTools = {
-        'Server 1': {
-          tools: [
-            { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' },
-            { name: 'writeFile', description: 'Write file contents', serverName: 'Server 1' }
-          ]
-        },
-        'Server 2': {
-          tools: [
-            { name: 'listFiles', description: 'List files in directory', serverName: 'Server 2' }
-          ]
-        }
-      };
-
-      vi.spyOn(hubToolsService, 'listAllTools').mockResolvedValue(mockTools);
-
-      // Act
-      const results = await hubToolsService.findTools({
-        pattern: 'File',
-        searchIn: 'both',
-        caseSensitive: false
-      });
-
-      // Assert
-      expect(results).toEqual(mockTools);
+      expect(allTools['Server 1'].tools).toEqual(expectedToolSummariesServer1);
+      expect(allTools['Server 2'].tools).toEqual(expectedToolSummariesServer2);
     });
   });
 
   describe('listResources', () => {
-    it('should return empty array when no servers are connected', async () => {
+    it('should return use-guide resource even when no servers are connected', async () => {
       // Arrange
       vi.mocked(hubManager.getAllServers).mockReturnValue([]);
 
@@ -571,11 +412,17 @@ describe('HubToolsService', () => {
       const resources = await hubToolsService.listResources();
 
       // Assert
-      expect(resources).toEqual([]);
-      expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
+      expect(resources).toHaveLength(1);
+      expect(resources[0]).toEqual({
+        uri: 'hub://use-guide',
+        name: 'MCP Hub Lite Use Guide',
+        description: 'Comprehensive guide to using MCP Hub Lite gateway and its features',
+        mimeType: 'text/markdown',
+        serverId: undefined
+      });
     });
 
-    it('should return dynamic resources for connected servers', async () => {
+    it('should return use-guide and server resources for connected servers', async () => {
       // Arrange
       const mockServers = [
         {
@@ -613,8 +460,19 @@ describe('HubToolsService', () => {
       const resources = await hubToolsService.listResources();
 
       // Assert
-      expect(resources).toHaveLength(1);
+      expect(resources).toHaveLength(2);
+
+      // First resource should be use-guide
       expect(resources[0]).toEqual({
+        uri: 'hub://use-guide',
+        name: 'MCP Hub Lite Use Guide',
+        description: 'Comprehensive guide to using MCP Hub Lite gateway and its features',
+        mimeType: 'text/markdown',
+        serverId: undefined
+      });
+
+      // Second resource should be server metadata
+      expect(resources[1]).toEqual({
         uri: 'hub://servers/Test Server',
         name: 'Server: Test Server',
         description: 'Connected MCP server: Test Server',
@@ -625,14 +483,25 @@ describe('HubToolsService', () => {
   });
 
   describe('readResource', () => {
+    it('should return use-guide content for use-guide URI', async () => {
+      // Act
+      const result = await hubToolsService.readResource('hub://use-guide');
+
+      // Assert
+      expect(typeof result).toBe('string');
+      expect(result).toContain('# MCP Hub Lite Use Guide');
+      expect(result).toContain('Getting Started');
+      expect(result).toContain('Progressive Discovery Workflow');
+      expect(result).toContain('System Tools Reference');
+    });
+
     it('should throw error for invalid URI format', async () => {
       // Act & Assert
       await expect(hubToolsService.readResource('invalid-uri')).rejects.toThrow(
         'Invalid Hub resource URI'
       );
-      await expect(hubToolsService.readResource('hub://invalid')).rejects.toThrow(
-        'Invalid Hub resource URI format'
-      );
+      // Now hub://invalid is not necessarily invalid - it could be a valid single-segment URI
+      // The parser only rejects hub://servers/... format URIs that are invalid
     });
 
     it('should throw error for non-existent server', async () => {
@@ -645,7 +514,7 @@ describe('HubToolsService', () => {
       );
     });
 
-    it('should return server metadata for server URI', async () => {
+    it('should return server metadata for server URI with tools field', async () => {
       // Arrange
       const serverName = 'Test Server';
       const mockInstance = {
@@ -665,12 +534,13 @@ describe('HubToolsService', () => {
         timeout: 30000,
         tags: { env: 'test' }
       };
+      const mockTools = [
+        { name: 'testTool', description: 'Test tool description', serverName: 'test-server' }
+      ];
 
       vi.mocked(hubManager.getServerInstanceByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue([
-        { name: 'testTool', serverName: 'test-server' }
-      ]);
+      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
       vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
         { uri: 'test://resource', name: 'Test Resource' }
       ]);
@@ -683,10 +553,12 @@ describe('HubToolsService', () => {
         name: serverName,
         status: 'online',
         toolsCount: 1,
+        tools: { testTool: 'Test tool description' },
         resourcesCount: 1,
         tags: { env: 'test' },
         lastHeartbeat: mockInstance.lastHeartbeat,
-        uptime: mockInstance.uptime
+        uptime: mockInstance.uptime,
+        description: `Connected MCP server: ${serverName}`
       });
     });
 
