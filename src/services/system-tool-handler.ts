@@ -4,19 +4,13 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import {
   SystemToolName,
   LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL,
   MCP_HUB_LITE_SERVER,
-  type FindServersParams,
-  type ListAllToolsInServerParams,
-  type FindToolsInServerParams,
+  type ListToolsInServerParams,
   type GetToolParams,
-  type CallToolParams,
-  type FindToolsParams
+  type CallToolParams
 } from '@models/system-tools.constants.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 
@@ -43,19 +37,9 @@ export class SystemToolHandler {
         case LIST_SERVERS_TOOL:
           result = await hubToolsService.listServers();
           break;
-        case FIND_SERVERS_TOOL: {
-          const findServersArgs = toolArgs as unknown as FindServersParams;
-          result = await hubToolsService.findServers(findServersArgs);
-          break;
-        }
-        case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
-          const listAllToolsArgs = toolArgs as unknown as ListAllToolsInServerParams;
-          result = await hubToolsService.listAllToolsInServer(listAllToolsArgs);
-          break;
-        }
-        case FIND_TOOLS_IN_SERVER_TOOL: {
-          const findToolsInServerArgs = toolArgs as unknown as FindToolsInServerParams;
-          result = await hubToolsService.findToolsInServer(findToolsInServerArgs);
+        case LIST_TOOLS_IN_SERVER_TOOL: {
+          const listToolsArgs = toolArgs as unknown as ListToolsInServerParams;
+          result = await hubToolsService.listToolsInServer(listToolsArgs);
           break;
         }
         case GET_TOOL_TOOL: {
@@ -73,11 +57,6 @@ export class SystemToolHandler {
             ...callToolArgs,
             serverName
           });
-          break;
-        }
-        case FIND_TOOLS_TOOL: {
-          const findToolsArgs = toolArgs as unknown as FindToolsParams;
-          result = await hubToolsService.findTools(findToolsArgs);
           break;
         }
         default:

@@ -45,13 +45,28 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
         // Handle system resources (mcp-hub-lite)
         if (name === MCP_HUB_LITE_SERVER) {
           const content = await hubToolsService.readResource(uri);
+
+          // Determine mimeType and format content appropriately
+          let mimeType = 'application/json';
+          let text: string;
+
+          // Use-guide is markdown
+          if (uri === 'hub://use-guide') {
+            mimeType = 'text/markdown';
+            text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+          } else {
+            // Server metadata is JSON
+            mimeType = 'application/json';
+            text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+          }
+
           // Wrap content in MCP resource read format
           return {
             contents: [
               {
                 uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(content, null, 2)
+                mimeType,
+                text
               }
             ]
           };

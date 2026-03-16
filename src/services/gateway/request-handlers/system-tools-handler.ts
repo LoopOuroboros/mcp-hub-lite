@@ -10,12 +10,9 @@ import { getSessionCwd } from '@utils/request-context.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import {
   LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
-  CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  CALL_TOOL_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -37,26 +34,9 @@ export function registerSystemToolsHandlers(server: McpServer): void {
     return { servers };
   });
 
-  // Find servers
-  const FindServersRequestSchema = z.object({
-    method: z.literal(FIND_SERVERS_TOOL),
-    params: z.object({
-      pattern: z.string(),
-      searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
-      caseSensitive: z.boolean().optional().default(false)
-    }),
-    id: z.union([z.string(), z.number()]),
-    jsonrpc: z.literal('2.0')
-  });
-
-  server.server.setRequestHandler(FindServersRequestSchema, async (request) => {
-    const servers = await hubToolsService.findServers(request.params);
-    return { servers };
-  });
-
   // List all tools in a specific server
-  const ListAllToolsInServerRequestSchema = z.object({
-    method: z.literal(LIST_ALL_TOOLS_IN_SERVER_TOOL),
+  const ListToolsInServerRequestSchema = z.object({
+    method: z.literal(LIST_TOOLS_IN_SERVER_TOOL),
     params: z.object({
       serverName: z.string(),
       requestOptions: z
@@ -73,9 +53,9 @@ export function registerSystemToolsHandlers(server: McpServer): void {
     jsonrpc: z.literal('2.0')
   });
 
-  server.server.setRequestHandler(ListAllToolsInServerRequestSchema, async (request) => {
+  server.server.setRequestHandler(ListToolsInServerRequestSchema, async (request) => {
     try {
-      const result = await hubToolsService.listAllToolsInServer(request.params);
+      const result = await hubToolsService.listToolsInServer(request.params);
       return result;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -83,43 +63,6 @@ export function registerSystemToolsHandlers(server: McpServer): void {
         throw new McpError(-32802, error.message);
       } else {
         logger.error(`List tools in server error:`, error);
-        throw new McpError(-32802, String(error));
-      }
-    }
-  });
-
-  // Find tools in a specific server
-  const FindToolsInServerRequestSchema = z.object({
-    method: z.literal(FIND_TOOLS_IN_SERVER_TOOL),
-    params: z.object({
-      serverName: z.string(),
-      pattern: z.string(),
-      searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
-      caseSensitive: z.boolean().optional().default(false),
-      requestOptions: z
-        .object({
-          sessionId: z
-            .union([z.string(), z.null()])
-            .optional()
-            .transform((val) => val ?? undefined),
-          tags: z.record(z.string(), z.string()).optional()
-        })
-        .optional()
-    }),
-    id: z.union([z.string(), z.number()]),
-    jsonrpc: z.literal('2.0')
-  });
-
-  server.server.setRequestHandler(FindToolsInServerRequestSchema, async (request) => {
-    try {
-      const result = await hubToolsService.findToolsInServer(request.params);
-      return result;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        logger.error(`Find tools in server error:`, error);
-        throw new McpError(-32802, error.message);
-      } else {
-        logger.error(`Find tools in server error:`, error);
         throw new McpError(-32802, String(error));
       }
     }
@@ -241,22 +184,5 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   server.server.setRequestHandler(ListAllToolsRequestSchema, async () => {
     const allTools = await hubToolsService.listAllTools();
     return allTools;
-  });
-
-  // Find tools across all servers
-  const FindToolsRequestSchema = z.object({
-    method: z.literal(FIND_TOOLS_TOOL),
-    params: z.object({
-      pattern: z.string(),
-      searchIn: z.enum(['name', 'description', 'both']).optional().default('both'),
-      caseSensitive: z.boolean().optional().default(false)
-    }),
-    id: z.union([z.string(), z.number()]),
-    jsonrpc: z.literal('2.0')
-  });
-
-  server.server.setRequestHandler(FindToolsRequestSchema, async (request) => {
-    const tools = await hubToolsService.findTools(request.params);
-    return tools;
   });
 }

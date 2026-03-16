@@ -4,12 +4,9 @@ import { hubToolsService } from '@services/hub-tools.service.js';
 import {
   SystemToolName,
   ListServersParams,
-  FindServersParams,
-  ListAllToolsInServerParams,
-  FindToolsInServerParams,
+  ListToolsInServerParams,
   GetToolParams,
-  CallToolParams,
-  FindToolsParams
+  CallToolParams
 } from '@models/system-tools.constants.js';
 
 // Request options interface
@@ -19,14 +16,7 @@ interface RequestOptions {
 }
 
 // Union type for system tool parameters
-type SystemToolArgs =
-  | ListServersParams
-  | FindServersParams
-  | ListAllToolsInServerParams
-  | FindToolsInServerParams
-  | GetToolParams
-  | CallToolParams
-  | FindToolsParams;
+type SystemToolArgs = ListServersParams | ListToolsInServerParams | GetToolParams | CallToolParams;
 
 /**
  * MCP Hub Tools API Routes
@@ -36,12 +26,12 @@ type SystemToolArgs =
  * tool management and execution within the MCP Hub Lite system.
  *
  * The API supports both system-level tools (built into MCP Hub Lite) and server-specific tools
- * from connected MCP servers. It enables powerful search capabilities, detailed tool inspection,
+ * from connected MCP servers. It enables tool listing, detailed tool inspection,
  * and secure tool invocation with proper parameter validation.
  *
  * Key features include:
  * - System tool discovery and execution
- * - Cross-server tool listing and searching
+ * - Cross-server tool listing
  * - Server-specific tool management
  * - Tool schema inspection and validation
  * - Secure tool invocation with session context
@@ -95,25 +85,6 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
     return servers;
   });
 
-  // GET /web/hub-tools/servers/find - Find servers matching a pattern
-  fastify.get<{
-    Querystring: {
-      pattern: string;
-      searchIn?: 'name' | 'description' | 'both';
-      caseSensitive?: string;
-    };
-  }>('/web/hub-tools/servers/find', async (request) => {
-    const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
-
-    const servers = await hubToolsService.findServers({
-      pattern,
-      searchIn: searchIn as 'name' | 'description' | 'both',
-      caseSensitive: caseSensitive === 'true'
-    });
-
-    return servers;
-  });
-
   // GET /web/hub-tools/servers/:serverName/tools - List all tools in a specific server
   fastify.get<{
     Params: { serverName: string };
@@ -128,60 +99,11 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
         tags: tags ? JSON.parse(tags) : undefined
       };
 
-      const result = await hubToolsService.listAllToolsInServer({ serverName, requestOptions });
+      const result = await hubToolsService.listToolsInServer({ serverName, requestOptions });
       return result;
     } catch (error) {
       return reply.code(404).send({
         error: 'Server not found',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  // GET /web/hub-tools/servers/:serverName/tools/find - Find tools in a specific server
-  fastify.get<{
-    Params: { serverName: string };
-    Querystring: {
-      pattern: string;
-      searchIn?: 'name' | 'description' | 'both';
-      caseSensitive?: string;
-      sessionId?: string;
-      tags?: string;
-    };
-  }>('/web/hub-tools/servers/:serverName/tools/find', async (request, reply) => {
-    try {
-      const { serverName } = request.params;
-      const {
-        pattern,
-        searchIn = 'both',
-        caseSensitive = 'false',
-        sessionId,
-        tags
-      } = request.query;
-
-      const requestOptions = {
-        sessionId,
-        tags: tags ? JSON.parse(tags) : undefined
-      };
-
-      const result = await hubToolsService.findToolsInServer({
-        serverName,
-        pattern,
-        searchIn: searchIn as 'name' | 'description' | 'both',
-        caseSensitive: caseSensitive === 'true',
-        requestOptions
-      });
-
-      return result;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
-        return reply.code(404).send({
-          error: 'Server not found',
-          message: error.message
-        });
-      }
-      return reply.code(500).send({
-        error: 'Internal Server Error',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
@@ -272,24 +194,5 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   fastify.get('/web/hub-tools/tools', async () => {
     const allTools = await hubToolsService.listAllTools();
     return allTools;
-  });
-
-  // GET /web/hub-tools/tools/find - Find tools matching a pattern across all servers
-  fastify.get<{
-    Querystring: {
-      pattern: string;
-      searchIn?: 'name' | 'description' | 'both';
-      caseSensitive?: string;
-    };
-  }>('/web/hub-tools/tools/find', async (request) => {
-    const { pattern, searchIn = 'both', caseSensitive = 'false' } = request.query;
-
-    const tools = await hubToolsService.findTools({
-      pattern,
-      searchIn: searchIn as 'name' | 'description' | 'both',
-      caseSensitive: caseSensitive === 'true'
-    });
-
-    return tools;
   });
 }
