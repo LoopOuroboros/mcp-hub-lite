@@ -1,6 +1,6 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
-import type { Tool } from '@shared-models/tool.model.js';
+import type { Tool, ToolSummary } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
@@ -9,33 +9,24 @@ import { stringifyForLogging } from '@utils/json-utils.js';
 import {
   MCP_HUB_LITE_SERVER,
   LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL,
   SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
   SystemToolArgs,
   SystemToolName,
   ListServersParams,
-  FindServersParams,
-  ListAllToolsInServerParams,
-  FindToolsInServerParams,
+  ListToolsInServerParams,
   GetToolParams,
-  CallToolParams,
-  FindToolsParams
+  CallToolParams
 } from '@models/system-tools.constants.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
 import {
   hasValidId,
   selectBestInstance,
   getSystemTools,
-  findServers as findServersUtil,
-  findToolsInServer as findToolsInServerUtil,
-  findTools as findToolsUtil,
   generateDynamicResources,
   readResource as readResourceUtil
 } from './hub-tools/index.js';
@@ -51,7 +42,7 @@ import {
  * ## Core Responsibilities
  *
  * - **System Tool Management**: Exposes a standardized set of system tools for server discovery and management
- * - **Tool Discovery**: Enables searching and listing tools across all connected MCP servers
+ * - **Tool Discovery**: Enables listing tools across all connected MCP servers
  * - **Tool Execution**: Provides safe, monitored execution of tools with comprehensive event tracking
  * - **Resource Management**: Dynamically generates and serves virtual resources representing server state
  * - **Instance Selection**: Handles intelligent server instance selection for multi-instance scenarios
@@ -61,12 +52,9 @@ import {
  *
  * The service exposes the following system tools through the `getSystemTools()` method:
  * - `list-servers`: Retrieve all connected server names
- * - `find-servers`: Search servers by pattern matching
- * - `list-all-tools-in-server`: List all tools from a specific server
- * - `find-tools-in-server`: Search tools within a specific server
+ * - `list-tools-in-server`: List all tools from a specific server
  * - `get-tool`: Retrieve complete schema for a specific tool
  * - `call-tool`: Execute a tool on a specific server
- * - `find-tools`: Search tools across all connected servers
  *
  * ## Architecture Integration
  *
@@ -88,9 +76,6 @@ import {
  *
  * // Call a tool on a specific server
  * const result = await hubTools.callTool('file-system-server', 'list-files', { directory: '/home' });
- *
- * // Search for tools across all servers
- * const matchingTools = await hubTools.findTools('search');
  * ```
  */
 export class HubToolsService {
@@ -137,31 +122,25 @@ export class HubToolsService {
   }
 
   /**
-   * Lists all connected MCP servers by name.
+   * Lists all connected MCP servers with their descriptions.
    *
    * This method retrieves all configured servers from the hub manager, filters out
-   * invalid entries using the hasValidId type guard, and returns an array of server names.
-   * It provides a simple way to discover available servers in the system.
+   * invalid entries using the hasValidId type guard, and returns a Record mapping
+   * server names to their descriptions. If a server doesn't have a description,
+   * a default description is provided.
    *
-   * @returns {Promise<string[]>} Array of connected server names
+   * @returns {Promise<Record<string, string>>} Record mapping server names to descriptions
    */
-  async listServers(): Promise<string[]> {
+  async listServers(): Promise<Record<string, string>> {
     const servers = hubManager.getAllServers();
-    return servers.filter(hasValidId).map((server) => server.name);
-  }
+    const result: Record<string, string> = {};
 
-  /**
-   * Finds servers matching a specified regex pattern.
-   *
-   * This method searches through all configured servers using the provided regex pattern,
-   * supporting flexible search options including case sensitivity and search scope
-   * (name, description, or both). It returns an array of matching server names.
-   *
-   * @param {FindServersParams} args - Search parameters
-   * @returns {Promise<string[]>} Array of matching server names
-   */
-  async findServers(args: FindServersParams): Promise<string[]> {
-    return findServersUtil(args.pattern, args.searchIn, args.caseSensitive);
+    for (const server of servers.filter(hasValidId)) {
+      const description = server.config.description || `Connected MCP server: ${server.name}`;
+      result[server.name] = description;
+    }
+
+    return result;
   }
 
   /**
@@ -172,13 +151,13 @@ export class HubToolsService {
    * It uses the selectBestInstance function to resolve server names to instances
    * and leverages the MCP connection manager for tool retrieval.
    *
-   * @param {ListAllToolsInServerParams} args - Server name and request options
-   * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and tools array
+   * @param {ListToolsInServerParams} args - Server name and request options
+   * @returns {Promise<{ serverName: string; tools: ToolSummary[] }>} Object containing server name and tools array
    * @throws {Error} If the specified server is not found or not connected
    */
-  async listAllToolsInServer(args: ListAllToolsInServerParams): Promise<{
+  async listToolsInServer(args: ListToolsInServerParams): Promise<{
     serverName: string;
-    tools: Tool[];
+    tools: ToolSummary[];
   }> {
     // Handle MCP Hub Lite server (return system tools list)
     if (typeof args.serverName === 'string' && args.serverName === MCP_HUB_LITE_SERVER) {
@@ -186,18 +165,16 @@ export class HubToolsService {
       const toolMap = new Map<string, { serverId: string; realToolName: string }>();
       const gatewayTools = gateway.generateGatewayToolsList(toolMap);
 
-      // Convert to Tool format
-      const tools: Tool[] = gatewayTools.map((tool) => ({
+      // Convert to ToolSummary format (without inputSchema)
+      const toolSummaries: ToolSummary[] = gatewayTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        inputSchema: tool.inputSchema,
-        serverName: MCP_HUB_LITE_SERVER,
-        annotations: tool.annotations
+        serverName: MCP_HUB_LITE_SERVER
       }));
 
       return {
         serverName: args.serverName,
-        tools
+        tools: toolSummaries
       };
     }
 
@@ -210,38 +187,18 @@ export class HubToolsService {
     // Get instance ID
     const serverId = serverInfo.instance.id;
 
-    // Get tool list from connection manager
+    // Get tool list from connection manager and convert to ToolSummary
     const tools = mcpConnectionManager.getTools(serverId);
+    const toolSummaries: ToolSummary[] = tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      serverName: args.serverName
+    }));
 
     return {
       serverName: args.serverName,
-      tools
+      tools: toolSummaries
     };
-  }
-
-  /**
-   * Finds tools matching a pattern within a specific MCP server.
-   *
-   * This method searches through all tools available from the specified server using
-   * the provided regex pattern, supporting flexible search options including case
-   * sensitivity and search scope (name, description, or both). It returns matching
-   * tools grouped by server name.
-   *
-   * @param {FindToolsInServerParams} args - Search parameters
-   * @returns {Promise<{ serverName: string; tools: Tool[] }>} Object containing server name and matching tools
-   * @throws {Error} If the specified server is not found or not connected
-   */
-  async findToolsInServer(args: FindToolsInServerParams): Promise<{
-    serverName: string;
-    tools: Tool[];
-  }> {
-    return findToolsInServerUtil(
-      args.serverName,
-      args.pattern,
-      args.searchIn,
-      args.caseSensitive,
-      args.requestOptions
-    );
   }
 
   /**
@@ -282,35 +239,23 @@ export class HubToolsService {
     toolName: T,
     toolArgs: T extends typeof LIST_SERVERS_TOOL
       ? ListServersParams
-      : T extends typeof FIND_SERVERS_TOOL
-        ? FindServersParams
-        : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
-          ? ListAllToolsInServerParams
-          : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
-            ? FindToolsInServerParams
-            : T extends typeof GET_TOOL_TOOL
-              ? GetToolParams
-              : T extends typeof CALL_TOOL_TOOL
-                ? CallToolParams
-                : T extends typeof FIND_TOOLS_TOOL
-                  ? FindToolsParams
-                  : never
+      : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+        ? ListToolsInServerParams
+        : T extends typeof GET_TOOL_TOOL
+          ? GetToolParams
+          : T extends typeof CALL_TOOL_TOOL
+            ? CallToolParams
+            : never
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
-      ? string[]
-      : T extends typeof FIND_SERVERS_TOOL
-        ? string[]
-        : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
-          ? { serverName: string; tools: Tool[] }
-          : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
-            ? { serverName: string; tools: Tool[] }
-            : T extends typeof GET_TOOL_TOOL
-              ? Tool | undefined
-              : T extends typeof CALL_TOOL_TOOL
-                ? unknown
-                : T extends typeof FIND_TOOLS_TOOL
-                  ? Record<string, { tools: Tool[] }>
-                  : never
+      ? Record<string, string>
+      : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+        ? { serverName: string; tools: ToolSummary[] }
+        : T extends typeof GET_TOOL_TOOL
+          ? Tool | undefined
+          : T extends typeof CALL_TOOL_TOOL
+            ? unknown
+            : never
   > {
     logger.debug(
       `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
@@ -323,16 +268,8 @@ export class HubToolsService {
         case LIST_SERVERS_TOOL:
           result = await this.listServers();
           break;
-        case FIND_SERVERS_TOOL: {
-          result = await this.findServers(toolArgs as FindServersParams);
-          break;
-        }
-        case LIST_ALL_TOOLS_IN_SERVER_TOOL: {
-          result = await this.listAllToolsInServer(toolArgs as ListAllToolsInServerParams);
-          break;
-        }
-        case FIND_TOOLS_IN_SERVER_TOOL: {
-          result = await this.findToolsInServer(toolArgs as FindToolsInServerParams);
+        case LIST_TOOLS_IN_SERVER_TOOL: {
+          result = await this.listToolsInServer(toolArgs as ListToolsInServerParams);
           break;
         }
         case GET_TOOL_TOOL: {
@@ -351,10 +288,6 @@ export class HubToolsService {
           });
           break;
         }
-        case FIND_TOOLS_TOOL: {
-          result = await this.findTools(toolArgs as FindToolsParams);
-          break;
-        }
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
@@ -362,20 +295,14 @@ export class HubToolsService {
       logger.debug(`System tool SUCCESS: ${toolName}`, LOG_MODULES.HUB_TOOLS);
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL
-        ? string[]
-        : T extends typeof FIND_SERVERS_TOOL
-          ? string[]
-          : T extends typeof LIST_ALL_TOOLS_IN_SERVER_TOOL
-            ? { serverName: string; tools: Tool[] }
-            : T extends typeof FIND_TOOLS_IN_SERVER_TOOL
-              ? { serverName: string; tools: Tool[] }
-              : T extends typeof GET_TOOL_TOOL
-                ? Tool | undefined
-                : T extends typeof CALL_TOOL_TOOL
-                  ? unknown
-                  : T extends typeof FIND_TOOLS_TOOL
-                    ? Record<string, { tools: Tool[] }>
-                    : never;
+        ? Record<string, string>
+        : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+          ? { serverName: string; tools: ToolSummary[] }
+          : T extends typeof GET_TOOL_TOOL
+            ? Tool | undefined
+            : T extends typeof CALL_TOOL_TOOL
+              ? unknown
+              : never;
     } catch (error) {
       logger.error(
         `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
@@ -533,22 +460,22 @@ export class HubToolsService {
    * the system tools provided by the MCP Hub Lite server itself. It returns a structured
    * object mapping server names to their respective tool arrays.
    *
-   * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to tool arrays
+   * @returns {Promise<Record<string, { tools: ToolSummary[] }>>} Object mapping server names to tool arrays
    */
   async listAllTools(): Promise<
     Record<
       string,
       {
-        tools: Tool[];
+        tools: ToolSummary[];
       }
     >
   > {
     const servers = hubManager.getAllServers();
-    const allTools: Record<string, { tools: Tool[] }> = {};
+    const allTools: Record<string, { tools: ToolSummary[] }> = {};
 
     // Add system tools under mcp-hub-lite server
-    const systemTools = this.getSystemTools().map((tool) => ({
-      ...tool,
+    const systemTools: ToolSummary[] = this.getSystemTools().map((tool) => ({
+      name: tool.name,
       description: `[System] ${tool.description}`,
       serverName: MCP_HUB_LITE_SERVER
     }));
@@ -565,38 +492,19 @@ export class HubToolsService {
       for (const instance of instances) {
         if (instance.id) {
           const tools = mcpConnectionManager.getTools(instance.id);
+          const toolSummaries: ToolSummary[] = tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            serverName: server.name
+          }));
           allTools[server.name] = {
-            tools
+            tools: toolSummaries
           };
         }
       }
     }
 
     return allTools;
-  }
-
-  /**
-   * Finds tools matching a pattern across all connected MCP servers.
-   *
-   * This method searches through all available tools from all connected servers using the
-   * provided regex pattern, supporting flexible search options including case sensitivity
-   * and search scope (name, description, or both). It returns matching tools grouped by
-   * their originating server names.
-   *
-   * @param {FindToolsParams} args - Search parameters
-   * @returns {Promise<Record<string, { tools: Tool[] }>>} Object mapping server names to matching tools
-   */
-  async findTools(args: FindToolsParams): Promise<
-    Record<
-      string,
-      {
-        tools: Tool[];
-      }
-    >
-  > {
-    return findToolsUtil(args.pattern, args.searchIn, args.caseSensitive, () =>
-      this.listAllTools()
-    );
   }
 
   /**
@@ -629,7 +537,7 @@ export class HubToolsService {
    * - Resources list: hub://servers/{serverName}/resources
    *
    * @param {string} uri - Resource URI to read (e.g., hub://servers/server-name)
-   * @returns {Promise<ServerMetadata | Tool[] | Resource[]>} Resource content based on URI type
+   * @returns {Promise<ServerMetadata | Tool[] | Resource[] | string>} Resource content based on URI type
    * @throws {Error} If URI format is invalid, server not found, or resource type unknown
    */
   async readResource(uri: string): Promise<
@@ -637,26 +545,32 @@ export class HubToolsService {
         name: string;
         status: unknown;
         toolsCount: number;
+        tools: Record<string, string>;
         resourcesCount: number;
         tags: Record<string, string>;
         lastHeartbeat: number;
         uptime: number;
+        description: string;
       }
     | Tool[]
     | Resource[]
+    | string
   > {
     return readResourceUtil(uri) as unknown as
       | {
           name: string;
           status: unknown;
           toolsCount: number;
+          tools: Record<string, string>;
           resourcesCount: number;
           tags: Record<string, string>;
           lastHeartbeat: number;
           uptime: number;
+          description: string;
         }
       | Tool[]
-      | Resource[];
+      | Resource[]
+      | string;
   }
 }
 

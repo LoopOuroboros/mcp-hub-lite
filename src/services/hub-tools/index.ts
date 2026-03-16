@@ -6,7 +6,5 @@ export type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js
 export { hasValidId, selectBestInstance } from './server-selector.js';
 export { getSystemTools } from './system-tool-definitions.js';
 export type { ToolAnnotations, SystemToolDefinition } from './system-tool-definitions.js';
-export { findServers, findToolsInServer, findTools } from './tool-search.js';
-export type { SearchOptions } from './tool-search.js';
 export { generateDynamicResources, readResource } from './resource-generator.js';
 export type { ServerMetadata } from './resource-generator.js';

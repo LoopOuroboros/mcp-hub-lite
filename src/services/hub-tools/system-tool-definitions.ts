@@ -2,12 +2,9 @@ import type { JsonSchema } from '@shared-models/tool.model.js';
 import {
   SYSTEM_TOOL_NAMES,
   LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
-  CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  CALL_TOOL_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -40,12 +37,9 @@ export interface SystemToolDefinition {
  *
  * The method implements all standard system tools:
  * - list-servers: List all connected servers
- * - find-servers: Find servers matching a pattern
- * - list-all-tools-in-server: List tools from a specific server
- * - find-tools-in-server: Find tools in a specific server
+ * - list-tools-in-server: List tools from a specific server
  * - get-tool: Get complete tool schema
  * - call-tool: Call a specific tool from a specific server
- * - find-tools: Find tools across all servers
  *
  * @returns {Array<{ name: string; description: string; inputSchema: JsonSchema; annotations?: ToolAnnotations }>}
  * Array of system tool configurations
@@ -79,33 +73,7 @@ export function getSystemTools(): SystemToolDefinition[] {
           }
         });
         break;
-      case FIND_SERVERS_TOOL:
-        systemTools.push({
-          name: toolName,
-          description: 'Find servers matching a pattern',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              pattern: { type: 'string', description: 'Regex pattern to search for' },
-              searchIn: {
-                type: 'string',
-                enum: ['name', 'description', 'both'],
-                default: 'both'
-              },
-              caseSensitive: { type: 'boolean', default: false }
-            },
-            required: ['pattern']
-          },
-          annotations: {
-            title: 'Find Servers',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false
-          }
-        });
-        break;
-      case LIST_ALL_TOOLS_IN_SERVER_TOOL:
+      case LIST_TOOLS_IN_SERVER_TOOL:
         systemTools.push({
           name: toolName,
           description: 'List all tools from a specific server',
@@ -125,40 +93,6 @@ export function getSystemTools(): SystemToolDefinition[] {
           },
           annotations: {
             title: 'List Tools in Server',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false
-          }
-        });
-        break;
-      case FIND_TOOLS_IN_SERVER_TOOL:
-        systemTools.push({
-          name: toolName,
-          description: 'Find tools matching a pattern in a specific server',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              serverName: { type: 'string', description: 'Name of the MCP server' },
-              pattern: { type: 'string', description: 'Regex pattern to search for' },
-              searchIn: {
-                type: 'string',
-                enum: ['name', 'description', 'both'],
-                default: 'both'
-              },
-              caseSensitive: { type: 'boolean', default: false },
-              requestOptions: {
-                type: 'object',
-                properties: {
-                  sessionId: { type: 'string', description: 'Session ID for instance selection' },
-                  tags: { type: 'object', description: 'Tags for instance selection' }
-                }
-              }
-            },
-            required: ['serverName', 'pattern']
-          },
-          annotations: {
-            title: 'Find Tools in Server',
             readOnlyHint: true,
             destructiveHint: false,
             idempotentHint: true,
@@ -220,32 +154,6 @@ export function getSystemTools(): SystemToolDefinition[] {
             destructiveHint: false,
             idempotentHint: false,
             openWorldHint: true
-          }
-        });
-        break;
-      case FIND_TOOLS_TOOL:
-        systemTools.push({
-          name: toolName,
-          description: 'Find tools matching a pattern across all connected servers',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              pattern: { type: 'string', description: 'Regex pattern to search for' },
-              searchIn: {
-                type: 'string',
-                enum: ['name', 'description', 'both'],
-                default: 'both'
-              },
-              caseSensitive: { type: 'boolean', default: false }
-            },
-            required: ['pattern']
-          },
-          annotations: {
-            title: 'Find Tools',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false
           }
         });
         break;
