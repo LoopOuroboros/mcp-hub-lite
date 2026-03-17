@@ -2,6 +2,20 @@ import { hubManager } from '@services/hub-manager.service.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
 
 /**
+ * Gets the description for a server, using a default if none is provided.
+ *
+ * @param serverConfig - Server configuration object (may contain description)
+ * @param serverName - Name of the server
+ * @returns The server description or a default one
+ */
+export function getServerDescription(
+  serverConfig: { description?: string } | undefined,
+  serverName: string
+): string {
+  return serverConfig?.description || `Connected MCP server: ${serverName}`;
+}
+
+/**
  * Type guard to validate that a server object has valid name and configuration.
  *
  * This function checks if the provided object is a valid server with both a non-empty

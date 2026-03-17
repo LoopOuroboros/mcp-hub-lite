@@ -5,7 +5,7 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { ServerStatus } from '@shared-types/common.types.js';
-import { hasValidId, selectBestInstance } from './server-selector.js';
+import { hasValidId, selectBestInstance, getServerDescription } from './server-selector.js';
 
 /**
  * Path to the use guide Markdown file.
@@ -122,7 +122,7 @@ export function generateDynamicResources(): Resource[] {
     resources.push({
       uri: `hub://servers/${server.name}`,
       name: `Server: ${server.name}`,
-      description: server.config.description || `Connected MCP server: ${server.name}`,
+      description: getServerDescription(server.config, server.name),
       mimeType: 'application/json',
       serverId: instanceId
     });
@@ -207,7 +207,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
       tags: serverConfig?.tags || {},
       lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
       uptime: serverInfo.instance.uptime as number,
-      description: serverConfig?.description || `Connected MCP server: ${serverName}`
+      description: getServerDescription(serverConfig, serverName)
     };
   } else if (resourceType === 'tools') {
     // Tools list

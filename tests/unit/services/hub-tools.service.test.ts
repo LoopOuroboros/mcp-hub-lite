@@ -46,6 +46,14 @@ describe('HubToolsService', () => {
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
+        return {
+          connected: true,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0
+        };
+      });
 
       // Act
       const servers = await hubToolsService.listServers();
@@ -75,6 +83,14 @@ describe('HubToolsService', () => {
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
+        return {
+          connected: true,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0
+        };
+      });
 
       // Act
       const servers = await hubToolsService.listServers();
@@ -115,6 +131,14 @@ describe('HubToolsService', () => {
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
+        return {
+          connected: true,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0
+        };
+      });
 
       // Act
       const servers = await hubToolsService.listServers();
@@ -124,6 +148,63 @@ describe('HubToolsService', () => {
         filesystem: 'File system operations',
         time: 'Time and timezone utilities'
       });
+    });
+
+    it('should only include connected servers in the result', async () => {
+      // Arrange
+      const mockServers = [
+        {
+          name: 'Connected Server',
+          config: {
+            type: 'stdio' as const,
+            command: 'test-command',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            timeout: 30000,
+            description: 'This server is connected'
+          }
+        },
+        {
+          name: 'Disconnected Server',
+          config: {
+            type: 'sse' as const,
+            url: 'http://example.com',
+            args: [],
+            enabled: true,
+            allowedTools: [],
+            timeout: 30000,
+            description: 'This server is disconnected'
+          }
+        }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation((name) => {
+        if (name === 'Connected Server') {
+          return {
+            connected: true,
+            lastCheck: Date.now(),
+            toolsCount: 0,
+            resourcesCount: 0
+          };
+        }
+        return {
+          connected: false,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0
+        };
+      });
+
+      // Act
+      const servers = await hubToolsService.listServers();
+
+      // Assert
+      expect(servers).toEqual({
+        'Connected Server': 'This server is connected'
+      });
+      expect(servers).not.toHaveProperty('Disconnected Server');
     });
   });
 
@@ -389,13 +470,14 @@ describe('HubToolsService', () => {
       expect(allTools).toHaveProperty('mcp-hub-lite');
       expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
 
-      // Assert system tools - should only have 4 tools now
+      // Assert system tools - should have 5 tools now
       const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
       expect(systemToolNames).toContain('list_tools_in_server');
       expect(systemToolNames).toContain('get_tool');
       expect(systemToolNames).toContain('call_tool');
-      expect(systemToolNames).toHaveLength(4);
+      expect(systemToolNames).toContain('update_server_description');
+      expect(systemToolNames).toHaveLength(5);
 
       // Assert server tools - should have only name and description
       expect(allTools['Server 1'].tools).toEqual(expectedToolSummariesServer1);

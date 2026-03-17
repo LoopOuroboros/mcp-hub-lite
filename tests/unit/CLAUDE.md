@@ -100,9 +100,14 @@ npx vitest tests/unit/services/hub-manager.test.ts
 **测试覆盖**:
 
 - 系统工具列表获取
-- 服务器列表和查找
+- 服务器列表和查找（listServers() 方法仅返回已连接的服务器
 - 工具列表和查找
 - 工具调用
+
+**最近更新**:
+- 添加了对 listServers() 只返回 Connected 服务器的测试
+- 添加了 getServerDescription() 通用方法的测试
+- 验证 Disconnected 服务器不会出现在结果中
 
 **运行**:
 

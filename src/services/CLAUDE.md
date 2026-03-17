@@ -189,7 +189,7 @@ services/
 **主要方法**:
 
 - `getSystemTools()` - 获取系统工具列表
-- `listServers()` - 获取服务器列表
+- `listServers()` - 获取服务器列表（仅返回已连接的服务器）
 - `findServers(pattern, searchIn, caseSensitive)` - 查找服务器
 - `listAllToolsInServer(serverId)` - 列出服务器所有工具
 - `findToolsInServer(serverId, pattern, searchIn, caseSensitive)` - 查找服务器中的工具
@@ -200,6 +200,9 @@ services/
 - `findTools(pattern, searchIn, caseSensitive)` - 查找所有工具
 
 **优化说明**: 使用 serverId 替代 serverName，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销。
+
+**重要更新**:
+- `listServers()` 方法现在只返回实际已连接（Connected）的服务器，过滤掉 Disconnected 状态的服务器
 
 **依赖**:
 
@@ -214,7 +217,7 @@ services/
 
 - `index.ts` - 统一导出模块
 - `types.ts` - 类型定义
-- `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance）
+- `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance, getServerDescription）
 - `system-tool-definitions.ts` - 系统工具定义（getSystemTools）
 - `resource-generator.ts` - 动态资源生成（generateDynamicResources, readResource）
 - `use-guide.md` - 使用指南
@@ -224,6 +227,11 @@ services/
 - 动态资源列表生成，仅保留服务器元数据
 - 系统工具定义与 MCP 协议集成
 - 服务器实例选择逻辑
+- 通用服务器描述获取（getServerDescription）
+
+**新增方法**:
+
+- `getServerDescription(serverConfig, serverName)` - 获取服务器描述，使用默认描述当配置中没有提供时
 
 ### SimpleSearchService (`simple-search.service.ts`)
 

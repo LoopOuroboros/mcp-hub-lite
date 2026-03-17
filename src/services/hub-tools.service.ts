@@ -12,6 +12,7 @@ import {
   LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
+  UPDATE_SERVER_DESCRIPTION_TOOL,
   SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
@@ -20,12 +21,14 @@ import type {
   ListServersParams,
   ListToolsInServerParams,
   GetToolParams,
-  CallToolParams
+  CallToolParams,
+  UpdateServerDescriptionParams
 } from '@models/system-tools.constants.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
 import {
   hasValidId,
   selectBestInstance,
+  getServerDescription,
   getSystemTools,
   generateDynamicResources,
   readResource as readResourceUtil
@@ -136,7 +139,12 @@ export class HubToolsService {
     const result: Record<string, string> = {};
 
     for (const server of servers.filter(hasValidId)) {
-      const description = server.config.description || `Connected MCP server: ${server.name}`;
+      // Check if server is actually connected
+      const status = mcpConnectionManager.getStatusByName(server.name);
+      if (!status?.connected) {
+        continue;
+      }
+      const description = getServerDescription(server.config, server.name);
       result[server.name] = description;
     }
 
@@ -224,6 +232,46 @@ export class HubToolsService {
   }
 
   /**
+   * Updates the description of a specific MCP server.
+   *
+   * This method validates the server exists, updates its description in the configuration,
+   * and persists the change to disk. It leverages the existing hubManager.updateServer()
+   * method which handles configuration persistence and event publishing.
+   *
+   * @param {UpdateServerDescriptionParams} args - Server name and new description
+   * @returns {Promise<{ success: boolean; serverName: string; description: string }>} Confirmation of successful update
+   * @throws {Error} If the server is not found or update fails
+   */
+  async updateServerDescription(args: UpdateServerDescriptionParams): Promise<{
+    success: boolean;
+    serverName: string;
+    description: string;
+  }> {
+    const { serverName, description } = args;
+
+    // Validate server exists
+    const existing = hubManager.getServerByName(serverName);
+    if (!existing) {
+      throw new Error(`Server not found: ${serverName}`);
+    }
+
+    // Update server description using existing hubManager
+    await hubManager.updateServer(serverName, { description });
+
+    // Note: hubManager.updateServer() already:
+    // 1. Updates the in-memory configuration
+    // 2. Persists to disk via configManager
+    // 3. Publishes SERVER_UPDATED event
+    // 4. Triggers cache invalidation in HubToolsService
+
+    return {
+      success: true,
+      serverName,
+      description
+    };
+  }
+
+  /**
    * Calls a specific system tool directly with type-safe conditional return types.
    *
    * This method provides a unified entry point for all system tool calls, using TypeScript's
@@ -245,7 +293,9 @@ export class HubToolsService {
           ? GetToolParams
           : T extends typeof CALL_TOOL_TOOL
             ? CallToolParams
-            : never
+            : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
+              ? UpdateServerDescriptionParams
+              : never
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
       ? Record<string, string>
@@ -255,7 +305,9 @@ export class HubToolsService {
           ? Tool | undefined
           : T extends typeof CALL_TOOL_TOOL
             ? unknown
-            : never
+            : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
+              ? { success: boolean; serverName: string; description: string }
+              : never
   > {
     logger.debug(
       `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
@@ -288,6 +340,10 @@ export class HubToolsService {
           });
           break;
         }
+        case UPDATE_SERVER_DESCRIPTION_TOOL: {
+          result = await this.updateServerDescription(toolArgs as UpdateServerDescriptionParams);
+          break;
+        }
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
@@ -302,7 +358,9 @@ export class HubToolsService {
             ? Tool | undefined
             : T extends typeof CALL_TOOL_TOOL
               ? unknown
-              : never;
+              : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
+                ? { success: boolean; serverName: string; description: string }
+                : never;
     } catch (error) {
       logger.error(
         `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
