@@ -87,13 +87,19 @@ api/
 
 ### MCP 状态 API (`api/web/mcp-status.ts`)
 
-| 路径                              | 方法 | 描述                    |
-| --------------------------------- | ---- | ----------------------- |
-| `/web/mcp/status`                 | GET  | 获取所有 MCP 服务器状态 |
-| `/web/mcp/servers/:id/connect`    | POST | 连接 MCP 服务器         |
-| `/web/mcp/servers/:id/disconnect` | POST | 断开 MCP 服务器         |
-| `/web/mcp/servers/:id/tools`      | GET  | 获取服务器工具列表      |
-| `/web/mcp/servers/:id/resources`  | GET  | 获取服务器资源列表      |
+| 路径                              | 方法 | 描述                                                                 |
+| --------------------------------- | ---- | -------------------------------------------------------------------- |
+| `/web/mcp/status`                 | GET  | 获取所有配置的 MCP 服务器状态（包括无实例的 disabled 服务器） |
+| `/web/mcp/servers/:id/connect`    | POST | 连接 MCP 服务器                                                      |
+| `/web/mcp/servers/:id/disconnect` | POST | 断开 MCP 服务器                                                      |
+| `/web/mcp/servers/:id/tools`      | GET  | 获取服务器工具列表                                                   |
+| `/web/mcp/servers/:id/resources`  | GET  | 获取服务器资源列表                                                   |
+
+**`/web/mcp/status` API 变更说明**：
+
+- 返回所有配置的服务器，包括没有实例的 disabled 服务器
+- 对于无实例的服务器，返回默认的 `connected: false` 状态
+- 服务器 ID 使用服务器名称作为标识
 
 ### 配置管理 API (`api/web/config.ts`)
 

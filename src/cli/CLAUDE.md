@@ -84,7 +84,8 @@ mcp-hub-lite status
 - 显示进程 ID 和运行状态
 - 显示配置的端口和主机
 - 显示 MCP 集成配置
-- 列出所有管理服务器的状态
+- 列出所有管理服务器的状态（包括 disabled 服务器）
+- 按连接状态分组显示：Connected（绿色）和 Disconnected（红色）
 
 **输出示例**:
 
@@ -95,6 +96,20 @@ Process ID: 12345
 Port: 7788
 Host: localhost
 Status: Running
+
+MCP Servers (Connected):
+════════════════════════
+Server Name  Type   Status        Tools  Resources
+──────────────────────────────────────────────────
+bingcn       stdio  Connected         2          0
+...
+
+MCP Servers (Disconnected):
+═══════════════════════════
+Server Name            Type   Status        Tools  Resources
+──────────────────────────────────────────────────────
+desktop-commander      stdio  Disconnected      0          0
+...
 
 MCP Integration:
 ================
