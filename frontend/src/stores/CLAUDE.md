@@ -84,9 +84,9 @@ stores/
 
 ```typescript
 {
-  config: SystemConfig           // 系统配置
-  loading: boolean               // 加载状态
-  error: string | null          // 错误信息
+  config: SystemConfig; // 系统配置
+  loading: boolean; // 加载状态
+  error: string | null; // 错误信息
 }
 ```
 
@@ -136,7 +136,7 @@ stores/
 
 ```typescript
 {
-  calls: Map<string, ToolCall>  // 工具调用映射
+  calls: Map<string, ToolCall>; // 工具调用映射
 }
 ```
 
@@ -183,8 +183,8 @@ stores/
 
 ```typescript
 {
-  connected: boolean             // 连接状态
-  wsClient: WebSocketClient | null  // WebSocket 客户端实例
+  connected: boolean; // 连接状态
+  wsClient: WebSocketClient | null; // WebSocket 客户端实例
 }
 ```
 
@@ -340,10 +340,10 @@ A: WebSocket Store 自动连接并处理事件，通过调用其他 Store 的方
 
 ## 相关文件清单
 
-| 文件路径                 | 描述               |
-| ------------------------ | ------------------ |
-| `stores/server.ts`       | 服务器状态管理     |
-| `stores/session.ts`      | 会话状态管理       |
-| `stores/system.ts`       | 系统状态管理       |
-| `stores/tool-calls.ts`   | 工具调用状态管理   |
-| `stores/websocket.ts`    | WebSocket 状态管理 |
+| 文件路径               | 描述               |
+| ---------------------- | ------------------ |
+| `stores/server.ts`     | 服务器状态管理     |
+| `stores/session.ts`    | 会话状态管理       |
+| `stores/system.ts`     | 系统状态管理       |
+| `stores/tool-calls.ts` | 工具调用状态管理   |
+| `stores/websocket.ts`  | WebSocket 状态管理 |

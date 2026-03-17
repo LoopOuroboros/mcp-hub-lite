@@ -204,15 +204,15 @@ import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 
 ## 相关文件清单
 
-| 文件路径                           | 描述                 |
-| ---------------------------------- | -------------------- |
-| `shared/models/index.ts`           | 模型统一导出         |
-| `shared/models/server.model.ts`    | 服务器数据模型       |
-| `shared/models/tool.model.ts`      | 工具数据模型         |
-| `shared/models/resource.model.ts`  | 资源数据模型         |
-| `shared/models/session.model.ts`   | 会话数据模型         |
-| `shared/types/index.ts`            | 类型统一导出         |
-| `shared/types/session.types.ts`    | 会话相关类型         |
-| `shared/types/session-context.types.ts` | 会话上下文类型   |
-| `shared/types/common.types.ts`     | 通用类型             |
-| `shared/types/websocket.types.ts`  | WebSocket 类型       |
+| 文件路径                                | 描述           |
+| --------------------------------------- | -------------- |
+| `shared/models/index.ts`                | 模型统一导出   |
+| `shared/models/server.model.ts`         | 服务器数据模型 |
+| `shared/models/tool.model.ts`           | 工具数据模型   |
+| `shared/models/resource.model.ts`       | 资源数据模型   |
+| `shared/models/session.model.ts`        | 会话数据模型   |
+| `shared/types/index.ts`                 | 类型统一导出   |
+| `shared/types/session.types.ts`         | 会话相关类型   |
+| `shared/types/session-context.types.ts` | 会话上下文类型 |
+| `shared/types/common.types.ts`          | 通用类型       |
+| `shared/types/websocket.types.ts`       | WebSocket 类型 |

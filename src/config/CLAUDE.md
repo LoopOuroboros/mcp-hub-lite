@@ -258,9 +258,9 @@ export const SecurityConfigSchema = z.object({
 | -------------- | ----------------------------------------------- | --------- | ----------------------------------------------- |
 | `command`      | string                                          | -         | 启动命令（stdio 类型必需）                      |
 | `args`         | string[]                                        | `[]`      | 命令参数                                        |
-| `env`          | Record&lt;string, string&gt;                          | -         | 环境变量                                        |
+| `env`          | Record&lt;string, string&gt;                    | -         | 环境变量                                        |
 | `enabled`      | boolean                                         | `true`    | 是否启用                                        |
-| `tags`         | Record&lt;string, string&gt;                          | -         | 配置标签                                        |
+| `tags`         | Record&lt;string, string&gt;                    | -         | 配置标签                                        |
 | `type`         | 'stdio' \| 'sse' \| 'streamable-http' \| 'http' | `'stdio'` | 传输类型                                        |
 | `timeout`      | number                                          | `60000`   | 超时时间（毫秒）                                |
 | `url`          | string                                          | -         | 服务器 URL（sse/streamable-http/http 类型必需） |
@@ -388,12 +388,12 @@ A: 会话数据存储在 `~/.mcp-hub-lite/sessions/` 目录下，每个会话一
 
 ## 相关文件清单
 
-| 文件路径                       | 描述                 |
-| ------------------------------ | -------------------- |
-| `config/config-manager.ts`     | 配置管理器（薄包装） |
-| `config/config.schema.ts`      | 配置 Schema 定义     |
-| `config/config-loader.ts`      | 配置加载器           |
-| `config/config-saver.ts`       | 配置保存器           |
-| `config/server-config-manager.ts` | 服务器配置管理器   |
-| `config/config-change-logger.ts` | 配置变更记录器     |
-| `config/type-converter.ts`     | 类型转换器           |
+| 文件路径                          | 描述                 |
+| --------------------------------- | -------------------- |
+| `config/config-manager.ts`        | 配置管理器（薄包装） |
+| `config/config.schema.ts`         | 配置 Schema 定义     |
+| `config/config-loader.ts`         | 配置加载器           |
+| `config/config-saver.ts`          | 配置保存器           |
+| `config/server-config-manager.ts` | 服务器配置管理器     |
+| `config/config-change-logger.ts`  | 配置变更记录器       |
+| `config/type-converter.ts`        | 类型转换器           |

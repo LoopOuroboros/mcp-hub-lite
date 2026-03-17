@@ -105,6 +105,7 @@ npx vitest tests/unit/services/hub-manager.test.ts
 - 工具调用
 
 **最近更新**:
+
 - 添加了对 listServers() 只返回 Connected 服务器的测试
 - 添加了 getServerDescription() 通用方法的测试
 - 验证 Disconnected 服务器不会出现在结果中

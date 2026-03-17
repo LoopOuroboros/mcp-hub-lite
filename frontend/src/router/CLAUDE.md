@@ -34,16 +34,16 @@ Router 模块负责前端路由管理，使用 Vue Router 实现单页应用（S
 
 **详细路由表**:
 
-| 路径                     | 路由名称       | 组件                | 描述               |
-| ------------------------ | -------------- | ------------------- | ------------------ |
-| `/`                      | -              | HomeView            | 根布局            |
-| `/` (子路由)             | dashboard      | ServerDashboard     | 服务器仪表板      |
-| `/servers`               | servers        | ServerListView      | 服务器列表        |
-| `/tools`                 | tools          | ToolsView           | 工具列表          |
-| `/resources`             | resources      | ResourcesView       | 资源列表          |
-| `/sessions`              | sessions       | SessionsView        | 会话管理          |
-| `/servers/:name/resources/detail` | resource-detail | ResourceDetailView | 资源详情 |
-| `/settings`              | settings       | SettingsView        | 系统设置          |
+| 路径                              | 路由名称        | 组件               | 描述         |
+| --------------------------------- | --------------- | ------------------ | ------------ |
+| `/`                               | -               | HomeView           | 根布局       |
+| `/` (子路由)                      | dashboard       | ServerDashboard    | 服务器仪表板 |
+| `/servers`                        | servers         | ServerListView     | 服务器列表   |
+| `/tools`                          | tools           | ToolsView          | 工具列表     |
+| `/resources`                      | resources       | ResourcesView      | 资源列表     |
+| `/sessions`                       | sessions        | SessionsView       | 会话管理     |
+| `/servers/:name/resources/detail` | resource-detail | ResourceDetailView | 资源详情     |
+| `/settings`                       | settings        | SettingsView       | 系统设置     |
 
 **依赖**:
 

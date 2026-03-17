@@ -309,6 +309,51 @@ npm run test
 
 详细的代码修改验证流程和代码格式化要求参见：[`.claude/rules/development.md`](.claude/rules/development.md)
 
+## 服务器修改验证流程
+
+当修改与 MCP 服务器相关的代码后，必须按以下流程进行验证：
+
+### 1. 服务重启确认
+
+- 完成 `npm run full:check` 验证通过后
+- 使用 `AskUserQuestion` 询问用户是否已完成服务重启
+- 确认服务重启成功后再进行后续验证
+
+### 2. CLI 工具可用性验证
+
+由 ClaudeCode 直接通过 Bash 运行以下命令验证 CLI 工具可用性：
+
+```bash
+# 查看服务状态
+npm run status
+
+# 列出所有 MCP 服务器
+npm run list
+```
+
+检查命令行输出内容，确保：
+
+- 命令正常执行，无错误
+- 输出信息完整且符合预期
+- 服务器状态显示正确
+
+### 3. MCP 网关系统工具调用测试验证
+
+服务重启后，由 ClaudeCode 逐个调用测试以下 MCP 网关系统工具：
+
+- `list_servers` - 验证服务器列表返回正确
+- `list_tools_in_server` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
+- `get_tool` - 验证工具详情获取功能（**必须测试 `serverName = mcp-hub-lite` 的系统工具**）
+- `call_tool` - 验证工具调用功能（如适用）
+- `update_server_description` - 验证服务器描述更新功能（**必须测试 `serverName = mcp-hub-lite`**，预期返回 "Server not found"，因为网关自身不是可配置的服务器）
+
+确保每个工具调用都能正常工作，没有引入新的问题。
+
+**关键要求**：所有系统工具必须针对 `serverName = mcp-hub-lite` 自身的情况进行验证，确保网关自身的工具暴露功能正常工作。
+
+**特殊说明**：
+- `update_server_description` 针对 `serverName = mcp-hub-lite` 调用时，预期返回 "Server not found" 错误，这是正常行为，因为网关自身不是可配置的 MCP 服务器。
+
 ## Git 提交规范
 
 详细的 Git 提交规范和提交前检查清单参见：[`.claude/rules/git.md`](.claude/rules/git.md)
