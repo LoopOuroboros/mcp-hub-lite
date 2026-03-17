@@ -221,6 +221,19 @@ export class HubToolsService {
    * @throws {Error} If the specified server is not found or not connected
    */
   async getTool(args: GetToolParams): Promise<Tool | undefined> {
+    // Handle MCP Hub Lite server (return system tool)
+    if (typeof args.serverName === 'string' && args.serverName === MCP_HUB_LITE_SERVER) {
+      const systemTools = getSystemTools();
+      const found = systemTools.find((tool) => tool.name === args.toolName);
+      if (found) {
+        return {
+          ...found,
+          serverName: MCP_HUB_LITE_SERVER
+        };
+      }
+      return undefined;
+    }
+
     const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
 
     if (!serverInfo) {

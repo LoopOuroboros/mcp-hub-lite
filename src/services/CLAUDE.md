@@ -202,7 +202,9 @@ services/
 **优化说明**: 使用 serverId 替代 serverName，直接使用服务器唯一标识符进行操作，避免了通过名称查找服务器的开销。
 
 **重要更新**:
+
 - `listServers()` 方法现在只返回实际已连接（Connected）的服务器，过滤掉 Disconnected 状态的服务器
+- `getTool()` 方法现在支持处理 `MCP_HUB_LITE_SERVER`（mcp-hub-lite）特殊服务器，返回系统工具的完整 schema
 
 **依赖**:
 
@@ -220,7 +222,8 @@ services/
 - `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance, getServerDescription）
 - `system-tool-definitions.ts` - 系统工具定义（getSystemTools）
 - `resource-generator.ts` - 动态资源生成（generateDynamicResources, readResource）
-- `use-guide.md` - 使用指南
+- `use-guide.md` - 用户使用指南
+- `developer-guide.md` - 开发者指南（包含 MCP_HUB_LITE_SERVER 处理规范）
 
 **功能**:
 
