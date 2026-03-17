@@ -125,9 +125,3 @@ $t('user.greeting', { name: 'John' })
 | `i18n/index.ts` | Vue I18n 配置 |
 | `i18n/en.ts`    | 英文语言包    |
 | `i18n/zh.ts`    | 中文语言包    |
-
-## 变更记录 (Changelog)
-
-### 2026-01-29
-
-- 初始化 I18N 模块文档

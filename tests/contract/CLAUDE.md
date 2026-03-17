@@ -111,15 +111,3 @@ npx vitest --coverage tests/contract/
 | `mcp-protocol/initialize.test.ts` | 初始化协议契约测试   |
 | `mcp-protocol/tools-list.test.ts` | 工具列表协议契约测试 |
 | `mcp-protocol/tools-call.test.ts` | 工具调用协议契约测试 |
-
-## 变更记录 (Changelog)
-
-### 2026-01-29
-
-- 添加导航面包屑
-- 完善契约测试模块文档
-- 添加每个测试文件的详细说明
-
-### 2026-01-19
-
-- 初始化契约测试模块文档

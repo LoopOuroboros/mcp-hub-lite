@@ -462,24 +462,3 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 | `unit/frontend/stores/server.test.ts`                 | Server Store 测试         |
 | `unit/frontend/mocks/http.mock.ts`                    | HTTP Mock                 |
 | `unit/frontend/setup.ts`                              | 前端测试设置              |
-
-## 变更记录 (Changelog)
-
-### 2026-01-29
-
-- 为 utils/logger 模块添加单元测试
-- 为 utils/log-rotator 模块添加单元测试
-- 为 utils/mcp-error-handler 模块添加单元测试
-- 为 frontend/components/Dashboard 组件添加单元测试
-- 为 frontend/components/ToolCard 组件添加单元测试
-- 为 frontend/stores/server 添加单元测试
-- 更新 Unit Tests 模块文档，包含所有新增测试
-
-### 2026-01-20
-
-- 更新 Unit Tests 模块文档
-- 添加搜索服务测试文档
-
-### 2026-01-19
-
-- 初始化 Unit Tests 模块文档

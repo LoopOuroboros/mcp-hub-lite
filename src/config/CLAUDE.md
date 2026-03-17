@@ -4,21 +4,26 @@
 
 ## 模块职责
 
-Config 模块负责配置文件的加载、验证、更新和环境变量管理，是应用的配置中心。
+Config 模块负责配置文件的加载、验证、更新和环境变量管理，是应用的配置中心。采用模块化结构，将配置管理拆分为多个专注的子模块，遵循单一职责原则。
 
 ## 目录结构
 
 ```
 config/
-├── config-manager.ts      # 配置管理器
-└── config.schema.ts       # 配置 Schema 定义
+├── config-manager.ts         # 配置管理器（薄包装器）
+├── config.schema.ts          # 配置 Schema 定义
+├── config-loader.ts          # 配置加载器
+├── config-saver.ts           # 配置保存器
+├── server-config-manager.ts  # 服务器配置管理器
+├── config-change-logger.ts   # 配置变更记录器
+└── type-converter.ts         # 类型转换器
 ```
 
-## 核心类
+## 核心模块
 
 ### ConfigManager (`config-manager.ts`)
 
-**职责**: 配置文件的 CRUD 和环境变量管理
+**职责**: 配置管理器的薄包装器，提供统一的配置访问接口
 
 **配置查找优先级**:
 
@@ -43,6 +48,104 @@ config/
 - `LOG_ROTATION_ENABLED` - 是否启用日志轮转
 - `LOG_MAX_AGE` - 日志最大保留时间
 - `LOG_MAX_SIZE` - 日志最大文件大小
+
+**依赖**:
+
+- `config-loader.ts` - 配置加载
+- `config-saver.ts` - 配置保存
+- `server-config-manager.ts` - 服务器配置管理
+- `config-change-logger.ts` - 配置变更记录
+
+### ConfigLoader (`config-loader.ts`)
+
+**职责**: 配置文件加载和解析，包含验证和兼容性处理
+
+**主要功能**:
+
+- 从文件系统加载配置
+- JSON 解析和验证
+- 类型转换（如 'http' 到 'streamable-http'）
+- Zod Schema 验证
+- 验证失败时回退到默认配置
+- 服务器配置按名称排序
+
+**主要方法**:
+
+- `loadConfig(configPath)` - 从指定路径加载配置
+
+**依赖**:
+
+- `config.schema.ts` - 配置 Schema
+- `type-converter.ts` - 类型转换
+
+### ConfigSaver (`config-saver.ts`)
+
+**职责**: 配置文件保存和原子写入
+
+**主要功能**:
+
+- 原子性配置写入（先写临时文件再重命名）
+- 目录自动创建
+- JSON 格式化输出
+- 错误处理和重试
+
+**主要方法**:
+
+- `saveConfig(configPath, config)` - 保存配置到指定路径
+
+### ServerConfigManager (`server-config-manager.ts`)
+
+**职责**: 服务器配置的 CRUD 操作和实例管理
+
+**主要功能**:
+
+- 服务器配置的添加、更新、删除
+- 服务器实例管理
+- 配置验证和规范化
+- 唯一实例 ID 生成
+- 批量服务器添加
+
+**主要方法**:
+
+- `addServers(servers, currentServers, serverInstances)` - 批量添加服务器
+- `addServer(name, config, currentServers, serverInstances)` - 添加单个服务器
+- `updateServer(name, updates, currentServers)` - 更新服务器
+- `removeServer(name, currentServers, serverInstances)` - 删除服务器
+- `generateInstanceId(serverName)` - 生成唯一实例 ID
+
+**依赖**:
+
+- `config.schema.ts` - 配置 Schema
+- `type-converter.ts` - 类型转换
+
+### ConfigChangeLogger (`config-change-logger.ts`)
+
+**职责**: 配置变更的比较和日志记录，用于审计目的
+
+**主要功能**:
+
+- 深度比较两个配置对象
+- 记录所有字段级别的变更
+- 格式化变更输出
+- 审计日志
+
+**主要方法**:
+
+- `logConfigChanges(oldConfig, newConfig)` - 记录配置变更
+
+### TypeConverter (`type-converter.ts`)
+
+**职责**: 配置类型转换，确保向后兼容性
+
+**主要功能**:
+
+- 传输类型转换（'http' → 'streamable-http'）
+- 配置规范化
+- 向后兼容性处理
+
+**主要方法**:
+
+- `convertHttpToStreamableHttp(config)` - 转换 HTTP 类型为 StreamableHttp
 
 ### SystemConfigSchema (`config.schema.ts`)
 
@@ -155,9 +258,9 @@ export const SecurityConfigSchema = z.object({
 | -------------- | ----------------------------------------------- | --------- | ----------------------------------------------- |
 | `command`      | string                                          | -         | 启动命令（stdio 类型必需）                      |
 | `args`         | string[]                                        | `[]`      | 命令参数                                        |
-| `env`          | Record<string, string>                          | -         | 环境变量                                        |
+| `env`          | Record&lt;string, string&gt;                          | -         | 环境变量                                        |
 | `enabled`      | boolean                                         | `true`    | 是否启用                                        |
-| `tags`         | Record<string, string>                          | -         | 配置标签                                        |
+| `tags`         | Record&lt;string, string&gt;                          | -         | 配置标签                                        |
 | `type`         | 'stdio' \| 'sse' \| 'streamable-http' \| 'http' | `'stdio'` | 传输类型                                        |
 | `timeout`      | number                                          | `60000`   | 超时时间（毫秒）                                |
 | `url`          | string                                          | -         | 服务器 URL（sse/streamable-http/http 类型必需） |
@@ -168,7 +271,25 @@ export const SecurityConfigSchema = z.object({
 ```
 config/
 ├── config-manager.ts
+│   ├── depends on: config-loader.ts
+│   ├── depends on: config-saver.ts
+│   ├── depends on: server-config-manager.ts
+│   ├── depends on: config-change-logger.ts
 │   └── depends on: config.schema.ts (Zod Schema)
+│
+├── config-loader.ts
+│   ├── depends on: config.schema.ts
+│   └── depends on: type-converter.ts
+│
+├── config-saver.ts
+│
+├── server-config-manager.ts
+│   ├── depends on: config.schema.ts
+│   └── depends on: type-converter.ts
+│
+├── config-change-logger.ts
+│
+├── type-converter.ts
 │
 └── config.schema.ts
     └── depends on: zod
@@ -267,20 +388,12 @@ A: 会话数据存储在 `~/.mcp-hub-lite/sessions/` 目录下，每个会话一
 
 ## 相关文件清单
 
-| 文件路径                   | 描述             |
-| -------------------------- | ---------------- |
-| `config/config-manager.ts` | 配置管理器       |
-| `config/config.schema.ts`  | 配置 Schema 定义 |
-
-## 变更记录 (Changelog)
-
-### 2026-02-15
-
-- 添加安全配置文档（sessionTimeout 等）
-- 添加完整配置示例
-- 添加配置选项说明表格
-- 添加会话持久化相关配置说明
-
-### 2026-01-19
-
-- 初始化 Config 模块文档
+| 文件路径                       | 描述                 |
+| ------------------------------ | -------------------- |
+| `config/config-manager.ts`     | 配置管理器（薄包装） |
+| `config/config.schema.ts`      | 配置 Schema 定义     |
+| `config/config-loader.ts`      | 配置加载器           |
+| `config/config-saver.ts`       | 配置保存器           |
+| `config/server-config-manager.ts` | 服务器配置管理器   |
+| `config/config-change-logger.ts` | 配置变更记录器     |
+| `config/type-converter.ts`     | 类型转换器           |

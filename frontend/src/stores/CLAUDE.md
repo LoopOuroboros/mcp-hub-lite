@@ -10,7 +10,11 @@ Stores 模块使用 Pinia 实现前端状态管理，是前端的数据中心。
 
 ```
 stores/
-└── server.ts              # 服务器状态管理
+├── server.ts              # 服务器状态管理
+├── session.ts             # 会话状态管理
+├── system.ts              # 系统状态管理
+├── tool-calls.ts          # 工具调用状态管理
+└── websocket.ts           # WebSocket 状态管理
 ```
 
 ## 核心 Store
@@ -48,6 +52,181 @@ stores/
 - `fetchResources(serverId)` - 获取服务器资源
 - `fetchLogs(serverId)` - 获取服务器日志
 - `clearLogs(serverId)` - 清除日志
+
+### Session Store (`session.ts`)
+
+**职责**: 管理会话状态和操作
+
+**State**:
+
+```typescript
+{
+  sessions: SessionState[]      // 会话列表
+  loading: boolean               // 加载状态
+  error: string | null          // 错误信息
+}
+```
+
+**Actions**:
+
+- `fetchSessions()` - 获取所有持久化会话
+- `deleteSession(sessionId)` - 删除指定会话
+
+**依赖**:
+
+- `@shared-types/session.types` - 会话类型定义
+
+### System Store (`system.ts`)
+
+**职责**: 管理系统配置和状态
+
+**State**:
+
+```typescript
+{
+  config: SystemConfig           // 系统配置
+  loading: boolean               // 加载状态
+  error: string | null          // 错误信息
+}
+```
+
+**SystemConfig 接口**:
+
+```typescript
+{
+  system: {
+    host: string;
+    port: number;
+    language: string;
+    theme: string;
+    logging: {
+      level: string;
+      rotationAge: string;
+      jsonPretty: boolean;
+      mcpCommDebug: boolean;
+      sessionDebug: boolean;
+    };
+  };
+  security: {
+    allowedNetworks: string[];
+    maxConcurrentConnections: number;
+    connectionTimeout: number;
+    idleConnectionTimeout: number;
+    sessionTimeout: number;
+    sessionFlushInterval: number;
+    maxConnections: number;
+  };
+}
+```
+
+**Actions**:
+
+- `fetchConfig()` - 获取系统配置
+- `updateConfig(updates)` - 更新系统配置
+
+**工具函数**:
+
+- `deepMerge(target, source)` - 深度合并配置对象
+
+### Tool Calls Store (`tool-calls.ts`)
+
+**职责**: 管理工具调用进度、结果和错误
+
+**State**:
+
+```typescript
+{
+  calls: Map<string, ToolCall>  // 工具调用映射
+}
+```
+
+**ToolCall 接口**:
+
+```typescript
+{
+  requestId: string;
+  serverId: string;
+  serverName: string;
+  toolName: string;
+  startTime: number;
+  endTime?: number;
+  status: 'running' | 'completed' | 'error';
+  args?: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+  progress?: number; // 0-100
+}
+```
+
+**Computed**:
+
+- `runningCalls` - 运行中的工具调用列表
+
+**Actions**:
+
+- `updateCall(call)` - 添加或更新调用
+- `getCall(requestId)` - 获取特定调用
+- `completeCall(requestId, result, error)` - 完成调用
+- `handleToolCallStarted(data)` - 处理工具调用开始事件
+- `handleToolCallCompleted(data)` - 处理工具调用完成事件
+- `handleToolCallError(data)` - 处理工具调用错误事件
+
+**依赖**:
+
+- `@shared-types/websocket.types` - WebSocket 事件类型
+
+### WebSocket Store (`websocket.ts`)
+
+**职责**: 管理 WebSocket 连接和与后端的事件处理
+
+**State**:
+
+```typescript
+{
+  connected: boolean             // 连接状态
+  wsClient: WebSocketClient | null  // WebSocket 客户端实例
+}
+```
+
+**Actions**:
+
+- `connect()` - 连接 WebSocket
+- `disconnect()` - 断开 WebSocket
+- `fetchLogs(serverId, limit, since)` - 获取历史日志
+- `handleServerMessage(message)` - 处理服务器消息
+
+**支持的事件类型**:
+
+- `SERVER_STATUS` - 服务器状态变化
+- `LOG` - 日志更新
+- `TOOLS` - 工具更新
+- `RESOURCES` - 资源更新
+- `SERVER_ADDED` - 服务器添加
+- `SERVER_UPDATED` - 服务器更新
+- `SERVER_DELETED` - 服务器删除
+- `SERVER_CONNECTED` - 服务器连接
+- `SERVER_DISCONNECTED` - 服务器断开
+- `TOOL_CALL_STARTED` - 工具调用开始
+- `TOOL_CALL_COMPLETED` - 工具调用完成
+- `TOOL_CALL_ERROR` - 工具调用错误
+- `CONFIGURATION_UPDATED` - 配置更新
+- `CLIENT_CONNECTED` - 客户端连接
+- `CLIENT_DISCONNECTED` - 客户端断开
+- `PONG` - 心跳响应
+
+**生命周期**:
+
+- `onMounted` - 组件挂载时自动连接
+- `onBeforeUnmount` - 组件卸载前自动断开
+
+**依赖**:
+
+- `@utils/websocket` - WebSocket 客户端
+- `@stores/server` - 服务器 Store
+- `@stores/tool-calls` - 工具调用 Store
+- `@stores/system` - 系统 Store
+- `@stores/session` - 会话 Store
+- `@shared-types/websocket.types` - WebSocket 类型定义
 
 ## 数据模型
 
@@ -100,8 +279,22 @@ export interface Server {
 
 ```
 stores/
-└── server.ts
-    └── depends on: utils/http.ts
+├── server.ts
+│   └── depends on: utils/http.ts
+├── session.ts
+│   ├── depends on: utils/http.ts
+│   └── depends on: @shared-types/session.types
+├── system.ts
+│   └── depends on: utils/http.ts
+├── tool-calls.ts
+│   └── depends on: @shared-types/websocket.types
+└── websocket.ts
+    ├── depends on: utils/websocket.ts
+    ├── depends on: @stores/server
+    ├── depends on: @stores/tool-calls
+    ├── depends on: @stores/system
+    ├── depends on: @stores/session
+    └── depends on: @shared-types/websocket.types
 ```
 
 ## 测试与质量
@@ -120,6 +313,10 @@ stores/
 **建议测试**:
 
 - 完整的 Action 测试覆盖（startServer、stopServer、deleteServer 等）
+- Session Store 测试
+- System Store 测试
+- Tool Calls Store 测试
+- WebSocket Store 测试
 - WebSocket 相关功能测试
 - 复杂场景的集成测试
 
@@ -131,16 +328,22 @@ A: 使用 Pinia 的 `defineStore` 创建新的状态管理文件。
 
 ### Q: 如何在组件中使用 Store？
 
-A: 使用 `useServerStore()` 获取 store 实例。
+A: 使用 `useServerStore()`、`useSessionStore()` 等获取 store 实例。
+
+### Q: Store 之间如何交互？
+
+A: 通过在一个 Store 中导入并使用其他 Store，如 WebSocket Store 中使用 Server Store、Tool Calls Store 等。
+
+### Q: 如何处理 WebSocket 事件？
+
+A: WebSocket Store 自动连接并处理事件，通过调用其他 Store 的方法来更新状态。
 
 ## 相关文件清单
 
-| 文件路径           | 描述           |
-| ------------------ | -------------- |
-| `stores/server.ts` | 服务器状态管理 |
-
-## 变更记录 (Changelog)
-
-### 2026-01-19
-
-- 初始化 Stores 模块文档
+| 文件路径                 | 描述               |
+| ------------------------ | ------------------ |
+| `stores/server.ts`       | 服务器状态管理     |
+| `stores/session.ts`      | 会话状态管理       |
+| `stores/system.ts`       | 系统状态管理       |
+| `stores/tool-calls.ts`   | 工具调用状态管理   |
+| `stores/websocket.ts`    | WebSocket 状态管理 |
