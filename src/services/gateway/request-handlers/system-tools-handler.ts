@@ -12,7 +12,8 @@ import {
   LIST_SERVERS_TOOL,
   LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
-  CALL_TOOL_TOOL
+  CALL_TOOL_TOOL,
+  UPDATE_SERVER_DESCRIPTION_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -184,5 +185,32 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   server.server.setRequestHandler(ListAllToolsRequestSchema, async () => {
     const allTools = await hubToolsService.listAllTools();
     return allTools;
+  });
+
+  // Update server description
+  const UpdateServerDescriptionRequestSchema = z.object({
+    method: z.literal(UPDATE_SERVER_DESCRIPTION_TOOL),
+    params: z.object({
+      serverName: z.string(),
+      description: z.string()
+    }),
+    id: z.union([z.string(), z.number()]),
+    jsonrpc: z.literal('2.0')
+  });
+
+  server.server.setRequestHandler(UpdateServerDescriptionRequestSchema, async (request) => {
+    try {
+      const result = await hubToolsService.updateServerDescription(request.params);
+      return result;
+    } catch (error: unknown) {
+      logger.error(`Update server description error:`, error);
+      if (error instanceof McpError) {
+        throw error;
+      } else if (error instanceof Error) {
+        throw new McpError(-32802, error.message);
+      } else {
+        throw new McpError(-32802, String(error));
+      }
+    }
   });
 }

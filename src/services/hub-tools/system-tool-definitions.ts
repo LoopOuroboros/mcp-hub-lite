@@ -4,7 +4,8 @@ import {
   LIST_SERVERS_TOOL,
   LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
-  CALL_TOOL_TOOL
+  CALL_TOOL_TOOL,
+  UPDATE_SERVER_DESCRIPTION_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -154,6 +155,27 @@ export function getSystemTools(): SystemToolDefinition[] {
             destructiveHint: false,
             idempotentHint: false,
             openWorldHint: true
+          }
+        });
+        break;
+      case UPDATE_SERVER_DESCRIPTION_TOOL:
+        systemTools.push({
+          name: toolName,
+          description: 'Update the description of a specific MCP server',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              serverName: { type: 'string', description: 'Name of the MCP server to update' },
+              description: { type: 'string', description: 'New description text for the server' }
+            },
+            required: ['serverName', 'description']
+          },
+          annotations: {
+            title: 'Update Server Description',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
           }
         });
         break;
