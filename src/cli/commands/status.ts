@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { getServerStatus, type EnhancedServerStatus } from '@cli/server.js';
+import { getServerStatus } from '@cli/server.js';
+import type { EnhancedServerStatus } from '@cli/server.js';
 import os from 'os';
 
 /**

@@ -5,7 +5,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import { LogRotator, type RotatorConfig } from '../log-rotator.js';
+import { LogRotator } from '../log-rotator.js';
+import type { RotatorConfig } from '../log-rotator.js';
 
 /**
  * Development logger configuration and setup.
