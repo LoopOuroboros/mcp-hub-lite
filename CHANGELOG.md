@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-03-17
+
+- **UI Enhancement**: Update resource detail and list views with hub tools integration
+- **System Tools Refactor**: Enhance system tools handling and API endpoints
+- **Hub Tools Refactor**: Restructure core hub tools service architecture
+
+## 2026-03-15
+
+- **Lint Fix**: Add fallback for missing .eslintrc-auto-import.json
+- **UI Fix**: Correct serverName prop in ServerDetail for ToolCallDialog
+- **Hub Tools Refactor**: Simplify dynamic resources list to only server metadata
+
+## 2026-03-09
+
+- **Core Refactor**: Update core modules for session and client migration
+- **Gateway Refactor**: Clean up deprecated methods and update tool cache access
+- **Client Refactor**: Remove deprecated client tracking and stores
+- **Session Refactor**: Migrate from mcp-session-manager to session-tracker service
+- **Test**: Enable initialized notification test
+- **Style**: Improve regex formatting for caller info
+- **Session Feature**: Add capabilities support in session manager
+- **Session Refactor**: Simplify sessionId generation
+- **Gateway Feature**: Add initialized notification and capabilities handling
+- **Client Tracker Feature**: Add capabilities and project inference
+- **Session Feature**: Add capabilities field to session model
+- **UI Feature**: Add capabilities display in SessionsView
+- **Logger Feature**: Add caller information and environment variable controls
+- **Logger Fix**: Ensure JSON pretty-printing for empty capabilities messages
+- **API Refactor**: Make MCP communication debug logging conditional
+- **Feature**: Add headers support and default to streamable-http
+- **UI Fix**: Fix environment variable value input display
+
 ## 2026-03-06
 
 - **System Tool Fix**: Fix system tool call validation errors when requestOptions.sessionId is null

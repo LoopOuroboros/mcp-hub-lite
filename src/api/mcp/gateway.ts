@@ -12,7 +12,8 @@ import { requestContext } from '@utils/request-context.js';
 import { sessionTrackerService } from '@services/session-tracker.service.js';
 import { mcpSessionManager } from '@services/session/index.js';
 import { cleanupStaleSseStreams } from './sse-stream-manager.js';
-import { extractSessionContext, type RequestBody } from './session-context-extractor.js';
+import { extractSessionContext } from './session-context-extractor.js';
+import type { RequestBody } from './session-context-extractor.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
 
 /**

@@ -1,30 +1,5 @@
 # MCP Hub Lite - AI 编程助手指南
 
-## 变更记录 (Changelog)
-
-### 2026-03-05
-
-- 执行项目初始化任务，更新全项目文档架构
-- 验证模块结构图和导航链接完整性
-- 检查各模块 CLAUDE.md 文档状态
-- 确认覆盖率报告与扫描状态
-
-### 2026-03-03
-
-- 更新文档架构，反映最新的代码结构变更
-- 移除 OpenTelemetry 相关文档（功能已移除）
-- 更新开发模式日志文档，补充时间戳命名和自动清理说明
-- 更新会话管理器模块引用（已重构到 session/ 子目录）
-- 完善覆盖率报告与扫描状态
-
-### 2026-02-28
-
-- 项目文档架构初始化与更新
-- 完善模块结构图与导航链接
-- 更新覆盖率报告与扫描状态
-
-完整变更记录请参见：[CHANGELOG_zh-CN.md](CHANGELOG_zh-CN.md)
-
 ## 项目概述
 
 MCP Hub Lite 是一个轻量级的 MCP (Model Context Protocol) 网关系统，专为独立开发者设计。它充当前端和多个后端 MCP 服务器之间的代理，提供统一的访问界面，支持 MCP JSON-RPC 2.0 协议。
@@ -333,6 +308,51 @@ npm run test
 ## 质量要求
 
 详细的代码修改验证流程和代码格式化要求参见：[`.claude/rules/development.md`](.claude/rules/development.md)
+
+## 服务器修改验证流程
+
+当修改与 MCP 服务器相关的代码后，必须按以下流程进行验证：
+
+### 1. 服务重启确认
+
+- 完成 `npm run full:check` 验证通过后
+- 使用 `AskUserQuestion` 询问用户是否已完成服务重启
+- 确认服务重启成功后再进行后续验证
+
+### 2. CLI 工具可用性验证
+
+由 ClaudeCode 直接通过 Bash 运行以下命令验证 CLI 工具可用性：
+
+```bash
+# 查看服务状态
+npm run status
+
+# 列出所有 MCP 服务器
+npm run list
+```
+
+检查命令行输出内容，确保：
+
+- 命令正常执行，无错误
+- 输出信息完整且符合预期
+- 服务器状态显示正确
+
+### 3. MCP 网关系统工具调用测试验证
+
+服务重启后，由 ClaudeCode 逐个调用测试以下 MCP 网关系统工具：
+
+- `list_servers` - 验证服务器列表返回正确
+- `list_tools_in_server` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
+- `get_tool` - 验证工具详情获取功能（**必须测试 `serverName = mcp-hub-lite` 的系统工具**）
+- `call_tool` - 验证工具调用功能（如适用）
+- `update_server_description` - 验证服务器描述更新功能（**必须测试 `serverName = mcp-hub-lite`**，预期返回 "Server not found"，因为网关自身不是可配置的服务器）
+
+确保每个工具调用都能正常工作，没有引入新的问题。
+
+**关键要求**：所有系统工具必须针对 `serverName = mcp-hub-lite` 自身的情况进行验证，确保网关自身的工具暴露功能正常工作。
+
+**特殊说明**：
+- `update_server_description` 针对 `serverName = mcp-hub-lite` 调用时，预期返回 "Server not found" 错误，这是正常行为，因为网关自身不是可配置的 MCP 服务器。
 
 ## Git 提交规范
 

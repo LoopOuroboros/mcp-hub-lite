@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { getServerStatus, type EnhancedServerStatus } from '@cli/server.js';
+import { getServerStatus } from '@cli/server.js';
+import type { EnhancedServerStatus } from '@cli/server.js';
 import os from 'os';
 
 /**
@@ -88,45 +89,63 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
   console.log(`🔗 MCP Endpoint: ${cyan}${mcpEndpoint}${reset}`);
   console.log(`📄 PID File: ${dim}${formatPath(status.pidFilePath)}${reset}`);
 
-  // MCP Servers section
+  // MCP Servers section - split into connected and disconnected
   if (status.mcpServers && status.mcpServers.length > 0) {
-    console.log('');
-    console.log(`${yellow}MCP Servers:${reset}`);
-    console.log(`${dim}═════════════${reset}`);
+    const connectedServers = status.mcpServers.filter((s) => s.connected);
+    const disconnectedServers = status.mcpServers.filter((s) => !s.connected);
 
-    // Calculate column widths
-    let maxNameLen = 'Server Name'.length;
-    let maxTypeLen = 'Type'.length;
-    const maxStatusLen = 'Disconnected'.length;
+    // Function to display a server list
+    const displayServerList = (
+      servers: typeof status.mcpServers,
+      title: string,
+      titleColor: string
+    ) => {
+      if (servers.length === 0) return;
 
-    for (const server of status.mcpServers) {
-      maxNameLen = Math.max(maxNameLen, (server.name || '').length);
-      maxTypeLen = Math.max(maxTypeLen, (server.type || '').length);
-    }
+      console.log('');
+      console.log(`${titleColor}${title}${reset}`);
+      console.log(`${dim}${'═'.repeat(title.length)}${reset}`);
 
-    // Simple table without complex borders
-    const headerName = 'Server Name'.padEnd(maxNameLen);
-    const headerType = 'Type'.padEnd(maxTypeLen);
-    const headerStatus = 'Status'.padEnd(maxStatusLen);
+      // Calculate column widths
+      let maxNameLen = 'Server Name'.length;
+      let maxTypeLen = 'Type'.length;
+      const maxStatusLen = 'Disconnected'.length;
 
-    console.log(`${cyan}${headerName}  ${headerType}  ${headerStatus}  Tools  Resources${reset}`);
-    console.log(`${dim}${'─'.repeat(maxNameLen + maxTypeLen + maxStatusLen + 20)}${reset}`);
-
-    for (const server of status.mcpServers) {
-      const name = (server.name || '').padEnd(maxNameLen);
-      const type = (server.type || '').padEnd(maxTypeLen);
-      const statusText = server.connected
-        ? `${green}Connected${reset}`.padEnd(maxStatusLen + 9)
-        : `${red}Disconnected${reset}`.padEnd(maxStatusLen + 9);
-      const tools = server.toolsCount.toString().padStart(5);
-      const resources = server.resourcesCount.toString().padStart(9);
-
-      console.log(`${name}  ${type}  ${statusText}  ${tools}  ${resources}`);
-
-      if (server.error) {
-        console.log(`  ${red}Error: ${server.error}${reset}`);
+      for (const server of servers) {
+        maxNameLen = Math.max(maxNameLen, (server.name || '').length);
+        maxTypeLen = Math.max(maxTypeLen, (server.type || '').length);
       }
-    }
+
+      // Simple table without complex borders
+      const headerName = 'Server Name'.padEnd(maxNameLen);
+      const headerType = 'Type'.padEnd(maxTypeLen);
+      const headerStatus = 'Status'.padEnd(maxStatusLen);
+
+      console.log(`${cyan}${headerName}  ${headerType}  ${headerStatus}  Tools  Resources${reset}`);
+      console.log(`${dim}${'─'.repeat(maxNameLen + maxTypeLen + maxStatusLen + 20)}${reset}`);
+
+      for (const server of servers) {
+        const name = (server.name || '').padEnd(maxNameLen);
+        const type = (server.type || '').padEnd(maxTypeLen);
+        const statusText = server.connected
+          ? `${green}Connected${reset}`.padEnd(maxStatusLen + 9)
+          : `${red}Disconnected${reset}`.padEnd(maxStatusLen + 9);
+        const tools = server.toolsCount.toString().padStart(5);
+        const resources = server.resourcesCount.toString().padStart(9);
+
+        console.log(`${name}  ${type}  ${statusText}  ${tools}  ${resources}`);
+
+        if (server.error) {
+          console.log(`  ${red}Error: ${server.error}${reset}`);
+        }
+      }
+    };
+
+    // Display connected servers first
+    displayServerList(connectedServers, 'MCP Servers (Connected):', green);
+
+    // Then display disconnected servers
+    displayServerList(disconnectedServers, 'MCP Servers (Disconnected):', red);
   }
 
   // MCP Client Configuration

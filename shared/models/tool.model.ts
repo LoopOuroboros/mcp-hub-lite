@@ -16,11 +16,15 @@ export interface ToolAnnotations {
   openWorldHint?: boolean;
 }
 
-// Unified tool model interface
-export interface Tool {
+// Tool summary (for listings and searches - without inputSchema)
+export interface ToolSummary {
   name: string;
   description?: string;
-  inputSchema?: JsonSchema;
   serverName: string;
+}
+
+// Unified tool model interface (complete version with inputSchema)
+export interface Tool extends ToolSummary {
+  inputSchema?: JsonSchema;
   annotations?: ToolAnnotations;
 }

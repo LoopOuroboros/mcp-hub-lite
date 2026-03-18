@@ -224,22 +224,3 @@ try {
 | `frontend/src/stores/server.ts` | 服务器状态管理 |
 | `frontend/src/components/`      | UI 组件        |
 | `frontend/src/views/`           | 页面视图       |
-
-## 变更记录 (Changelog)
-
-### 2026-02-16
-
-- 更新 Frontend UI 模块文档
-- 完善会话管理相关文档
-- 添加数据模型说明
-- 更新测试覆盖信息
-
-### 2026-02-15
-
-- 新增会话管理页面文档
-- 更新路由配置说明
-- 添加国际化支持文档
-
-### 2026-02-05
-
-- 初始化 Frontend UI 模块文档

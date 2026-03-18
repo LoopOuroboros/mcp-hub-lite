@@ -34,12 +34,6 @@
           </div>
           <div class="md:col-span-2">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-              {{ $t('resources.description') }}
-            </div>
-            <div class="text-sm">{{ resourceDescription }}</div>
-          </div>
-          <div class="md:col-span-2">
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               {{ $t('resources.server') }}
             </div>
             <div class="text-sm">{{ serverName }}</div>
@@ -71,15 +65,6 @@
         </div>
 
         <div class="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#0f172a]">
-          <!-- Resource Description -->
-          <div
-            v-if="resourceDescription && resourceDescription !== 'No description available'"
-            class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-800"
-          >
-            <div class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">Description</div>
-            <div class="text-sm text-blue-700 dark:text-blue-300">{{ resourceDescription }}</div>
-          </div>
-
           <!-- Loading State -->
           <div v-if="loading" class="h-full flex items-center justify-center text-gray-400">
             {{ $t('resources.loadingContent') }}
@@ -162,9 +147,6 @@ const resourceName = computed(() => {
 const resourceMimeType = computed(
   () => (route.query.mimeType as string) || 'application/octet-stream'
 );
-const resourceDescription = computed(() => {
-  return (route.query.description as string) || $t('resources.noDescription');
-});
 
 const loading = ref(false);
 const error = ref<string | null>(null);

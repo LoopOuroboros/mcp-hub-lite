@@ -2,7 +2,23 @@ import globals from 'globals';
 import pluginJs from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
-import autoImportGlobals from './.eslintrc-auto-import.json' with { type: 'json' };
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const autoImportPath = path.resolve(__dirname, '.eslintrc-auto-import.json');
+
+// Load auto-import globals if the file exists, otherwise use empty object
+let autoImportGlobals = { globals: {} };
+if (fs.existsSync(autoImportPath)) {
+  try {
+    const content = fs.readFileSync(autoImportPath, 'utf-8');
+    autoImportGlobals = JSON.parse(content);
+  } catch {
+    // Ignore read/parse errors, use empty object
+  }
+}
 
 export default [
   {

@@ -46,12 +46,14 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
 
       servers.forEach((server) => {
         const instances = serverInstances[server.name] || [];
-        instances.forEach((instance) => {
+
+        // If no instances, add a default disconnected entry for this server
+        if (instances.length === 0) {
           statusList.push({
-            id: instance.id || '',
+            id: server.name,
             name: server.name,
             type: server.config.type,
-            status: mcpConnectionManager.getStatus(instance.id || '') || {
+            status: {
               connected: false,
               lastCheck: Date.now(),
               toolsCount: 0,
@@ -59,7 +61,23 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
               pid: undefined
             }
           });
-        });
+        } else {
+          // Add status for each instance
+          instances.forEach((instance) => {
+            statusList.push({
+              id: instance.id || '',
+              name: server.name,
+              type: server.config.type,
+              status: mcpConnectionManager.getStatus(instance.id || '') || {
+                connected: false,
+                lastCheck: Date.now(),
+                toolsCount: 0,
+                resourcesCount: 0,
+                pid: undefined
+              }
+            });
+          });
+        }
       });
 
       return statusList;

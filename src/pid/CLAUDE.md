@@ -94,9 +94,3 @@ A: 当检测到 PID 文件存在但进程不存在时，系统会自动清理僵
 | `pid/types.ts`   | PID 类型定义 |
 | `pid/manager.ts` | PID 管理器   |
 | `pid/file.ts`    | PID 文件操作 |
-
-## 变更记录 (Changelog)
-
-### 2026-01-29
-
-- 初始化 PID 模块文档

@@ -1,8 +1,62 @@
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
 import { hubManager } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { ServerStatus } from '@shared-types/common.types.js';
-import { hasValidId, selectBestInstance } from './server-selector.js';
+import { hasValidId, selectBestInstance, getServerDescription } from './server-selector.js';
+
+/**
+ * Path to the use guide Markdown file.
+ */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const USE_GUIDE_PATH = join(__dirname, 'use-guide.md');
+
+/**
+ * Loads the use guide content from the Markdown file.
+ *
+ * @returns {string} Markdown formatted use guide content
+ */
+function loadUseGuideContent(): string {
+  try {
+    return fs.readFileSync(USE_GUIDE_PATH, 'utf-8');
+  } catch {
+    // Fallback in case the file can't be read
+    return `# MCP Hub Lite Use Guide
+
+## Overview
+
+MCP Hub Lite is a lightweight MCP (Model Context Protocol) gateway that acts as a unified interface between AI assistants and multiple backend MCP servers.
+
+## Note
+
+The complete use guide is currently unavailable. Please check the MCP Hub Lite documentation at https://github.com/your-org/mcp-hub-lite for more information.
+`;
+  }
+}
+
+/**
+ * URI for the use guide resource.
+ */
+export const USE_GUIDE_URI = 'hub://use-guide';
+
+/**
+ * Name of the use guide resource.
+ */
+export const USE_GUIDE_NAME = 'MCP Hub Lite Use Guide';
+
+/**
+ * Description of the use guide resource.
+ */
+export const USE_GUIDE_DESCRIPTION =
+  'Comprehensive guide to using MCP Hub Lite gateway and its features';
+
+/**
+ * MIME type for the use guide resource.
+ */
+export const USE_GUIDE_MIME_TYPE = 'text/markdown';
 
 /**
  * Server metadata resource content.
@@ -11,10 +65,12 @@ export interface ServerMetadata {
   name: string;
   status: ServerStatus;
   toolsCount: number;
+  tools: Record<string, string>;
   resourcesCount: number;
   tags: Record<string, string>;
   lastHeartbeat: number;
   uptime: number;
+  description: string;
 }
 
 /**
@@ -37,6 +93,16 @@ export interface ServerMetadata {
 export function generateDynamicResources(): Resource[] {
   const resources: Resource[] = [];
 
+  // Add use-guide resource first - it's always available
+  resources.push({
+    uri: USE_GUIDE_URI,
+    name: USE_GUIDE_NAME,
+    description: USE_GUIDE_DESCRIPTION,
+    mimeType: USE_GUIDE_MIME_TYPE,
+    // System resources don't have a serverId
+    serverId: undefined
+  });
+
   // Use the same access pattern as tools - directly access manager cache
   const servers = hubManager.getAllServers();
 
@@ -56,7 +122,7 @@ export function generateDynamicResources(): Resource[] {
     resources.push({
       uri: `hub://servers/${server.name}`,
       name: `Server: ${server.name}`,
-      description: server.config.description || `Connected MCP server: ${server.name}`,
+      description: getServerDescription(server.config, server.name),
       mimeType: 'application/json',
       serverId: instanceId
     });
@@ -91,10 +157,15 @@ export function generateDynamicResources(): Resource[] {
  * const tools = await readResource('hub://servers/my-mcp-server/tools');
  * ```
  */
-export async function readResource(uri: string): Promise<ServerMetadata | Resource[]> {
+export async function readResource(uri: string): Promise<ServerMetadata | Resource[] | string> {
   // Validate URI format
   if (!uri.startsWith('hub://')) {
     throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
+  }
+
+  // Check for use-guide resource first
+  if (uri === USE_GUIDE_URI) {
+    return loadUseGuideContent();
   }
 
   // Parse URI
@@ -121,14 +192,22 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
     const tools = mcpConnectionManager.getTools(instanceId);
     const resources = mcpConnectionManager.getResources(instanceId);
 
+    // Build tool name to description map
+    const toolsMap: Record<string, string> = {};
+    for (const tool of tools) {
+      toolsMap[tool.name] = tool.description || '';
+    }
+
     return {
       name: serverName,
       status: serverInfo.instance.status as ServerStatus,
       toolsCount: tools.length,
+      tools: toolsMap,
       resourcesCount: resources.length,
       tags: serverConfig?.tags || {},
       lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
-      uptime: serverInfo.instance.uptime as number
+      uptime: serverInfo.instance.uptime as number,
+      description: getServerDescription(serverConfig, serverName)
     };
   } else if (resourceType === 'tools') {
     // Tools list

@@ -1,5 +1,37 @@
 # 变更记录 (Changelog)
 
+## 2026-03-17
+
+- **UI 增强**: 更新资源详情和列表视图，集成 Hub 工具
+- **系统工具重构**: 增强系统工具处理和 API 端点
+- **Hub 工具重构**: 重构核心 Hub 工具服务架构
+
+## 2026-03-15
+
+- **Lint 修复**: 为缺失的 .eslintrc-auto-import.json 添加回退处理
+- **UI 修复**: 修正 ServerDetail 中 ToolCallDialog 的 serverName 属性
+- **Hub 工具重构**: 简化动态资源列表，仅保留服务器元数据
+
+## 2026-03-09
+
+- **核心重构**: 更新会话和客户端迁移的核心模块
+- **网关重构**: 清理弃用方法，更新工具缓存访问
+- **客户端重构**: 移除弃用的客户端跟踪和存储
+- **会话重构**: 从 mcp-session-manager 迁移到 session-tracker 服务
+- **测试**: 启用初始化通知测试
+- **样式**: 改进调用者信息的正则表达式格式化
+- **会话功能**: 在会话管理器中添加 capabilities 支持
+- **会话重构**: 简化 sessionId 生成
+- **网关功能**: 添加初始化通知和 capabilities 处理
+- **客户端跟踪功能**: 添加 capabilities 和项目推断
+- **会话功能**: 在会话模型中添加 capabilities 字段
+- **UI 功能**: 在 SessionsView 中添加 capabilities 显示
+- **日志功能**: 添加调用者信息和环境变量控制
+- **日志修复**: 确保空 capabilities 消息的 JSON 美化打印
+- **API 重构**: 使 MCP 通信调试日志记录为条件性
+- **功能**: 添加 headers 支持并默认为 streamable-http
+- **UI 修复**: 修复环境变量值输入显示
+
 ## 2026-03-06
 
 - **系统工具修复**：修复 requestOptions.sessionId 为 null 时的系统工具调用验证错误

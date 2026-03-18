@@ -138,13 +138,3 @@ A: 使用 `beforeEach` 和 `afterEach` 钩子设置和清理测试环境。
 | `integration/api/gateway.test.ts`             | Gateway API 测试 |
 | `integration/gateway/fault-tolerance.test.ts` | 容错测试         |
 | `integration/gateway/mcp-connection.test.ts`  | MCP 连接测试     |
-
-## 变更记录 (Changelog)
-
-### 2026-01-20
-
-- 更新 Integration Tests 模块文档
-
-### 2026-01-19
-
-- 初始化 Integration Tests 模块文档

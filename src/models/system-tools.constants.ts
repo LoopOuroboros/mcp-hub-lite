@@ -6,25 +6,8 @@
 // System tool parameter type definitions
 export type ListServersParams = Record<string, never>;
 
-export interface FindServersParams {
-  pattern: string;
-  searchIn?: 'name' | 'description' | 'both';
-  caseSensitive?: boolean;
-}
-
-export interface ListAllToolsInServerParams {
+export interface ListToolsInServerParams {
   serverName: string;
-  requestOptions?: {
-    sessionId?: string;
-    tags?: Record<string, string>;
-  };
-}
-
-export interface FindToolsInServerParams {
-  serverName: string;
-  pattern: string;
-  searchIn?: 'name' | 'description' | 'both';
-  caseSensitive?: boolean;
   requestOptions?: {
     sessionId?: string;
     tags?: Record<string, string>;
@@ -50,30 +33,25 @@ export interface CallToolParams {
   };
 }
 
-export interface FindToolsParams {
-  pattern: string;
-  searchIn?: 'name' | 'description' | 'both';
-  caseSensitive?: boolean;
+export interface UpdateServerDescriptionParams {
+  serverName: string;
+  description: string;
 }
 
 // Union type for system tool parameters
 export type SystemToolArgs =
   | ListServersParams
-  | FindServersParams
-  | ListAllToolsInServerParams
-  | FindToolsInServerParams
+  | ListToolsInServerParams
   | GetToolParams
   | CallToolParams
-  | FindToolsParams;
+  | UpdateServerDescriptionParams;
 
 // Individual system tool name constants
 export const LIST_SERVERS_TOOL = 'list_servers';
-export const FIND_SERVERS_TOOL = 'find_servers';
-export const LIST_ALL_TOOLS_IN_SERVER_TOOL = 'list_all_tools_in_server';
-export const FIND_TOOLS_IN_SERVER_TOOL = 'find_tools_in_server';
+export const LIST_TOOLS_IN_SERVER_TOOL = 'list_tools_in_server';
 export const GET_TOOL_TOOL = 'get_tool';
 export const CALL_TOOL_TOOL = 'call_tool';
-export const FIND_TOOLS_TOOL = 'find_tools';
+export const UPDATE_SERVER_DESCRIPTION_TOOL = 'update_server_description';
 
 /**
  * List of all system tool names
@@ -81,12 +59,10 @@ export const FIND_TOOLS_TOOL = 'find_tools';
  */
 export const SYSTEM_TOOL_NAMES = [
   LIST_SERVERS_TOOL,
-  FIND_SERVERS_TOOL,
-  LIST_ALL_TOOLS_IN_SERVER_TOOL,
-  FIND_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_IN_SERVER_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  FIND_TOOLS_TOOL
+  UPDATE_SERVER_DESCRIPTION_TOOL
 ] as const;
 
 /**
