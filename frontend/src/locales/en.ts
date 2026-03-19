@@ -186,6 +186,8 @@ export default {
     transportType: 'Select Transport Type',
     name: 'Server Name',
     namePlaceholder: 'My New Server',
+    description: 'Description',
+    descriptionPlaceholder: 'Enter server description',
     executablePlaceholder: '/path/to/executable or npx',
     argPlaceholder: 'Argument',
     urlPlaceholder: 'http://localhost:3000/sse',

@@ -186,6 +186,8 @@ export default {
     transportType: '选择传输类型',
     name: '服务器名称',
     namePlaceholder: '我的新服务器',
+    description: '描述',
+    descriptionPlaceholder: '请输入服务器描述',
     executablePlaceholder: '/path/to/executable 或 npx',
     argPlaceholder: '参数',
     urlPlaceholder: 'http://localhost:3000/sse',

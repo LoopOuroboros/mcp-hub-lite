@@ -56,6 +56,15 @@
         <el-input v-model="form.name" :placeholder="$t('addServer.namePlaceholder')" />
       </el-form-item>
 
+      <el-form-item :label="$t('addServer.description')">
+        <el-input
+          v-model="form.description"
+          type="textarea"
+          :rows="2"
+          :placeholder="$t('addServer.descriptionPlaceholder')"
+        />
+      </el-form-item>
+
       <template v-if="form.transport === 'stdio'">
         <el-form-item :label="$t('serverDetail.config.executable')">
           <el-input v-model="form.command" :placeholder="$t('addServer.executablePlaceholder')" />
@@ -308,7 +317,7 @@ watch(dialogVisible, (val) => {
 const defaultJsonConfig = `{\n  "mcpServers": {\n  }\n}`;
 const jsonConfig = ref(defaultJsonConfig);
 const batchJsonConfig = ref(
-  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`
+  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true,\n      "description": "A sample MCP server using stdio transport"\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true,\n      "description": "A sample MCP server using HTTP transport"\n    }\n  }\n}`
 );
 
 const importResult = ref({
@@ -319,6 +328,7 @@ const importResult = ref({
 const form = ref({
   transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
   name: '',
+  description: '',
   command: '',
   args: [] as string[],
   url: '',
@@ -378,6 +388,10 @@ function importJson() {
         key,
         value: String(value)
       }));
+    }
+
+    if (configToUse.description) {
+      form.value.description = configToUse.description;
     }
 
     showImportJson.value = false;
@@ -457,6 +471,7 @@ function resetForm() {
   form.value = {
     transport: 'stdio',
     name: '',
+    description: '',
     command: '',
     args: [],
     url: '',
@@ -466,7 +481,7 @@ function resetForm() {
   envItems.value = [];
   headerItems.value = [];
   jsonConfig.value = defaultJsonConfig;
-  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`;
+  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true,\n      "description": "A sample MCP server using stdio transport"\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true,\n      "description": "A sample MCP server using HTTP transport"\n    }\n  }\n}`;
   importResult.value = {
     success: [],
     errors: []
@@ -512,7 +527,8 @@ async function createServer() {
         enabled: form.value.autoStart,
         allowedTools: [],
         env,
-        headers: Object.keys(headers).length > 0 ? headers : undefined
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
+        description: form.value.description || undefined
       },
       logs: []
     });
