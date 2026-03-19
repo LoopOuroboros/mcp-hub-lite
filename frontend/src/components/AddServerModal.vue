@@ -133,7 +133,7 @@
       </el-form-item>
 
       <template v-if="form.transport !== 'stdio'">
-        <el-form-item label="Headers">
+        <el-form-item :label="$t('serverDetail.config.headers')">
           <div
             class="w-full flex flex-col gap-2"
             style="display: flex; flex-direction: column; width: 100%"
@@ -158,7 +158,7 @@
             </div>
             <div>
               <el-button :icon="Plus" plain size="small" @click="addHeader"
-                >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+                >+ {{ $t('serverDetail.config.addHeader') }}</el-button
               >
             </div>
           </div>

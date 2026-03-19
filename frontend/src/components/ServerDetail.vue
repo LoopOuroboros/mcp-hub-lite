@@ -138,7 +138,7 @@
             </el-form-item>
 
             <template v-if="server.config.type !== 'stdio'">
-              <el-form-item label="Headers">
+              <el-form-item :label="$t('serverDetail.config.headers')">
                 <div class="w-full flex flex-col gap-2">
                   <div
                     v-for="(_, key) in server.config.headers"
@@ -161,7 +161,7 @@
                   </div>
                   <div>
                     <el-button :icon="Plus" plain size="small" @click="addHeader"
-                      >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+                      >+ {{ $t('serverDetail.config.addHeader') }}</el-button
                     >
                   </div>
                 </div>

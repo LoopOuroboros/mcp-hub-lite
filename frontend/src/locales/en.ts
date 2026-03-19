@@ -107,7 +107,21 @@ export default {
       minutes: 'Minutes',
       hours: 'Hours',
       days: 'Days'
-    }
+    },
+    tagsTab: 'Tags',
+    tagDefinitions: 'Tag Definitions',
+    tagKey: 'Tag Key',
+    tagDescription: 'Description',
+    tagType: 'Type',
+    tagValues: 'Allowed Values',
+    addTag: 'Add Tag',
+    editTag: 'Edit Tag',
+    deleteTag: 'Delete Tag',
+    deleteTagConfirm: 'Are you sure you want to delete this tag definition?',
+    noTagsDefined: 'No tags defined yet',
+    tagKeyPlaceholder: 'Enter tag key (e.g., environment, priority)',
+    tagDescriptionPlaceholder: 'Enter tag description',
+    tagValuesPlaceholder: 'Enter allowed values, press Enter to add'
   },
   dashboard: {
     title: 'Dashboard',
@@ -142,6 +156,8 @@ export default {
       autoStart: 'Auto-start',
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
+      addHeader: 'Add Header',
+      headers: 'Headers',
       save: 'Save Configuration',
       editByJson: 'Edit By Json',
       description: 'Description',

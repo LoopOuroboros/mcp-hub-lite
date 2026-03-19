@@ -107,7 +107,21 @@ export default {
       minutes: '分钟',
       hours: '小时',
       days: '天'
-    }
+    },
+    tagsTab: '标签',
+    tagDefinitions: '标签定义',
+    tagKey: '标签键',
+    tagDescription: '描述',
+    tagType: '类型',
+    tagValues: '可选值',
+    addTag: '添加标签',
+    editTag: '编辑标签',
+    deleteTag: '删除标签',
+    deleteTagConfirm: '确定要删除此标签定义吗？',
+    noTagsDefined: '尚未定义标签',
+    tagKeyPlaceholder: '输入标签键（如 environment, priority）',
+    tagDescriptionPlaceholder: '输入标签描述',
+    tagValuesPlaceholder: '输入可选值，按回车添加'
   },
   dashboard: {
     title: '仪表盘',
@@ -142,6 +156,8 @@ export default {
       autoStart: '随系统启动',
       addArg: '添加参数',
       addEnv: '添加环境变量',
+      addHeader: '添加请求头',
+      headers: '请求头',
       save: '保存配置',
       editByJson: '通过 JSON 编辑',
       description: '描述',
