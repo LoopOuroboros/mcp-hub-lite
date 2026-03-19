@@ -30,6 +30,13 @@ function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   return result as T;
 }
 
+export interface TagDefinition {
+  key: string;
+  description?: string;
+  type: 'string' | 'number' | 'boolean' | 'enum';
+  values?: string[];
+}
+
 export interface SystemConfig {
   system: {
     host: string;
@@ -53,6 +60,7 @@ export interface SystemConfig {
     sessionFlushInterval: number;
     maxConnections: number;
   };
+  tagDefinitions?: TagDefinition[];
   isDevMode?: boolean;
   [key: string]: unknown;
 }
@@ -81,6 +89,7 @@ export const useSystemStore = defineStore('system', () => {
       sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
     },
+    tagDefinitions: [],
     isDevMode: false
   });
 

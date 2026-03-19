@@ -291,6 +291,20 @@
               </el-form>
             </div>
           </el-tab-pane>
+
+          <!-- Tags Settings -->
+          <el-tab-pane name="tags">
+            <template #label>
+              <span class="flex items-center gap-2">
+                <el-icon><PriceTag /></el-icon>
+                <span>{{ $t('settings.tagsTab') }}</span>
+              </span>
+            </template>
+
+            <div class="pt-4">
+              <TagManager v-model="config.tagDefinitions" />
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </div>
     </div>
@@ -300,10 +314,20 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Check, Document, Lock, Setting, Sunny, Moon, Monitor } from '@element-plus/icons-vue';
+import {
+  Check,
+  Document,
+  Lock,
+  Setting,
+  Sunny,
+  Moon,
+  Monitor,
+  PriceTag
+} from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
+import TagManager from '@components/TagManager.vue';
 
 const { t } = useI18n();
 const systemStore = useSystemStore();
