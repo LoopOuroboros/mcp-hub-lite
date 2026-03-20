@@ -48,7 +48,8 @@ import {
   updateServer,
   updateServerInstance,
   removeServer,
-  removeServerInstance
+  removeServerInstance,
+  reassignServerInstanceIndexes
 } from './server-config-manager.js';
 
 // Re-export types for external use
@@ -246,6 +247,16 @@ export class ConfigManager {
    */
   public async removeServerInstance(name: string, index: number): Promise<void> {
     removeServerInstance(name, index, this.serverInstances);
+  }
+
+  /**
+   * Reassigns server instance indexes to be consecutive (0, 1, 2, ...).
+   *
+   * @param name - The name of the server to reassign indexes for
+   * @returns True if the server exists and indexes were reassigned, false otherwise
+   */
+  public async reassignInstanceIndexes(name: string): Promise<boolean> {
+    return reassignServerInstanceIndexes(name, this.serverInstances);
   }
 
   /**

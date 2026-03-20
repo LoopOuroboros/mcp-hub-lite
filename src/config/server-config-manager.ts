@@ -98,9 +98,51 @@ export function addServerInstance(
     instance.hash = Math.random().toString(36);
   }
 
+  // Assign index: max index + 1, or 0 if no existing instances
+  if (instance.index === undefined) {
+    const instances = serverInstances[name] || [];
+    if (instances.length === 0) {
+      instance.index = 0;
+    } else {
+      const indexes = instances.map((inst) => inst.index ?? 0);
+      const maxIndex = Math.max(...indexes);
+      instance.index = maxIndex + 1;
+    }
+  }
+
   const validated = ServerInstanceConfigSchema.parse(instance);
   serverInstances[name].push(validated);
   return validated;
+}
+
+/**
+ * Reassigns server instance indexes to be consecutive (0, 1, 2, ...).
+ *
+ * @param name - The name of the server to reassign indexes for
+ * @param serverInstances - Current server instances record (will be modified)
+ * @returns True if the server exists and indexes were reassigned, false otherwise
+ */
+export function reassignServerInstanceIndexes(
+  name: string,
+  serverInstances: Record<string, ServerInstanceConfig[]>
+): boolean {
+  if (!serverInstances[name] || serverInstances[name].length === 0) {
+    return false;
+  }
+
+  // Sort instances by their current index
+  const sortedInstances = [...serverInstances[name]].sort(
+    (a, b) => (a.index ?? 0) - (b.index ?? 0)
+  );
+
+  // Reassign indexes to be consecutive starting from 0
+  sortedInstances.forEach((instance, newIndex) => {
+    instance.index = newIndex;
+  });
+
+  // Update the server instances array
+  serverInstances[name] = sortedInstances;
+  return true;
 }
 
 /**

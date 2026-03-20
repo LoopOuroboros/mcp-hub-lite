@@ -468,6 +468,24 @@ export class HubManagerService {
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_DELETED, { name, index });
   }
+
+  /**
+   * Reassigns server instance indexes to be consecutive (0, 1, 2, ...).
+   *
+   * @param name - The name of the server to reassign indexes for
+   * @returns True if the server exists and indexes were reassigned, false otherwise
+   *
+   * @example
+   * ```typescript
+   * const success = await hubManager.reassignInstanceIndexes('my-server');
+   * if (success) {
+   *   console.log('Indexes reassigned successfully');
+   * }
+   * ```
+   */
+  async reassignInstanceIndexes(name: string): Promise<boolean> {
+    return this.configManager.reassignInstanceIndexes(name);
+  }
 }
 
 export const hubManager = new HubManagerService();

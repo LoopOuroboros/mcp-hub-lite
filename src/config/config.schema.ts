@@ -88,7 +88,9 @@ export const ServerInstanceConfigSchema = z.object({
   timestamp: z.number(), // Startup time
   hash: z.string(),
   pid: z.number().optional(), // Process ID
-  startTime: z.number().optional() // Startup time (same as timestamp, for compatibility)
+  startTime: z.number().optional(), // Startup time (same as timestamp, for compatibility)
+  index: z.number().optional(),
+  displayName: z.string().optional()
 });
 
 /**

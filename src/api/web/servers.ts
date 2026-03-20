@@ -192,6 +192,29 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // POST /web/server-instances/:name/reassign-indexes
+  fastify.post<{ Params: { name: string } }>(
+    '/web/server-instances/:name/reassign-indexes',
+    async (request, reply) => {
+      try {
+        // Check if server exists
+        const server = hubManager.getServerByName(request.params.name);
+        if (!server) {
+          return reply.code(404).send({ error: 'Server not found' });
+        }
+
+        const success = await hubManager.reassignInstanceIndexes(request.params.name);
+        if (!success) {
+          return reply.code(404).send({ error: 'No server instances found' });
+        }
+
+        return reply.code(200).send({ message: 'Server instance indexes reassigned successfully' });
+      } catch {
+        return reply.code(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
   // POST /web/servers/batch
   fastify.post('/web/servers/batch', async (request, reply) => {
     try {

@@ -22,6 +22,8 @@ export interface ServerInstanceConfig {
   id: string;
   timestamp: number;
   hash: string;
+  index?: number;
+  displayName?: string;
 }
 
 // Log entry interface
