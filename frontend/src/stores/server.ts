@@ -44,6 +44,17 @@ export type {
 };
 
 /**
+ * Server instance update payload interface
+ */
+export interface ServerInstanceUpdate {
+  displayName?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  tags?: Record<string, string>;
+}
+
+/**
  * Creates and returns the server store instance
  *
  * @returns {Object} Pinia store object with state, getters, and actions
@@ -460,6 +471,114 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
+   * Adds a new server instance for an existing server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to add an instance for
+   * @returns {Promise<void>}
+   * @throws {Error} If instance creation fails
+   */
+  async function addServerInstance(serverName: string) {
+    loading.value = true;
+    try {
+      await http.post<ServerInstanceConfig>(`/web/server-instances/${serverName}`, {});
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to add server instance';
+      } else {
+        error.value = String(e) || 'Failed to add server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Updates an existing server instance
+   *
+   * @async
+   * @param {string} serverName - Name of the server
+   * @param {number} index - Index of the instance to update
+   * @param {Partial<ServerInstanceUpdate>} updates - Updates to apply to the instance
+   * @returns {Promise<void>}
+   * @throws {Error} If instance not found or update fails
+   */
+  async function updateServerInstance(
+    serverName: string,
+    index: number,
+    updates: Partial<ServerInstanceUpdate>
+  ) {
+    loading.value = true;
+    try {
+      await http.put(`/web/server-instances/${serverName}/${index}`, updates);
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to update server instance';
+      } else {
+        error.value = String(e) || 'Failed to update server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Removes a specific server instance by index
+   *
+   * @async
+   * @param {string} serverName - Name of the server
+   * @param {number} index - Index of the instance to remove
+   * @returns {Promise<void>}
+   * @throws {Error} If instance not found or removal fails
+   */
+  async function removeServerInstance(serverName: string, index: number) {
+    loading.value = true;
+    try {
+      await http.delete(`/web/server-instances/${serverName}/${index}`);
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to remove server instance';
+      } else {
+        error.value = String(e) || 'Failed to remove server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Reassigns indexes for all instances of a server
+   * Makes indexes contiguous starting from 0
+   *
+   * @async
+   * @param {string} serverName - Name of the server to reassign indexes for
+   * @returns {Promise<void>}
+   * @throws {Error} If reassignment fails
+   */
+  async function reassignInstanceIndexes(serverName: string) {
+    loading.value = true;
+    try {
+      await http.post(`/web/server-instances/${serverName}/reassign-indexes`, {});
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to reassign instance indexes';
+      } else {
+        error.value = String(e) || 'Failed to reassign instance indexes';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
    * Imports multiple servers from JSON configuration
    *
    * Converts legacy JSON format to the new batch import format and
@@ -676,6 +795,10 @@ export const useServerStore = defineStore('server', () => {
     fetchAllLogs,
     clearLogs,
     readResource,
-    fetchAllResources
+    fetchAllResources,
+    addServerInstance,
+    updateServerInstance,
+    removeServerInstance,
+    reassignInstanceIndexes
   };
 });

@@ -29,7 +29,9 @@ export const ServerInstanceSchema = z.object({
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
   headers: z.record(z.string(), z.string()).optional(),
-  tags: z.record(z.string(), z.string()).default({})
+  tags: z.record(z.string(), z.string()).default({}),
+  index: z.number().optional(),
+  displayName: z.string().optional()
 });
 
 /**
