@@ -133,15 +133,28 @@ export default {
   serverDetail: {
     emptySelect: '请选择一个服务器以查看详情',
     noServerSelected: '未选择服务器',
+    noInstanceSelected: '请选择一个实例',
     deleteConfirm: '确定要删除此服务器吗？',
     version: '版本',
     pid: '进程ID',
     uptime: '运行时间',
+    selectInstanceForTool: '选择要调用工具的实例',
+    selectInstanceForResource: '选择要查看资源的实例',
+    selectInstancePlaceholder: '选择一个实例...',
+    confirm: '确认',
     tabs: {
       config: '配置',
       logs: '日志',
       tools: '工具',
       resources: '资源'
+    },
+    configTabs: {
+      template: '模版',
+      instances: '实例'
+    },
+    instanceTabs: {
+      configOverride: '实例配置',
+      logs: '日志'
     },
     config: {
       transport: '传输方式',
@@ -158,10 +171,24 @@ export default {
       addEnv: '添加环境变量',
       addHeader: '添加请求头',
       headers: '请求头',
+      tags: '标签',
       save: '保存配置',
       editByJson: '通过 JSON 编辑',
       description: '描述',
       descriptionPlaceholder: '请输入服务器描述'
+    },
+    instanceConfig: {
+      title: '实例配置',
+      template: '模版配置',
+      readOnly: '只读',
+      override: '实例配置覆盖',
+      editable: '可编辑',
+      noArgs: '无参数',
+      noEnv: '无环境变量',
+      noHeaders: '无请求头',
+      noTags: '无标签',
+      addTag: '添加标签',
+      mergedPreview: '合并后的最终配置预览'
     },
     logs: {
       autoScroll: '自动滚动',
@@ -195,6 +222,12 @@ export default {
       stopping: '停止中',
       error: '错误',
       starting: '启动中'
+    },
+    instances: {
+      title: '实例',
+      unnamed: '未命名',
+      add: '添加实例',
+      reassignIndexes: '重新分配索引'
     }
   },
   addServer: {

@@ -39,8 +39,8 @@
       </div>
     </div>
 
-    <!-- Tabs -->
-    <el-tabs v-model="activeTab" class="flex-1 flex flex-col overflow-hidden custom-tabs">
+    <!-- Top Level Tabs -->
+    <el-tabs v-model="activeTopTab" class="flex-1 flex flex-col overflow-hidden custom-tabs">
       <!-- Config Tab -->
       <el-tab-pane name="config" class="h-full overflow-y-auto">
         <template #label>
@@ -49,195 +49,245 @@
             <span>{{ $t('serverDetail.tabs.config') }}</span>
           </span>
         </template>
-        <div class="max-w-3xl">
-          <el-form label-position="top" class="mt-4">
-            <el-form-item :label="$t('serverDetail.config.transport')">
-              <el-select v-model="server.config.type" class="w-full">
-                <el-option :label="$t('serverDetail.config.transportStdio')" value="stdio" />
-                <el-option :label="$t('serverDetail.config.transportSse')" value="sse" />
-                <el-option
-                  :label="$t('serverDetail.config.transportHttp')"
-                  value="streamable-http"
-                />
-              </el-select>
-            </el-form-item>
-
-            <template v-if="server.config.type === 'stdio'">
-              <el-form-item :label="$t('serverDetail.config.executable')">
-                <el-input v-model="server.config.command" />
-              </el-form-item>
-              <el-form-item :label="$t('serverDetail.config.args')">
-                <div class="w-full flex flex-col gap-2">
-                  <div
-                    v-for="(_, index) in server.config.args"
-                    :key="index"
-                    class="flex gap-2 w-full"
-                  >
-                    <el-input v-model="server.config.args![index]" />
-                    <el-button :icon="Delete" circle plain @click="removeArg(index)" />
-                  </div>
-                  <div>
-                    <el-button :icon="Plus" plain size="small" @click="addArg"
-                      >+ {{ $t('serverDetail.config.addArg') }}</el-button
-                    >
-                  </div>
-                </div>
-              </el-form-item>
+        <el-tabs v-model="activeConfigTab" class="config-sub-tabs">
+          <!-- Template Sub-tab -->
+          <el-tab-pane name="template">
+            <template #label>
+              <span class="custom-tabs-label">
+                <el-icon><Document /></el-icon>
+                <span>{{ $t('serverDetail.configTabs.template') }}</span>
+              </span>
             </template>
-
-            <template v-else>
-              <el-form-item :label="$t('serverDetail.config.url')">
-                <el-input v-model="server.config.url" />
-              </el-form-item>
-            </template>
-
-            <el-form-item :label="$t('serverDetail.config.timeout')">
-              <el-input-number v-model="timeoutInSeconds" :min="0" :step="1" />
-            </el-form-item>
-
-            <el-form-item :label="$t('serverDetail.config.description')">
-              <el-input
-                v-model="server.config.description"
-                type="textarea"
-                :rows="3"
-                :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
-              />
-            </el-form-item>
-
-            <el-form-item :label="$t('serverDetail.config.autoStart')">
-              <el-switch v-model="server.config.enabled" />
-            </el-form-item>
-
-            <el-form-item :label="$t('serverDetail.config.env')">
-              <div class="w-full flex flex-col gap-2">
-                <div
-                  v-for="(_, key) in server.config.env"
-                  :key="key"
-                  class="flex gap-2 w-full"
-                  style="display: flex; gap: 0.5rem; width: 100%"
-                >
-                  <el-input
-                    v-model="envKeys[key as string]"
-                    :placeholder="$t('addServer.keyPlaceholder')"
-                    style="width: 30%; min-width: 150px"
-                    @change="(val: string) => updateEnvKey(key as string, val)"
-                  />
-                  <el-input
-                    v-model="server.config.env![key]"
-                    :placeholder="$t('addServer.valuePlaceholder')"
-                    style="flex: 1"
-                  />
-                  <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
-                </div>
-                <div>
-                  <el-button :icon="Plus" plain size="small" @click="addEnv"
-                    >+ {{ $t('serverDetail.config.addEnv') }}</el-button
-                  >
-                </div>
-              </div>
-            </el-form-item>
-
-            <template v-if="server.config.type !== 'stdio'">
-              <el-form-item :label="$t('serverDetail.config.headers')">
-                <div class="w-full flex flex-col gap-2">
-                  <div
-                    v-for="(_, key) in server.config.headers"
-                    :key="key"
-                    class="flex gap-2 w-full"
-                    style="display: flex; gap: 0.5rem; width: 100%"
-                  >
-                    <el-input
-                      v-model="headerKeys[key as string]"
-                      :placeholder="$t('addServer.keyPlaceholder')"
-                      style="width: 30%; min-width: 150px"
-                      @change="(val: string) => updateHeaderKey(key as string, val)"
+            <div class="max-w-3xl">
+              <el-form label-position="top" class="mt-4">
+                <el-form-item :label="$t('serverDetail.config.transport')">
+                  <el-select v-model="server.config.type" class="w-full">
+                    <el-option :label="$t('serverDetail.config.transportStdio')" value="stdio" />
+                    <el-option :label="$t('serverDetail.config.transportSse')" value="sse" />
+                    <el-option
+                      :label="$t('serverDetail.config.transportHttp')"
+                      value="streamable-http"
                     />
-                    <el-input
-                      v-model="server.config.headers![key]"
-                      :placeholder="$t('addServer.valuePlaceholder')"
-                      style="flex: 1"
-                    />
-                    <el-button :icon="Delete" circle plain @click="removeHeader(key as string)" />
-                  </div>
-                  <div>
-                    <el-button :icon="Plus" plain size="small" @click="addHeader"
-                      >+ {{ $t('serverDetail.config.addHeader') }}</el-button
-                    >
-                  </div>
-                </div>
-              </el-form-item>
-            </template>
+                  </el-select>
+                </el-form-item>
 
-            <div class="flex gap-2">
-              <el-button type="primary" class="mt-4" @click="saveConfig">{{
-                $t('serverDetail.config.save')
-              }}</el-button>
-              <el-button class="mt-4" :icon="Edit" @click="openEditJson">{{
-                $t('serverDetail.config.editByJson')
-              }}</el-button>
+                <template v-if="server.config.type === 'stdio'">
+                  <el-form-item :label="$t('serverDetail.config.executable')">
+                    <el-input v-model="server.config.command" />
+                  </el-form-item>
+                  <el-form-item :label="$t('serverDetail.config.args')">
+                    <div class="w-full flex flex-col gap-2">
+                      <div
+                        v-for="(_, index) in server.config.args"
+                        :key="index"
+                        class="flex gap-2 w-full"
+                      >
+                        <el-input v-model="server.config.args![index]" />
+                        <el-button :icon="Delete" circle plain @click="removeArg(index)" />
+                      </div>
+                      <div>
+                        <el-button :icon="Plus" plain size="small" @click="addArg"
+                          >+ {{ $t('serverDetail.config.addArg') }}</el-button
+                        >
+                      </div>
+                    </div>
+                  </el-form-item>
+                </template>
+
+                <template v-else>
+                  <el-form-item :label="$t('serverDetail.config.url')">
+                    <el-input v-model="server.config.url" />
+                  </el-form-item>
+                </template>
+
+                <el-form-item :label="$t('serverDetail.config.timeout')">
+                  <el-input-number v-model="timeoutInSeconds" :min="0" :step="1" />
+                </el-form-item>
+
+                <el-form-item :label="$t('serverDetail.config.description')">
+                  <el-input
+                    v-model="server.config.description"
+                    type="textarea"
+                    :rows="3"
+                    :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
+                  />
+                </el-form-item>
+
+                <el-form-item :label="$t('serverDetail.config.autoStart')">
+                  <el-switch v-model="server.config.enabled" />
+                </el-form-item>
+
+                <el-form-item :label="$t('serverDetail.config.env')">
+                  <div class="w-full flex flex-col gap-2">
+                    <div
+                      v-for="(_, key) in server.config.env"
+                      :key="key"
+                      class="flex gap-2 w-full"
+                      style="display: flex; gap: 0.5rem; width: 100%"
+                    >
+                      <el-input
+                        v-model="envKeys[key as string]"
+                        :placeholder="$t('addServer.keyPlaceholder')"
+                        style="width: 30%; min-width: 150px"
+                        @change="(val: string) => updateEnvKey(key as string, val)"
+                      />
+                      <el-input
+                        v-model="server.config.env![key]"
+                        :placeholder="$t('addServer.valuePlaceholder')"
+                        style="flex: 1"
+                      />
+                      <el-button :icon="Delete" circle plain @click="removeEnv(key as string)" />
+                    </div>
+                    <div>
+                      <el-button :icon="Plus" plain size="small" @click="addEnv"
+                        >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+                      >
+                    </div>
+                  </div>
+                </el-form-item>
+
+                <template v-if="server.config.type !== 'stdio'">
+                  <el-form-item :label="$t('serverDetail.config.headers')">
+                    <div class="w-full flex flex-col gap-2">
+                      <div
+                        v-for="(_, key) in server.config.headers"
+                        :key="key"
+                        class="flex gap-2 w-full"
+                        style="display: flex; gap: 0.5rem; width: 100%"
+                      >
+                        <el-input
+                          v-model="headerKeys[key as string]"
+                          :placeholder="$t('addServer.keyPlaceholder')"
+                          style="width: 30%; min-width: 150px"
+                          @change="(val: string) => updateHeaderKey(key as string, val)"
+                        />
+                        <el-input
+                          v-model="server.config.headers![key]"
+                          :placeholder="$t('addServer.valuePlaceholder')"
+                          style="flex: 1"
+                        />
+                        <el-button
+                          :icon="Delete"
+                          circle
+                          plain
+                          @click="removeHeader(key as string)"
+                        />
+                      </div>
+                      <div>
+                        <el-button :icon="Plus" plain size="small" @click="addHeader"
+                          >+ {{ $t('serverDetail.config.addHeader') }}</el-button
+                        >
+                      </div>
+                    </div>
+                  </el-form-item>
+                </template>
+
+                <div class="flex gap-2">
+                  <el-button type="primary" class="mt-4" @click="saveConfig">{{
+                    $t('serverDetail.config.save')
+                  }}</el-button>
+                  <el-button class="mt-4" :icon="Edit" @click="openEditJson">{{
+                    $t('serverDetail.config.editByJson')
+                  }}</el-button>
+                </div>
+              </el-form>
             </div>
-          </el-form>
-        </div>
-      </el-tab-pane>
+          </el-tab-pane>
 
-      <!-- Logs Tab -->
-      <el-tab-pane name="logs" class="h-full flex flex-col">
-        <template #label>
-          <span class="custom-tabs-label">
-            <el-icon><Memo /></el-icon>
-            <span>{{ $t('serverDetail.tabs.logs') }}</span>
-          </span>
-        </template>
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{
-              $t('serverDetail.logs.instance')
-            }}</span>
-            <el-select
-              v-model="currentInstanceId"
-              size="small"
-              style="width: 450px"
-              :placeholder="$t('serverDetail.logs.selectInstance')"
-            >
-              <el-option
-                v-for="inst in relatedInstances"
-                :key="inst.id"
-                :label="getInstanceLabel(inst)"
-                :value="inst.id"
+          <!-- Instances Sub-tab -->
+          <el-tab-pane name="instances">
+            <template #label>
+              <span class="custom-tabs-label">
+                <el-icon><Files /></el-icon>
+                <span>{{ $t('serverDetail.configTabs.instances') }}</span>
+              </span>
+            </template>
+            <div class="flex h-full gap-4 mt-4">
+              <!-- Instance Card List -->
+              <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
+                <InstanceCardList
+                  :instances="serverInstances"
+                  :selected-index="selectedInstanceIndex"
+                  :server-name="server.name"
+                  @select="handleSelectInstance"
+                  @add="handleAddInstance"
+                  @update-display-name="handleUpdateDisplayName"
+                  @delete="handleDeleteInstance"
+                  @reassign-indexes="handleReassignIndexes"
+                />
+              </div>
+
+              <!-- Instance Detail -->
+              <div
+                v-if="selectedInstanceIndex !== null"
+                class="flex-1 min-h-0 overflow-y-auto pl-4"
               >
-                <div class="flex items-center justify-between w-full">
-                  <span>{{ getInstanceLabel(inst) }}</span>
-                  <span v-if="inst.id === server.id" class="text-blue-500 text-xs ml-2"
-                    >Current</span
-                  >
-                </div>
-              </el-option>
-            </el-select>
-          </div>
-          <div class="flex items-center gap-2">
-            <el-checkbox
-              v-model="autoScroll"
-              :label="$t('serverDetail.logs.autoScroll')"
-              class="text-gray-600 dark:text-gray-400"
-            />
-            <el-button size="small" :icon="Delete" plain @click="clearLogs">{{
-              $t('serverDetail.logs.clear')
-            }}</el-button>
-            <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{
-              $t('serverDetail.logs.copy')
-            }}</el-button>
-          </div>
-        </div>
-        <div
-          class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300"
-          ref="logsContainer"
-        >
-          <div v-for="(log, index) in server.logs" :key="index" class="mb-1 break-words">
-            <span :class="getLogLevelColor(log.level)">
-              {{ formatTimestamp(log.timestamp) }} [{{ log.level.toUpperCase() }}] {{ log.message }}
-            </span>
-          </div>
-        </div>
+                <el-tabs v-model="activeInstanceTab" class="instance-detail-tabs">
+                  <!-- Instance Config Override Tab -->
+                  <el-tab-pane name="config-override">
+                    <template #label>
+                      <span class="custom-tabs-label">
+                        <el-icon><Setting /></el-icon>
+                        <span>{{ $t('serverDetail.instanceTabs.configOverride') }}</span>
+                      </span>
+                    </template>
+                    <InstanceConfig
+                      :template-config="server.config"
+                      :instance-config="selectedInstanceConfig"
+                      :server-name="server.name"
+                      @update="handleUpdateInstanceConfig"
+                    />
+                  </el-tab-pane>
+
+                  <!-- Instance Logs Tab -->
+                  <el-tab-pane name="logs" class="h-full flex flex-col">
+                    <template #label>
+                      <span class="custom-tabs-label">
+                        <el-icon><Memo /></el-icon>
+                        <span>{{ $t('serverDetail.instanceTabs.logs') }}</span>
+                      </span>
+                    </template>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                      <div class="flex items-center gap-2">
+                        <el-checkbox
+                          v-model="autoScroll"
+                          :label="$t('serverDetail.logs.autoScroll')"
+                          class="text-gray-600 dark:text-gray-400"
+                        />
+                        <el-button size="small" :icon="Delete" plain @click="clearLogs">{{
+                          $t('serverDetail.logs.clear')
+                        }}</el-button>
+                        <el-button size="small" :icon="CopyDocument" plain @click="copyLogs">{{
+                          $t('serverDetail.logs.copy')
+                        }}</el-button>
+                      </div>
+                    </div>
+                    <div
+                      class="bg-gray-900 dark:bg-black p-4 rounded-lg font-mono text-sm h-full overflow-y-auto text-gray-300"
+                      ref="logsContainer"
+                    >
+                      <div
+                        v-for="(log, index) in server.logs"
+                        :key="index"
+                        class="mb-1 break-words"
+                      >
+                        <span :class="getLogLevelColor(log.level)">
+                          {{ formatTimestamp(log.timestamp) }} [{{ log.level.toUpperCase() }}]
+                          {{ log.message }}
+                        </span>
+                      </div>
+                    </div>
+                  </el-tab-pane>
+                </el-tabs>
+              </div>
+
+              <!-- No Instance Selected -->
+              <div v-else class="flex-1 flex items-center justify-center text-gray-400">
+                {{ $t('serverDetail.noInstanceSelected') }}
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </el-tab-pane>
 
       <!-- Tools Tab -->
@@ -293,7 +343,7 @@
                 v-if="selectedTool"
                 type="primary"
                 size="small"
-                @click="showCallDialog = true"
+                @click="showInstanceSelectForTool = true"
               >
                 {{ $t('serverDetail.tools.call') }}
               </el-button>
@@ -340,7 +390,7 @@
             />
             <el-table-column label="" width="100" align="right">
               <template #default="{ row }">
-                <el-button size="small" plain @click="viewResource(row)">{{
+                <el-button size="small" plain @click="showInstanceSelectForResource = row">{{
                   $t('action.view')
                 }}</el-button>
               </template>
@@ -367,9 +417,77 @@
       </template>
     </el-dialog>
 
+    <!-- Instance Select Dialog for Tool Call -->
+    <el-dialog
+      v-model="showInstanceSelectForTool"
+      :title="$t('serverDetail.selectInstanceForTool')"
+      width="500px"
+    >
+      <el-select
+        v-model="selectedInstanceForTool"
+        :placeholder="$t('serverDetail.selectInstancePlaceholder')"
+        class="w-full"
+      >
+        <el-option
+          v-for="inst in serverInstances"
+          :key="inst.index ?? 0"
+          :label="getInstanceSelectLabel(inst)"
+          :value="inst.index ?? 0"
+        />
+      </el-select>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showInstanceSelectForTool = false">{{
+            $t('action.cancel')
+          }}</el-button>
+          <el-button
+            type="primary"
+            @click="callToolWithInstance"
+            :disabled="selectedInstanceForTool === null"
+          >
+            {{ $t('action.confirm') }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- Instance Select Dialog for Resource View -->
+    <el-dialog
+      v-model="showInstanceSelectForResourceDialog"
+      :title="$t('serverDetail.selectInstanceForResource')"
+      width="500px"
+    >
+      <el-select
+        v-model="selectedInstanceForResource"
+        :placeholder="$t('serverDetail.selectInstancePlaceholder')"
+        class="w-full"
+      >
+        <el-option
+          v-for="inst in serverInstances"
+          :key="inst.index ?? 0"
+          :label="getInstanceSelectLabel(inst)"
+          :value="inst.index ?? 0"
+        />
+      </el-select>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showInstanceSelectForResourceDialog = false">{{
+            $t('action.cancel')
+          }}</el-button>
+          <el-button
+            type="primary"
+            @click="viewResourceWithInstance"
+            :disabled="selectedInstanceForResource === null"
+          >
+            {{ $t('action.confirm') }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- Tool Call Dialog -->
     <ToolCallDialog
-      v-if="selectedTool"
+      v-if="selectedTool && selectedInstanceForTool !== null"
       v-model="showCallDialog"
       :server-name="server.name"
       :tool-name="selectedTool.name"
@@ -385,10 +503,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeMount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useServerStore, type Server } from '@stores/server';
+import { useServerStore } from '@stores/server';
 import { useWebSocketStore } from '@stores/websocket';
 import ToolCallDialog from '@components/ToolCallDialog.vue';
 import ServerStatusTags from '@components/ServerStatusTags.vue';
+import InstanceCardList from '@components/InstanceCardList.vue';
+import InstanceConfig from '@components/InstanceConfig.vue';
 import {
   VideoPlay,
   SwitchButton,
@@ -409,12 +529,24 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { formatUptime } from '@utils/format-utils';
 import type { Resource } from '@shared-models/resource.model';
 import type { Tool } from '@shared-models/tool.model';
+import type { ServerInstanceConfig } from '@shared-models/server.model';
 
 const store = useServerStore();
 useWebSocketStore();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+
+/**
+ * Instance configuration override interface
+ */
+interface InstanceConfigOverrides {
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  tags?: Record<string, string>;
+  displayName?: string;
+}
 
 function navigateBack() {
   store.selectedServerId = null;
@@ -438,54 +570,55 @@ function viewResource(resource: Resource) {
 // Computed property for the selected server
 const server = computed(() => store.selectedServer);
 
-// Instance Selection Logic
-const relatedInstances = computed(() => {
-  if (!server.value) return [];
-  return store.servers.filter((s) => s.name === server.value!.name);
+// Mock server instances - would be populated from store in real implementation
+const serverInstances = computed((): ServerInstanceConfig[] => {
+  // For now, return empty array - in real implementation this would come from store
+  return [];
 });
 
-const currentInstanceId = computed({
-  get: () => server.value?.id || '',
-  set: (val: string) => {
-    store.selectServer(val);
-  }
+// State - Top Level Tabs
+const activeTopTab = ref<'config' | 'tools' | 'resources'>('config');
+
+// State - Config Sub-tabs
+const activeConfigTab = ref<'template' | 'instances'>('template');
+
+// State - Instance Selection
+const selectedInstanceIndex = ref<number | null>(null);
+
+// State - Instance Detail Sub-tabs
+const activeInstanceTab = ref<'config-override' | 'logs'>('config-override');
+
+// Get selected instance
+const selectedInstance = computed((): ServerInstanceConfig | null => {
+  if (selectedInstanceIndex.value === null) return null;
+  return serverInstances.value.find((inst) => inst.index === selectedInstanceIndex.value) || null;
 });
 
-function getInstanceLabel(inst: Server) {
-  let label = inst.id;
-  if (inst.pid) {
-    label += ` (PID: ${inst.pid})`;
+// Get selected instance config for InstanceConfig component
+const selectedInstanceConfig = computed((): InstanceConfigOverrides => {
+  const instance = selectedInstance.value;
+  if (!instance) {
+    return {
+      args: [],
+      env: {},
+      headers: {},
+      tags: {}
+    };
   }
-
-  // Check if it's a config-only placeholder
-  if (inst.instance?.hash === 'config-only') {
-    label = 'Config (No Instance)';
-  }
-
-  if (inst.status === 'online') {
-    label += ` (${t('serverDetail.status.running')})`;
-  } else if (inst.status === 'offline' && inst.instance?.hash !== 'config-only') {
-    label += ` (${t('serverDetail.status.stopped')})`;
-  }
-  return label;
-}
-
-// State
-const activeTab = ref('config');
-const autoScroll = ref(true);
-const logsContainer = ref<HTMLElement | null>(null);
-const envKeys = ref<Record<string, string>>({});
-const headerKeys = ref<Record<string, string>>({});
-const showEditJson = ref(false);
-const jsonConfig = ref('');
-const selectedTool = ref<Tool | null>(null);
-const showCallDialog = ref(false);
+  return {
+    args: [],
+    env: {},
+    headers: {},
+    tags: {},
+    displayName: instance.displayName
+  };
+});
 
 // Initialize active tab from route query parameter
 onBeforeMount(() => {
   const tabFromQuery = route.query.tab as string;
-  if (tabFromQuery && ['config', 'logs', 'tools', 'resources'].includes(tabFromQuery)) {
-    activeTab.value = tabFromQuery;
+  if (tabFromQuery && ['config', 'tools', 'resources'].includes(tabFromQuery)) {
+    activeTopTab.value = tabFromQuery as 'config' | 'tools' | 'resources';
   }
 });
 
@@ -503,6 +636,23 @@ const timeoutInSeconds = computed({
     }
   }
 });
+
+// State
+const autoScroll = ref(true);
+const logsContainer = ref<HTMLElement | null>(null);
+const envKeys = ref<Record<string, string>>({});
+const headerKeys = ref<Record<string, string>>({});
+const showEditJson = ref(false);
+const jsonConfig = ref('');
+const selectedTool = ref<Tool | null>(null);
+const showCallDialog = ref(false);
+
+// Instance selection for tool/resource
+const showInstanceSelectForTool = ref(false);
+const selectedInstanceForTool = ref<number | null>(null);
+const showInstanceSelectForResourceDialog = ref(false);
+const showInstanceSelectForResource = ref<Resource | null>(null);
+const selectedInstanceForResource = ref<number | null>(null);
 
 // Initialize env keys when server changes
 watch(
@@ -531,9 +681,10 @@ watch(
     if (newId && newId !== oldId) {
       // Only set default tab if not already set by route query
       if (!route.query.tab) {
-        activeTab.value = server.value?.status === 'online' ? 'logs' : 'config';
+        activeTopTab.value = server.value?.status === 'online' ? 'tools' : 'config';
       }
       selectedTool.value = null;
+      selectedInstanceIndex.value = null;
     }
   },
   { immediate: true }
@@ -555,7 +706,7 @@ watch(
 
 // Tab switching logic
 watch(
-  activeTab,
+  activeTopTab,
   async (tab) => {
     if (!server.value?.id) return;
 
@@ -563,8 +714,6 @@ watch(
       await store.fetchTools(server.value.id);
     } else if (tab === 'resources') {
       await store.fetchResources(server.value.id);
-    } else if (tab === 'logs') {
-      store.fetchLogs(server.value.id); // No longer an async method
     }
   },
   { immediate: true }
@@ -950,6 +1099,65 @@ const copyLogs = () => {
     ElMessage.success(t('action.logsCopied'));
   }
 };
+
+// Instance Card List Handlers
+function handleSelectInstance(index: number) {
+  selectedInstanceIndex.value = index;
+}
+
+function handleAddInstance() {
+  // Would call store.addServerInstance in real implementation
+  ElMessage.info('Add instance - would call store.addServerInstance');
+}
+
+function handleUpdateDisplayName(index: number, displayName: string) {
+  // Would call store.updateServerInstance in real implementation
+  ElMessage.info(`Update display name for #${index}: ${displayName}`);
+}
+
+function handleDeleteInstance(index: number) {
+  // Would call store.removeServerInstance in real implementation
+  ElMessage.info(`Delete instance #${index}`);
+}
+
+function handleReassignIndexes() {
+  // Would call store.reassignInstanceIndexes in real implementation
+  ElMessage.info('Reassign indexes');
+}
+
+function handleUpdateInstanceConfig(config: Partial<InstanceConfigOverrides>) {
+  // Would call store.updateServerInstance in real implementation
+  void config;
+  ElMessage.info('Update instance config');
+}
+
+// Instance selection helpers for tool/resource
+function getInstanceSelectLabel(inst: ServerInstanceConfig): string {
+  return `#${inst.index ?? 0} [${inst.displayName || t('serverDetail.instances.unnamed')}]`;
+}
+
+function callToolWithInstance() {
+  showInstanceSelectForTool.value = false;
+  showCallDialog.value = true;
+}
+
+function viewResourceWithInstance() {
+  const resource = showInstanceSelectForResource.value;
+  if (resource) {
+    viewResource(resource);
+  }
+  showInstanceSelectForResource.value = null;
+  showInstanceSelectForResourceDialog.value = false;
+  selectedInstanceForResource.value = null;
+}
+
+// Watch for resource selection dialog trigger
+watch(showInstanceSelectForResource, (newVal) => {
+  if (newVal !== null) {
+    showInstanceSelectForResourceDialog.value = true;
+    showInstanceSelectForResource.value = null;
+  }
+});
 </script>
 
 <style scoped>
@@ -970,5 +1178,15 @@ const copyLogs = () => {
 .custom-tabs-label span {
   vertical-align: middle;
   margin-left: 4px;
+}
+
+/* Config sub-tabs styling */
+.config-sub-tabs :deep(.el-tabs__header) {
+  margin-bottom: 1rem;
+}
+
+/* Instance detail tabs styling */
+.instance-detail-tabs :deep(.el-tabs__header) {
+  margin-bottom: 1rem;
 }
 </style>

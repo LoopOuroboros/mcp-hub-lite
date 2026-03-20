@@ -133,15 +133,28 @@ export default {
   serverDetail: {
     emptySelect: 'Select a server to view details',
     noServerSelected: 'No server selected',
+    noInstanceSelected: 'Please select an instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
     version: 'Version',
     pid: 'PID',
     uptime: 'Uptime',
+    selectInstanceForTool: 'Select instance to call tool',
+    selectInstanceForResource: 'Select instance to view resource',
+    selectInstancePlaceholder: 'Select an instance...',
+    confirm: 'Confirm',
     tabs: {
       config: 'Configuration',
       logs: 'Logs',
       tools: 'Tools',
       resources: 'Resources'
+    },
+    configTabs: {
+      template: 'Template',
+      instances: 'Instances'
+    },
+    instanceTabs: {
+      configOverride: 'Instance Config',
+      logs: 'Logs'
     },
     config: {
       transport: 'Transport',
@@ -158,10 +171,23 @@ export default {
       addEnv: 'Add Environment Variable',
       addHeader: 'Add Header',
       headers: 'Headers',
+      tags: 'Tags',
       save: 'Save Configuration',
       editByJson: 'Edit By Json',
       description: 'Description',
       descriptionPlaceholder: 'Enter server description'
+    },
+    instanceConfig: {
+      title: 'Instance Configuration',
+      template: 'Template Config',
+      readOnly: 'Read-only',
+      override: 'Instance Override',
+      editable: 'Editable',
+      noArgs: 'No arguments',
+      noEnv: 'No environment variables',
+      noHeaders: 'No headers',
+      noTags: 'No tags',
+      mergedPreview: 'Merged Final Config Preview'
     },
     logs: {
       autoScroll: 'Auto-scroll',
@@ -195,6 +221,12 @@ export default {
       stopping: 'Stopping',
       error: 'Error',
       starting: 'Starting'
+    },
+    instances: {
+      title: 'Instances',
+      unnamed: 'Unnamed',
+      add: 'Add Instance',
+      reassignIndexes: 'Reassign Indexes'
     }
   },
   addServer: {

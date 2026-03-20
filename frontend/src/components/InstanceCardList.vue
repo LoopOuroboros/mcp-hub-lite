@@ -309,6 +309,6 @@ function handleReassignIndexes() {
 }
 
 .instance-card:hover {
-  @apply bg-gray-50 dark:bg-gray-750;
+  @apply bg-gray-50 dark:bg-gray-800;
 }
 </style>
