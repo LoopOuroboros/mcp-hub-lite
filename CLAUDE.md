@@ -352,6 +352,7 @@ npm run list
 **关键要求**：所有系统工具必须针对 `serverName = mcp-hub-lite` 自身的情况进行验证，确保网关自身的工具暴露功能正常工作。
 
 **特殊说明**：
+
 - `update_server_description` 针对 `serverName = mcp-hub-lite` 调用时，预期返回 "Server not found" 错误，这是正常行为，因为网关自身不是可配置的 MCP 服务器。
 
 ## Git 提交规范

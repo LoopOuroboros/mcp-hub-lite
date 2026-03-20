@@ -108,7 +108,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -153,7 +154,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -201,7 +203,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -260,7 +263,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -326,7 +330,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
@@ -414,7 +419,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -477,7 +483,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -536,7 +543,8 @@ describe('Server Runner', () => {
           sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 

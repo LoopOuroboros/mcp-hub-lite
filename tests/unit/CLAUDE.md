@@ -20,6 +20,10 @@ unit/
 │       ├── search-cache.test.ts
 │       ├── search-core.service.test.ts
 │       └── search-scorer.test.ts
+├── config/                # 配置模块单元测试
+│   ├── config-loader-automatic-migration.test.ts
+│   ├── config-migrator.test.ts
+│   └── config.schema.test.ts
 ├── utils/                 # 工具层单元测试
 │   ├── config.test.ts
 │   ├── logger.test.ts
@@ -162,6 +166,62 @@ npx vitest tests/unit/services/search/search-core.service.test.ts
 
 ```bash
 npx vitest tests/unit/services/search/search-scorer.test.ts
+```
+
+### Config Schema Test (`config/config.schema.test.ts`)
+
+**被测模块**: `src/config/config.schema.ts`
+
+**测试覆盖**:
+
+- v1.0 配置 Schema 验证
+- v1.1 配置 Schema 验证
+- 版本检测函数 (`isV1Config`, `isV1_1Config`)
+- 默认值验证
+- 边界条件测试
+
+**运行**:
+
+```bash
+npx vitest tests/unit/config/config.schema.test.ts
+```
+
+### Config Migrator Test (`config/config-migrator.test.ts`)
+
+**被测模块**: `src/config/config-migrator.ts`
+
+**测试覆盖**:
+
+- v1.0 → v1.1 配置迁移
+- 迁移验证和备份
+- 干运行模式 (Dry Run)
+- 回滚功能
+- 实例配置解析
+- v1.1 → v1.0 向后兼容性
+- 模板 + 实例架构转换
+- 迁移状态检查
+
+**运行**:
+
+```bash
+npx vitest tests/unit/config/config-migrator.test.ts
+```
+
+### Config Loader Automatic Migration Test (`config/config-loader-automatic-migration.test.ts`)
+
+**被测模块**: `src/config/config-loader.ts`
+
+**测试覆盖**:
+
+- 配置加载时的自动迁移
+- 迁移失败时的回退处理
+- 迁移警告记录
+- 配置加载和 Schema 验证集成
+
+**运行**:
+
+```bash
+npx vitest tests/unit/config/config-loader-automatic-migration.test.ts
 ```
 
 ### Config Test (`utils/config.test.ts`)
@@ -448,23 +508,26 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 
 ## 相关文件清单
 
-| 文件路径                                              | 描述                      |
-| ----------------------------------------------------- | ------------------------- |
-| `unit/server/runner.test.ts`                          | 服务器运行器测试          |
-| `unit/services/hub-manager-service.test.ts`           | Hub Manager 服务单元测试  |
-| `unit/services/hub-manager.test.ts`                   | Hub Manager API 路由测试  |
-| `unit/services/hub-tools.service.test.ts`             | Hub Tools 服务测试        |
-| `unit/services/search/search-cache.test.ts`           | 搜索缓存测试              |
-| `unit/services/search/search-core.service.test.ts`    | 搜索核心服务测试          |
-| `unit/services/search/search-scorer.test.ts`          | 搜索评分器测试            |
-| `unit/utils/config.test.ts`                           | 配置管理器测试            |
-| `unit/utils/logger.test.ts`                           | Logger 测试               |
-| `unit/utils/log-rotator.test.ts`                      | 日志轮转测试              |
-| `unit/utils/mcp-error-handler.test.ts`                | MCP 错误处理器测试        |
-| `unit/utils/request-context.test.ts`                  | 请求上下文测试            |
-| `unit/frontend/components/dashboard.test.ts`          | Dashboard 组件测试        |
-| `unit/frontend/components/tool-card.test.ts`          | ToolCard 组件测试         |
-| `unit/frontend/components/server-status-tags.test.ts` | ServerStatusTags 组件测试 |
-| `unit/frontend/stores/server.test.ts`                 | Server Store 测试         |
-| `unit/frontend/mocks/http.mock.ts`                    | HTTP Mock                 |
-| `unit/frontend/setup.ts`                              | 前端测试设置              |
+| 文件路径                                                | 描述                      |
+| ------------------------------------------------------- | ------------------------- |
+| `unit/server/runner.test.ts`                            | 服务器运行器测试          |
+| `unit/services/hub-manager-service.test.ts`             | Hub Manager 服务单元测试  |
+| `unit/services/hub-manager.test.ts`                     | Hub Manager API 路由测试  |
+| `unit/services/hub-tools.service.test.ts`               | Hub Tools 服务测试        |
+| `unit/services/search/search-cache.test.ts`             | 搜索缓存测试              |
+| `unit/services/search/search-core.service.test.ts`      | 搜索核心服务测试          |
+| `unit/services/search/search-scorer.test.ts`            | 搜索评分器测试            |
+| `unit/config/config.schema.test.ts`                     | 配置 Schema 测试          |
+| `unit/config/config-migrator.test.ts`                   | 配置迁移器测试            |
+| `unit/config/config-loader-automatic-migration.test.ts` | 配置加载器自动迁移测试    |
+| `unit/utils/config.test.ts`                             | 配置管理器测试            |
+| `unit/utils/logger.test.ts`                             | Logger 测试               |
+| `unit/utils/log-rotator.test.ts`                        | 日志轮转测试              |
+| `unit/utils/mcp-error-handler.test.ts`                  | MCP 错误处理器测试        |
+| `unit/utils/request-context.test.ts`                    | 请求上下文测试            |
+| `unit/frontend/components/dashboard.test.ts`            | Dashboard 组件测试        |
+| `unit/frontend/components/tool-card.test.ts`            | ToolCard 组件测试         |
+| `unit/frontend/components/server-status-tags.test.ts`   | ServerStatusTags 组件测试 |
+| `unit/frontend/stores/server.test.ts`                   | Server Store 测试         |
+| `unit/frontend/mocks/http.mock.ts`                      | HTTP Mock                 |
+| `unit/frontend/setup.ts`                                | 前端测试设置              |

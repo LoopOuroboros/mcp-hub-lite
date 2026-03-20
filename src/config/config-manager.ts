@@ -72,7 +72,7 @@ export class ConfigManager {
       process.env.MCP_HUB_CONFIG_PATH ||
       path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
     logger.info(`Using config file: ${this.configPath}`, LOG_MODULES.CONFIG_MANAGER);
-    this.config = loadConfig(this.configPath);
+    this.config = loadConfig(this.configPath, true);
     this.initServerInstances();
   }
 
@@ -269,7 +269,7 @@ export class ConfigManager {
    * Synchronizes the in-memory configuration with the on-disk configuration file.
    */
   public async syncConfig(): Promise<void> {
-    this.config = loadConfig(this.configPath);
+    this.config = loadConfig(this.configPath, true);
     this.initServerInstances();
   }
 }
