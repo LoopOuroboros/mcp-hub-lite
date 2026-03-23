@@ -224,6 +224,25 @@ npx vitest tests/unit/config/config-migrator.test.ts
 npx vitest tests/unit/config/config-loader-automatic-migration.test.ts
 ```
 
+### Config Saver Test (`config/config-saver.test.ts`)
+
+**被测模块**: `src/config/config-saver.ts`
+
+**测试覆盖**:
+
+- 配置文件保存功能
+- 空值清理功能（空字符串、空数组、空对象、null、undefined）
+- 嵌套对象递归清理
+- version 字段保留逻辑
+- 真实配置场景测试
+- 错误处理
+
+**运行**:
+
+```bash
+npx vitest tests/unit/config/config-saver.test.ts
+```
+
 ### Config Test (`utils/config.test.ts`)
 
 **被测模块**: `src/config/config-manager.ts`
@@ -520,6 +539,7 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 | `unit/config/config.schema.test.ts`                     | 配置 Schema 测试          |
 | `unit/config/config-migrator.test.ts`                   | 配置迁移器测试            |
 | `unit/config/config-loader-automatic-migration.test.ts` | 配置加载器自动迁移测试    |
+| `unit/config/config-saver.test.ts`                      | Config Saver 空值清理测试 |
 | `unit/utils/config.test.ts`                             | 配置管理器测试            |
 | `unit/utils/logger.test.ts`                             | Logger 测试               |
 | `unit/utils/log-rotator.test.ts`                        | 日志轮转测试              |

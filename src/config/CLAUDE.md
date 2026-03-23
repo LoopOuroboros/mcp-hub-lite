@@ -90,10 +90,24 @@ config/
 - 目录自动创建
 - JSON 格式化输出
 - 错误处理和重试
+- **空值清理**: 保存前自动移除空值字段以保持配置文件简洁
+
+**空值清理规则**:
+
+- 空字符串 `''` → 移除字段
+- 空数组 `[]` → 移除字段
+- 空对象 `{}` → 移除字段
+- `null` 和 `undefined` → 移除字段
+- 嵌套对象递归处理
+- **例外**: 始终保留 `version` 字段
 
 **主要方法**:
 
 - `saveConfig(configPath, config)` - 保存配置到指定路径
+
+**测试覆盖**:
+
+- `tests/unit/config/config-saver.test.ts` - 空值清理功能测试
 
 ### ServerConfigManager (`server-config-manager.ts`)
 
