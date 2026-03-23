@@ -1,29 +1,29 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
-import { ServerConfigSchema, ServerInstanceConfigSchema } from '@config/config.schema.js';
-import type { ServerConfig } from '@config/config.schema.js';
+import { ServerTemplateSchema, ServerInstanceSchema } from '@config/config.schema.js';
+import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
 import { logger } from '@utils/logger.js';
 
 interface BatchResultSuccess {
   name: string;
-  config: Partial<ServerConfig>;
+  config: Partial<ServerTemplate>;
 }
 
 /**
- * MCP Server Management API Routes
+ * MCP Server Management API Routes (v1.1 format)
  *
  * Provides comprehensive CRUD (Create, Read, Update, Delete) operations for managing MCP (Model Context Protocol) servers
  * and their runtime instances within the MCP Hub Lite system. This module serves as the primary interface for
  * server configuration management, process control, and bulk operations.
  *
- * The API supports both static server configuration (defining how servers should be configured) and dynamic
+ * The API supports both static server template configuration and dynamic
  * instance management (controlling actual running server processes). It includes sophisticated validation
  * using Zod schemas to ensure configuration integrity and provides detailed error handling with appropriate
  * HTTP status codes.
  *
  * Key features include:
- * - Full CRUD operations for server configurations
+ * - Full CRUD operations for server templates
  * - Instance-level management for running server processes
  * - Batch import/export capabilities for server configurations
  * - Automatic server startup based on enabled status
@@ -57,16 +57,25 @@ export async function webServerRoutes(fastify: FastifyInstance) {
 
   // GET /web/server-instances
   fastify.get('/web/server-instances', async () => {
-    return hubManager.getServerInstances();
+    const allServers = hubManager.getAllServers();
+    const instances: Record<string, ServerInstance[]> = {};
+    for (const { name, config } of allServers) {
+      instances[name] = config.instances;
+    }
+    return instances;
   });
 
   // GET /web/server-instances/:name
   fastify.get<{ Params: { name: string } }>(
     '/web/server-instances/:name',
     async (request, reply) => {
-      const instances = hubManager.getServerInstanceByName(request.params.name);
+      const instances = hubManager.getServerInstancesByName(request.params.name);
       if (instances.length === 0) {
-        return reply.code(404).send({ error: 'Server instances not found' });
+        // Check if server exists but has no instances
+        const server = hubManager.getServerByName(request.params.name);
+        if (!server) {
+          return reply.code(404).send({ error: 'Server not found' });
+        }
       }
       return instances;
     }
@@ -75,18 +84,19 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // POST /web/servers
   fastify.post('/web/servers', async (request, reply) => {
     try {
-      // Accept server name and configuration as request body
+      // Accept server name and template configuration as request body
       const postSchema = z.object({
         name: z.string().min(1).max(100),
-        config: ServerConfigSchema.partial()
+        config: ServerTemplateSchema.partial()
       });
       const body = postSchema.parse(request.body);
       const newServer = await hubManager.addServer(body.name, body.config);
 
-      // If auto-start is enabled, add server instance (addServerInstance will automatically check and handle startup)
-      if (newServer.enabled !== false && newServer.enabled !== undefined) {
+      // If auto-start is enabled, check if we need to start the instance
+      const firstInstance = newServer.instances[0];
+      if (firstInstance && firstInstance.enabled !== false) {
         try {
-          await hubManager.addServerInstance(body.name, {});
+          // Instance is already created by addServer, no need to create again
         } catch (error) {
           // Auto-start failure does not affect server addition operation
           logger.warn(`Failed to auto-start server instance for ${body.name}:`, error);
@@ -107,7 +117,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     '/web/server-instances/:name',
     async (request, reply) => {
       try {
-        const instanceSchema = ServerInstanceConfigSchema.partial();
+        const instanceSchema = ServerInstanceSchema.partial();
         const body = instanceSchema.parse(request.body);
 
         // Check if server exists
@@ -130,7 +140,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // PUT /web/servers/:name
   fastify.put<{ Params: { name: string } }>('/web/servers/:name', async (request, reply) => {
     try {
-      const partialSchema = ServerConfigSchema.partial();
+      const partialSchema = ServerTemplateSchema.partial();
       const body = partialSchema.parse(request.body);
 
       const updatedServer = await hubManager.updateServer(request.params.name, body);
@@ -153,7 +163,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     '/web/server-instances/:name/:index',
     async (request, reply) => {
       try {
-        const partialSchema = ServerInstanceConfigSchema.partial();
+        const partialSchema = ServerInstanceSchema.partial();
         const body = partialSchema.parse(request.body);
 
         await hubManager.updateServerInstance(request.params.name, request.params.index, body);
@@ -223,7 +233,7 @@ export async function webServerRoutes(fastify: FastifyInstance) {
         mcpServers: z.array(
           z.object({
             name: z.string().min(1).max(100),
-            config: ServerConfigSchema.partial()
+            config: ServerTemplateSchema.partial()
           })
         )
       });
@@ -256,12 +266,12 @@ export async function webServerRoutes(fastify: FastifyInstance) {
           }
 
           // Validate server configuration using Zod (now supports "http" type)
-          const validatedConfig = ServerConfigSchema.partial().parse(serverConfig);
+          const validatedConfig = ServerTemplateSchema.partial().parse(serverConfig);
 
           serversToAdd.push({ name: processedName, config: validatedConfig });
-          if (validatedConfig.enabled !== false && validatedConfig.enabled !== undefined) {
-            serversToConnect.push(processedName);
-          }
+          // In v1.1, enabled is at instance level, not template level
+          // We'll connect all instances by default
+          serversToConnect.push(processedName);
           results.success.push({ name: processedName, config: validatedConfig });
           existingNames.add(processedName); // Prevent duplicates within the same batch
         } catch (error) {

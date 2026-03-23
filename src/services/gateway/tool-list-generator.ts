@@ -51,8 +51,11 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
       const serverConfig = hubManager.getServerById(serverId);
       if (serverConfig) {
         if (
-          serverConfig.config.allowedTools &&
-          !serverConfig.config.allowedTools.includes(tool.name)
+          serverConfig.config &&
+          serverConfig.config.template &&
+          serverConfig.config.template.allowedTools &&
+          serverConfig.config.template.allowedTools.length > 0 &&
+          !serverConfig.config.template.allowedTools.includes(tool.name)
         ) {
           continue;
         }
@@ -73,8 +76,11 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
 
     for (const tool of tools) {
       if (
-        serverConfig.config.allowedTools &&
-        !serverConfig.config.allowedTools.includes(tool.name)
+        serverConfig.config &&
+        serverConfig.config.template &&
+        serverConfig.config.template.allowedTools &&
+        serverConfig.config.template.allowedTools.length > 0 &&
+        !serverConfig.config.template.allowedTools.includes(tool.name)
       ) {
         continue;
       }
@@ -87,15 +93,15 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
 
       // If tool name is not unique or conflicts with system tool, append server hash
       if (!isUnique || isSystemConflict) {
-        // Get instance hash from serverConfig, use first 4 characters of serverId as default
-        const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+        // Use first 4 characters of serverId as hash suffix
+        const hash = serverId.substring(0, 4);
         gatewayToolName = `${tool.name}_${hash}`;
       }
 
       // Ensure name doesn't exceed 60 chars
       if (gatewayToolName.length > 60) {
-        // Use first 4 characters of serverId as default hash
-        const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+        // Use first 4 characters of serverId as hash suffix
+        const hash = serverId.substring(0, 4);
         // Reserve space for hash and separator
         const maxToolNameLen = 60 - hash.length - 1;
         const truncatedToolName = tool.name.substring(0, maxToolNameLen);

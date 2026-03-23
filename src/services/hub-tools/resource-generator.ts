@@ -107,7 +107,12 @@ export function generateDynamicResources(): Resource[] {
   const servers = hubManager.getAllServers();
 
   for (const server of servers) {
-    if (!hasValidId(server) || !server.config.enabled) {
+    if (!hasValidId(server)) {
+      continue;
+    }
+    // Check if any instance is enabled
+    const hasEnabledInstance = server.config.instances.some((i) => i.enabled !== false);
+    if (!hasEnabledInstance) {
       continue;
     }
 
@@ -116,7 +121,7 @@ export function generateDynamicResources(): Resource[] {
       continue;
     }
 
-    const instanceId = bestInstance.instance.id;
+    const instanceId = bestInstance.instance.id as string;
 
     // Server metadata resource
     resources.push({
@@ -175,7 +180,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
   }
 
   const serverName = uriParts[1];
-  const resourceType = uriParts[2]; // 'tools', 'resources', or undefined for server metadata
+  const resourceType = uriParts[2] as string | undefined; // 'tools', 'resources', or undefined for server metadata
 
   // Check if server exists and is connected
   const serverInfo = selectBestInstance(serverName);
@@ -183,7 +188,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
     throw new Error(`Server not found or not connected: ${serverName}`);
   }
 
-  const instanceId = serverInfo.instance.id;
+  const instanceId = serverInfo.instance.id as string;
 
   // Return appropriate content based on resource type
   if (!resourceType) {
@@ -195,7 +200,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
     // Build tool name to description map
     const toolsMap: Record<string, string> = {};
     for (const tool of tools) {
-      toolsMap[tool.name] = tool.description || '';
+      toolsMap[tool.name as string] = (tool.description as string) || '';
     }
 
     return {
@@ -204,7 +209,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
       toolsCount: tools.length,
       tools: toolsMap,
       resourcesCount: resources.length,
-      tags: serverConfig?.tags || {},
+      tags: serverConfig?.template?.tags || {},
       lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
       uptime: serverInfo.instance.uptime as number,
       description: getServerDescription(serverConfig, serverName)

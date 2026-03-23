@@ -193,7 +193,7 @@ export class HubToolsService {
     }
 
     // Get instance ID
-    const serverId = serverInfo.instance.id;
+    const serverId = serverInfo.instance.id as string as string;
 
     // Get tool list from connection manager and convert to ToolSummary
     const tools = mcpConnectionManager.getTools(serverId);
@@ -240,7 +240,7 @@ export class HubToolsService {
       throw new Error(`Server not found: ${args.serverName}`);
     }
 
-    const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
+    const tools = mcpConnectionManager.getTools(serverInfo.instance.id as string);
     return tools.find((tool) => tool.name === args.toolName);
   }
 
@@ -436,8 +436,8 @@ export class HubToolsService {
         }
 
         const serverInfo = selectBestInstance(server.name, requestOptions);
-        if (serverInfo && serverInfo.instance.id) {
-          const tools = mcpConnectionManager.getTools(serverInfo.instance.id);
+        if (serverInfo && (serverInfo.instance.id as string)) {
+          const tools = mcpConnectionManager.getTools(serverInfo.instance.id as string);
           if (tools.some((tool) => tool.name === toolName)) {
             matchingServers.push(server.name);
           }
@@ -472,7 +472,7 @@ export class HubToolsService {
       throw new Error(`Server not found: ${serverName}`);
     }
 
-    const serverId = serverInfo.instance.id;
+    const serverId = serverInfo.instance.id as string;
     const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Publish tool call started event
@@ -559,7 +559,7 @@ export class HubToolsService {
       if (!hasValidId(server)) {
         continue;
       }
-      const instances = hubManager.getServerInstanceByName(server.name);
+      const instances = hubManager.getServerInstancesByName(server.name);
       for (const instance of instances) {
         if (instance.id) {
           const tools = mcpConnectionManager.getTools(instance.id);

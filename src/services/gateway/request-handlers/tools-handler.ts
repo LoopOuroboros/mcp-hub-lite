@@ -49,7 +49,7 @@ export function registerToolsHandlers(server: McpServer): void {
       };
 
       if (filters.serverName) {
-        const serverInstances = hubManager.getServerInstanceByName(filters.serverName);
+        const serverInstances = hubManager.getServerInstancesByName(filters.serverName);
         if (serverInstances.length > 0) {
           // Use the first instance's ID as filter condition
           searchOptions.filters!.serverId = serverInstances[0].id;

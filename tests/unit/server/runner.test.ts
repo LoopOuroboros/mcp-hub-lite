@@ -10,6 +10,20 @@ import { checkPort } from '@utils/port-checker.js';
 import type { FastifyInstance } from 'fastify';
 import type { SystemConfig, ServerConfig } from '@config/config.schema.js';
 
+// Mock resolveInstanceConfig to return a valid resolved config
+vi.mock('@config/config-migrator.js', () => ({
+  resolveInstanceConfig: vi.fn(() => ({
+    command: 'test-command',
+    args: [],
+    type: 'stdio' as const,
+    timeout: 30000,
+    allowedTools: [],
+    tags: {},
+    enabled: true
+  })),
+  getEnabledInstances: vi.fn()
+}));
+
 // Mock all dependencies
 vi.mock('@src/app.js', () => ({
   buildApp: vi.fn()
@@ -19,7 +33,7 @@ vi.mock('@config/config-manager.js', () => ({
   configManager: {
     getConfig: vi.fn(),
     getServers: vi.fn(),
-    getServerInstanceByName: vi.fn(),
+    getServerInstancesByName: vi.fn(),
     addServerInstance: vi.fn()
   }
 }));
@@ -85,7 +99,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -131,7 +145,7 @@ describe('Server Runner', () => {
     it('should start server in stdio mode successfully', async () => {
       // Setup mocks
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -180,7 +194,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -240,7 +254,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -307,7 +321,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -340,35 +354,44 @@ describe('Server Runner', () => {
         {
           name: 'enabled-server',
           config: {
-            enabled: true,
-            command: 'test-command',
-            type: 'stdio' as const,
-            args: [],
-            allowedTools: [],
-            timeout: 30000
+            template: {
+              command: 'test-command',
+              type: 'stdio' as const,
+              args: [],
+              allowedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [{ id: 'instance-1', enabled: true, args: [], tags: {} }],
+            tagDefinitions: []
           }
         },
         {
           name: 'disabled-server',
           config: {
-            enabled: false,
-            command: 'test-command',
-            type: 'stdio' as const,
-            args: [],
-            allowedTools: [],
-            timeout: 30000
+            template: {
+              command: 'test-command',
+              type: 'stdio' as const,
+              args: [],
+              allowedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [{ id: 'instance-2', enabled: false, args: [], tags: {} }],
+            tagDefinitions: []
           }
         }
       ];
       vi.mocked(configManager.getServers).mockReturnValue(mockServers);
-      vi.mocked(configManager.getServerInstanceByName).mockImplementation((name: string) => {
+      vi.mocked(configManager.getServerInstancesByName).mockImplementation((name: string) => {
         if (name === 'enabled-server') return [];
-        return [{ id: 'instance-1', timestamp: Date.now(), hash: 'test-hash' }];
+        return [{ id: 'instance-1', enabled: false, args: [], tags: {} }];
       });
       vi.mocked(configManager.addServerInstance).mockResolvedValue({
         id: 'new-instance',
-        timestamp: Date.now(),
-        hash: 'test-hash'
+        enabled: true,
+        args: [],
+        tags: {}
       });
 
       // Execute
@@ -396,7 +419,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -460,7 +483,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -520,7 +543,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockRejectedValue(new Error('Startup failed'));
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,

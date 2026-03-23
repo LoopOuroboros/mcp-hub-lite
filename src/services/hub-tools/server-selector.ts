@@ -4,15 +4,15 @@ import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js
 /**
  * Gets the description for a server, using a default if none is provided.
  *
- * @param serverConfig - Server configuration object (may contain description)
+ * @param serverConfig - Server configuration object (may contain description in template)
  * @param serverName - Name of the server
  * @returns The server description or a default one
  */
 export function getServerDescription(
-  serverConfig: { description?: string } | undefined,
+  serverConfig: { template?: { description?: string } } | undefined,
   serverName: string
 ): string {
-  return serverConfig?.description || `Connected MCP server: ${serverName}`;
+  return serverConfig?.template?.description || `Connected MCP server: ${serverName}`;
 }
 
 /**
@@ -87,7 +87,7 @@ export function selectBestInstance(
   requestOptions?: RequestOptions
 ): ServerInstanceInfo | undefined {
   // Get all instances of the server
-  const instances = hubManager.getServerInstanceByName(serverName);
+  const instances = hubManager.getServerInstancesByName(serverName);
 
   if (instances.length === 0) {
     return undefined;

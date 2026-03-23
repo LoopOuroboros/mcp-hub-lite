@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -44,11 +45,10 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
   let serverId: string;
 
   beforeEach(async () => {
-    // Add to hub manager
+    // Add to hub manager (v1.1 format)
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
       allowedTools: []
@@ -71,16 +71,17 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       throw new Error('Server not found');
     }
 
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
     await mcpConnectionManager.connect({
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now(),
+      hash: 'test-hash'
     });
 
     const status = mcpConnectionManager.getStatus(serverId);
@@ -95,16 +96,17 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       throw new Error('Server not found');
     }
 
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
     await mcpConnectionManager.connect({
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now(),
+      hash: 'test-hash'
     });
 
     const tools = mcpConnectionManager.getTools(serverId);

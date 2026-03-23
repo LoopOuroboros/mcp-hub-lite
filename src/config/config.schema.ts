@@ -3,8 +3,20 @@ import type { LogLevel } from '@shared-types/common.types.js';
 
 /**
  * MCP Server Configuration Schema
- * Simplified schema for MCP-HUB-LITE Lite version
+ * Simplified v1.1 only - No v1.0 compatibility
  */
+
+/**
+ * Transport type constants for MCP server connections
+ */
+export const TransportType = {
+  STDIO: 'stdio',
+  SSE: 'sse',
+  STREAMABLE_HTTP: 'streamable-http',
+  HTTP: 'http'
+} as const;
+
+export type TransportType = (typeof TransportType)[keyof typeof TransportType];
 
 // ====== v1.1 Configuration Schema (Server Template + Instance Model) ======
 
@@ -43,7 +55,14 @@ export const ServerTemplateSchema = z.object({
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).optional(),
   headers: z.record(z.string(), z.string()).optional(),
-  type: z.enum(['stdio', 'sse', 'streamable-http', 'http']).default('stdio'),
+  type: z
+    .enum([
+      TransportType.STDIO,
+      TransportType.SSE,
+      TransportType.STREAMABLE_HTTP,
+      TransportType.HTTP
+    ])
+    .default(TransportType.STDIO),
   timeout: z.number().default(60000),
   url: z.string().optional(),
   allowedTools: z.array(z.string()).default([]),
@@ -55,44 +74,10 @@ export const ServerTemplateSchema = z.object({
  * Server Configuration Schema (v1.1)
  * A server with a template and multiple instances
  */
-export const ServerConfigV1_1Schema = z.object({
+export const ServerConfigSchema = z.object({
   template: ServerTemplateSchema,
   instances: z.array(ServerInstanceSchema).default([]),
   tagDefinitions: z.array(TagDefinitionSchema).default([])
-});
-
-// ====== v1.0 Configuration Schema (Legacy Server Model) ======
-
-/**
- * Legacy Server Configuration Schema (v1.0)
- * Single server per configuration entry
- */
-export const ServerConfigV1Schema = z.object({
-  command: z.string().optional(),
-  args: z.array(z.string()).default([]),
-  env: z.record(z.string(), z.string()).optional(),
-  headers: z.record(z.string(), z.string()).optional(),
-  enabled: z.boolean().default(true),
-  tags: z.record(z.string(), z.string()).optional(),
-  type: z.enum(['stdio', 'sse', 'streamable-http', 'http']).default('stdio'),
-  timeout: z.number().default(60000),
-  url: z.string().optional(),
-  allowedTools: z.array(z.string()).default([]),
-  description: z.string().optional()
-});
-
-// ====== Alias for Backward Compatibility ======
-export const ServerConfigSchema = ServerConfigV1Schema;
-
-// Server instance schema (each instance contains id, timestamp, hash)
-export const ServerInstanceConfigSchema = z.object({
-  id: z.string(),
-  timestamp: z.number(), // Startup time
-  hash: z.string(),
-  pid: z.number().optional(), // Process ID
-  startTime: z.number().optional(), // Startup time (same as timestamp, for compatibility)
-  index: z.number().optional(),
-  displayName: z.string().optional()
 });
 
 /**
@@ -101,10 +86,10 @@ export const ServerInstanceConfigSchema = z.object({
 export const LoggingConfigSchema = z
   .object({
     level: z.custom<LogLevel>().default('info'),
-    rotationAge: z.string().default('7d'), // e.g., "7d", "30d"
-    jsonPretty: z.boolean().default(true), // Enable pretty JSON formatting in logs
-    mcpCommDebug: z.boolean().default(false), // Enable MCP communication debug logging
-    sessionDebug: z.boolean().default(false) // Enable session debug logging
+    rotationAge: z.string().default('7d'),
+    jsonPretty: z.boolean().default(true),
+    mcpCommDebug: z.boolean().default(false),
+    sessionDebug: z.boolean().default(false)
   })
   .default({
     level: 'info',
@@ -128,11 +113,11 @@ export const SecurityConfigSchema = z
     sessionTimeout: z
       .number()
       .min(60000)
-      .default(30 * 60 * 1000), // Default 30 minutes, min 1 minute
+      .default(30 * 60 * 1000),
     sessionFlushInterval: z
       .number()
       .min(1000)
-      .default(15 * 60 * 1000), // Default 15 minutes, min 1 second
+      .default(15 * 60 * 1000),
     maxConnections: z.number().min(1).max(1000).default(50)
   })
   .default({
@@ -146,10 +131,10 @@ export const SecurityConfigSchema = z
   });
 
 /**
- * System Configuration Schema (v1.0 - Legacy)
+ * System Configuration Schema (v1.1 - Primary)
  */
-export const SystemConfigV1Schema = z.object({
-  version: z.string().default('1.0.0'),
+export const SystemConfigSchema = z.object({
+  version: z.literal('1.1.0').default('1.1.0'),
   system: z
     .object({
       host: z.string().default('localhost'),
@@ -172,89 +157,38 @@ export const SystemConfigV1Schema = z.object({
       }
     }),
   security: SecurityConfigSchema,
-  servers: z.record(z.string(), ServerConfigV1Schema).default({}),
+  servers: z.record(z.string(), ServerConfigSchema).default({}),
   tagDefinitions: z.array(TagDefinitionSchema).default([])
 });
 
 /**
- * System Configuration Schema (v1.1 - Server Template + Instance Model)
+ * Simplified type guard - only check for legacy v1.0 format for migration
  */
-export const SystemConfigV1_1Schema = z.object({
-  version: z.literal('1.1.0'),
-  system: z
-    .object({
-      host: z.string().default('localhost'),
-      port: z.number().default(7788),
-      language: z.enum(['zh', 'en']).default('zh'),
-      theme: z.enum(['light', 'dark', 'system']).default('system'),
-      logging: LoggingConfigSchema
-    })
-    .default({
-      host: 'localhost',
-      port: 7788,
-      language: 'zh',
-      theme: 'system',
-      logging: {
-        level: 'info',
-        rotationAge: '7d',
-        jsonPretty: true,
-        mcpCommDebug: false,
-        sessionDebug: false
-      }
-    }),
-  security: SecurityConfigSchema,
-  servers: z.record(z.string(), ServerConfigV1_1Schema).default({}),
-  tagDefinitions: z.array(TagDefinitionSchema).default([])
+export function isLegacyV1Config(config: unknown): boolean {
+  if (typeof config !== 'object' || config === null) return false;
+  const c = config as { version?: string };
+  return c.version !== '1.1.0';
+}
+
+/**
+ * Server instance runtime configuration (for connection manager)
+ * Contains runtime-specific fields like timestamp, hash, pid, etc.
+ */
+export const ServerInstanceConfigSchema = z.object({
+  id: z.string(),
+  timestamp: z.number(), // Startup time
+  hash: z.string(),
+  pid: z.number().optional(), // Process ID
+  startTime: z.number().optional(), // Startup time (same as timestamp, for compatibility)
+  index: z.number().optional(),
+  displayName: z.string().optional()
 });
-
-/**
- * Union type for both configuration versions (maintains backward compatibility)
- * For now, we keep using v1.0 as the primary schema for backward compatibility
- */
-export const SystemConfigSchema = SystemConfigV1Schema;
-
-/**
- * Union schema that accepts both versions (for validation)
- */
-export const AnySystemConfigSchema = SystemConfigV1Schema.or(SystemConfigV1_1Schema);
-
-// ====== Type Guards ======
-
-/**
- * Type guard to check if config is v1.0 format
- */
-export function isV1Config(config: unknown): config is SystemConfigV1 {
-  if (typeof config !== 'object' || config === null) return false;
-  const c = config as { version?: string };
-  // Check for v1.0 version or not v1.1
-  if (c.version === '1.1.0') return false;
-  return true;
-}
-
-/**
- * Type guard to check if config is v1.1 format
- */
-export function isV1_1Config(config: unknown): config is SystemConfigV1_1 {
-  if (typeof config !== 'object' || config === null) return false;
-  const c = config as { version?: string };
-  // Check for v1.1 version
-  return c.version === '1.1.0';
-}
 
 // ====== Export Types ======
 
-export type SystemConfigV1 = z.infer<typeof SystemConfigV1Schema>;
-export type SystemConfigV1_1 = z.infer<typeof SystemConfigV1_1Schema>;
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
-export type ServerConfigV1 = z.infer<typeof ServerConfigV1Schema>;
-export type ServerConfig = ServerConfigV1; // Backward compatibility
-export type ServerConfigV1_1 = z.infer<typeof ServerConfigV1_1Schema>;
+export type ServerConfig = z.infer<typeof ServerConfigSchema>;
 export type ServerTemplate = z.infer<typeof ServerTemplateSchema>;
 export type ServerInstance = z.infer<typeof ServerInstanceSchema>;
 export type TagDefinition = z.infer<typeof TagDefinitionSchema>;
 export type ServerInstanceConfig = z.infer<typeof ServerInstanceConfigSchema>;
-
-/**
- * Type union for any system configuration version
- */
-export type AnySystemConfig = SystemConfigV1 | SystemConfigV1_1;

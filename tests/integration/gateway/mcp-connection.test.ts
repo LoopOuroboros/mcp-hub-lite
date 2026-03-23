@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { simpleSearchService } from '@services/simple-search.service.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK Client
 const mockConnect = vi.fn();
@@ -41,11 +42,10 @@ describe('MCP Connection Integration', () => {
     // Clear all mocks
     vi.clearAllMocks();
 
-    // Add test server
+    // Add test server (v1.1 format)
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
       allowedTools: []
@@ -66,9 +66,18 @@ describe('MCP Connection Integration', () => {
     mockListTools.mockResolvedValueOnce({ tools: [] });
 
     const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
     const success = await mcpConnectionManager.connect({
-      ...serverInfo!.config,
-      ...serverInfo!.instance
+      ...resolvedConfig,
+      id: serverId,
+      timestamp: Date.now(),
+      hash: 'test-hash'
     });
 
     expect(success).toBe(true);
@@ -80,9 +89,18 @@ describe('MCP Connection Integration', () => {
     mockConnect.mockRejectedValueOnce(new Error('Connection refused'));
 
     const serverInfo = hubManager.getServerById(serverId);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
     const success = await mcpConnectionManager.connect({
-      ...serverInfo!.config,
-      ...serverInfo!.instance
+      ...resolvedConfig,
+      id: serverId,
+      timestamp: Date.now(),
+      hash: 'test-hash'
     });
 
     expect(success).toBe(false);
@@ -92,12 +110,11 @@ describe('MCP Connection Integration', () => {
   });
 
   it('should support concurrent connections', async () => {
-    // Add second server
+    // Add second server (v1.1 format)
     const server2Name = 'test-mcp-server-2';
     await hubManager.addServer(server2Name, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
       allowedTools: []
@@ -109,15 +126,27 @@ describe('MCP Connection Integration', () => {
 
     const serverInfo1 = hubManager.getServerById(serverId);
     const serverInfo2 = hubManager.getServerById(instance2.id);
+    if (!serverInfo1 || !serverInfo2) {
+      throw new Error('Server not found');
+    }
+    const resolvedConfig1 = resolveInstanceConfig(serverInfo1.config, serverId);
+    const resolvedConfig2 = resolveInstanceConfig(serverInfo2.config, instance2.id);
+    if (!resolvedConfig1 || !resolvedConfig2) {
+      throw new Error('Failed to resolve server configuration');
+    }
 
     const [success1, success2] = await Promise.all([
       mcpConnectionManager.connect({
-        ...serverInfo1!.config,
-        ...serverInfo1!.instance
+        ...resolvedConfig1,
+        id: serverId,
+        timestamp: Date.now(),
+        hash: 'test-hash'
       }),
       mcpConnectionManager.connect({
-        ...serverInfo2!.config,
-        ...serverInfo2!.instance
+        ...resolvedConfig2,
+        id: instance2.id,
+        timestamp: Date.now(),
+        hash: 'test-hash-2'
       })
     ]);
 
@@ -152,7 +181,6 @@ describe('MCP Connection Integration', () => {
     await hubManager.addServer(searchServerName, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
       allowedTools: []
@@ -160,9 +188,18 @@ describe('MCP Connection Integration', () => {
     const searchServerInstance = await hubManager.addServerInstance(searchServerName, {});
 
     const serverInfo = hubManager.getServerById(searchServerInstance.id);
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, searchServerInstance.id);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
     await mcpConnectionManager.connect({
-      ...serverInfo!.config,
-      ...serverInfo!.instance
+      ...resolvedConfig,
+      id: searchServerInstance.id,
+      timestamp: Date.now(),
+      hash: 'test-hash'
     });
 
     const results = simpleSearchService.search('test');

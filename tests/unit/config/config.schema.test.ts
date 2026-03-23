@@ -3,15 +3,14 @@ import {
   TagDefinitionSchema,
   ServerInstanceSchema,
   ServerTemplateSchema,
-  ServerConfigV1_1Schema,
-  SystemConfigV1Schema,
-  isV1Config,
-  isV1_1Config,
+  ServerConfigSchema,
+  SystemConfigSchema,
+  isLegacyV1Config,
   type TagDefinition,
   type ServerInstance,
   type ServerTemplate,
-  type ServerConfigV1_1,
-  type SystemConfigV1
+  type ServerConfig,
+  type SystemConfig
 } from '@config/config.schema.js';
 
 describe('Config Schema (v1.1)', () => {
@@ -121,9 +120,9 @@ describe('Config Schema (v1.1)', () => {
     });
   });
 
-  describe('ServerConfigV1_1Schema', () => {
+  describe('ServerConfigSchema', () => {
     it('should validate a complete server configuration', () => {
-      const serverConfig: ServerConfigV1_1 = {
+      const serverConfig: ServerConfig = {
         template: {
           command: 'npx my-server',
           args: [],
@@ -155,7 +154,7 @@ describe('Config Schema (v1.1)', () => {
         ]
       };
 
-      const result = ServerConfigV1_1Schema.safeParse(serverConfig);
+      const result = ServerConfigSchema.safeParse(serverConfig);
       expect(result.success).toBe(true);
     });
 
@@ -166,7 +165,7 @@ describe('Config Schema (v1.1)', () => {
         }
       };
 
-      const result = ServerConfigV1_1Schema.safeParse(serverConfig);
+      const result = ServerConfigSchema.safeParse(serverConfig);
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.instances).toEqual([]);
@@ -176,14 +175,14 @@ describe('Config Schema (v1.1)', () => {
   });
 
   describe('Type Guards', () => {
-    describe('isV1Config', () => {
+    describe('isLegacyV1Config', () => {
       it('should recognize v1 config by version', () => {
         const config = {
           version: '1.0.0',
           servers: {}
         };
 
-        expect(isV1Config(config)).toBe(true);
+        expect(isLegacyV1Config(config)).toBe(true);
       });
 
       it('should not recognize v1.1 config', () => {
@@ -192,45 +191,20 @@ describe('Config Schema (v1.1)', () => {
           servers: {}
         };
 
-        expect(isV1Config(config)).toBe(false);
+        expect(isLegacyV1Config(config)).toBe(false);
       });
 
       it('should handle null/undefined', () => {
-        expect(isV1Config(null)).toBe(false);
-        expect(isV1Config(undefined)).toBe(false);
-      });
-    });
-
-    describe('isV1_1Config', () => {
-      it('should recognize v1.1 config by version', () => {
-        const config = {
-          version: '1.1.0',
-          servers: {}
-        };
-
-        expect(isV1_1Config(config)).toBe(true);
-      });
-
-      it('should not recognize v1 config', () => {
-        const config = {
-          version: '1.0.0',
-          servers: {}
-        };
-
-        expect(isV1_1Config(config)).toBe(false);
-      });
-
-      it('should handle null/undefined', () => {
-        expect(isV1_1Config(null)).toBe(false);
-        expect(isV1_1Config(undefined)).toBe(false);
+        expect(isLegacyV1Config(null)).toBe(false);
+        expect(isLegacyV1Config(undefined)).toBe(false);
       });
     });
   });
 
-  describe('Backward Compatibility', () => {
-    it('should validate v1.0 config with SystemConfigV1Schema', () => {
-      const v1Config: SystemConfigV1 = {
-        version: '1.0.0',
+  describe('SystemConfigSchema', () => {
+    it('should validate a complete system configuration', () => {
+      const config: SystemConfig = {
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 7788,
@@ -253,20 +227,11 @@ describe('Config Schema (v1.1)', () => {
           sessionFlushInterval: 900000,
           maxConnections: 50
         },
-        servers: {
-          'my-server': {
-            command: 'npx my-server',
-            args: [],
-            enabled: true,
-            type: 'stdio',
-            timeout: 60000,
-            allowedTools: []
-          }
-        },
+        servers: {},
         tagDefinitions: []
       };
 
-      const result = SystemConfigV1Schema.safeParse(v1Config);
+      const result = SystemConfigSchema.safeParse(config);
       expect(result.success).toBe(true);
     });
   });

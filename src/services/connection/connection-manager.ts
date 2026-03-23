@@ -14,8 +14,9 @@ import { logStorage } from '@services/log-storage.service.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
-import type { ServerConfig } from '@config/config.schema.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
+import type { ResolvedServerConfig } from '@config/config-migrator.js';
+import type { ServerConfig, ServerInstance } from '@config/config-manager.js';
 import type { ServerStatus } from './types.js';
 import { ToolCache } from './tool-cache.js';
 
@@ -54,7 +55,7 @@ export class McpConnectionManager {
     eventBus.subscribe(EventTypes.SERVER_DELETED, (data: unknown) => {
       const serverName = data as string;
       // Find all instances by server name and disconnect them
-      const serverInstances = hubManager.getServerInstanceByName(serverName);
+      const serverInstances = hubManager.getServerInstancesByName(serverName);
       serverInstances.forEach((instance) => {
         this.disconnect(instance.id!).catch((err) => {
           logger.warn(
@@ -102,10 +103,10 @@ export class McpConnectionManager {
    * }
    * ```
    */
-  public async connect(server: ServerConfig & ServerInstanceConfig): Promise<boolean> {
-    let serverInfo:
-      | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
-      | undefined;
+  public async connect(
+    server: ResolvedServerConfig & Partial<ServerInstanceConfig>
+  ): Promise<boolean> {
+    let serverInfo: { name: string; config: ServerConfig; instance: ServerInstance } | undefined;
     try {
       logger.info(
         `Connecting to server [${server.id || 'unknown'}]...`,
@@ -265,13 +266,10 @@ export class McpConnectionManager {
       const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
 
       // Update server instance info (merge pid and startTime)
-      const instances = hubManager.getServerInstanceByName(serverName);
-      const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
-      if (instanceIndex !== -1) {
-        hubManager.updateServerInstance(serverName, instanceIndex, {
-          pid: pid,
-          startTime: Date.now() // Startup time is the same as timestamp
-        });
+      const instances = hubManager.getServerInstancesByName(serverName);
+      const instance = instances.find((inst) => inst.id === server.id);
+      if (instance && instance.index !== undefined) {
+        // pid and startTime are runtime-only fields, not stored in config
       }
 
       this.serverStatus.set(server.id, {

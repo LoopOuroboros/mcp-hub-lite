@@ -1,10 +1,10 @@
 /**
- * Server configuration management utilities.
- * Handles CRUD operations for server configurations and instances.
+ * Server configuration management utilities for v1.1 format.
+ * Handles CRUD operations for server templates and instances.
  */
 
-import { ServerConfigSchema, ServerInstanceConfigSchema } from './config.schema.js';
-import type { ServerConfig, ServerInstanceConfig } from './config.schema.js';
+import { ServerTemplateSchema, ServerInstanceSchema, ServerConfigSchema } from './config.schema.js';
+import type { ServerTemplate, ServerInstance, ServerConfig } from './config.schema.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
 
 /**
@@ -19,23 +19,64 @@ function generateInstanceId(serverName: string): string {
 }
 
 /**
+ * Creates a default server instance with index assignment.
+ *
+ * @param serverName - Name of the server
+ * @param existingInstances - Existing instances for index calculation
+ * @param partialInstance - Partial instance configuration
+ * @returns A complete server instance
+ */
+function createDefaultInstance(
+  serverName: string,
+  existingInstances: ServerInstance[],
+  partialInstance: Partial<ServerInstance> = {}
+): ServerInstance {
+  const instance: Partial<ServerInstance> = {
+    ...partialInstance
+  };
+
+  // Minimal identity generation logic
+  if (!instance.id) {
+    instance.id = generateInstanceId(serverName);
+  }
+
+  // Assign index: max index + 1, or 0 if no existing instances
+  if (instance.index === undefined) {
+    if (existingInstances.length === 0) {
+      instance.index = 0;
+    } else {
+      const indexes = existingInstances.map((inst) => inst.index ?? 0);
+      const maxIndex = Math.max(...indexes);
+      instance.index = maxIndex + 1;
+    }
+  }
+
+  return ServerInstanceSchema.parse(instance);
+}
+
+/**
  * Adds multiple server configurations to the system in a single operation.
  *
- * @param servers - Array of server objects containing name and partial configuration
+ * @param servers - Array of server objects containing name and partial template configuration
  * @param currentServers - Current servers configuration object (will be modified)
- * @param serverInstances - Current server instances record (will be modified)
  * @returns The updated servers configuration
  */
 export function addServers(
-  servers: Array<{ name: string; config: Partial<ServerConfig> }>,
-  currentServers: Record<string, ServerConfig>,
-  serverInstances: Record<string, ServerInstanceConfig[]>
+  servers: Array<{ name: string; config: Partial<ServerTemplate> }>,
+  currentServers: Record<string, ServerConfig>
 ): Record<string, ServerConfig> {
   for (const { name, config } of servers) {
     // Unified type conversion: convert http to streamable-http
-    const convertedConfig = convertHttpToStreamableHttp(config) as Partial<ServerConfig>;
-    currentServers[name] = ServerConfigSchema.parse(convertedConfig);
-    if (!serverInstances[name]) serverInstances[name] = [];
+    const convertedConfig = convertHttpToStreamableHttp(config) as Partial<ServerTemplate>;
+    const template = ServerTemplateSchema.parse(convertedConfig);
+
+    // Create default instance
+    const defaultInstance = createDefaultInstance(name, []);
+
+    currentServers[name] = ServerConfigSchema.parse({
+      template,
+      instances: [defaultInstance]
+    });
   }
 
   // Ensure server configurations are sorted by name
@@ -43,25 +84,32 @@ export function addServers(
 }
 
 /**
- * Adds a new server configuration to the system.
+ * Adds a new server configuration to the system (v1.1 format).
+ * Creates a template and a default instance.
  *
  * @param name - The unique name for the server
- * @param config - The server configuration (partial, will be validated)
+ * @param config - The server template configuration (partial, will be validated)
  * @param currentServers - Current servers configuration object (will be modified)
- * @param serverInstances - Current server instances record (will be modified)
- * @returns The validated and complete server configuration
+ * @returns The complete server configuration (v1.1)
  */
 export function addServer(
   name: string,
-  config: Partial<ServerConfig>,
-  currentServers: Record<string, ServerConfig>,
-  serverInstances: Record<string, ServerInstanceConfig[]>
+  config: Partial<ServerTemplate>,
+  currentServers: Record<string, ServerConfig>
 ): ServerConfig {
   // Unified type conversion: convert http to streamable-http
   const convertedConfig = convertHttpToStreamableHttp(config);
-  const validated = ServerConfigSchema.parse(convertedConfig);
-  currentServers[name] = validated;
-  if (!serverInstances[name]) serverInstances[name] = [];
+  const template = ServerTemplateSchema.parse(convertedConfig);
+
+  // Create default instance
+  const defaultInstance = createDefaultInstance(name, []);
+
+  const serverConfig = ServerConfigSchema.parse({
+    template,
+    instances: [defaultInstance]
+  });
+
+  currentServers[name] = serverConfig;
 
   // Ensure server configurations are sorted by name
   const sortedServers = Object.fromEntries(
@@ -72,7 +120,7 @@ export function addServer(
   Object.keys(currentServers).forEach((key) => delete currentServers[key]);
   Object.assign(currentServers, sortedServers);
 
-  return validated;
+  return serverConfig;
 }
 
 /**
@@ -80,58 +128,42 @@ export function addServer(
  *
  * @param name - The name of the server to add an instance for
  * @param instance - The server instance configuration (partial, will be validated)
- * @param serverInstances - Current server instances record (will be modified)
+ * @param currentServers - Current servers configuration object (will be modified)
  * @returns The validated and complete server instance configuration
  */
 export function addServerInstance(
   name: string,
-  instance: Partial<ServerInstanceConfig>,
-  serverInstances: Record<string, ServerInstanceConfig[]>
-): ServerInstanceConfig {
-  if (!serverInstances[name]) serverInstances[name] = [];
-
-  // Minimal identity generation logic
-  if (!instance.id) {
-    const ts = Date.now();
-    instance.id = generateInstanceId(name);
-    instance.timestamp = ts;
-    instance.hash = Math.random().toString(36);
+  instance: Partial<ServerInstance>,
+  currentServers: Record<string, ServerConfig>
+): ServerInstance {
+  if (!currentServers[name]) {
+    throw new Error(`Server not found: ${name}`);
   }
 
-  // Assign index: max index + 1, or 0 if no existing instances
-  if (instance.index === undefined) {
-    const instances = serverInstances[name] || [];
-    if (instances.length === 0) {
-      instance.index = 0;
-    } else {
-      const indexes = instances.map((inst) => inst.index ?? 0);
-      const maxIndex = Math.max(...indexes);
-      instance.index = maxIndex + 1;
-    }
-  }
+  const existingInstances = currentServers[name].instances || [];
+  const newInstance = createDefaultInstance(name, existingInstances, instance);
 
-  const validated = ServerInstanceConfigSchema.parse(instance);
-  serverInstances[name].push(validated);
-  return validated;
+  currentServers[name].instances = [...existingInstances, newInstance];
+  return newInstance;
 }
 
 /**
  * Reassigns server instance indexes to be consecutive (0, 1, 2, ...).
  *
  * @param name - The name of the server to reassign indexes for
- * @param serverInstances - Current server instances record (will be modified)
- * @returns True if the server exists and indexes were reassigned, false otherwise
+ * @param currentServers - Current servers configuration object (will be modified)
+ * @returns True if the server exists and indexes were reassigned
  */
 export function reassignServerInstanceIndexes(
   name: string,
-  serverInstances: Record<string, ServerInstanceConfig[]>
+  currentServers: Record<string, ServerConfig>
 ): boolean {
-  if (!serverInstances[name] || serverInstances[name].length === 0) {
+  if (!currentServers[name] || currentServers[name].instances.length === 0) {
     return false;
   }
 
   // Sort instances by their current index
-  const sortedInstances = [...serverInstances[name]].sort(
+  const sortedInstances = [...currentServers[name].instances].sort(
     (a, b) => (a.index ?? 0) - (b.index ?? 0)
   );
 
@@ -141,27 +173,30 @@ export function reassignServerInstanceIndexes(
   });
 
   // Update the server instances array
-  serverInstances[name] = sortedInstances;
+  currentServers[name].instances = sortedInstances;
   return true;
 }
 
 /**
- * Updates an existing server configuration with the provided changes.
+ * Updates an existing server template configuration.
  *
  * @param name - The name of the server to update
- * @param updates - The partial configuration updates to apply
+ * @param updates - The partial template updates to apply
  * @param currentServers - Current servers configuration object (will be modified)
- * @returns True if the server was updated, false if it didn't exist
+ * @returns True if the server was updated
  */
-export function updateServer(
+export function updateServerTemplate(
   name: string,
-  updates: Partial<ServerConfig>,
+  updates: Partial<ServerTemplate>,
   currentServers: Record<string, ServerConfig>
 ): boolean {
   if (currentServers[name]) {
     // Unified type conversion: convert http to streamable-http
-    const convertedUpdates = convertHttpToStreamableHttp(updates) as Partial<ServerConfig>;
-    currentServers[name] = { ...currentServers[name], ...convertedUpdates };
+    const convertedUpdates = convertHttpToStreamableHttp(updates) as Partial<ServerTemplate>;
+    currentServers[name].template = {
+      ...currentServers[name].template,
+      ...convertedUpdates
+    };
 
     // Ensure server configurations are sorted by name
     const sortedServers = Object.fromEntries(
@@ -178,23 +213,29 @@ export function updateServer(
 }
 
 /**
- * Updates an existing server instance configuration with the provided changes.
+ * Updates an existing server instance configuration.
  *
  * @param name - The name of the server containing the instance to update
- * @param index - The index of the instance to update in the instances array
- * @param updates - The partial instance configuration updates to apply
- * @param serverInstances - Current server instances record (will be modified)
- * @returns True if the instance was updated, false if it didn't exist
+ * @param index - The index of the instance to update
+ * @param updates - The partial instance updates to apply
+ * @param currentServers - Current servers configuration object (will be modified)
+ * @returns True if the instance was updated
  */
 export function updateServerInstance(
   name: string,
   index: number,
-  updates: Partial<ServerInstanceConfig>,
-  serverInstances: Record<string, ServerInstanceConfig[]>
+  updates: Partial<ServerInstance>,
+  currentServers: Record<string, ServerConfig>
 ): boolean {
-  if (serverInstances[name]?.[index]) {
-    serverInstances[name][index] = { ...serverInstances[name][index], ...updates };
-    return true;
+  if (currentServers[name]?.instances) {
+    const instanceIndex = currentServers[name].instances.findIndex((inst) => inst.index === index);
+    if (instanceIndex !== -1) {
+      currentServers[name].instances[instanceIndex] = {
+        ...currentServers[name].instances[instanceIndex],
+        ...updates
+      };
+      return true;
+    }
   }
   return false;
 }
@@ -204,17 +245,11 @@ export function updateServerInstance(
  *
  * @param name - The name of the server to remove
  * @param currentServers - Current servers configuration object (will be modified)
- * @param serverInstances - Current server instances record (will be modified)
- * @returns True if the server was removed, false if it didn't exist
+ * @returns True if the server was removed
  */
-export function removeServer(
-  name: string,
-  currentServers: Record<string, ServerConfig>,
-  serverInstances: Record<string, ServerInstanceConfig[]>
-): boolean {
+export function removeServer(name: string, currentServers: Record<string, ServerConfig>): boolean {
   if (currentServers[name]) {
     delete currentServers[name];
-    delete serverInstances[name];
 
     // Ensure server configurations are sorted by name
     const sortedServers = Object.fromEntries(
@@ -234,21 +269,24 @@ export function removeServer(
  * Removes a specific server instance from the system.
  *
  * @param name - The name of the server containing the instance to remove
- * @param index - The index of the instance to remove from the instances array
- * @param serverInstances - Current server instances record (will be modified)
- * @returns True if the instance was removed, false if it didn't exist
+ * @param index - The index of the instance to remove
+ * @param currentServers - Current servers configuration object (will be modified)
+ * @returns True if the instance was removed
  */
 export function removeServerInstance(
   name: string,
   index: number,
-  serverInstances: Record<string, ServerInstanceConfig[]>
+  currentServers: Record<string, ServerConfig>
 ): boolean {
-  if (serverInstances[name]) {
-    serverInstances[name].splice(index, 1);
-    if (serverInstances[name].length === 0) {
-      delete serverInstances[name];
+  if (currentServers[name]?.instances) {
+    const instanceIndex = currentServers[name].instances.findIndex((inst) => inst.index === index);
+    if (instanceIndex !== -1) {
+      currentServers[name].instances.splice(instanceIndex, 1);
+      if (currentServers[name].instances.length === 0) {
+        // Keep the server even if it has no instances
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }

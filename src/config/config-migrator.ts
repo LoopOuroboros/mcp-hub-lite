@@ -2,20 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import type {
-  ServerConfigV1,
-  ServerConfigV1_1,
-  ServerInstance,
-  ServerTemplate,
-  SystemConfigV1,
-  SystemConfigV1_1
-} from './config.schema.js';
-import {
-  isV1Config,
-  isV1_1Config,
-  SystemConfigV1Schema,
-  SystemConfigV1_1Schema
-} from './config.schema.js';
+import type { ServerInstance, ServerTemplate, SystemConfig } from './config.schema.js';
+import { isLegacyV1Config, SystemConfigSchema } from './config.schema.js';
 
 /**
  * Resolved server configuration with template + instance merged
@@ -40,7 +28,7 @@ export interface ResolvedServerConfig {
 export interface MigrationResult {
   success: boolean;
   backupPath?: string;
-  migratedConfig?: SystemConfigV1_1;
+  migratedConfig?: SystemConfig;
   error?: string;
   warnings: string[];
 }
@@ -62,6 +50,34 @@ const DEFAULT_OPTIONS: MigrationOptions = {
   createBackup: true,
   validateAfterMigration: true
 };
+
+/**
+ * Legacy v1.0 Server Configuration type for migration
+ */
+interface LegacyServerConfigV1 {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  enabled?: boolean;
+  tags?: Record<string, string>;
+  type?: 'stdio' | 'sse' | 'streamable-http' | 'http';
+  timeout?: number;
+  url?: string;
+  allowedTools?: string[];
+  description?: string;
+}
+
+/**
+ * Legacy v1.0 System Configuration type for migration
+ */
+interface LegacySystemConfigV1 {
+  version?: string;
+  system?: Record<string, unknown>;
+  security?: Record<string, unknown>;
+  servers?: Record<string, LegacyServerConfigV1>;
+  tagDefinitions?: Array<{ key: string; description?: string }>;
+}
 
 /**
  * Generates a timestamp for backup files
@@ -127,9 +143,9 @@ function createBackup(configPath: string): string | null {
 }
 
 /**
- * Converts a v1.0 ServerConfig to a v1.1 ServerTemplate
+ * Converts a legacy v1.0 ServerConfig to a v1.1 ServerTemplate
  */
-function convertToServerTemplate(v1Config: ServerConfigV1): ServerTemplate {
+function convertToServerTemplate(v1Config: LegacyServerConfigV1): ServerTemplate {
   return {
     command: v1Config.command,
     args: v1Config.args || [],
@@ -168,9 +184,12 @@ function generateInstanceId(serverName: string, instanceConfig: Partial<ServerIn
 }
 
 /**
- * Converts a v1.0 ServerConfig to a v1.1 ServerInstance
+ * Converts a legacy v1.0 ServerConfig to a v1.1 ServerInstance
  */
-function convertToServerInstance(v1Config: ServerConfigV1, serverName: string): ServerInstance {
+function convertToServerInstance(
+  v1Config: LegacyServerConfigV1,
+  serverName: string
+): ServerInstance {
   // Only keep the differences from template (args should be empty since template has full args)
   const instanceConfig: Partial<ServerInstance> = {
     args: [],
@@ -191,14 +210,14 @@ function convertToServerInstance(v1Config: ServerConfigV1, serverName: string): 
 }
 
 /**
- * Converts a v1.0 SystemConfig to a v1.1 SystemConfig
+ * Converts a legacy v1.0 SystemConfig to a v1.1 SystemConfig
  */
-function migrateV1ToV1_1(v1Config: SystemConfigV1): {
-  config: SystemConfigV1_1;
+function migrateV1ToV1_1(v1Config: LegacySystemConfigV1): {
+  config: SystemConfig;
   warnings: string[];
 } {
   const warnings: string[] = [];
-  const servers: Record<string, ServerConfigV1_1> = {};
+  const servers: Record<string, SystemConfig['servers'][string]> = {};
 
   // Convert each v1 server to a v1.1 server
   for (const [serverName, serverConfig] of Object.entries(v1Config.servers || {})) {
@@ -212,10 +231,10 @@ function migrateV1ToV1_1(v1Config: SystemConfigV1): {
     };
   }
 
-  const v1_1Config: SystemConfigV1_1 = {
+  const v1_1Config: SystemConfig = {
     version: '1.1.0',
-    system: v1Config.system,
-    security: v1Config.security,
+    system: v1Config.system as SystemConfig['system'],
+    security: v1Config.security as SystemConfig['security'],
     servers,
     tagDefinitions: []
   };
@@ -226,19 +245,12 @@ function migrateV1ToV1_1(v1Config: SystemConfigV1): {
 /**
  * Validates a configuration against the schema
  */
-function validateConfig(
-  config: unknown,
-  version: 'v1' | 'v1.1'
-): {
+function validateConfig(config: unknown): {
   valid: boolean;
   errors?: string;
 } {
   try {
-    if (version === 'v1') {
-      SystemConfigV1Schema.parse(config);
-    } else {
-      SystemConfigV1_1Schema.parse(config);
-    }
+    SystemConfigSchema.parse(config);
     return { valid: true };
   } catch (error) {
     return {
@@ -269,7 +281,7 @@ function loadConfigFile(configPath: string): unknown {
 /**
  * Saves a configuration file
  */
-function saveConfigFile(configPath: string, config: SystemConfigV1_1): void {
+function saveConfigFile(configPath: string, config: SystemConfig): void {
   const dir = dirname(configPath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -298,20 +310,11 @@ export function migrateConfig(configPath: string, options: MigrationOptions = {}
     const sourceConfig = loadConfigFile(configPath);
 
     // Check if already v1.1
-    if (isV1_1Config(sourceConfig)) {
+    if (!isLegacyV1Config(sourceConfig)) {
       result.success = true;
       result.warnings.push('Configuration is already in v1.1 format');
-      result.migratedConfig = sourceConfig;
+      result.migratedConfig = sourceConfig as SystemConfig;
       return result;
-    }
-
-    // Validate it's a v1 config
-    if (!isV1Config(sourceConfig)) {
-      const validation = validateConfig(sourceConfig, 'v1');
-      if (!validation.valid) {
-        result.error = `Invalid v1 configuration: ${validation.errors}`;
-        return result;
-      }
     }
 
     // Create backup if requested
@@ -326,13 +329,13 @@ export function migrateConfig(configPath: string, options: MigrationOptions = {}
     }
 
     // Perform migration
-    const v1Config = sourceConfig as SystemConfigV1;
+    const v1Config = sourceConfig as LegacySystemConfigV1;
     const { config: migratedConfig, warnings } = migrateV1ToV1_1(v1Config);
     result.warnings.push(...warnings);
 
     // Validate migrated config
     if (opts.validateAfterMigration) {
-      const validation = validateConfig(migratedConfig, 'v1.1');
+      const validation = validateConfig(migratedConfig);
       if (!validation.valid) {
         result.error = `Migrated configuration validation failed: ${validation.errors}`;
         return result;
@@ -390,14 +393,6 @@ export function rollbackMigration(
     }
 
     const backupContent = readFileSync(backupPath, 'utf8');
-    const backupConfig = JSON.parse(backupContent);
-
-    if (!isV1Config(backupConfig)) {
-      return {
-        success: false,
-        error: 'Backup file is not a valid v1.0 configuration'
-      };
-    }
 
     const dir = dirname(configPath);
     if (!existsSync(dir)) {
@@ -439,7 +434,7 @@ export function checkMigrationStatus(configPath: string): {
   try {
     const config = loadConfigFile(configPath);
 
-    if (isV1_1Config(config)) {
+    if (!isLegacyV1Config(config)) {
       return {
         exists: true,
         version: 'v1.1',
@@ -448,20 +443,11 @@ export function checkMigrationStatus(configPath: string): {
       };
     }
 
-    if (isV1Config(config)) {
-      return {
-        exists: true,
-        version: 'v1',
-        canMigrate: true,
-        message: 'Configuration is in v1.0 format and can be migrated'
-      };
-    }
-
     return {
       exists: true,
-      version: 'unknown',
-      canMigrate: false,
-      message: 'Configuration format is unrecognized'
+      version: 'v1',
+      canMigrate: true,
+      message: 'Configuration is in v1.0 format and can be migrated'
     };
   } catch (error) {
     return {
@@ -478,23 +464,6 @@ export function checkMigrationStatus(configPath: string): {
 // ====== v1.1 Configuration Helpers ======
 
 /**
- * Resolved server configuration with template + instance merged
- */
-export interface ResolvedServerConfig {
-  command?: string;
-  args: string[];
-  env?: Record<string, string>;
-  headers?: Record<string, string>;
-  type: 'stdio' | 'sse' | 'streamable-http' | 'http';
-  timeout: number;
-  url?: string;
-  allowedTools: string[];
-  tags: Record<string, string>;
-  enabled: boolean;
-  description?: string;
-}
-
-/**
  * Resolves a server instance configuration by merging template and instance overrides
  *
  * @param serverConfig The server configuration with template and instances
@@ -502,7 +471,7 @@ export interface ResolvedServerConfig {
  * @returns The resolved server configuration
  */
 export function resolveInstanceConfig(
-  serverConfig: ServerConfigV1_1,
+  serverConfig: SystemConfig['servers'][string],
   instanceId?: string
 ): ResolvedServerConfig | null {
   const { template, instances } = serverConfig;
@@ -543,7 +512,7 @@ export function resolveInstanceConfig(
  * @returns Array of enabled instances with resolved configs
  */
 export function getEnabledInstances(
-  serverConfig: ServerConfigV1_1
+  serverConfig: SystemConfig['servers'][string]
 ): Array<{ instance: ServerInstance; resolved: ResolvedServerConfig }> {
   const result: Array<{ instance: ServerInstance; resolved: ResolvedServerConfig }> = [];
 
@@ -553,56 +522,6 @@ export function getEnabledInstances(
       if (resolved) {
         result.push({ instance, resolved });
       }
-    }
-  }
-
-  return result;
-}
-
-/**
- * Converts a v1.1 server configuration back to v1.0 format for backward compatibility
- *
- * @param serverConfig The v1.1 server configuration
- * @param instanceId Optional instance ID to use (uses first enabled instance)
- * @returns The v1.0 server configuration
- */
-export function convertToV1ServerConfig(
-  serverConfig: ServerConfigV1_1,
-  instanceId?: string
-): ServerConfigV1 | null {
-  const resolved = resolveInstanceConfig(serverConfig, instanceId);
-  if (!resolved) {
-    return null;
-  }
-
-  return {
-    command: resolved.command,
-    args: resolved.args,
-    env: resolved.env,
-    headers: resolved.headers,
-    enabled: resolved.enabled,
-    tags: resolved.tags,
-    type: resolved.type,
-    timeout: resolved.timeout,
-    url: resolved.url,
-    allowedTools: resolved.allowedTools,
-    description: resolved.description
-  };
-}
-
-/**
- * Gets the flat v1.0-style servers map from a v1.1 config
- *
- * @param config The v1.1 system configuration
- * @returns A map of server names to v1.0 server configs (using first enabled instance)
- */
-export function getFlatServersMap(config: SystemConfigV1_1): Record<string, ServerConfigV1> {
-  const result: Record<string, ServerConfigV1> = {};
-
-  for (const [serverName, serverConfig] of Object.entries(config.servers)) {
-    const v1Config = convertToV1ServerConfig(serverConfig);
-    if (v1Config) {
-      result[serverName] = v1Config;
     }
   }
 

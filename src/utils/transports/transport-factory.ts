@@ -2,7 +2,7 @@ import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
-import type { ServerConfig } from '@config/config.schema.js';
+import type { ResolvedServerConfig } from '@config/config-migrator.js';
 import { logStorage } from '@services/log-storage.service.js';
 
 /**
@@ -17,7 +17,7 @@ export class TransportFactory {
    * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
-    server: ServerConfig & { name: string },
+    server: ResolvedServerConfig & { name: string },
     serverId?: string
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
@@ -82,7 +82,7 @@ export class TransportFactory {
    * Validate and convert server configuration to transport configuration
    */
   private static validateAndConvertConfig(
-    server: ServerConfig & { name: string }
+    server: ResolvedServerConfig & { name: string }
   ): ServerTransportConfig {
     const type = server.type || 'stdio';
 

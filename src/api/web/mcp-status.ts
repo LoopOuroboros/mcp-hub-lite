@@ -4,9 +4,10 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 /**
- * MCP Connection Status API Routes
+ * MCP Connection Status API Routes (v1.1 format)
  *
  * Provides real-time monitoring and management endpoints for MCP (Model Context Protocol) server connections.
  * This module enables administrators to check the health of connected servers, manage connection states,
@@ -36,7 +37,6 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   fastify.get('/web/mcp/status', async (_request, reply) => {
     try {
       const servers = hubManager.getAllServers();
-      const serverInstances = hubManager.getServerInstances();
       const statusList: Array<{
         id: string;
         name: string;
@@ -45,14 +45,14 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       }> = [];
 
       servers.forEach((server) => {
-        const instances = serverInstances[server.name] || [];
+        const instances = server.config.instances || [];
 
         // If no instances, add a default disconnected entry for this server
         if (instances.length === 0) {
           statusList.push({
             id: server.name,
             name: server.name,
-            type: server.config.type,
+            type: server.config.template.type,
             status: {
               connected: false,
               lastCheck: Date.now(),
@@ -64,10 +64,11 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         } else {
           // Add status for each instance
           instances.forEach((instance) => {
+            const resolvedConfig = resolveInstanceConfig(server.config, instance.id);
             statusList.push({
               id: instance.id || '',
               name: server.name,
-              type: server.config.type,
+              type: resolvedConfig?.type || server.config.template.type,
               status: mcpConnectionManager.getStatus(instance.id || '') || {
                 connected: false,
                 lastCheck: Date.now(),
@@ -92,21 +93,37 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     '/web/mcp/servers/:id/connect',
     async (request, reply) => {
       try {
-        const server = hubManager.getServerById(request.params.id);
-        if (!server) {
+        const serverInfo = hubManager.getServerById(request.params.id);
+        if (!serverInfo) {
           return reply.code(404).send({ error: 'Server not found' });
         }
 
-        const success = await mcpConnectionManager.connect({
-          ...server.config,
-          ...server.instance
-        });
+        const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverInfo.instance.id);
+        if (!resolvedConfig) {
+          return reply.code(404).send({ error: 'Server instance configuration not found' });
+        }
+
+        // Create a compatible config object with required instance fields
+        const connectConfig = {
+          ...resolvedConfig,
+          id: serverInfo.instance.id,
+          timestamp: Date.now(),
+          hash: '',
+          pid: undefined,
+          startTime: undefined,
+          index: serverInfo.instance.index,
+          displayName: serverInfo.instance.displayName
+        };
+
+        const success = await mcpConnectionManager.connect(connectConfig);
         if (!success) {
           return reply.code(500).send({ error: 'Failed to connect to server' });
         }
 
-        // Update enabled status in config - The enabled field now belongs to server configuration, not instance configuration
-        await hubManager.updateServer(server.name, { enabled: true });
+        // Update instance enabled status
+        await hubManager.updateServerInstance(serverInfo.name, serverInfo.instance.index!, {
+          enabled: true
+        });
 
         return { success: true };
       } catch (error) {
@@ -123,11 +140,12 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       try {
         await mcpConnectionManager.disconnect(request.params.id);
 
-        // Update enabled status in config to ensure it doesn't show as "starting"
-        // The enabled field now belongs to server configuration, not instance configuration
-        const server = hubManager.getServerById(request.params.id);
-        if (server) {
-          await hubManager.updateServer(server.name, { enabled: false });
+        // Update instance enabled status
+        const serverInfo = hubManager.getServerById(request.params.id);
+        if (serverInfo) {
+          await hubManager.updateServerInstance(serverInfo.name, serverInfo.instance.index!, {
+            enabled: false
+          });
         }
 
         return { success: true };

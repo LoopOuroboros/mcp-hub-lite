@@ -141,7 +141,7 @@ export class SearchCoreService {
       const serverConfig = hubManager.getServerByName(tool.serverName);
       if (!serverConfig) return true;
 
-      const allowed = serverConfig.allowedTools;
+      const allowed = serverConfig.template.allowedTools;
       if (allowed == null) return true; // No allowedTools configured, show all tools
       if (allowed.length === 0) return false; // Empty array, don't show any tools
       return allowed.includes(tool.name); // Strict filtering
