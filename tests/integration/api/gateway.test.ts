@@ -165,7 +165,7 @@ describe('GatewayService', () => {
     vi.mocked(mocks.getServerById).mockReturnValue({
       name: 'Test Server',
       id: 'server1',
-      config: { allowedTools: ['testTool'] },
+      config: { template: { allowedTools: ['testTool'] } },
       instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
     } as MockServerConfig);
 
@@ -216,7 +216,7 @@ describe('GatewayService', () => {
     vi.mocked(mocks.getServerById).mockReturnValue({
       name: 'Test Server',
       id: 'server1',
-      config: { allowedTools: ['testTool'] },
+      config: { template: { allowedTools: ['testTool'] } },
       instance: { id: 'server1', timestamp: Date.now(), hash: 'abc123' }
     } as MockServerConfig);
 

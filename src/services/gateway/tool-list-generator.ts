@@ -50,13 +50,18 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
     for (const tool of tools) {
       const serverConfig = hubManager.getServerById(serverId);
       if (serverConfig) {
-        if (
+        // Only include tools if server has allowedTools configured AND tool is in allowedTools
+        const hasAllowedTools =
           serverConfig.config &&
           serverConfig.config.template &&
           serverConfig.config.template.allowedTools &&
-          serverConfig.config.template.allowedTools.length > 0 &&
-          !serverConfig.config.template.allowedTools.includes(tool.name)
-        ) {
+          serverConfig.config.template.allowedTools.length > 0;
+
+        if (!hasAllowedTools) {
+          continue;
+        }
+
+        if (!serverConfig.config.template.allowedTools.includes(tool.name)) {
           continue;
         }
       }
@@ -74,14 +79,19 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
       continue;
     }
 
+    // Only include tools if server has allowedTools configured
+    const hasAllowedTools =
+      serverConfig.config &&
+      serverConfig.config.template &&
+      serverConfig.config.template.allowedTools &&
+      serverConfig.config.template.allowedTools.length > 0;
+
+    if (!hasAllowedTools) {
+      continue;
+    }
+
     for (const tool of tools) {
-      if (
-        serverConfig.config &&
-        serverConfig.config.template &&
-        serverConfig.config.template.allowedTools &&
-        serverConfig.config.template.allowedTools.length > 0 &&
-        !serverConfig.config.template.allowedTools.includes(tool.name)
-      ) {
+      if (!serverConfig.config.template.allowedTools.includes(tool.name)) {
         continue;
       }
 
