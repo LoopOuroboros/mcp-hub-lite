@@ -16,7 +16,6 @@ import {
   SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
-  SystemToolArgs,
   SystemToolName,
   ListServersParams,
   ListToolsInServerParams,
@@ -398,7 +397,12 @@ export class HubToolsService {
    */
   async callTool(args: CallToolParams): Promise<unknown> {
     let { serverName, toolName } = args;
-    const { toolArgs, requestOptions } = args;
+    // Support both toolArgs and arguments for backward compatibility
+    const toolArgs: Record<string, unknown> = (args.toolArgs || args.arguments || {}) as Record<
+      string,
+      unknown
+    >;
+    const { requestOptions } = args;
     // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
     const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
     if (parsedTool) {
@@ -417,7 +421,7 @@ export class HubToolsService {
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
       // Check if it's a system tool
       if (SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-        return await this.callSystemTool(toolName as SystemToolName, toolArgs as SystemToolArgs);
+        return await this.callSystemTool(toolName as SystemToolName, args);
       }
 
       // Not a system tool - find it in all connected servers
@@ -466,14 +470,72 @@ export class HubToolsService {
     );
 
     const serverInfo = selectBestInstance(serverName, requestOptions);
+    const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     if (!serverInfo) {
-      logger.error(`Server not found: ${serverName}`, LOG_MODULES.HUB_TOOLS);
-      throw new Error(`Server not found: ${serverName}`);
+      // Server not found in hubManager, try direct call by name through mcpConnectionManager
+      logger.debug(
+        `Server not found in hubManager, trying direct call by name: ${serverName}`,
+        LOG_MODULES.HUB_TOOLS
+      );
+
+      // Check if server is known by mcpConnectionManager
+      const serverId = mcpConnectionManager.getServerIdByName(serverName);
+      if (!serverId) {
+        logger.error(`Server not found: ${serverName}`, LOG_MODULES.HUB_TOOLS);
+        throw new Error(`Server not found: ${serverName}`);
+      }
+
+      // Publish tool call started event with the resolved serverId
+      eventBus.publish(EventTypes.TOOL_CALL_STARTED, {
+        requestId,
+        serverId,
+        serverName,
+        toolName,
+        timestamp: Date.now(),
+        args: toolArgs
+      });
+
+      try {
+        const result = await mcpConnectionManager.callTool(serverId, toolName, toolArgs);
+
+        // Publish tool call completed event
+        eventBus.publish(EventTypes.TOOL_CALL_COMPLETED, {
+          requestId,
+          serverId,
+          serverName,
+          toolName,
+          timestamp: Date.now(),
+          result
+        });
+
+        logger.debug(
+          `Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`,
+          LOG_MODULES.HUB_TOOLS
+        );
+        return result;
+      } catch (error) {
+        // Publish tool call error event
+        eventBus.publish(EventTypes.TOOL_CALL_ERROR, {
+          requestId,
+          serverId,
+          serverName,
+          toolName,
+          timestamp: Date.now(),
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+
+        logger.error(
+          `Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+          error,
+          LOG_MODULES.HUB_TOOLS
+        );
+        throw error;
+      }
     }
 
     const serverId = serverInfo.instance.id as string;
-    const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Publish tool call started event
     eventBus.publish(EventTypes.TOOL_CALL_STARTED, {

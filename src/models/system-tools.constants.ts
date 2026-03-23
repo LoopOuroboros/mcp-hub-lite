@@ -26,7 +26,8 @@ export interface GetToolParams {
 export interface CallToolParams {
   serverName: string;
   toolName: string;
-  toolArgs: Record<string, unknown>;
+  toolArgs?: Record<string, unknown>;
+  arguments?: Record<string, unknown>;
   requestOptions?: {
     sessionId?: string;
     tags?: Record<string, string>;
