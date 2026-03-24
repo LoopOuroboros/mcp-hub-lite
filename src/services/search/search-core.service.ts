@@ -116,16 +116,16 @@ export class SearchCoreService {
    *
    * This method first checks if tools are available in the cache. If cached data exists,
    * it returns the cached tools immediately. Otherwise, it fetches tools from all connected
-   * MCP servers, applies server-level filtering based on allowedTools configuration,
+   * MCP servers, applies server-level filtering based on aggregatedTools configuration,
    * caches the result, and returns the filtered tools.
    *
    * @returns A promise that resolves to an array of Tool objects from all connected servers.
    *
    * @remarks
-   * - Tools are filtered based on each server's allowedTools configuration
-   * - If allowedTools is null or undefined, all tools from that server are included
-   * - If allowedTools is an empty array, no tools from that server are included
-   * - Tools are filtered using strict name matching against the allowedTools list
+   * - Tools are filtered based on each server's aggregatedTools configuration
+   * - If aggregatedTools is null or undefined, all tools from that server are included
+   * - If aggregatedTools is an empty array, no tools from that server are included
+   * - Tools are filtered using strict name matching against the aggregatedTools list
    */
   private async getToolsWithCache(): Promise<Tool[]> {
     const cached = this.cacheService.get();
@@ -136,15 +136,15 @@ export class SearchCoreService {
     // Use new server name-level cache to get all tools
     const tools = mcpConnectionManager.getAllToolsByServerName();
 
-    // Get configuration based on server name and apply allowedTools filtering
+    // Get configuration based on server name and apply aggregatedTools filtering
     const filteredTools = tools.filter((tool) => {
       const serverConfig = hubManager.getServerByName(tool.serverName);
       if (!serverConfig) return true;
 
-      const allowed = serverConfig.template.allowedTools;
-      if (allowed == null) return true; // No allowedTools configured, show all tools
-      if (allowed.length === 0) return false; // Empty array, don't show any tools
-      return allowed.includes(tool.name); // Strict filtering
+      const aggregated = serverConfig.template.aggregatedTools;
+      if (aggregated == null) return false; // No aggregatedTools configured, don't show any tools
+      if (aggregated.length === 0) return false; // Empty array, don't show any tools
+      return aggregated.includes(tool.name); // Strict filtering
     });
 
     this.cacheService.set(filteredTools);

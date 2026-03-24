@@ -2,6 +2,7 @@
   InstanceCardList Component
 
   Displays a vertical list of server instance cards with:
+  - Template configuration node at the top (special node with special styling)
   - Instance index and display name (#index [displayName])
   - Status indicator (online/offline/starting/error)
   - Edit display name functionality
@@ -21,6 +22,33 @@
       <el-button size="small" :icon="Refresh" plain @click="handleReassignIndexes">
         {{ $t('serverDetail.instances.reassignIndexes') }}
       </el-button>
+    </div>
+
+    <!-- Template Card -->
+    <div v-if="showTemplateNode" class="mb-4">
+      <div
+        class="template-card p-4 rounded-lg border transition-all duration-200 cursor-pointer"
+        :class="getTemplateCardClass()"
+        @click="handleSelectTemplate"
+      >
+        <div class="flex items-center justify-between">
+          <!-- Left: Template Info -->
+          <div class="flex items-center gap-3">
+            <!-- Template Icon -->
+            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+
+            <!-- Template Name -->
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-sm text-purple-600 dark:text-purple-400">
+                {{ $t('serverDetail.instances.template') }}
+              </span>
+              <el-tag size="small" type="info">
+                {{ $t('serverDetail.instances.templateTag') }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Instance Cards -->
@@ -77,13 +105,18 @@
           <div class="flex items-center gap-2" @click.stop>
             <template v-if="!isEditingDisplayName || editingIndex !== instance.index">
               <!-- Edit Display Name -->
-              <el-button
-                :icon="Edit"
-                circle
-                plain
-                size="small"
-                @click="startEditDisplayName(instance)"
-              />
+              <el-tooltip
+                :content="$t('serverDetail.instances.editDisplayName') || 'Edit display name'"
+                placement="top"
+              >
+                <el-button
+                  :icon="Edit"
+                  circle
+                  plain
+                  size="small"
+                  @click="startEditDisplayName(instance)"
+                />
+              </el-tooltip>
               <!-- Delete Instance -->
               <el-button
                 :icon="Delete"
@@ -125,11 +158,15 @@ interface InstanceWithStatus extends ServerInstanceConfig {
  * @property {InstanceWithStatus[]} instances - Array of server instances
  * @property {number | null} selectedIndex - Currently selected instance index
  * @property {string} serverName - Name of the server
+ * @property {boolean} showTemplateNode - Whether to show the template node at the top
+ * @property {boolean} templateSelected - Whether the template node is selected
  */
 interface InstanceCardListProps {
   instances: InstanceWithStatus[];
   selectedIndex: number | null;
   serverName: string;
+  showTemplateNode?: boolean;
+  templateSelected?: boolean;
 }
 
 /**
@@ -137,6 +174,7 @@ interface InstanceCardListProps {
  *
  * @interface InstanceCardListEmits
  * @property {function} select - Emitted when an instance is selected
+ * @property {function} select-template - Emitted when template node is selected
  * @property {function} add - Emitted when add instance button is clicked
  * @property {function} update-display-name - Emitted when display name is updated
  * @property {function} delete - Emitted when delete instance button is clicked
@@ -144,13 +182,18 @@ interface InstanceCardListProps {
  */
 interface InstanceCardListEmits {
   (e: 'select', index: number): void;
+  (e: 'select-template'): void;
   (e: 'add'): void;
   (e: 'update-display-name', index: number, displayName: string): void;
   (e: 'delete', index: number): void;
   (e: 'reassign-indexes'): void;
 }
 
-const props = defineProps<InstanceCardListProps>();
+const props = withDefaults(defineProps<InstanceCardListProps>(), {
+  showTemplateNode: true,
+  templateSelected: false
+});
+
 const emit = defineEmits<InstanceCardListEmits>();
 
 // Editing state
@@ -174,6 +217,17 @@ const sortedInstances = computed(() => {
  */
 function getInstanceStatus(instance: InstanceWithStatus): string {
   return instance.status || 'offline';
+}
+
+/**
+ * Gets CSS class names for the template card based on selection state
+ *
+ * @returns {string} CSS class names
+ */
+function getTemplateCardClass() {
+  return props.templateSelected
+    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+    : 'border-purple-200 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-sm bg-white dark:bg-gray-800';
 }
 
 /**
@@ -229,6 +283,13 @@ function getStatusBadgeClass(status: string) {
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
   }
+}
+
+/**
+ * Handles template node selection
+ */
+function handleSelectTemplate() {
+  emit('select-template');
 }
 
 /**
@@ -302,6 +363,14 @@ function handleReassignIndexes() {
 <style scoped>
 .instance-card-list {
   @apply w-full;
+}
+
+.template-card {
+  @apply bg-white dark:bg-gray-800;
+}
+
+.template-card:hover {
+  @apply bg-purple-50 dark:bg-purple-900/10;
 }
 
 .instance-card {

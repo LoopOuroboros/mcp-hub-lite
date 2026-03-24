@@ -15,7 +15,7 @@ import { eventBus, EventTypes } from '@services/event-bus.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
-import type { ResolvedServerConfig } from '@config/config-migrator.js';
+import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import type { ServerConfig, ServerInstance } from '@config/config-manager.js';
 import type { ServerStatus } from './types.js';
 import { ToolCache } from './tool-cache.js';
@@ -104,7 +104,7 @@ export class McpConnectionManager {
    * ```
    */
   public async connect(
-    server: ResolvedServerConfig & Partial<ServerInstanceConfig>
+    server: ServerRuntimeConfig & Partial<ServerInstanceConfig>
   ): Promise<boolean> {
     let serverInfo: { name: string; config: ServerConfig; instance: ServerInstance } | undefined;
     try {
@@ -279,8 +279,7 @@ export class McpConnectionManager {
         resourcesCount: 0,
         pid: pid,
         startTime: Date.now(),
-        version: serverVersion,
-        hash: server.hash
+        version: serverVersion
       });
 
       logger.info(`Connected to server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);

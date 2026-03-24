@@ -48,7 +48,7 @@ describe('MCP Connection Integration', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
@@ -76,8 +76,7 @@ describe('MCP Connection Integration', () => {
     const success = await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     expect(success).toBe(true);
@@ -99,8 +98,7 @@ describe('MCP Connection Integration', () => {
     const success = await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     expect(success).toBe(false);
@@ -117,7 +115,7 @@ describe('MCP Connection Integration', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
     const instance2 = await hubManager.addServerInstance(server2Name, {});
 
@@ -139,14 +137,12 @@ describe('MCP Connection Integration', () => {
       mcpConnectionManager.connect({
         ...resolvedConfig1,
         id: serverId,
-        timestamp: Date.now(),
-        hash: 'test-hash'
+        timestamp: Date.now()
       }),
       mcpConnectionManager.connect({
         ...resolvedConfig2,
         id: instance2.id,
-        timestamp: Date.now(),
-        hash: 'test-hash-2'
+        timestamp: Date.now()
       })
     ]);
 
@@ -183,7 +179,7 @@ describe('MCP Connection Integration', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
     const searchServerInstance = await hubManager.addServerInstance(searchServerName, {});
 
@@ -198,8 +194,7 @@ describe('MCP Connection Integration', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: searchServerInstance.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const results = simpleSearchService.search('test');

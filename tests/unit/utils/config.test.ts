@@ -115,7 +115,7 @@ describe('ConfigManager', () => {
               args: ['arg1', 'arg2'],
               type: 'stdio' as const,
               timeout: 30000,
-              allowedTools: [],
+              aggregatedTools: [],
               tags: {}
             },
             instances: [

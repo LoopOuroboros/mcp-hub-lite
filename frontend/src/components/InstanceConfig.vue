@@ -1,355 +1,345 @@
 <!--
   InstanceConfig Component
 
-  Displays both template configuration (read-only) and instance configuration override (editable)
-  in a side-by-side layout. The template configuration is shown on the left with a gray,
-  disabled appearance to indicate it cannot be edited directly. The instance configuration
-  override is shown on the right and can be edited.
+  Displays a unified configuration form for instance configuration:
+  - Uses the same layout as ConfigTemplateForm for consistency
+  - Template-defined fields are read-only/disabled with gray background
+  - Instance-added fields are fully editable
+  - Supports adding new editable fields in each section (args, env, headers, tags)
+  - Keeps the "view merged configuration" feature
 
   Features:
-  - Side-by-side comparison of template and instance configurations
-  - Template configuration is read-only with grayed-out styling
-  - Instance configuration override is fully editable
-  - Highlights fields that differ from the template
-  - Shows merged final configuration preview
+  - Unified single-column layout matching ConfigTemplateForm
+  - Template fields: read-only, grayed out, with "from template" indicator
+  - Instance fields: fully editable, can be deleted
+  - Add buttons for each section to add new instance-specific fields
+  - Merged configuration preview via modal dialog button
 
-  This component helps users understand the relationship between template and instance configurations.
+  This component provides a more intuitive experience for understanding
+  the relationship between template and instance configurations.
 -->
 <template>
   <div class="instance-config">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      {{ $t('serverDetail.instanceConfig.title') }}
-    </h3>
+    <!-- Header with title and preview button -->
+    <div class="header-bar flex justify-between items-center mb-4 pr-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        {{ $t('serverDetail.instanceConfig.title') }}
+      </h3>
+      <el-button @click="showPreview = true">
+        <el-icon><View /></el-icon>
+        {{ $t('serverDetail.instanceConfig.viewMerged') }}
+      </el-button>
+    </div>
 
-    <!-- Two-column layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Left: Template Configuration (Read-only) -->
-      <div class="template-config">
-        <div class="flex items-center gap-2 mb-4">
-          <h4 class="text-md font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('serverDetail.instanceConfig.template') }}
-          </h4>
+    <!-- Unified configuration form -->
+    <div class="config-form space-y-4">
+      <!-- Transport Type (from template, read-only) -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ $t('serverDetail.config.transport') }}
+        </label>
+        <div class="flex items-center gap-2">
           <el-tag size="small" type="info">
-            {{ $t('serverDetail.instanceConfig.readOnly') }}
+            {{ getTransportLabel(templateConfig.type) }}
           </el-tag>
-        </div>
-
-        <div
-          class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
-        >
-          <el-form label-position="top" class="template-form">
-            <!-- Transport -->
-            <el-form-item :label="$t('serverDetail.config.transport')">
-              <el-select :model-value="templateConfig.type" disabled class="w-full">
-                <el-option :label="$t('serverDetail.config.transportStdio')" value="stdio" />
-                <el-option :label="$t('serverDetail.config.transportSse')" value="sse" />
-                <el-option
-                  :label="$t('serverDetail.config.transportHttp')"
-                  value="streamable-http"
-                />
-              </el-select>
-            </el-form-item>
-
-            <!-- Stdio specific fields -->
-            <template v-if="templateConfig.type === 'stdio'">
-              <el-form-item :label="$t('serverDetail.config.executable')">
-                <el-input :model-value="templateConfig.command" disabled />
-              </el-form-item>
-              <el-form-item :label="$t('serverDetail.config.args')">
-                <div class="w-full flex flex-col gap-2">
-                  <div
-                    v-for="(_, index) in templateConfig.args"
-                    :key="index"
-                    class="flex gap-2 w-full"
-                  >
-                    <el-input :model-value="templateConfig.args?.[index]" disabled />
-                  </div>
-                  <div
-                    v-if="!templateConfig.args || templateConfig.args.length === 0"
-                    class="text-gray-400 text-sm italic"
-                  >
-                    {{ $t('serverDetail.instanceConfig.noArgs') }}
-                  </div>
-                </div>
-              </el-form-item>
-            </template>
-
-            <!-- Remote specific fields -->
-            <template v-else>
-              <el-form-item :label="$t('serverDetail.config.url')">
-                <el-input :model-value="templateConfig.url" disabled />
-              </el-form-item>
-            </template>
-
-            <!-- Timeout -->
-            <el-form-item :label="$t('serverDetail.config.timeout')">
-              <el-input-number
-                :model-value="templateConfig.timeout ? templateConfig.timeout / 1000 : 60"
-                disabled
-                :min="0"
-                :step="1"
-              />
-            </el-form-item>
-
-            <!-- Description -->
-            <el-form-item :label="$t('serverDetail.config.description')">
-              <el-input
-                :model-value="templateConfig.description"
-                type="textarea"
-                :rows="3"
-                disabled
-              />
-            </el-form-item>
-
-            <!-- Auto-start -->
-            <el-form-item :label="$t('serverDetail.config.autoStart')">
-              <el-switch :model-value="templateConfig.enabled" disabled />
-            </el-form-item>
-
-            <!-- Environment Variables -->
-            <el-form-item :label="$t('serverDetail.config.env')">
-              <div class="w-full flex flex-col gap-2">
-                <div v-for="(_, key) in templateConfig.env" :key="key" class="flex gap-2 w-full">
-                  <el-input :model-value="key" disabled style="width: 30%; min-width: 150px" />
-                  <el-input :model-value="templateConfig.env?.[key]" disabled style="flex: 1" />
-                </div>
-                <div
-                  v-if="!templateConfig.env || Object.keys(templateConfig.env).length === 0"
-                  class="text-gray-400 text-sm italic"
-                >
-                  {{ $t('serverDetail.instanceConfig.noEnv') }}
-                </div>
-              </div>
-            </el-form-item>
-
-            <!-- Headers (for remote types) -->
-            <template v-if="templateConfig.type !== 'stdio'">
-              <el-form-item :label="$t('serverDetail.config.headers')">
-                <div class="w-full flex flex-col gap-2">
-                  <div
-                    v-for="(_, key) in templateConfig.headers"
-                    :key="key"
-                    class="flex gap-2 w-full"
-                  >
-                    <el-input :model-value="key" disabled style="width: 30%; min-width: 150px" />
-                    <el-input
-                      :model-value="templateConfig.headers?.[key]"
-                      disabled
-                      style="flex: 1"
-                    />
-                  </div>
-                  <div
-                    v-if="
-                      !templateConfig.headers || Object.keys(templateConfig.headers).length === 0
-                    "
-                    class="text-gray-400 text-sm italic"
-                  >
-                    {{ $t('serverDetail.instanceConfig.noHeaders') }}
-                  </div>
-                </div>
-              </el-form-item>
-            </template>
-
-            <!-- Tags -->
-            <el-form-item :label="$t('serverDetail.config.tags')">
-              <div class="w-full flex flex-col gap-2">
-                <div v-for="(_, key) in templateConfig.tags" :key="key" class="flex gap-2 w-full">
-                  <el-input :model-value="key" disabled style="width: 30%; min-width: 150px" />
-                  <el-input :model-value="templateConfig.tags?.[key]" disabled style="flex: 1" />
-                </div>
-                <div
-                  v-if="!templateConfig.tags || Object.keys(templateConfig.tags).length === 0"
-                  class="text-gray-400 text-sm italic"
-                >
-                  {{ $t('serverDetail.instanceConfig.noTags') }}
-                </div>
-              </div>
-            </el-form-item>
-          </el-form>
+          <span class="text-xs text-gray-500 dark:text-gray-400">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
         </div>
       </div>
 
-      <!-- Right: Instance Configuration Override (Editable) -->
-      <div class="instance-config-override">
-        <div class="flex items-center gap-2 mb-4">
-          <h4 class="text-md font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('serverDetail.instanceConfig.override') }}
-          </h4>
+      <!-- Command / URL (from template, read-only) -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{
+            templateConfig.type === 'stdio'
+              ? $t('serverDetail.config.executable')
+              : $t('serverDetail.config.url')
+          }}
+        </label>
+        <div class="flex gap-2 items-start">
+          <el-input
+            :model-value="
+              templateConfig.type === 'stdio' ? templateConfig.command : templateConfig.url
+            "
+            disabled
+            class="flex-1"
+          />
+          <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Arguments (stdio only) -->
+      <div v-if="templateConfig.type === 'stdio'" class="pr-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.args') }}
+          </label>
+          <el-button size="small" :icon="Plus" @click="addInstanceArg">
+            {{ $t('serverDetail.config.addArg') }}
+          </el-button>
+        </div>
+
+        <!-- Template args (read-only) -->
+        <div v-if="hasTemplateArgs" class="space-y-2 mb-3">
+          <div
+            v-for="(arg, index) in templateConfig.args"
+            :key="`template-arg-${index}`"
+            class="flex gap-2 items-start"
+          >
+            <el-input :model-value="arg" disabled class="flex-1" />
+            <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+              {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Instance args (editable) -->
+        <div v-if="localConfig.args && localConfig.args.length > 0" class="space-y-2">
+          <div
+            v-for="(_, index) in localConfig.args"
+            :key="`instance-arg-${index}`"
+            class="flex gap-2 items-start"
+          >
+            <el-input v-model="localConfig.args![index]" class="flex-1" />
+            <el-button
+              size="small"
+              type="danger"
+              :icon="Delete"
+              @click="removeInstanceArg(index)"
+            />
+            <el-tag size="small" type="success">
+              {{ $t('serverDetail.instanceConfig.instance') }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Environment Variables -->
+      <div class="pr-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.env') }}
+          </label>
+          <el-button size="small" :icon="Plus" @click="addInstanceEnv">
+            {{ $t('serverDetail.config.addEnv') }}
+          </el-button>
+        </div>
+
+        <!-- Template env (read-only) -->
+        <div v-if="hasTemplateEnv" class="space-y-2 mb-3">
+          <div
+            v-for="(_, key) in templateConfig.env"
+            :key="`template-env-${key}`"
+            class="flex gap-2 items-start"
+            style="display: flex; gap: 0.5rem; width: 100%"
+          >
+            <el-input :model-value="key" disabled style="width: 30%; min-width: 150px" />
+            <el-input :model-value="templateConfig.env![key]" disabled style="flex: 1" />
+            <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+              {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Instance env (editable) -->
+        <div v-if="localConfig.env && Object.keys(localConfig.env).length > 0" class="space-y-2">
+          <div
+            v-for="(_, key) in localConfig.env"
+            :key="`instance-env-${key}`"
+            class="flex gap-2 items-start"
+            style="display: flex; gap: 0.5rem; width: 100%"
+          >
+            <el-input
+              :model-value="key"
+              style="width: 30%; min-width: 150px"
+              :placeholder="$t('addServer.keyPlaceholder')"
+              @update:model-value="(newKey) => updateInstanceEnvKey(key, newKey as string)"
+            />
+            <el-input
+              v-model="localConfig.env![key]"
+              style="flex: 1"
+              :placeholder="$t('addServer.valuePlaceholder')"
+            />
+            <el-button size="small" type="danger" :icon="Delete" @click="removeInstanceEnv(key)" />
+            <el-tag size="small" type="success">
+              {{ $t('serverDetail.instanceConfig.instance') }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Headers (non-stdio only) -->
+      <div v-if="templateConfig.type !== 'stdio'" class="pr-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.headers') }}
+          </label>
+          <el-button size="small" :icon="Plus" @click="addInstanceHeader">
+            {{ $t('serverDetail.config.addHeader') }}
+          </el-button>
+        </div>
+
+        <!-- Template headers (read-only) -->
+        <div v-if="hasTemplateHeaders" class="space-y-2 mb-3">
+          <div
+            v-for="(_, key) in templateConfig.headers"
+            :key="`template-header-${key}`"
+            class="flex gap-2 items-start"
+            style="display: flex; gap: 0.5rem; width: 100%"
+          >
+            <el-input :model-value="key" disabled style="width: 30%; min-width: 150px" />
+            <el-input :model-value="templateConfig.headers![key]" disabled style="flex: 1" />
+            <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+              {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Instance headers (editable) -->
+        <div
+          v-if="localConfig.headers && Object.keys(localConfig.headers).length > 0"
+          class="space-y-2"
+        >
+          <div
+            v-for="(_, key) in localConfig.headers"
+            :key="`instance-header-${key}`"
+            class="flex gap-2 items-start"
+            style="display: flex; gap: 0.5rem; width: 100%"
+          >
+            <el-input
+              :model-value="key"
+              style="width: 30%; min-width: 150px"
+              :placeholder="$t('addServer.keyPlaceholder')"
+              @update:model-value="(newKey) => updateInstanceHeaderKey(key, newKey as string)"
+            />
+            <el-input
+              v-model="localConfig.headers![key]"
+              style="flex: 1"
+              :placeholder="$t('addServer.valuePlaceholder')"
+            />
+            <el-button
+              size="small"
+              type="danger"
+              :icon="Delete"
+              @click="removeInstanceHeader(key)"
+            />
+            <el-tag size="small" type="success">
+              {{ $t('serverDetail.instanceConfig.instance') }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeout (from template, read-only) -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ $t('serverDetail.config.timeout') }}
+        </label>
+        <div class="flex gap-2 items-center">
+          <el-input-number
+            :model-value="templateConfig.timeout ? templateConfig.timeout / 1000 : 60"
+            disabled
+            :min="1"
+            :max="3600"
+          />
+          <span class="text-xs text-gray-500 dark:text-gray-400">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Description (from template, read-only) -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ $t('serverDetail.config.description') }}
+        </label>
+        <div class="flex gap-2 items-start">
+          <el-input
+            :model-value="templateConfig.description"
+            type="textarea"
+            :rows="3"
+            disabled
+            class="flex-1"
+          />
+          <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Tags (instance only, editable) -->
+      <div class="pr-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.tags') }}
+          </label>
+          <el-button size="small" :icon="Plus" @click="addInstanceTag">
+            {{ $t('serverDetail.instanceConfig.addTag') }}
+          </el-button>
+        </div>
+
+        <!-- Instance tags (editable) -->
+        <div v-if="localConfig.tags && Object.keys(localConfig.tags).length > 0" class="space-y-2">
+          <div
+            v-for="(_, key) in localConfig.tags"
+            :key="`instance-tag-${key}`"
+            class="flex gap-2 items-start"
+            style="display: flex; gap: 0.5rem; width: 100%"
+          >
+            <el-input
+              :model-value="key"
+              style="width: 30%; min-width: 150px"
+              :placeholder="$t('addServer.keyPlaceholder')"
+              @update:model-value="(newKey) => updateInstanceTagKey(key, newKey as string)"
+            />
+            <el-input
+              v-model="localConfig.tags![key]"
+              style="flex: 1"
+              :placeholder="$t('addServer.valuePlaceholder')"
+            />
+            <el-button size="small" type="danger" :icon="Delete" @click="removeInstanceTag(key)" />
+            <el-tag size="small" type="success">
+              {{ $t('serverDetail.instanceConfig.instance') }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-start (instance only, editable) -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ $t('serverDetail.config.autoStart') }}
+        </label>
+        <div class="flex gap-2 items-center">
+          <el-switch v-model="localConfig.enabled" />
           <el-tag size="small" type="success">
-            {{ $t('serverDetail.instanceConfig.editable') }}
+            {{ $t('serverDetail.instanceConfig.instance') }}
           </el-tag>
         </div>
+      </div>
 
-        <div
-          class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
-        >
-          <el-form label-position="top" class="override-form">
-            <!-- Args Override -->
-            <el-form-item
-              :label="$t('serverDetail.config.args')"
-              :class="{ 'field-diff': hasDiff('args') }"
-            >
-              <div class="w-full flex flex-col gap-2">
-                <div
-                  v-for="(_, index) in instanceConfigOverrides.args || []"
-                  :key="index"
-                  class="flex gap-2 w-full"
-                >
-                  <el-input v-model="instanceConfigOverrides.args![index]" />
-                  <el-button :icon="Delete" circle plain @click="removeOverrideArg(index)" />
-                </div>
-                <div>
-                  <el-button :icon="Plus" plain size="small" @click="addOverrideArg"
-                    >+ {{ $t('serverDetail.config.addArg') }}</el-button
-                  >
-                </div>
-              </div>
-            </el-form-item>
-
-            <!-- Env Override -->
-            <el-form-item
-              :label="$t('serverDetail.config.env')"
-              :class="{ 'field-diff': hasDiff('env') }"
-            >
-              <div class="w-full flex flex-col gap-2">
-                <div
-                  v-for="(_, key) in instanceConfigOverrides.env || {}"
-                  :key="key"
-                  class="flex gap-2 w-full"
-                >
-                  <el-input
-                    v-model="overrideEnvKeys[key as string]"
-                    :placeholder="$t('addServer.keyPlaceholder')"
-                    style="width: 30%; min-width: 150px"
-                    @change="(val: string) => updateOverrideEnvKey(key as string, val)"
-                  />
-                  <el-input
-                    v-model="instanceConfigOverrides.env![key]"
-                    :placeholder="$t('addServer.valuePlaceholder')"
-                    style="flex: 1"
-                  />
-                  <el-button
-                    :icon="Delete"
-                    circle
-                    plain
-                    @click="removeOverrideEnv(key as string)"
-                  />
-                </div>
-                <div>
-                  <el-button :icon="Plus" plain size="small" @click="addOverrideEnv"
-                    >+ {{ $t('serverDetail.config.addEnv') }}</el-button
-                  >
-                </div>
-              </div>
-            </el-form-item>
-
-            <!-- Headers Override (for remote types) -->
-            <template v-if="templateConfig.type !== 'stdio'">
-              <el-form-item
-                :label="$t('serverDetail.config.headers')"
-                :class="{ 'field-diff': hasDiff('headers') }"
-              >
-                <div class="w-full flex flex-col gap-2">
-                  <div
-                    v-for="(_, key) in instanceConfigOverrides.headers || {}"
-                    :key="key"
-                    class="flex gap-2 w-full"
-                  >
-                    <el-input
-                      v-model="overrideHeaderKeys[key as string]"
-                      :placeholder="$t('addServer.keyPlaceholder')"
-                      style="width: 30%; min-width: 150px"
-                      @change="(val: string) => updateOverrideHeaderKey(key as string, val)"
-                    />
-                    <el-input
-                      v-model="instanceConfigOverrides.headers![key]"
-                      :placeholder="$t('addServer.valuePlaceholder')"
-                      style="flex: 1"
-                    />
-                    <el-button
-                      :icon="Delete"
-                      circle
-                      plain
-                      @click="removeOverrideHeader(key as string)"
-                    />
-                  </div>
-                  <div>
-                    <el-button :icon="Plus" plain size="small" @click="addOverrideHeader"
-                      >+ {{ $t('serverDetail.config.addHeader') }}</el-button
-                    >
-                  </div>
-                </div>
-              </el-form-item>
-            </template>
-
-            <!-- Tags Override -->
-            <el-form-item
-              :label="$t('serverDetail.config.tags')"
-              :class="{ 'field-diff': hasDiff('tags') }"
-            >
-              <div class="w-full flex flex-col gap-2">
-                <div
-                  v-for="(_, key) in instanceConfigOverrides.tags || {}"
-                  :key="key"
-                  class="flex gap-2 w-full"
-                >
-                  <el-input
-                    v-model="overrideTagKeys[key as string]"
-                    :placeholder="$t('addServer.keyPlaceholder')"
-                    style="width: 30%; min-width: 150px"
-                    @change="(val: string) => updateOverrideTagKey(key as string, val)"
-                  />
-                  <el-input
-                    v-model="instanceConfigOverrides.tags![key]"
-                    :placeholder="$t('addServer.valuePlaceholder')"
-                    style="flex: 1"
-                  />
-                  <el-button
-                    :icon="Delete"
-                    circle
-                    plain
-                    @click="removeOverrideTag(key as string)"
-                  />
-                </div>
-                <div>
-                  <el-button :icon="Plus" plain size="small" @click="addOverrideTag"
-                    >+ {{ $t('serverDetail.instanceConfig.addTag') }}</el-button
-                  >
-                </div>
-              </div>
-            </el-form-item>
-
-            <!-- Save Button -->
-            <div class="flex gap-2">
-              <el-button type="primary" class="mt-4" @click="saveOverrideConfig">
-                {{ $t('serverDetail.config.save') }}
-              </el-button>
-            </div>
-          </el-form>
-        </div>
+      <!-- Save Button -->
+      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 pr-4">
+        <el-button type="primary" @click="saveInstanceConfig">
+          {{ $t('serverDetail.config.save') }}
+        </el-button>
       </div>
     </div>
 
-    <!-- Merged Final Configuration Preview -->
-    <div class="mt-6">
-      <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
-        {{ $t('serverDetail.instanceConfig.mergedPreview') }}
-      </h4>
-      <div
-        class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800"
-      >
-        <pre class="text-sm font-mono text-gray-700 dark:text-gray-300 overflow-x-auto">{{
-          JSON.stringify(mergedConfig, null, 2)
-        }}</pre>
-      </div>
-    </div>
+    <!-- Merged Configuration Preview Dialog -->
+    <MergedConfigPreviewDialog v-model="showPreview" :merged-config="mergedConfig" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Delete, Plus } from '@element-plus/icons-vue';
-import type { ServerConfig } from '@shared-models/server.model';
+import { Delete, Plus, View } from '@element-plus/icons-vue';
+import type { ServerTemplate } from '@shared-models/server.model';
+import MergedConfigPreviewDialog from './MergedConfigPreviewDialog.vue';
+import { useI18n } from 'vue-i18n';
 
 /**
  * Instance configuration override interface
@@ -360,6 +350,7 @@ interface InstanceConfigOverrides {
   headers?: Record<string, string>;
   tags?: Record<string, string>;
   displayName?: string;
+  enabled?: boolean;
 }
 
 /**
@@ -371,7 +362,7 @@ interface InstanceConfigOverrides {
  * @property {string} serverName - Name of the server
  */
 interface InstanceConfigProps {
-  templateConfig: ServerConfig;
+  templateConfig: ServerTemplate;
   instanceConfig: InstanceConfigOverrides;
   serverName: string;
 }
@@ -388,44 +379,62 @@ interface InstanceConfigEmits {
 
 const props = defineProps<InstanceConfigProps>();
 const emit = defineEmits<InstanceConfigEmits>();
+const { t } = useI18n();
+
+// Dialog visibility state
+const showPreview = ref(false);
 
 // Local state for instance configuration overrides
-const instanceConfigOverrides = ref<InstanceConfigOverrides>({
+const localConfig = ref<InstanceConfigOverrides>({
+  enabled: true,
   ...props.instanceConfig
 });
 
 // Key tracking for dynamic fields
-const overrideEnvKeys = ref<Record<string, string>>({});
-const overrideHeaderKeys = ref<Record<string, string>>({});
-const overrideTagKeys = ref<Record<string, string>>({});
+const instanceEnvKeys = ref<Record<string, string>>({});
+const instanceHeaderKeys = ref<Record<string, string>>({});
+const instanceTagKeys = ref<Record<string, string>>({});
+
+// Computed properties for template field existence
+const hasTemplateArgs = computed(() => {
+  return props.templateConfig.args && props.templateConfig.args.length > 0;
+});
+
+const hasTemplateEnv = computed(() => {
+  return props.templateConfig.env && Object.keys(props.templateConfig.env).length > 0;
+});
+
+const hasTemplateHeaders = computed(() => {
+  return props.templateConfig.headers && Object.keys(props.templateConfig.headers).length > 0;
+});
 
 // Initialize keys when props change
 watch(
   () => props.instanceConfig,
   (newConfig) => {
-    instanceConfigOverrides.value = { ...newConfig };
+    localConfig.value = { ...newConfig };
 
     // Initialize env keys
-    overrideEnvKeys.value = {};
+    instanceEnvKeys.value = {};
     if (newConfig.env) {
       Object.keys(newConfig.env).forEach((k) => {
-        overrideEnvKeys.value[k] = k;
+        instanceEnvKeys.value[k] = k;
       });
     }
 
     // Initialize header keys
-    overrideHeaderKeys.value = {};
+    instanceHeaderKeys.value = {};
     if (newConfig.headers) {
       Object.keys(newConfig.headers).forEach((k) => {
-        overrideHeaderKeys.value[k] = k;
+        instanceHeaderKeys.value[k] = k;
       });
     }
 
     // Initialize tag keys
-    overrideTagKeys.value = {};
+    instanceTagKeys.value = {};
     if (newConfig.tags) {
       Object.keys(newConfig.tags).forEach((k) => {
-        overrideTagKeys.value[k] = k;
+        instanceTagKeys.value[k] = k;
       });
     }
   },
@@ -441,182 +450,158 @@ const mergedConfig = computed(() => {
   };
 
   // Apply overrides
-  if (instanceConfigOverrides.value.args && instanceConfigOverrides.value.args.length > 0) {
-    merged.args = instanceConfigOverrides.value.args;
+  if (localConfig.value.args && localConfig.value.args.length > 0) {
+    merged.args = [...(props.templateConfig.args || []), ...localConfig.value.args];
   }
 
-  if (
-    instanceConfigOverrides.value.env &&
-    Object.keys(instanceConfigOverrides.value.env).length > 0
-  ) {
+  if (localConfig.value.env && Object.keys(localConfig.value.env).length > 0) {
     merged.env = {
       ...(props.templateConfig.env || {}),
-      ...instanceConfigOverrides.value.env
+      ...localConfig.value.env
     };
   }
 
-  if (
-    instanceConfigOverrides.value.headers &&
-    Object.keys(instanceConfigOverrides.value.headers).length > 0
-  ) {
+  if (localConfig.value.headers && Object.keys(localConfig.value.headers).length > 0) {
     merged.headers = {
       ...(props.templateConfig.headers || {}),
-      ...instanceConfigOverrides.value.headers
+      ...localConfig.value.headers
     };
   }
 
-  if (
-    instanceConfigOverrides.value.tags &&
-    Object.keys(instanceConfigOverrides.value.tags).length > 0
-  ) {
-    merged.tags = {
-      ...(props.templateConfig.tags || {}),
-      ...instanceConfigOverrides.value.tags
-    };
+  if (localConfig.value.tags && Object.keys(localConfig.value.tags).length > 0) {
+    merged.tags = localConfig.value.tags;
   }
 
-  if (instanceConfigOverrides.value.displayName) {
-    merged.displayName = instanceConfigOverrides.value.displayName;
+  if (localConfig.value.displayName) {
+    merged.displayName = localConfig.value.displayName;
+  }
+
+  if (localConfig.value.enabled !== undefined) {
+    merged.enabled = localConfig.value.enabled;
   }
 
   return merged;
 });
 
 /**
- * Checks if a field has differences from the template
+ * Gets the translated transport type label
  *
- * @param {string} field - The field to check
- * @returns {boolean} True if the field has differences
+ * @param {string} type - The transport type
+ * @returns {string} The translated label
  */
-function hasDiff(field: string): boolean {
-  switch (field) {
-    case 'args':
-      return !!(
-        instanceConfigOverrides.value.args &&
-        instanceConfigOverrides.value.args.length > 0 &&
-        JSON.stringify(instanceConfigOverrides.value.args) !==
-          JSON.stringify(props.templateConfig.args || [])
-      );
-    case 'env':
-      return !!(
-        instanceConfigOverrides.value.env &&
-        Object.keys(instanceConfigOverrides.value.env).length > 0
-      );
-    case 'headers':
-      return !!(
-        instanceConfigOverrides.value.headers &&
-        Object.keys(instanceConfigOverrides.value.headers).length > 0
-      );
-    case 'tags':
-      return !!(
-        instanceConfigOverrides.value.tags &&
-        Object.keys(instanceConfigOverrides.value.tags).length > 0
-      );
+function getTransportLabel(type: string): string {
+  switch (type) {
+    case 'stdio':
+      return t('serverDetail.config.transportStdio');
+    case 'sse':
+      return t('serverDetail.config.transportSse');
+    case 'streamable-http':
+      return t('serverDetail.config.transportHttp');
     default:
-      return false;
+      return type;
   }
 }
 
 /**
- * Saves the override configuration
+ * Saves the instance configuration
  */
-function saveOverrideConfig() {
-  emit('update', instanceConfigOverrides.value);
+function saveInstanceConfig() {
+  emit('update', localConfig.value);
 }
 
 // Args helpers
-function addOverrideArg() {
-  if (!instanceConfigOverrides.value.args) {
-    instanceConfigOverrides.value.args = [];
+function addInstanceArg() {
+  if (!localConfig.value.args) {
+    localConfig.value.args = [];
   }
-  instanceConfigOverrides.value.args.push('');
+  localConfig.value.args.push('');
 }
 
-function removeOverrideArg(index: number) {
-  if (instanceConfigOverrides.value.args) {
-    instanceConfigOverrides.value.args.splice(index, 1);
+function removeInstanceArg(index: number) {
+  if (localConfig.value.args) {
+    localConfig.value.args.splice(index, 1);
   }
 }
 
 // Env helpers
-function addOverrideEnv() {
-  if (!instanceConfigOverrides.value.env) {
-    instanceConfigOverrides.value.env = {};
+function addInstanceEnv() {
+  if (!localConfig.value.env) {
+    localConfig.value.env = {};
   }
   const newKey = `NEW_ENV_${Date.now()}`;
-  instanceConfigOverrides.value.env[newKey] = '';
-  overrideEnvKeys.value[newKey] = newKey;
+  localConfig.value.env[newKey] = '';
+  instanceEnvKeys.value[newKey] = newKey;
 }
 
-function removeOverrideEnv(key: string) {
-  if (instanceConfigOverrides.value.env) {
-    delete instanceConfigOverrides.value.env[key];
-    delete overrideEnvKeys.value[key];
+function removeInstanceEnv(key: string) {
+  if (localConfig.value.env) {
+    delete localConfig.value.env[key];
+    delete instanceEnvKeys.value[key];
   }
 }
 
-function updateOverrideEnvKey(oldKey: string, newKey: string) {
-  if (!instanceConfigOverrides.value.env || !oldKey || !newKey || oldKey === newKey) return;
+function updateInstanceEnvKey(oldKey: string, newKey: string) {
+  if (!localConfig.value.env || !oldKey || !newKey || oldKey === newKey) return;
 
-  const value = instanceConfigOverrides.value.env[oldKey] ?? '';
-  delete instanceConfigOverrides.value.env[oldKey];
-  delete overrideEnvKeys.value[oldKey];
-  instanceConfigOverrides.value.env[newKey] = value;
-  overrideEnvKeys.value[newKey] = newKey;
+  const value = localConfig.value.env[oldKey] ?? '';
+  delete localConfig.value.env[oldKey];
+  delete instanceEnvKeys.value[oldKey];
+  localConfig.value.env[newKey] = value;
+  instanceEnvKeys.value[newKey] = newKey;
 }
 
 // Headers helpers
-function addOverrideHeader() {
-  if (!instanceConfigOverrides.value.headers) {
-    instanceConfigOverrides.value.headers = {};
+function addInstanceHeader() {
+  if (!localConfig.value.headers) {
+    localConfig.value.headers = {};
   }
   const newKey = `X-New-Header-${Date.now()}`;
-  instanceConfigOverrides.value.headers[newKey] = '';
-  overrideHeaderKeys.value[newKey] = newKey;
+  localConfig.value.headers[newKey] = '';
+  instanceHeaderKeys.value[newKey] = newKey;
 }
 
-function removeOverrideHeader(key: string) {
-  if (instanceConfigOverrides.value.headers) {
-    delete instanceConfigOverrides.value.headers[key];
-    delete overrideHeaderKeys.value[key];
+function removeInstanceHeader(key: string) {
+  if (localConfig.value.headers) {
+    delete localConfig.value.headers[key];
+    delete instanceHeaderKeys.value[key];
   }
 }
 
-function updateOverrideHeaderKey(oldKey: string, newKey: string) {
-  if (!instanceConfigOverrides.value.headers || !oldKey || !newKey || oldKey === newKey) return;
+function updateInstanceHeaderKey(oldKey: string, newKey: string) {
+  if (!localConfig.value.headers || !oldKey || !newKey || oldKey === newKey) return;
 
-  const value = instanceConfigOverrides.value.headers[oldKey] ?? '';
-  delete instanceConfigOverrides.value.headers[oldKey];
-  delete overrideHeaderKeys.value[oldKey];
-  instanceConfigOverrides.value.headers[newKey] = value;
-  overrideHeaderKeys.value[newKey] = newKey;
+  const value = localConfig.value.headers[oldKey] ?? '';
+  delete localConfig.value.headers[oldKey];
+  delete instanceHeaderKeys.value[oldKey];
+  localConfig.value.headers[newKey] = value;
+  instanceHeaderKeys.value[newKey] = newKey;
 }
 
 // Tags helpers
-function addOverrideTag() {
-  if (!instanceConfigOverrides.value.tags) {
-    instanceConfigOverrides.value.tags = {};
+function addInstanceTag() {
+  if (!localConfig.value.tags) {
+    localConfig.value.tags = {};
   }
   const newKey = `new-tag-${Date.now()}`;
-  instanceConfigOverrides.value.tags[newKey] = '';
-  overrideTagKeys.value[newKey] = newKey;
+  localConfig.value.tags[newKey] = '';
+  instanceTagKeys.value[newKey] = newKey;
 }
 
-function removeOverrideTag(key: string) {
-  if (instanceConfigOverrides.value.tags) {
-    delete instanceConfigOverrides.value.tags[key];
-    delete overrideTagKeys.value[key];
+function removeInstanceTag(key: string) {
+  if (localConfig.value.tags) {
+    delete localConfig.value.tags[key];
+    delete instanceTagKeys.value[key];
   }
 }
 
-function updateOverrideTagKey(oldKey: string, newKey: string) {
-  if (!instanceConfigOverrides.value.tags || !oldKey || !newKey || oldKey === newKey) return;
+function updateInstanceTagKey(oldKey: string, newKey: string) {
+  if (!localConfig.value.tags || !oldKey || !newKey || oldKey === newKey) return;
 
-  const value = instanceConfigOverrides.value.tags[oldKey] ?? '';
-  delete instanceConfigOverrides.value.tags[oldKey];
-  delete overrideTagKeys.value[oldKey];
-  instanceConfigOverrides.value.tags[newKey] = value;
-  overrideTagKeys.value[newKey] = newKey;
+  const value = localConfig.value.tags[oldKey] ?? '';
+  delete localConfig.value.tags[oldKey];
+  delete instanceTagKeys.value[oldKey];
+  localConfig.value.tags[newKey] = value;
+  instanceTagKeys.value[newKey] = newKey;
 }
 </script>
 
@@ -625,17 +610,7 @@ function updateOverrideTagKey(oldKey: string, newKey: string) {
   @apply w-full;
 }
 
-.template-form .el-input__wrapper,
-.template-form .el-select__wrapper,
-.template-form .el-input-number__wrapper {
-  @apply bg-gray-100 dark:bg-gray-700;
-}
-
-.field-diff {
-  @apply border-l-4 border-yellow-400 pl-2;
-}
-
-.field-diff .el-form-item__label {
-  @apply text-yellow-600 dark:text-yellow-400 font-semibold;
+.config-form {
+  @apply w-full;
 }
 </style>

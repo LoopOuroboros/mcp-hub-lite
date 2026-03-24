@@ -8,10 +8,6 @@
         {{ $t('sidebar.servers') }}
       </h2>
       <div class="flex gap-2">
-        <el-button type="success" @click="handleSave">
-          <el-icon class="mr-2"><CircleCheckFilled /></el-icon>
-          {{ $t('action.save') }}
-        </el-button>
         <el-button type="primary" @click="openAddModal('form')">
           <el-icon class="mr-2"><Plus /></el-icon>
           {{ $t('sidebar.addServer') }}
@@ -189,9 +185,8 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useServerStore } from '@stores/server';
-import { useSystemStore } from '@stores/system';
 import { useI18n } from 'vue-i18n';
-import type { Server, ServerConfig } from '@shared-models/server.model';
+import type { Server } from '@shared-models/server.model';
 import {
   Plus,
   Platform,
@@ -199,7 +194,6 @@ import {
   SwitchButton,
   Refresh,
   Setting,
-  CircleCheckFilled,
   Memo,
   Tools,
   Files
@@ -209,50 +203,10 @@ import ServerStatusTags from '@components/ServerStatusTags.vue';
 import { ElMessage } from 'element-plus';
 
 const store = useServerStore();
-const systemStore = useSystemStore();
 const router = useRouter();
 const { t } = useI18n();
 const showAddModal = ref(false);
 const addModalMode = ref<'form' | 'json'>('form');
-
-/**
- * Handles saving the current server configuration to persistent storage.
- *
- * This function collects all server configurations from the store and sends them
- * to the backend API for persistence. It provides user feedback via success/error messages.
- *
- * @async
- * @throws {Error} If the save operation fails
- *
- * @example
- * ```typescript
- * await handleSave(); // Saves all server configurations
- * ```
- */
-async function handleSave() {
-  try {
-    // Get current server configuration
-    const serversConfig = store.servers.map((server) => ({
-      name: server.name,
-      config: server.config
-    }));
-
-    // Call save configuration API
-    await systemStore.updateConfig({
-      servers: serversConfig.reduce(
-        (acc, curr) => {
-          acc[curr.name] = curr.config;
-          return acc;
-        },
-        {} as Record<string, ServerConfig>
-      )
-    });
-
-    ElMessage.success(t('action.saveSuccess'));
-  } catch (err: unknown) {
-    ElMessage.error((err as Error).message || t('error.saveFailed'));
-  }
-}
 
 // Fetch servers when component is mounted
 onMounted(() => {
@@ -276,26 +230,36 @@ function openAddModal(mode: 'form' | 'json') {
 }
 
 /**
- * Navigates to the dashboard view with the specified server selected and tab active.
+ * Navigates to the server detail view with the specified server selected and tab active.
  *
  * @param {string} serverId - The ID of the server to select
- * @param {string} tabName - The name of the tab to activate ('logs', 'config', 'tools')
+ * @param {string} tabName - The name of the tab to activate ('config', 'tools', 'resources')
  *
  * @example
  * ```typescript
- * navigateToTab('server-123', 'logs'); // Navigate to logs tab for server-123
+ * navigateToTab('server-123', 'config'); // Navigate to config tab for server-123
  * ```
  */
 function navigateToTab(serverId: string, tabName: string) {
+  const server = store.servers.find((s) => s.id === serverId);
+  if (!server) return;
+
   store.selectServer(serverId);
-  // Navigate to dashboard where ServerDetail is shown with the specified tab
-  router.push({ name: 'dashboard', query: { tab: tabName } });
+
+  const routeName =
+    tabName === 'tools'
+      ? 'server-detail-tools'
+      : tabName === 'resources'
+        ? 'server-detail-resources'
+        : 'server-detail-config';
+
+  router.push({ name: routeName, params: { name: server.name } });
 }
 
 /**
  * Handles clicking on a server card to navigate to the appropriate detail view.
  *
- * For online servers, navigates to the logs tab. For offline servers, navigates to the config tab.
+ * For online servers, navigates to the config tab (which contains logs). For offline servers, navigates to the config tab.
  *
  * @param {Server} server - The server object that was clicked
  *
@@ -305,11 +269,7 @@ function navigateToTab(serverId: string, tabName: string) {
  * ```
  */
 function handleCardClick(server: Server) {
-  if (server.status === 'online') {
-    navigateToTab(server.id, 'logs');
-  } else {
-    navigateToTab(server.id, 'config');
-  }
+  navigateToTab(server.id, 'config');
 }
 
 /**

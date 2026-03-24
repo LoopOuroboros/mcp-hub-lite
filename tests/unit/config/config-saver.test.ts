@@ -60,10 +60,8 @@ describe('ConfigSaver', () => {
 
       expect(() => saveConfig(testConfigPath, config)).not.toThrow();
     });
-  });
 
-  describe('empty value cleaning', () => {
-    it('should remove empty string fields', () => {
+    it('should preserve empty string fields', () => {
       const config = {
         version: '1.1.0',
         emptyField: '',
@@ -73,14 +71,10 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, config);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        nonEmptyField: 'value'
-      });
-      expect(writtenContent.emptyField).toBeUndefined();
+      expect(writtenContent).toEqual(config);
     });
 
-    it('should remove empty array fields', () => {
+    it('should preserve empty array fields', () => {
       const config = {
         version: '1.1.0',
         emptyArray: [],
@@ -90,14 +84,10 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, config);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        nonEmptyArray: [1, 2, 3]
-      });
-      expect(writtenContent.emptyArray).toBeUndefined();
+      expect(writtenContent).toEqual(config);
     });
 
-    it('should remove empty object fields', () => {
+    it('should preserve empty object fields', () => {
       const config = {
         version: '1.1.0',
         emptyObject: {},
@@ -107,14 +97,10 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, config);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        nonEmptyObject: { key: 'value' }
-      });
-      expect(writtenContent.emptyObject).toBeUndefined();
+      expect(writtenContent).toEqual(config);
     });
 
-    it('should remove null and undefined fields', () => {
+    it('should preserve null and undefined fields', () => {
       const config = {
         version: '1.1.0',
         nullField: null,
@@ -127,33 +113,20 @@ describe('ConfigSaver', () => {
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
       expect(writtenContent).toEqual({
         version: '1.1.0',
+        nullField: null,
         validField: 'value'
       });
-      expect(writtenContent.nullField).toBeUndefined();
-      expect(writtenContent.undefinedField).toBeUndefined();
     });
 
-    it('should always preserve version field even if empty', () => {
-      const config = {
-        version: '1.1.0',
-        emptyVersion: '',
-        system: {}
-      };
-
-      saveConfig(testConfigPath, config);
-
-      const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent.version).toBe('1.1.0');
-    });
-
-    it('should recursively clean nested objects', () => {
+    it('should preserve nested empty objects and arrays', () => {
       const config = {
         version: '1.1.0',
         system: {
           host: 'localhost',
           port: 7788,
           emptyNested: {},
-          emptyString: ''
+          emptyString: '',
+          emptyArray: []
         },
         security: {
           emptyArray: [],
@@ -164,44 +137,33 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, config);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        system: {
-          host: 'localhost',
-          port: 7788
-        },
-        security: {
-          maxConnections: 50
-        }
-      });
+      expect(writtenContent).toEqual(config);
     });
 
-    it('should handle arrays with empty values', () => {
-      const config = {
-        version: '1.1.0',
-        arrayWithEmpty: [1, '', null, undefined, {}, 'valid']
-      };
-
-      saveConfig(testConfigPath, config);
-
-      const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        arrayWithEmpty: [1, 'valid']
-      });
-    });
-
-    it('should preserve business fields like type and timeout', () => {
+    it('should preserve server configuration with empty collections', () => {
       const config = {
         version: '1.1.0',
         servers: {
           'test-server': {
-            type: 'stdio',
-            timeout: 60000,
-            command: 'npx test',
-            args: [],
-            env: {},
-            tags: {}
+            template: {
+              type: 'stdio',
+              timeout: 60000,
+              command: 'npx test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: []
+            },
+            instances: [
+              {
+                id: 'instance-1',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ]
           }
         }
       };
@@ -209,30 +171,10 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, config);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent.servers['test-server'].type).toBe('stdio');
-      expect(writtenContent.servers['test-server'].timeout).toBe(60000);
-      expect(writtenContent.servers['test-server'].command).toBe('npx test');
-      expect(writtenContent.servers['test-server'].args).toBeUndefined();
-      expect(writtenContent.servers['test-server'].env).toBeUndefined();
-      expect(writtenContent.servers['test-server'].tags).toBeUndefined();
+      expect(writtenContent).toEqual(config);
     });
 
-    it('should write empty object if everything is cleaned except version', () => {
-      const config = {
-        version: '1.1.0',
-        emptyField: '',
-        anotherEmpty: {}
-      };
-
-      saveConfig(testConfigPath, config);
-
-      const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0'
-      });
-    });
-
-    it('should handle complex real-world configuration', () => {
+    it('should handle complex real-world configuration with empty values', () => {
       const realConfig = {
         version: '1.1.0',
         system: {
@@ -255,14 +197,25 @@ describe('ConfigSaver', () => {
         },
         servers: {
           'my-server': {
-            command: 'npx my-server',
-            args: [],
-            env: {},
-            enabled: true,
-            type: 'stdio',
-            timeout: 60000,
-            allowedTools: [],
-            tags: {}
+            template: {
+              command: 'npx my-server',
+              args: [],
+              env: {},
+              headers: {},
+              timeout: 60000,
+              aggregatedTools: [],
+              type: 'stdio'
+            },
+            instances: [
+              {
+                id: 'default',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ]
           }
         },
         emptySection: {}
@@ -271,32 +224,7 @@ describe('ConfigSaver', () => {
       saveConfig(testConfigPath, realConfig);
 
       const writtenContent = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
-      expect(writtenContent).toEqual({
-        version: '1.1.0',
-        system: {
-          host: 'localhost',
-          port: 7788,
-          language: 'zh',
-          theme: 'system',
-          logging: {
-            level: 'info',
-            rotationAge: '7d'
-          }
-        },
-        security: {
-          allowedNetworks: ['127.0.0.1'],
-          maxConcurrentConnections: 50,
-          connectionTimeout: 30000
-        },
-        servers: {
-          'my-server': {
-            command: 'npx my-server',
-            enabled: true,
-            type: 'stdio',
-            timeout: 60000
-          }
-        }
-      });
+      expect(writtenContent).toEqual(realConfig);
     });
   });
 });

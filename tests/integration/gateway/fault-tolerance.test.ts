@@ -34,7 +34,7 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 });
 
 describe('Gateway Fault Tolerance', () => {
-  let mockServerInstance: { id: string; timestamp: number; hash: string };
+  let mockServerInstance: { id: string; timestamp: number };
 
   beforeEach(async () => {
     // Clear all mocks
@@ -46,19 +46,17 @@ describe('Gateway Fault Tolerance', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
     const instance = (await hubManager.addServerInstance('test-server', {})) as unknown as {
       id: string;
       timestamp: number;
-      hash: string;
     };
     mockServerInstance = {
       id: instance.id,
-      timestamp: instance.timestamp || Date.now(),
-      hash: instance.hash || 'test-hash'
+      timestamp: instance.timestamp || Date.now()
     };
   });
 
@@ -80,8 +78,7 @@ describe('Gateway Fault Tolerance', () => {
     const success = await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: mockServerInstance.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     expect(success).toBe(false);
@@ -109,8 +106,7 @@ describe('Gateway Fault Tolerance', () => {
     const success = await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: mockServerInstance.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     expect(success).toBe(false);
@@ -126,7 +122,7 @@ describe('Gateway Fault Tolerance', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
     const workingInstance = await hubManager.addServerInstance('working-server', {});
 
@@ -149,8 +145,7 @@ describe('Gateway Fault Tolerance', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig1,
       id: mockServerInstance.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     // Connect second server (should succeed)
@@ -165,8 +160,7 @@ describe('Gateway Fault Tolerance', () => {
     const success2 = await mcpConnectionManager.connect({
       ...resolvedConfig2,
       id: workingInstance.id,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     expect(success2).toBe(true);

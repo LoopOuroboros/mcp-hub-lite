@@ -51,7 +51,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
@@ -80,8 +80,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const status = mcpConnectionManager.getStatus(serverId);
@@ -105,8 +104,7 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const tools = mcpConnectionManager.getTools(serverId);

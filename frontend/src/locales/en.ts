@@ -21,7 +21,12 @@ export default {
     logsCopied: 'Logs copied to clipboard',
     serverAdded: 'Server added successfully',
     configImported: 'Configuration imported successfully',
-    saveSuccess: 'Configuration saved successfully'
+    saveSuccess: 'Configuration saved successfully',
+    copiedToClipboard: 'Copied to clipboard',
+    copyFailed: 'Failed to copy to clipboard'
+  },
+  common: {
+    copy: 'Copy'
   },
   sidebar: {
     title: 'MCP Server Manager',
@@ -134,6 +139,7 @@ export default {
     emptySelect: 'Select a server to view details',
     noServerSelected: 'No server selected',
     noInstanceSelected: 'Please select an instance',
+    noSelection: 'Please select template or instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
     version: 'Version',
     pid: 'PID',
@@ -153,6 +159,7 @@ export default {
       instances: 'Instances'
     },
     instanceTabs: {
+      config: 'Config',
       configOverride: 'Instance Config',
       logs: 'Logs'
     },
@@ -183,11 +190,15 @@ export default {
       readOnly: 'Read-only',
       override: 'Instance Override',
       editable: 'Editable',
+      fromTemplate: 'From template',
+      instance: 'Instance',
       noArgs: 'No arguments',
       noEnv: 'No environment variables',
       noHeaders: 'No headers',
       noTags: 'No tags',
-      mergedPreview: 'Merged Final Config Preview'
+      addTag: 'Add Tag',
+      mergedPreview: 'Merged Final Config Preview',
+      viewMerged: 'View Merged Config'
     },
     logs: {
       autoScroll: 'Auto-scroll',
@@ -222,11 +233,15 @@ export default {
       error: 'Error',
       starting: 'Starting'
     },
+    editJsonTitle: 'Edit JSON Config',
     instances: {
       title: 'Instances',
+      template: 'Template',
+      templateTag: 'Template Config',
       unnamed: 'Unnamed',
       add: 'Add Instance',
-      reassignIndexes: 'Reassign Indexes'
+      reassignIndexes: 'Reassign Indexes',
+      editDisplayName: 'Edit display name'
     }
   },
   addServer: {

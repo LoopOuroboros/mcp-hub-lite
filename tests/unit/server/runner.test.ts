@@ -17,7 +17,7 @@ vi.mock('@config/config-migrator.js', () => ({
     args: [],
     type: 'stdio' as const,
     timeout: 30000,
-    allowedTools: [],
+    aggregatedTools: [],
     tags: {},
     enabled: true
   })),
@@ -358,9 +358,8 @@ describe('Server Runner', () => {
               command: 'test-command',
               type: 'stdio' as const,
               args: [],
-              allowedTools: [],
-              timeout: 30000,
-              tags: {}
+              aggregatedTools: [],
+              timeout: 30000
             },
             instances: [{ id: 'instance-1', enabled: true, args: [], tags: {} }],
             tagDefinitions: []
@@ -373,9 +372,8 @@ describe('Server Runner', () => {
               command: 'test-command',
               type: 'stdio' as const,
               args: [],
-              allowedTools: [],
-              timeout: 30000,
-              tags: {}
+              aggregatedTools: [],
+              timeout: 30000
             },
             instances: [{ id: 'instance-2', enabled: false, args: [], tags: {} }],
             tagDefinitions: []

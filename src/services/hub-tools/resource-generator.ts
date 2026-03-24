@@ -209,7 +209,7 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
       toolsCount: tools.length,
       tools: toolsMap,
       resourcesCount: resources.length,
-      tags: serverConfig?.template?.tags || {},
+      tags: serverConfig?.instances[0]?.tags || {},
       lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
       uptime: serverInfo.instance.uptime as number,
       description: getServerDescription(serverConfig, serverName)

@@ -4,23 +4,13 @@ import { createHash } from 'node:crypto';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { ServerInstance, ServerTemplate, SystemConfig } from './config.schema.js';
 import { isLegacyV1Config, SystemConfigSchema } from './config.schema.js';
+import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 
 /**
+ * @deprecated Use ServerRuntimeConfig from @shared-models/server.model instead
  * Resolved server configuration with template + instance merged
  */
-export interface ResolvedServerConfig {
-  command?: string;
-  args: string[];
-  env?: Record<string, string>;
-  headers?: Record<string, string>;
-  type: 'stdio' | 'sse' | 'streamable-http' | 'http';
-  timeout: number;
-  url?: string;
-  allowedTools: string[];
-  tags: Record<string, string>;
-  enabled: boolean;
-  description?: string;
-}
+export type ResolvedServerConfig = ServerRuntimeConfig;
 
 /**
  * Configuration Migration Result
@@ -154,9 +144,8 @@ function convertToServerTemplate(v1Config: LegacyServerConfigV1): ServerTemplate
     type: v1Config.type || 'stdio',
     timeout: v1Config.timeout || 60000,
     url: v1Config.url,
-    allowedTools: v1Config.allowedTools || [],
-    description: v1Config.description,
-    tags: v1Config.tags || {}
+    aggregatedTools: v1Config.allowedTools || [],
+    description: v1Config.description
   };
 }
 
@@ -473,7 +462,7 @@ export function checkMigrationStatus(configPath: string): {
 export function resolveInstanceConfig(
   serverConfig: SystemConfig['servers'][string],
   instanceId?: string
-): ResolvedServerConfig | null {
+): ServerRuntimeConfig | null {
   const { template, instances } = serverConfig;
 
   // Find the target instance
@@ -498,8 +487,8 @@ export function resolveInstanceConfig(
     type: template.type,
     timeout: template.timeout,
     url: template.url,
-    allowedTools: template.allowedTools,
-    tags: { ...template.tags, ...targetInstance.tags },
+    aggregatedTools: template.aggregatedTools,
+    tags: targetInstance.tags,
     enabled: targetInstance.enabled !== false,
     description: template.description
   };
@@ -513,8 +502,8 @@ export function resolveInstanceConfig(
  */
 export function getEnabledInstances(
   serverConfig: SystemConfig['servers'][string]
-): Array<{ instance: ServerInstance; resolved: ResolvedServerConfig }> {
-  const result: Array<{ instance: ServerInstance; resolved: ResolvedServerConfig }> = [];
+): Array<{ instance: ServerInstance; resolved: ServerRuntimeConfig }> {
+  const result: Array<{ instance: ServerInstance; resolved: ServerRuntimeConfig }> = [];
 
   for (const instance of serverConfig.instances) {
     if (instance.enabled !== false) {

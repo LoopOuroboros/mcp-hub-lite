@@ -68,9 +68,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
-        allowedTools: [],
-        timeout: 30000,
-        tags: {}
+        aggregatedTools: [],
+        timeout: 30000
       },
       instances: [],
       tagDefinitions: []
@@ -93,7 +92,7 @@ describe('HubManagerService', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 30000,
-      allowedTools: [],
+      aggregatedTools: [],
       tags: {},
       enabled: true
     });
@@ -116,9 +115,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
-        allowedTools: [],
-        timeout: 30000,
-        tags: {}
+        aggregatedTools: [],
+        timeout: 30000
       },
       instances: [],
       tagDefinitions: []
@@ -141,7 +139,7 @@ describe('HubManagerService', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 30000,
-      allowedTools: [],
+      aggregatedTools: [],
       tags: {},
       enabled: false
     });
@@ -161,9 +159,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
-        allowedTools: [],
-        timeout: 30000,
-        tags: {}
+        aggregatedTools: [],
+        timeout: 30000
       },
       instances: [],
       tagDefinitions: []
@@ -193,9 +190,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'test',
         args: [],
-        allowedTools: [],
-        timeout: 30000,
-        tags: {}
+        aggregatedTools: [],
+        timeout: 30000
       },
       instances: [],
       tagDefinitions: []

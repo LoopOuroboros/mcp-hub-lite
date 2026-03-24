@@ -525,7 +525,7 @@ async function createServer() {
         url: form.value.url,
         timeout: form.value.timeout * 1000,
         enabled: form.value.autoStart,
-        allowedTools: [],
+        aggregatedTools: [],
         env,
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         description: form.value.description || undefined

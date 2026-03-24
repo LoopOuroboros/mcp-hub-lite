@@ -35,6 +35,9 @@ shared/
 - `ServerConfig` - 服务器配置接口
 - `ServerInstance` - 服务器实例接口
 - `ServerStatus` - 服务器状态类型
+- `ServerTemplateV11` - v1.1 服务器模板配置接口
+- `ServerInstanceV11` - v1.1 服务器实例配置接口
+- `ServerConfigV11` - v1.1 完整服务器配置接口
 
 ### Tool Model (`models/tool.model.ts`)
 

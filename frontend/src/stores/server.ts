@@ -21,11 +21,14 @@ import { ref, computed } from 'vue';
 import { http } from '@utils/http';
 import { useWebSocketStore } from '@stores/websocket';
 import type {
-  ServerConfig,
+  ServerRuntimeConfig,
   ServerInstanceConfig,
   LogEntry,
   Server,
-  StatusInfo
+  StatusInfo,
+  ServerConfig,
+  ServerTemplate,
+  ServerInstance
 } from '@shared-models/server.model';
 import type { ServerStatus } from '@shared-types/common.types';
 import type { Tool } from '@shared-models/tool.model';
@@ -35,12 +38,13 @@ import type { Resource } from '@shared-models/resource.model';
 export type {
   Server,
   ServerStatus,
-  ServerConfig,
+  ServerRuntimeConfig,
   ServerInstanceConfig,
   LogEntry,
   Tool,
   Resource,
-  StatusInfo
+  StatusInfo,
+  ServerConfig
 };
 
 /**
@@ -52,6 +56,34 @@ export interface ServerInstanceUpdate {
   env?: Record<string, string>;
   headers?: Record<string, string>;
   tags?: Record<string, string>;
+  enabled?: boolean;
+}
+
+/**
+ * Resolves the actual server configuration by merging template and instance
+ *
+ * @param template - The server template configuration
+ * @param instance - The server instance configuration
+ * @returns Merged server configuration
+ */
+function resolveInstanceConfig(
+  template: ServerTemplate,
+  instance: Partial<ServerInstance>
+): ServerRuntimeConfig {
+  return {
+    command: template.command,
+    args: template.args ?? [],
+    env: { ...template.env, ...instance.env },
+    headers: { ...template.headers, ...instance.headers },
+    type: (template.type as 'stdio' | 'sse' | 'streamable-http' | 'http') || 'stdio',
+    timeout: template.timeout ?? 60000,
+    url: template.url,
+    aggregatedTools: template.aggregatedTools ?? [],
+    description: template.description,
+    tags: instance.tags,
+    // v1.1 doesn't have enabled at template level, use instance level
+    enabled: instance.enabled !== false
+  };
 }
 
 /**
@@ -114,9 +146,8 @@ export const useServerStore = defineStore('server', () => {
     loading.value = true;
     error.value = null;
     try {
-      const [serverConfigs, serverInstances, statuses] = await Promise.all([
+      const [serverConfigs, statuses] = await Promise.all([
         http.get<Array<{ name: string; config: ServerConfig }>>('/web/servers'),
-        http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances'),
         http.get<StatusInfo[]>('/web/mcp/status')
       ]);
 
@@ -128,74 +159,88 @@ export const useServerStore = defineStore('server', () => {
       const combinedServers: Server[] = [];
 
       serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
-        // Get all instances corresponding to this server name
-        const instances = serverInstances[serverName] || [];
+        const template = serverConfig.template;
+        const instances = serverConfig.instances || [];
 
         if (instances.length > 0) {
-          // Case with instances - keep original logic
+          // Case with instances - process each instance
           instances.forEach((instanceConfig) => {
             const serverId = instanceConfig.id; // Use instance ID as unique server ID
             const statusInfo = statuses.find((s) => s.id === serverId)?.status;
 
-            // Determine status based on config.enabled and statusInfo
+            // Resolve the actual configuration by merging template and instance
+            const resolvedConfig = resolveInstanceConfig(template, instanceConfig);
+
+            // Determine status based on instance enabled and statusInfo
             let status: ServerStatus;
             if (statusInfo?.connected) {
               status = 'online';
             } else if (statusInfo?.error) {
               status = 'error';
-            } else if (serverConfig.enabled) {
+            } else if (instanceConfig.enabled !== false) {
               // If configured as enabled but not yet connected, show as starting
               status = 'starting';
             } else {
               status = 'offline';
             }
 
+            // Create compatible instance config for frontend
+            const compatibleInstance: ServerInstanceConfig = {
+              id: instanceConfig.id,
+              timestamp: instanceConfig.timestamp ?? Date.now(),
+              index: instanceConfig.index,
+              displayName: instanceConfig.displayName
+            };
+
             combinedServers.push({
               id: serverId,
               name: serverName,
               status,
               type:
-                serverConfig.type === 'sse' || serverConfig.type === 'streamable-http'
+                template.type === 'sse' ||
+                template.type === 'streamable-http' ||
+                template.type === 'http'
                   ? 'remote'
                   : 'local',
-              config: serverConfig,
-              instance: instanceConfig,
+              config: resolvedConfig,
+              instance: compatibleInstance,
               logs: existingLogs.get(serverId) || [],
               tools: existingTools.get(serverId),
               resources: existingResources.get(serverId),
               uptime: statusInfo?.connected ? 'Active' : undefined,
-              startTime: statusInfo?.startTime,
-              pid: statusInfo?.pid,
-              toolsCount: statusInfo?.toolsCount,
-              resourcesCount: statusInfo?.resourcesCount,
-              version: statusInfo?.version
+              startTime: statusInfo?.startTime ?? instanceConfig.startTime,
+              pid: statusInfo?.pid ?? instanceConfig.pid,
+              toolsCount: statusInfo?.toolsCount ?? 0,
+              resourcesCount: statusInfo?.resourcesCount ?? 0,
+              version: statusInfo?.version,
+              rawV11Config: serverConfig
             });
           });
         } else {
           // Case without instances - create a virtual instance for display
           const serverId = `config-${serverName}-${Date.now()}`;
 
-          // Determine display status based on configured enabled state
-          let status: ServerStatus;
-          if (serverConfig.enabled) {
-            status = 'starting'; // Configured as enabled but not started
-          } else {
-            status = 'offline'; // Configured as disabled
-          }
+          // Resolve base config from template
+          const resolvedConfig = resolveInstanceConfig(template, { id: serverId });
+
+          // Determine display status - v1.1 doesn't have template-level enabled,
+          // default to offline for config-only servers
+          const status: ServerStatus = 'offline';
 
           combinedServers.push({
             id: serverId,
             name: serverName,
             status,
             type:
-              serverConfig.type === 'sse' || serverConfig.type === 'streamable-http'
+              template.type === 'sse' ||
+              template.type === 'streamable-http' ||
+              template.type === 'http'
                 ? 'remote'
                 : 'local',
-            config: serverConfig,
+            config: resolvedConfig,
             instance: {
               id: serverId,
-              timestamp: Date.now(),
-              hash: 'config-only'
+              timestamp: Date.now()
             },
             logs: existingLogs.get(serverId) || [],
             tools: existingTools.get(serverId),
@@ -205,7 +250,8 @@ export const useServerStore = defineStore('server', () => {
             pid: undefined,
             toolsCount: 0,
             resourcesCount: 0,
-            version: undefined
+            version: undefined,
+            rawV11Config: serverConfig
           });
         }
       });
@@ -243,7 +289,10 @@ export const useServerStore = defineStore('server', () => {
         config: serverData.config || {}
       };
 
-      await http.post<{ name: string; config: ServerConfig }>('/web/servers', serverBasePayload);
+      await http.post<{ name: string; config: ServerRuntimeConfig }>(
+        '/web/servers',
+        serverBasePayload
+      );
 
       // Step 2: Add server instance configuration (now automatically handled by backend)
 
@@ -301,7 +350,7 @@ export const useServerStore = defineStore('server', () => {
 
       if (serverData.config) {
         // Update server configuration
-        const payload: Partial<ServerConfig> = {};
+        const payload: Partial<ServerRuntimeConfig> = {};
         if (serverData.config.command) payload.command = serverData.config.command;
         if (serverData.config.args) payload.args = serverData.config.args;
         if (serverData.config.env) payload.env = serverData.config.env;
@@ -309,8 +358,8 @@ export const useServerStore = defineStore('server', () => {
         if (serverData.config.url) payload.url = serverData.config.url;
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout;
         if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled;
-        if (serverData.config.allowedTools !== undefined)
-          payload.allowedTools = serverData.config.allowedTools;
+        if (serverData.config.aggregatedTools !== undefined)
+          payload.aggregatedTools = serverData.config.aggregatedTools;
         if (serverData.config.type) payload.type = serverData.config.type;
         if (serverData.config.tags) payload.tags = serverData.config.tags;
         if (serverData.config.description !== undefined)

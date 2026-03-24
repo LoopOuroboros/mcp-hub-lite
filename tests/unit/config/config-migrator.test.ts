@@ -78,7 +78,7 @@ describe('Config Migrator', () => {
         tags: { environment: 'dev' },
         type: 'stdio',
         timeout: 60000,
-        allowedTools: ['tool1', 'tool2'],
+        aggregatedTools: ['tool1', 'tool2'],
         description: 'Test server 1'
       },
       'test-server-2': {
@@ -88,7 +88,7 @@ describe('Config Migrator', () => {
         type: 'sse',
         url: 'http://localhost:8080',
         timeout: 60000,
-        allowedTools: [],
+        aggregatedTools: [],
         description: 'Test server 2'
       }
     },
@@ -189,7 +189,7 @@ describe('Config Migrator', () => {
       expect(server1.template.args).toEqual(['--verbose']);
       expect(server1.template.env).toEqual({ NODE_ENV: 'development' });
       expect(server1.template.type).toBe('stdio');
-      expect(server1.template.tags).toEqual({ environment: 'dev' });
+      expect(server1.instances[0].tags).toEqual({ environment: 'dev' });
       expect(server1.instances).toHaveLength(1);
       expect(server1.instances[0].id).toMatch(/test-server-1-[0-9a-f]{8}/);
       expect(server1.instances[0].enabled).toBe(true);
@@ -365,7 +365,7 @@ describe('Config Migrator', () => {
             type: 'stdio',
             args: [],
             timeout: 30000,
-            allowedTools: []
+            aggregatedTools: []
           }
         }
       };

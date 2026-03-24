@@ -96,9 +96,8 @@ describe('Config Schema (v1.1)', () => {
         env: { LOG_LEVEL: 'info' },
         type: 'stdio',
         timeout: 60000,
-        allowedTools: ['tool1', 'tool2'],
-        description: 'My MCP server template',
-        tags: { vendor: 'acme' }
+        aggregatedTools: ['tool1', 'tool2'],
+        description: 'My MCP server template'
       };
 
       const result = ServerTemplateSchema.safeParse(template);
@@ -114,8 +113,7 @@ describe('Config Schema (v1.1)', () => {
         expect(result.data.type).toBe('stdio');
         expect(result.data.timeout).toBe(60000);
         expect(result.data.args).toEqual([]);
-        expect(result.data.allowedTools).toEqual([]);
-        expect(result.data.tags).toEqual({});
+        expect(result.data.aggregatedTools).toEqual([]);
       }
     });
   });
@@ -128,8 +126,7 @@ describe('Config Schema (v1.1)', () => {
           args: [],
           type: 'stdio',
           timeout: 60000,
-          allowedTools: [],
-          tags: {}
+          aggregatedTools: []
         },
         instances: [
           {

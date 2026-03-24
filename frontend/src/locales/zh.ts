@@ -21,7 +21,12 @@ export default {
     logsCopied: '日志已复制到剪贴板',
     serverAdded: '服务器添加成功',
     configImported: '配置导入成功',
-    saveSuccess: '配置保存成功'
+    saveSuccess: '配置保存成功',
+    copiedToClipboard: '已复制到剪贴板',
+    copyFailed: '复制到剪贴板失败'
+  },
+  common: {
+    copy: '复制'
   },
   sidebar: {
     title: 'MCP 服务器管理器',
@@ -134,6 +139,7 @@ export default {
     emptySelect: '请选择一个服务器以查看详情',
     noServerSelected: '未选择服务器',
     noInstanceSelected: '请选择一个实例',
+    noSelection: '请选择模板或实例',
     deleteConfirm: '确定要删除此服务器吗？',
     version: '版本',
     pid: '进程ID',
@@ -153,6 +159,7 @@ export default {
       instances: '实例'
     },
     instanceTabs: {
+      config: '配置',
       configOverride: '实例配置',
       logs: '日志'
     },
@@ -183,12 +190,15 @@ export default {
       readOnly: '只读',
       override: '实例配置覆盖',
       editable: '可编辑',
+      fromTemplate: '来自模板',
+      instance: '实例',
       noArgs: '无参数',
       noEnv: '无环境变量',
       noHeaders: '无请求头',
       noTags: '无标签',
       addTag: '添加标签',
-      mergedPreview: '合并后的最终配置预览'
+      mergedPreview: '合并后的最终配置预览',
+      viewMerged: '查看合并配置'
     },
     logs: {
       autoScroll: '自动滚动',
@@ -223,11 +233,15 @@ export default {
       error: '错误',
       starting: '启动中'
     },
+    editJsonTitle: '编辑 JSON 配置',
     instances: {
       title: '实例',
+      template: '模板',
+      templateTag: '模板配置',
       unnamed: '未命名',
       add: '添加实例',
-      reassignIndexes: '重新分配索引'
+      reassignIndexes: '重新分配索引',
+      editDisplayName: '编辑显示名称'
     }
   },
   addServer: {

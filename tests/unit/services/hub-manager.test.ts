@@ -45,7 +45,7 @@ describe('Server API Routes', () => {
             type: 'stdio' as const,
             command: 'test',
             args: [],
-            allowedTools: [],
+            aggregatedTools: [],
             timeout: 30000,
             tags: {}
           },
@@ -80,9 +80,8 @@ describe('Server API Routes', () => {
         command: 'node',
         args: [],
         env: {},
-        allowedTools: [],
-        timeout: 30000,
-        tags: {}
+        aggregatedTools: [],
+        timeout: 30000
       },
       instances: [],
       tagDefinitions: []

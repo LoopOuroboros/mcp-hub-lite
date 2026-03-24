@@ -82,7 +82,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
@@ -111,8 +111,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const result = (await mcpConnectionManager.callTool(serverId, 'calculator', {
@@ -141,8 +140,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     await expect(
@@ -170,8 +168,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     await expect(mcpConnectionManager.callTool(serverId, 'unknown_tool', {})).rejects.toThrow();
@@ -193,8 +190,7 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const [result1, result2] = await Promise.all([

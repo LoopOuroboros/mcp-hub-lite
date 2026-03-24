@@ -7,12 +7,11 @@ export interface MockServerConfig {
   id: string;
   name: string;
   config: {
-    allowedTools?: string[];
+    aggregatedTools?: string[];
   };
   instance: {
     id: string;
     timestamp: number;
-    hash: string;
   };
 }
 

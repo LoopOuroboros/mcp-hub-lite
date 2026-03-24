@@ -6,7 +6,7 @@ import {
   ServerTemplate
 } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
-import type { ResolvedServerConfig } from '@config/config-migrator.js';
+import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
@@ -138,7 +138,7 @@ export class HubManagerService {
   /**
    * Gets the resolved server configuration by merging template and instance.
    */
-  getResolvedServerConfig(name: string, instanceId?: string): ResolvedServerConfig | null {
+  getResolvedServerConfig(name: string, instanceId?: string): ServerRuntimeConfig | null {
     const serverConfig = this.getServerByName(name);
     if (!serverConfig) {
       return null;

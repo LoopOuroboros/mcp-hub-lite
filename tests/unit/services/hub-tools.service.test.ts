@@ -31,7 +31,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               description: 'File system operations',
               tags: {}
@@ -47,7 +47,7 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               tags: {}
             },
@@ -88,7 +88,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               tags: {}
             },
@@ -127,7 +127,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               description: 'File system operations',
               tags: {}
@@ -143,7 +143,7 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               description: 'Time and timezone utilities',
               tags: {}
@@ -184,7 +184,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               description: 'This server is connected',
               tags: {}
@@ -200,7 +200,7 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               description: 'This server is disconnected',
               tags: {}
@@ -278,9 +278,8 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
-          allowedTools: [],
-          timeout: 30000,
-          tags: {}
+          aggregatedTools: [],
+          timeout: 30000
         },
         instances: [],
         tagDefinitions: []
@@ -341,9 +340,8 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
-          allowedTools: [],
-          timeout: 30000,
-          tags: {}
+          aggregatedTools: [],
+          timeout: 30000
         },
         instances: [],
         tagDefinitions: []
@@ -378,9 +376,8 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
-          allowedTools: [],
-          timeout: 30000,
-          tags: {}
+          aggregatedTools: [],
+          timeout: 30000
         },
         instances: [],
         tagDefinitions: []
@@ -411,9 +408,8 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
-          allowedTools: [],
-          timeout: 30000,
-          tags: {}
+          aggregatedTools: [],
+          timeout: 30000
         },
         instances: [],
         tagDefinitions: []
@@ -452,7 +448,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               tags: {}
             },
@@ -467,7 +463,7 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               tags: {}
             },
@@ -570,7 +566,7 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
-              allowedTools: [],
+              aggregatedTools: [],
               timeout: 30000,
               tags: {}
             },
@@ -669,11 +665,10 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
-          allowedTools: [],
-          timeout: 30000,
-          tags: { env: 'test' }
+          aggregatedTools: [],
+          timeout: 30000
         },
-        instances: [],
+        instances: [{ id: 'test-instance', enabled: true, args: [], tags: { env: 'test' } }],
         tagDefinitions: []
       };
       const mockTools = [

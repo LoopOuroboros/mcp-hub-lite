@@ -40,7 +40,7 @@ describe('Server API Routes', () => {
             type: 'stdio' as const,
             command: 'test',
             args: [],
-            allowedTools: [],
+            aggregatedTools: [],
             timeout: 30000,
             tags: {}
           },
@@ -67,7 +67,7 @@ describe('Server API Routes', () => {
         command: 'node',
         args: [],
         env: {},
-        allowedTools: []
+        aggregatedTools: []
       }
     };
     const createdServer = {
@@ -76,7 +76,7 @@ describe('Server API Routes', () => {
         command: 'node',
         args: [],
         env: {},
-        allowedTools: [],
+        aggregatedTools: [],
         timeout: 30000,
         tags: {}
       },

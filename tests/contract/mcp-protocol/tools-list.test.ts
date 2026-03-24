@@ -42,7 +42,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       args: [],
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
@@ -101,8 +101,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const tools = mcpConnectionManager.getTools(serverId);
@@ -139,8 +138,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const tools1 = mcpConnectionManager.getTools(serverId);
@@ -169,8 +167,7 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     await mcpConnectionManager.connect({
       ...resolvedConfig,
       id: serverId,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      timestamp: Date.now()
     });
 
     const tools = mcpConnectionManager.getTools(serverId);
