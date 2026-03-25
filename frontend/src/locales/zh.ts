@@ -24,7 +24,10 @@ export default {
     saveSuccess: '配置保存成功',
     copiedToClipboard: '已复制到剪贴板',
     copyFailed: '复制到剪贴板失败',
-    displayNameUpdated: '实例名称已更新'
+    displayNameUpdated: '实例名称已更新',
+    instanceAdded: '实例添加成功',
+    instanceDeleted: '实例删除成功',
+    indexesReassigned: '索引重新分配成功'
   },
   common: {
     copy: '复制'
@@ -143,6 +146,7 @@ export default {
     noInstanceSelected: '请选择一个实例',
     noSelection: '请选择模板或实例',
     deleteConfirm: '确定要删除此服务器吗？',
+    deleteInstanceConfirm: '确定要删除此实例吗？',
     version: '版本',
     pid: '进程ID',
     uptime: '运行时间',

@@ -772,8 +772,19 @@ function handleSelectInstance(index: number) {
   selectedInstanceIndex.value = index;
 }
 
-function handleAddInstance() {
-  ElMessage.info('Add instance - would call store.addServerInstance');
+async function handleAddInstance() {
+  if (!server.value?.name) return;
+
+  try {
+    await store.addServerInstance(server.value.name);
+    ElMessage.success(t('action.instanceAdded'));
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(e.message);
+    } else {
+      ElMessage.error(String(e));
+    }
+  }
 }
 
 async function handleUpdateDisplayName(index: number, displayName: string) {
@@ -791,12 +802,47 @@ async function handleUpdateDisplayName(index: number, displayName: string) {
   }
 }
 
-function handleDeleteInstance(index: number) {
-  ElMessage.info(`Delete instance #${index}`);
+async function handleDeleteInstance(index: number) {
+  if (!server.value?.name) return;
+
+  try {
+    await ElMessageBox.confirm(t('serverDetail.deleteInstanceConfirm'), t('action.delete'), {
+      confirmButtonText: t('action.delete'),
+      cancelButtonText: t('action.cancel'),
+      type: 'warning'
+    });
+
+    await store.removeServerInstance(server.value.name, index);
+    ElMessage.success(t('action.instanceDeleted'));
+
+    // If the deleted instance was selected, switch to template
+    if (selectedInstanceIndex.value === index) {
+      selectedInstanceIndex.value = null;
+    }
+  } catch (e: unknown) {
+    if (e !== 'cancel') {
+      if (e instanceof Error) {
+        ElMessage.error(e.message || 'Failed to delete instance');
+      } else {
+        ElMessage.error(String(e) || 'Failed to delete instance');
+      }
+    }
+  }
 }
 
-function handleReassignIndexes() {
-  ElMessage.info('Reassign indexes');
+async function handleReassignIndexes() {
+  if (!server.value?.name) return;
+
+  try {
+    await store.reassignInstanceIndexes(server.value.name);
+    ElMessage.success(t('action.indexesReassigned'));
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(e.message);
+    } else {
+      ElMessage.error(String(e));
+    }
+  }
 }
 
 async function handleUpdateInstanceConfig(config: Partial<InstanceConfigOverrides>) {

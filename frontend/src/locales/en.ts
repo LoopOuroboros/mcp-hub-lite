@@ -24,7 +24,10 @@ export default {
     saveSuccess: 'Configuration saved successfully',
     copiedToClipboard: 'Copied to clipboard',
     copyFailed: 'Failed to copy to clipboard',
-    displayNameUpdated: 'Display name updated'
+    displayNameUpdated: 'Display name updated',
+    instanceAdded: 'Instance added successfully',
+    instanceDeleted: 'Instance deleted successfully',
+    indexesReassigned: 'Indexes reassigned successfully'
   },
   common: {
     copy: 'Copy'
@@ -143,6 +146,7 @@ export default {
     noInstanceSelected: 'Please select an instance',
     noSelection: 'Please select template or instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
+    deleteInstanceConfirm: 'Are you sure you want to delete this instance?',
     version: 'Version',
     pid: 'PID',
     uptime: 'Uptime',

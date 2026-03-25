@@ -224,12 +224,14 @@ export function updateServerTemplate(
  */
 export function updateServerInstance(
   name: string,
-  index: number,
+  index: number | string,
   updates: Partial<ServerInstance>,
   currentServers: Record<string, ServerConfig>
 ): boolean {
+  const numericIndex = typeof index === 'string' ? parseInt(index, 10) : index;
+
   logger.debug(
-    `[ServerConfigManager] updateServerInstance called for server: ${name}, index: ${index} (type: ${typeof index})`
+    `[ServerConfigManager] updateServerInstance called for server: ${name}, index: ${numericIndex} (type: ${typeof numericIndex})`
   );
   logger.debug(`[ServerConfigManager] Updates received:`, updates);
 
@@ -246,9 +248,9 @@ export function updateServerInstance(
     );
 
     const instanceIndex = instances.findIndex((inst) => {
-      const match = inst.index === index;
+      const match = inst.index === numericIndex;
       logger.debug(
-        `[ServerConfigManager] Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${index} (${typeof index}) => ${match}`
+        `[ServerConfigManager] Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${numericIndex} (${typeof numericIndex}) => ${match}`
       );
       return match;
     });
@@ -265,18 +267,21 @@ export function updateServerInstance(
       logger.debug(`[ServerConfigManager] Updated instance after merge:`, instances[instanceIndex]);
       return true;
     } else {
-      logger.debug(`[ServerConfigManager] Instance with index ${index} not found`);
+      logger.debug(`[ServerConfigManager] Instance with index ${numericIndex} not found`);
       // Try fallback to array index
-      if (index >= 0 && index < instances.length) {
+      if (numericIndex >= 0 && numericIndex < instances.length) {
         logger.debug(
-          `[ServerConfigManager] Falling back to array index ${index} (since index field match failed)`
+          `[ServerConfigManager] Falling back to array index ${numericIndex} (since index field match failed)`
         );
-        const originalInstance = instances[index];
-        instances[index] = {
+        const originalInstance = instances[numericIndex];
+        instances[numericIndex] = {
           ...originalInstance,
           ...updates
         };
-        logger.debug(`[ServerConfigManager] Updated instance via array index:`, instances[index]);
+        logger.debug(
+          `[ServerConfigManager] Updated instance via array index:`,
+          instances[numericIndex]
+        );
         return true;
       }
     }
@@ -322,11 +327,14 @@ export function removeServer(name: string, currentServers: Record<string, Server
  */
 export function removeServerInstance(
   name: string,
-  index: number,
+  index: number | string,
   currentServers: Record<string, ServerConfig>
 ): boolean {
   if (currentServers[name]?.instances) {
-    const instanceIndex = currentServers[name].instances.findIndex((inst) => inst.index === index);
+    const numericIndex = typeof index === 'string' ? parseInt(index, 10) : index;
+    const instanceIndex = currentServers[name].instances.findIndex(
+      (inst) => inst.index === numericIndex
+    );
     if (instanceIndex !== -1) {
       currentServers[name].instances.splice(instanceIndex, 1);
       if (currentServers[name].instances.length === 0) {

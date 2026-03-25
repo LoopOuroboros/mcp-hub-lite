@@ -26,7 +26,7 @@ export function saveConfig(configPath: string, config: unknown): void {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(configPath, JSON.stringify(config));
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     logger.debug(`[ConfigSaver] Configuration saved successfully`);
   } catch (error) {
     logger.error(`[ConfigSaver] Failed to save configuration:`, error);

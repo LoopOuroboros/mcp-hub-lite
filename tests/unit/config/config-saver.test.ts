@@ -43,7 +43,10 @@ describe('ConfigSaver', () => {
 
       expect(mockPath.dirname).toHaveBeenCalledWith(testConfigPath);
       expect(mockFs.existsSync).toHaveBeenCalledWith(testDir);
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(testConfigPath, JSON.stringify(config));
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+        testConfigPath,
+        JSON.stringify(config, null, 2)
+      );
     });
 
     it('should create directory if it does not exist', () => {
