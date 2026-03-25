@@ -61,12 +61,34 @@ api/
 
 ### 服务器管理 API (`api/web/servers.ts`)
 
-| 路径               | 方法   | 描述               |
-| ------------------ | ------ | ------------------ |
-| `/web/servers`     | GET    | 获取所有服务器配置 |
-| `/web/servers`     | POST   | 添加新服务器       |
-| `/web/servers/:id` | PUT    | 更新服务器配置     |
-| `/web/servers/:id` | DELETE | 删除服务器         |
+**服务器模板管理**:
+
+| 路径                      | 方法   | 描述                 |
+| ------------------------- | ------ | -------------------- |
+| `/web/servers`            | GET    | 获取所有服务器配置   |
+| `/web/servers`            | POST   | 添加新服务器         |
+| `/web/servers/:name`      | PUT    | 更新服务器模板配置   |
+| `/web/servers/:name`      | DELETE | 删除服务器           |
+| `/web/servers/name/:name` | GET    | 获取指定名称的服务器 |
+| `/web/servers/batch`      | POST   | 批量导入服务器       |
+
+**服务器实例管理（新增 v1.1）**:
+
+| 路径                                           | 方法   | 描述                             |
+| ---------------------------------------------- | ------ | -------------------------------- |
+| `/web/server-instances`                        | GET    | 获取所有服务器实例               |
+| `/web/server-instances/:name`                  | GET    | 获取指定服务器的所有实例         |
+| `/web/server-instances/:name`                  | POST   | 为指定服务器添加新实例           |
+| `/web/server-instances/:name/:index`           | PUT    | 更新指定服务器的实例（部分更新） |
+| `/web/server-instances/:name/:index`           | DELETE | 删除指定服务器的实例             |
+| `/web/server-instances/:name/reassign-indexes` | POST   | 重新分配服务器实例索引           |
+
+**ServerInstanceUpdateSchema 使用说明**:
+
+- 用于实例的部分更新（PATCH 语义）
+- 所有字段都是可选的
+- 不包含默认值，避免覆盖现有配置
+- 支持更新 displayName、enabled、env、args 等字段
 
 ### 搜索 API (`api/web/search.ts`)
 
@@ -312,17 +334,17 @@ A:
 
 ## 相关文件清单
 
-| 文件路径                | 描述               |
-| ----------------------- | ------------------ |
-| `api/mcp/gateway.ts`    | MCP Gateway 路由   |
-| `api/web/servers.ts`    | 服务器管理 API     |
-| `api/web/search.ts`     | 搜索 API           |
-| `api/web/health.ts`     | 健康检查 API       |
-| `api/web/mcp-status.ts` | MCP 状态 API       |
-| `api/web/config.ts`     | 配置管理 API       |
-| `api/web/logs.ts`       | 日志 API           |
-| `api/web/hub-tools.ts`  | 系统工具 API       |
-| `api/web/resources.ts`  | 资源 API           |
-| `api/web/sessions.ts`   | 会话管理 API       |
-| `api/ws/events.ts`      | WebSocket 事件处理 |
-| `api/ws/ws-handler.ts`  | WebSocket 处理器   |
+| 文件路径                | 描述                        |
+| ----------------------- | --------------------------- |
+| `api/mcp/gateway.ts`    | MCP Gateway 路由            |
+| `api/web/servers.ts`    | 服务器管理 API（v1.1 格式） |
+| `api/web/search.ts`     | 搜索 API                    |
+| `api/web/health.ts`     | 健康检查 API                |
+| `api/web/mcp-status.ts` | MCP 状态 API                |
+| `api/web/config.ts`     | 配置管理 API                |
+| `api/web/logs.ts`       | 日志 API                    |
+| `api/web/hub-tools.ts`  | 系统工具 API                |
+| `api/web/resources.ts`  | 资源 API                    |
+| `api/web/sessions.ts`   | 会话管理 API                |
+| `api/ws/events.ts`      | WebSocket 事件处理          |
+| `api/ws/ws-handler.ts`  | WebSocket 处理器            |

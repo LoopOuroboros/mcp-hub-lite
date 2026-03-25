@@ -104,7 +104,22 @@ logger.debug('Tool called', { toolName, args }, LOG_MODULES.GATEWAY);
 
 ### JsonUtils (`json-utils.ts`)
 
-**职责**: JSON 工具函数，配置获取器模式
+**职责**: JSON 工具函数，配置获取器模式，包含多种调试设置获取器
+
+**ConfigGetter 类型**:
+
+```typescript
+type ConfigGetter = () => {
+  system: {
+    logging: {
+      jsonPretty: boolean;
+      mcpCommDebug: boolean;
+      sessionDebug: boolean;
+      apiDebug: boolean; // 新增：API 调试日志配置
+    };
+  };
+};
+```
 
 **主要方法**:
 
@@ -112,8 +127,11 @@ logger.debug('Tool called', { toolName, args }, LOG_MODULES.GATEWAY);
 - `getJsonPrettySetting()` - 获取 JSON 美化设置
 - `getMcpCommDebugSetting()` - 获取 MCP 通信调试设置
 - `getSessionDebugSetting()` - 获取会话调试设置
+- `getApiDebugSetting()` - 获取 API 调试设置（新增）
 - `safeJsonStringify()` - 安全 JSON 序列化
 - `prettifyJson()` - JSON 美化，支持换行处理
+- `rawHeadersToObject()` - 将 Node.js rawHeaders 数组转换为对象
+- `stringifyRawHeadersForLogging()` - 格式化 rawHeaders 用于日志输出
 
 ### FormatUtils (`format-utils.ts`)
 
