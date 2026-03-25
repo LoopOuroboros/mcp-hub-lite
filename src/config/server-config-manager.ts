@@ -6,6 +6,7 @@
 import { ServerTemplateSchema, ServerInstanceSchema, ServerConfigSchema } from './config.schema.js';
 import type { ServerTemplate, ServerInstance, ServerConfig } from './config.schema.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * Generates a unique server instance ID.
@@ -227,15 +228,61 @@ export function updateServerInstance(
   updates: Partial<ServerInstance>,
   currentServers: Record<string, ServerConfig>
 ): boolean {
+  logger.debug(
+    `[ServerConfigManager] updateServerInstance called for server: ${name}, index: ${index} (type: ${typeof index})`
+  );
+  logger.debug(`[ServerConfigManager] Updates received:`, updates);
+
   if (currentServers[name]?.instances) {
-    const instanceIndex = currentServers[name].instances.findIndex((inst) => inst.index === index);
+    const instances = currentServers[name].instances;
+    logger.debug(`[ServerConfigManager] All instances for server ${name}:`, instances);
+    logger.debug(
+      `[ServerConfigManager] Instance indexes:`,
+      instances.map((inst, i) => ({
+        arrayIndex: i,
+        instanceIndex: inst.index,
+        type: typeof inst.index
+      }))
+    );
+
+    const instanceIndex = instances.findIndex((inst) => {
+      const match = inst.index === index;
+      logger.debug(
+        `[ServerConfigManager] Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${index} (${typeof index}) => ${match}`
+      );
+      return match;
+    });
+
     if (instanceIndex !== -1) {
-      currentServers[name].instances[instanceIndex] = {
-        ...currentServers[name].instances[instanceIndex],
+      const originalInstance = instances[instanceIndex];
+      logger.debug(`[ServerConfigManager] Original instance before update:`, originalInstance);
+
+      instances[instanceIndex] = {
+        ...originalInstance,
         ...updates
       };
+
+      logger.debug(`[ServerConfigManager] Updated instance after merge:`, instances[instanceIndex]);
       return true;
+    } else {
+      logger.debug(`[ServerConfigManager] Instance with index ${index} not found`);
+      // Try fallback to array index
+      if (index >= 0 && index < instances.length) {
+        logger.debug(
+          `[ServerConfigManager] Falling back to array index ${index} (since index field match failed)`
+        );
+        const originalInstance = instances[index];
+        instances[index] = {
+          ...originalInstance,
+          ...updates
+        };
+        logger.debug(`[ServerConfigManager] Updated instance via array index:`, instances[index]);
+        return true;
+      }
     }
+  } else {
+    logger.debug(`[ServerConfigManager] Server ${name} not found or has no instances`);
+    logger.debug(`[ServerConfigManager] Current servers keys:`, Object.keys(currentServers));
   }
   return false;
 }

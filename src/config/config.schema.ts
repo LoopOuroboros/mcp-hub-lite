@@ -2,6 +2,7 @@ import {
   TransportType,
   TagDefinitionSchema,
   ServerInstanceSchema,
+  ServerInstanceUpdateSchema,
   ServerTemplateSchema,
   ServerConfigSchema,
   LoggingConfigSchema,
@@ -12,6 +13,7 @@ import {
   type ServerConfig,
   type ServerTemplate,
   type ServerInstance,
+  type ServerInstanceUpdate,
   type TagDefinition,
   type ServerInstanceConfig,
   type ServerRuntimeConfig
@@ -31,6 +33,7 @@ export {
   TransportType,
   TagDefinitionSchema,
   ServerInstanceSchema,
+  ServerInstanceUpdateSchema,
   ServerTemplateSchema,
   ServerConfigSchema,
   LoggingConfigSchema,
@@ -44,6 +47,7 @@ export type {
   ServerConfig,
   ServerTemplate,
   ServerInstance,
+  ServerInstanceUpdate,
   TagDefinition,
   ServerInstanceConfig,
   ServerRuntimeConfig

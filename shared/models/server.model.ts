@@ -45,8 +45,8 @@ export type TransportType = (typeof TransportType)[keyof typeof TransportType];
  */
 export const ServerEnvConfigSchema = z.object({
   args: z.array(z.string()).default([]),
-  env: z.record(z.string(), z.string()).optional(),
-  headers: z.record(z.string(), z.string()).optional()
+  env: z.record(z.string(), z.string()).default({}),
+  headers: z.record(z.string(), z.string()).default({})
 });
 
 export type ServerEnvConfig = z.infer<typeof ServerEnvConfigSchema>;
@@ -102,13 +102,34 @@ export const ServerInstanceSchema = ServerInstanceMetadataSchema.merge(
   enabled: z.boolean().default(true),
   // Environment config (for overriding template values)
   args: z.array(z.string()).default([]),
-  env: z.record(z.string(), z.string()).optional(),
-  headers: z.record(z.string(), z.string()).optional(),
+  env: z.record(z.string(), z.string()).default({}),
+  headers: z.record(z.string(), z.string()).default({}),
   // Instance-specific tags
   tags: z.record(z.string(), z.string()).default({})
 });
 
 export type ServerInstance = z.infer<typeof ServerInstanceSchema>;
+
+/**
+ * Server Instance Update Schema (without defaults)
+ * Used for partial updates to server instances - intentionally omits default values
+ * to prevent overwriting existing configuration with empty defaults.
+ */
+export const ServerInstanceUpdateSchema = z.object({
+  id: z.string().optional(),
+  index: z.number().optional(),
+  displayName: z.string().optional(),
+  timestamp: z.number().optional(),
+  pid: z.number().optional(),
+  startTime: z.number().optional(),
+  enabled: z.boolean().optional(),
+  args: z.array(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  tags: z.record(z.string(), z.string()).optional()
+});
+
+export type ServerInstanceUpdate = z.infer<typeof ServerInstanceUpdateSchema>;
 
 // ====== Server Template Schema ======
 
@@ -159,14 +180,16 @@ export const LoggingConfigSchema = z
     rotationAge: z.string().default('7d'),
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
-    sessionDebug: z.boolean().default(false)
+    sessionDebug: z.boolean().default(false),
+    apiDebug: z.boolean().default(false)
   })
   .default({
     level: 'info',
     rotationAge: '7d',
     jsonPretty: true,
     mcpCommDebug: false,
-    sessionDebug: false
+    sessionDebug: false,
+    apiDebug: false
   });
 
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
@@ -231,7 +254,8 @@ export const SystemConfigSchema = z.object({
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false
+        sessionDebug: false,
+        apiDebug: false
       }
     }),
   security: SecurityConfigSchema,

@@ -124,6 +124,10 @@
                   <el-form-item :label="$t('settings.sessionDebug')">
                     <el-switch v-model="config.system.logging.sessionDebug" />
                   </el-form-item>
+
+                  <el-form-item :label="$t('settings.apiDebug')">
+                    <el-switch v-model="config.system.logging.apiDebug" />
+                  </el-form-item>
                 </template>
               </el-form>
             </div>

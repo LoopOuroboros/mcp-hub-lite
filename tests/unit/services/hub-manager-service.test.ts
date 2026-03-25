@@ -68,6 +68,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
+        env: {},
+        headers: {},
         aggregatedTools: [],
         timeout: 30000
       },
@@ -79,6 +81,8 @@ describe('HubManagerService', () => {
       id: 'test-server',
       enabled: true,
       args: [],
+      env: {},
+      headers: {},
       tags: {}
     };
 
@@ -115,6 +119,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
+        env: {},
+        headers: {},
         aggregatedTools: [],
         timeout: 30000
       },
@@ -126,6 +132,8 @@ describe('HubManagerService', () => {
       id: 'test-server-disabled',
       enabled: false,
       args: [],
+      env: {},
+      headers: {},
       tags: {}
     };
 
@@ -159,6 +167,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'node',
         args: [],
+        env: {},
+        headers: {},
         aggregatedTools: [],
         timeout: 30000
       },
@@ -173,6 +183,8 @@ describe('HubManagerService', () => {
         id: 'test-server-instance',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {}
       } as ServerInstance
     ]);
@@ -190,6 +202,8 @@ describe('HubManagerService', () => {
         type: 'stdio' as const,
         command: 'test',
         args: [],
+        env: {},
+        headers: {},
         aggregatedTools: [],
         timeout: 30000
       },
@@ -211,6 +225,8 @@ describe('HubManagerService', () => {
       id: 'test-instance',
       enabled: true,
       args: [],
+      env: {},
+      headers: {},
       tags: {}
     };
 

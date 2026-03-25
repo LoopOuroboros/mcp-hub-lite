@@ -49,6 +49,7 @@ export interface SystemConfig {
       jsonPretty: boolean;
       mcpCommDebug: boolean;
       sessionDebug: boolean;
+      apiDebug: boolean;
     };
   };
   security: {
@@ -77,7 +78,8 @@ export const useSystemStore = defineStore('system', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false
+        sessionDebug: false,
+        apiDebug: false
       }
     },
     security: {

@@ -1,9 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
-import { ServerTemplateSchema, ServerInstanceSchema } from '@config/config.schema.js';
+import { ServerTemplateSchema, ServerInstanceUpdateSchema } from '@config/config.schema.js';
 import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
+import { stringifyForLogging, getApiDebugSetting } from '@utils/json-utils.js';
 
 interface BatchResultSuccess {
   name: string;
@@ -117,8 +118,19 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     '/web/server-instances/:name',
     async (request, reply) => {
       try {
-        const instanceSchema = ServerInstanceSchema.partial();
-        const body = instanceSchema.parse(request.body);
+        if (getApiDebugSetting()) {
+          logger.debug(
+            `[API] POST /web/server-instances/${request.params.name} - raw body: ${stringifyForLogging(request.body)}`,
+            LOG_MODULES.SERVER_API
+          );
+        }
+        const body = ServerInstanceUpdateSchema.parse(request.body);
+        if (getApiDebugSetting()) {
+          logger.debug(
+            `[API] POST /web/server-instances/${request.params.name} - parsed body: ${stringifyForLogging(body)}`,
+            LOG_MODULES.SERVER_API
+          );
+        }
 
         // Check if server exists
         const server = hubManager.getServerByName(request.params.name);
@@ -163,8 +175,19 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     '/web/server-instances/:name/:index',
     async (request, reply) => {
       try {
-        const partialSchema = ServerInstanceSchema.partial();
-        const body = partialSchema.parse(request.body);
+        if (getApiDebugSetting()) {
+          logger.debug(
+            `[API] PUT /web/server-instances/${request.params.name}/${request.params.index} - raw body: ${stringifyForLogging(request.body)}`,
+            LOG_MODULES.SERVER_API
+          );
+        }
+        const body = ServerInstanceUpdateSchema.parse(request.body);
+        if (getApiDebugSetting()) {
+          logger.debug(
+            `[API] PUT /web/server-instances/${request.params.name}/${request.params.index} - parsed body: ${stringifyForLogging(body)}`,
+            LOG_MODULES.SERVER_API
+          );
+        }
 
         await hubManager.updateServerInstance(request.params.name, request.params.index, body);
         return reply.code(200).send({ message: 'Server instance updated' });

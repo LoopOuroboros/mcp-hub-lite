@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import path from 'path';
+import { logger } from '@utils/logger.js';
 
 /**
  * Saves the configuration to disk at the specified path.
@@ -20,12 +21,14 @@ import path from 'path';
  */
 export function saveConfig(configPath: string, config: unknown): void {
   try {
+    logger.debug(`[ConfigSaver] Saving configuration to: ${configPath}`);
     const dir = path.dirname(configPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  } catch {
-    // Ignore
+    fs.writeFileSync(configPath, JSON.stringify(config));
+    logger.debug(`[ConfigSaver] Configuration saved successfully`);
+  } catch (error) {
+    logger.error(`[ConfigSaver] Failed to save configuration:`, error);
   }
 }

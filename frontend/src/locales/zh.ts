@@ -23,7 +23,8 @@ export default {
     configImported: '配置导入成功',
     saveSuccess: '配置保存成功',
     copiedToClipboard: '已复制到剪贴板',
-    copyFailed: '复制到剪贴板失败'
+    copyFailed: '复制到剪贴板失败',
+    displayNameUpdated: '实例名称已更新'
   },
   common: {
     copy: '复制'
@@ -95,6 +96,7 @@ export default {
     jsonPretty: '日志中JSON格式化',
     mcpCommDebug: '启用MCP通信调试',
     sessionDebug: '启用会话调试',
+    apiDebug: '启用API调试',
     security: '安全设置',
     allowedNetworks: '允许的网络',
     allowedNetworksHint: '输入 IP CIDR (如 192.168.1.0/24)。按回车添加。',

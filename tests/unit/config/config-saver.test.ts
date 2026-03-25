@@ -6,6 +6,12 @@ import path from 'path';
 // Mock fs module
 vi.mock('fs');
 vi.mock('path');
+vi.mock('@utils/logger.js', () => ({
+  logger: {
+    debug: vi.fn(),
+    error: vi.fn()
+  }
+}));
 
 describe('ConfigSaver', () => {
   const mockFs = vi.mocked(fs);
@@ -37,10 +43,7 @@ describe('ConfigSaver', () => {
 
       expect(mockPath.dirname).toHaveBeenCalledWith(testConfigPath);
       expect(mockFs.existsSync).toHaveBeenCalledWith(testDir);
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        testConfigPath,
-        JSON.stringify(config, null, 2)
-      );
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith(testConfigPath, JSON.stringify(config));
     });
 
     it('should create directory if it does not exist', () => {

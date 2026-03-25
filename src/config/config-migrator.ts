@@ -139,8 +139,8 @@ function convertToServerTemplate(v1Config: LegacyServerConfigV1): ServerTemplate
   return {
     command: v1Config.command,
     args: v1Config.args || [],
-    env: v1Config.env,
-    headers: v1Config.headers,
+    env: v1Config.env || {},
+    headers: v1Config.headers || {},
     type: v1Config.type || 'stdio',
     timeout: v1Config.timeout || 60000,
     url: v1Config.url,
@@ -182,8 +182,8 @@ function convertToServerInstance(
   // Only keep the differences from template (args should be empty since template has full args)
   const instanceConfig: Partial<ServerInstance> = {
     args: [],
-    env: v1Config.env,
-    headers: v1Config.headers,
+    env: v1Config.env || {},
+    headers: v1Config.headers || {},
     tags: v1Config.tags || {}
   };
 
@@ -191,8 +191,8 @@ function convertToServerInstance(
     id: generateInstanceId(serverName, instanceConfig),
     enabled: v1Config.enabled !== false,
     args: [], // In v1.1, instance args are just the append part
-    env: v1Config.env,
-    headers: v1Config.headers,
+    env: v1Config.env || {},
+    headers: v1Config.headers || {},
     tags: v1Config.tags || {}
     // command and description are removed from instance
   };

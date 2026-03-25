@@ -100,6 +100,7 @@ type ConfigGetter = () => {
       jsonPretty: boolean;
       mcpCommDebug: boolean;
       sessionDebug: boolean;
+      apiDebug: boolean;
     };
   };
 };
@@ -199,6 +200,23 @@ export function getSessionDebugSetting(): boolean {
     try {
       const config = _configGetter();
       return config.system.logging.sessionDebug;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return getDefaultForDevMode(false);
+}
+
+/**
+ * Get API debug setting from config getter.
+ *
+ * @returns boolean indicating whether to enable API debug logging
+ */
+export function getApiDebugSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.apiDebug;
     } catch {
       // Fall through to default if config getter fails
     }

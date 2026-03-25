@@ -23,7 +23,8 @@ export default {
     configImported: 'Configuration imported successfully',
     saveSuccess: 'Configuration saved successfully',
     copiedToClipboard: 'Copied to clipboard',
-    copyFailed: 'Failed to copy to clipboard'
+    copyFailed: 'Failed to copy to clipboard',
+    displayNameUpdated: 'Display name updated'
   },
   common: {
     copy: 'Copy'
@@ -95,6 +96,7 @@ export default {
     jsonPretty: 'Pretty JSON in logs',
     mcpCommDebug: 'Enable MCP communication debug',
     sessionDebug: 'Enable session debug',
+    apiDebug: 'Enable API debug',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',
     allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',

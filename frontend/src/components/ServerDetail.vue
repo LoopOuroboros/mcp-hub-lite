@@ -452,6 +452,16 @@ watch(
         store.selectServer(server.id);
       }
     }
+
+    // Also parse selection from route after servers are loaded
+    if (route.query.selection === 'template') {
+      selectedInstanceIndex.value = null;
+    } else if (route.query.instanceIndex !== undefined) {
+      selectedInstanceIndex.value = parseInt(route.query.instanceIndex as string, 10);
+    } else {
+      // Default to template selected
+      selectedInstanceIndex.value = null;
+    }
   }
 );
 
@@ -476,7 +486,8 @@ watch(
     if (newId && newId !== oldId) {
       activeTopTab.value = getTabFromRoute();
       selectedTool.value = null;
-      selectedInstanceIndex.value = null;
+      // Don't reset selectedInstanceIndex here - let the route query params decide
+      // This fixes the issue where instanceIndex in URL was being ignored
     }
   },
   { immediate: true }
@@ -765,8 +776,19 @@ function handleAddInstance() {
   ElMessage.info('Add instance - would call store.addServerInstance');
 }
 
-function handleUpdateDisplayName(index: number, displayName: string) {
-  ElMessage.info(`Update display name for #${index}: ${displayName}`);
+async function handleUpdateDisplayName(index: number, displayName: string) {
+  if (!server.value?.name) return;
+
+  try {
+    await store.updateServerInstance(server.value.name, index, { displayName });
+    ElMessage.success(t('action.displayNameUpdated'));
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(e.message);
+    } else {
+      ElMessage.error(String(e));
+    }
+  }
 }
 
 function handleDeleteInstance(index: number) {
@@ -783,7 +805,8 @@ async function handleUpdateInstanceConfig(config: Partial<InstanceConfigOverride
   try {
     // Update the local rawV11Config first
     const instanceIndex = selectedInstanceIndex.value;
-    const instance = server.value.rawV11Config?.instances?.[instanceIndex];
+    const instances = server.value.rawV11Config?.instances;
+    const instance = instances?.find((inst) => inst.index === instanceIndex);
 
     if (instance) {
       // Apply the config updates to the instance

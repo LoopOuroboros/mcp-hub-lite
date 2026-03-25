@@ -110,7 +110,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -156,7 +157,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -205,7 +207,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -265,7 +268,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -332,7 +336,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -358,10 +363,14 @@ describe('Server Runner', () => {
               command: 'test-command',
               type: 'stdio' as const,
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000
             },
-            instances: [{ id: 'instance-1', enabled: true, args: [], tags: {} }],
+            instances: [
+              { id: 'instance-1', enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
             tagDefinitions: []
           }
         },
@@ -372,10 +381,14 @@ describe('Server Runner', () => {
               command: 'test-command',
               type: 'stdio' as const,
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000
             },
-            instances: [{ id: 'instance-2', enabled: false, args: [], tags: {} }],
+            instances: [
+              { id: 'instance-2', enabled: false, args: [], env: {}, headers: {}, tags: {} }
+            ],
             tagDefinitions: []
           }
         }
@@ -383,12 +396,14 @@ describe('Server Runner', () => {
       vi.mocked(configManager.getServers).mockReturnValue(mockServers);
       vi.mocked(configManager.getServerInstancesByName).mockImplementation((name: string) => {
         if (name === 'enabled-server') return [];
-        return [{ id: 'instance-1', enabled: false, args: [], tags: {} }];
+        return [{ id: 'instance-1', enabled: false, args: [], env: {}, headers: {}, tags: {} }];
       });
       vi.mocked(configManager.addServerInstance).mockResolvedValue({
         id: 'new-instance',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {}
       });
 
@@ -428,7 +443,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -492,7 +508,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -552,7 +569,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {

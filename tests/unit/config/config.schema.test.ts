@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   TagDefinitionSchema,
   ServerInstanceSchema,
+  ServerInstanceUpdateSchema,
   ServerTemplateSchema,
   ServerConfigSchema,
   SystemConfigSchema,
@@ -57,6 +58,7 @@ describe('Config Schema (v1.1)', () => {
         enabled: true,
         args: ['--verbose'],
         env: { NODE_ENV: 'development' },
+        headers: {},
         tags: { environment: 'dev', region: 'us-east' }
       };
 
@@ -74,6 +76,8 @@ describe('Config Schema (v1.1)', () => {
       if (result.success) {
         expect(result.data.enabled).toBe(true);
         expect(result.data.args).toEqual([]);
+        expect(result.data.env).toEqual({});
+        expect(result.data.headers).toEqual({});
         expect(result.data.tags).toEqual({});
       }
     });
@@ -94,6 +98,7 @@ describe('Config Schema (v1.1)', () => {
         command: 'npx my-server',
         args: ['--config', 'default.json'],
         env: { LOG_LEVEL: 'info' },
+        headers: {},
         type: 'stdio',
         timeout: 60000,
         aggregatedTools: ['tool1', 'tool2'],
@@ -113,6 +118,8 @@ describe('Config Schema (v1.1)', () => {
         expect(result.data.type).toBe('stdio');
         expect(result.data.timeout).toBe(60000);
         expect(result.data.args).toEqual([]);
+        expect(result.data.env).toEqual({});
+        expect(result.data.headers).toEqual({});
         expect(result.data.aggregatedTools).toEqual([]);
       }
     });
@@ -124,6 +131,8 @@ describe('Config Schema (v1.1)', () => {
         template: {
           command: 'npx my-server',
           args: [],
+          env: {},
+          headers: {},
           type: 'stdio',
           timeout: 60000,
           aggregatedTools: []
@@ -133,12 +142,16 @@ describe('Config Schema (v1.1)', () => {
             id: 'instance-1',
             enabled: true,
             args: [],
+            env: {},
+            headers: {},
             tags: { environment: 'dev' }
           },
           {
             id: 'instance-2',
             enabled: false,
             args: [],
+            env: {},
+            headers: {},
             tags: { environment: 'prod' }
           }
         ],
@@ -212,7 +225,8 @@ describe('Config Schema (v1.1)', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            sessionDebug: false,
+            apiDebug: false
           }
         },
         security: {
@@ -230,6 +244,129 @@ describe('Config Schema (v1.1)', () => {
 
       const result = SystemConfigSchema.safeParse(config);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('ServerInstanceUpdateSchema (Regression Test)', () => {
+    it('should NOT add default values when parsing empty object', () => {
+      const updates = {};
+      const result = ServerInstanceUpdateSchema.safeParse(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Should NOT have default values - only the fields that were provided
+        expect(result.data).toEqual({});
+        expect(result.data.args).toBeUndefined();
+        expect(result.data.env).toBeUndefined();
+        expect(result.data.headers).toBeUndefined();
+        expect(result.data.tags).toBeUndefined();
+        expect(result.data.enabled).toBeUndefined();
+      }
+    });
+
+    it('should preserve only the provided fields (displayName only)', () => {
+      const updates = { displayName: 'My Updated Instance' };
+      const result = ServerInstanceUpdateSchema.safeParse(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.displayName).toBe('My Updated Instance');
+        expect(result.data.args).toBeUndefined();
+        expect(result.data.env).toBeUndefined();
+        expect(result.data.headers).toBeUndefined();
+        expect(result.data.tags).toBeUndefined();
+      }
+    });
+
+    it('should preserve only the provided fields (env only)', () => {
+      const updates = { env: { NEW_KEY: 'new-value' } };
+      const result = ServerInstanceUpdateSchema.safeParse(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.env).toEqual({ NEW_KEY: 'new-value' });
+        expect(result.data.args).toBeUndefined();
+        expect(result.data.headers).toBeUndefined();
+        expect(result.data.tags).toBeUndefined();
+        expect(result.data.displayName).toBeUndefined();
+      }
+    });
+
+    it('should preserve only the provided fields (args only)', () => {
+      const updates = { args: ['--new-arg'] };
+      const result = ServerInstanceUpdateSchema.safeParse(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.args).toEqual(['--new-arg']);
+        expect(result.data.env).toBeUndefined();
+        expect(result.data.headers).toBeUndefined();
+        expect(result.data.tags).toBeUndefined();
+      }
+    });
+
+    it('should work correctly with object merge (preventing regression)', () => {
+      // Simulate the original instance with existing values
+      const originalInstance: ServerInstance = {
+        id: 'instance-1',
+        enabled: true,
+        args: ['--existing-arg'],
+        env: { EXISTING_KEY: 'existing-value' },
+        headers: { 'X-Existing': 'header' },
+        tags: { existing: 'tag' }
+      };
+
+      // User only wants to update displayName
+      const updates = { displayName: 'Updated Name' };
+      const parsedUpdates = ServerInstanceUpdateSchema.parse(updates);
+
+      // Merge should NOT overwrite existing env/args/headers/tags
+      const mergedInstance = {
+        ...originalInstance,
+        ...parsedUpdates
+      };
+
+      // Verify existing fields are preserved
+      expect(mergedInstance.args).toEqual(['--existing-arg']);
+      expect(mergedInstance.env).toEqual({ EXISTING_KEY: 'existing-value' });
+      expect(mergedInstance.headers).toEqual({ 'X-Existing': 'header' });
+      expect(mergedInstance.tags).toEqual({ existing: 'tag' });
+      expect(mergedInstance.displayName).toBe('Updated Name');
+    });
+
+    it('should work correctly when updating env without affecting args', () => {
+      const originalInstance: ServerInstance = {
+        id: 'instance-1',
+        enabled: true,
+        args: ['--keep-this'],
+        env: { KEEP_THIS: 'value' },
+        headers: {},
+        tags: {}
+      };
+
+      const updates = { env: { NEW_KEY: 'new-value' } };
+      const parsedUpdates = ServerInstanceUpdateSchema.parse(updates);
+
+      const mergedInstance = {
+        ...originalInstance,
+        ...parsedUpdates
+      };
+
+      // args should still be preserved
+      expect(mergedInstance.args).toEqual(['--keep-this']);
+      // env should be updated
+      expect(mergedInstance.env).toEqual({ NEW_KEY: 'new-value' });
+    });
+
+    it('should NOT fill in defaults when using ServerInstanceSchema.partial() [demonstrating the bug]', () => {
+      // This test demonstrates the bug we're fixing
+      const updates = { displayName: 'Test' };
+      const result = ServerInstanceSchema.partial().safeParse(updates);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // ServerInstanceSchema.partial() WILL add default values!
+        // This is the bug - it adds args: [], env: {}, etc.
+        expect(result.data.args).toEqual([]);
+        expect(result.data.env).toEqual({});
+        expect(result.data.headers).toEqual({});
+        expect(result.data.tags).toEqual({});
+      }
     });
   });
 });

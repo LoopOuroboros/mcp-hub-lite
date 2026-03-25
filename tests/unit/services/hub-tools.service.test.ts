@@ -31,6 +31,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               description: 'File system operations',
@@ -47,6 +49,8 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               tags: {}
@@ -88,6 +92,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               tags: {}
@@ -127,6 +133,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               description: 'File system operations',
@@ -143,6 +151,8 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               description: 'Time and timezone utilities',
@@ -184,6 +194,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               description: 'This server is connected',
@@ -200,6 +212,8 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               description: 'This server is disconnected',
@@ -271,13 +285,22 @@ describe('HubToolsService', () => {
       ];
 
       // getServerInstancesByName should return ServerInstance objects
-      const mockInstance = { id: serverId, enabled: true, args: [], tags: {} } as ServerInstance;
+      const mockInstance = {
+        id: serverId,
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      } as ServerInstance;
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue({
         template: {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
+          env: {},
+          headers: {},
           aggregatedTools: [],
           timeout: 30000
         },
@@ -333,13 +356,22 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockInstance = { id: serverId, enabled: true, args: [], tags: {} } as ServerInstance;
+      const mockInstance = {
+        id: serverId,
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      } as ServerInstance;
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue({
         template: {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
+          env: {},
+          headers: {},
           aggregatedTools: [],
           timeout: 30000
         },
@@ -369,13 +401,22 @@ describe('HubToolsService', () => {
         }
       ];
 
-      const mockInstance = { id: serverId, enabled: true, args: [], tags: {} } as ServerInstance;
+      const mockInstance = {
+        id: serverId,
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      } as ServerInstance;
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue({
         template: {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
+          env: {},
+          headers: {},
           aggregatedTools: [],
           timeout: 30000
         },
@@ -401,13 +442,22 @@ describe('HubToolsService', () => {
       const toolArgs = { path: '/test/file.txt' };
       const expectedResult = { content: 'Test file content' };
 
-      const mockInstance = { id: serverId, enabled: true, args: [], tags: {} } as ServerInstance;
+      const mockInstance = {
+        id: serverId,
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      } as ServerInstance;
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue({
         template: {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
+          env: {},
+          headers: {},
           aggregatedTools: [],
           timeout: 30000
         },
@@ -448,6 +498,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               tags: {}
@@ -463,6 +515,8 @@ describe('HubToolsService', () => {
               type: 'sse' as const,
               url: 'http://example.com',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               tags: {}
@@ -475,10 +529,17 @@ describe('HubToolsService', () => {
 
       const mockServerInstances: Record<
         string,
-        Array<{ id: string; enabled: boolean; args: []; tags: Record<string, string> }>
+        Array<{
+          id: string;
+          enabled: boolean;
+          args: [];
+          env: Record<string, string>;
+          headers: Record<string, string>;
+          tags: Record<string, string>;
+        }>
       > = {
-        'Server 1': [{ id: '1', enabled: true, args: [], tags: {} }],
-        'Server 2': [{ id: '2', enabled: true, args: [], tags: {} }]
+        'Server 1': [{ id: '1', enabled: true, args: [], env: {}, headers: {}, tags: {} }],
+        'Server 2': [{ id: '2', enabled: true, args: [], env: {}, headers: {}, tags: {} }]
       };
 
       const mockTools = [
@@ -566,6 +627,8 @@ describe('HubToolsService', () => {
               type: 'stdio' as const,
               command: 'test-command',
               args: [],
+              env: {},
+              headers: {},
               aggregatedTools: [],
               timeout: 30000,
               tags: {}
@@ -575,6 +638,8 @@ describe('HubToolsService', () => {
                 id: '1',
                 enabled: true,
                 args: [],
+                env: {},
+                headers: {},
                 tags: {},
                 index: 0,
                 displayName: 'Test Instance'
@@ -653,6 +718,8 @@ describe('HubToolsService', () => {
         id: '1',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {},
         timestamp: Date.now(),
         hash: 'hash1',
@@ -665,10 +732,21 @@ describe('HubToolsService', () => {
           type: 'stdio' as const,
           command: 'test-command',
           args: [],
+          env: {},
+          headers: {},
           aggregatedTools: [],
           timeout: 30000
         },
-        instances: [{ id: 'test-instance', enabled: true, args: [], tags: { env: 'test' } }],
+        instances: [
+          {
+            id: 'test-instance',
+            enabled: true,
+            args: [],
+            env: {},
+            headers: {},
+            tags: { env: 'test' }
+          }
+        ],
         tagDefinitions: []
       };
       const mockTools = [
@@ -709,6 +787,8 @@ describe('HubToolsService', () => {
         id: '1',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {},
         timestamp: Date.now(),
         hash: 'hash1',
@@ -736,6 +816,8 @@ describe('HubToolsService', () => {
         id: '1',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {},
         timestamp: Date.now(),
         hash: 'hash1',
@@ -763,6 +845,8 @@ describe('HubToolsService', () => {
         id: '1',
         enabled: true,
         args: [],
+        env: {},
+        headers: {},
         tags: {},
         timestamp: Date.now(),
         hash: 'hash1',
