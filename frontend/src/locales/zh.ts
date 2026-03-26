@@ -5,6 +5,7 @@ export default {
     stop: '停止',
     restart: '重启',
     delete: '删除',
+    deleteServer: '删除MCP服务器',
     edit: '编辑',
     save: '保存',
     cancel: '取消',
@@ -27,10 +28,26 @@ export default {
     displayNameUpdated: '实例名称已更新',
     instanceAdded: '实例添加成功',
     instanceDeleted: '实例删除成功',
-    indexesReassigned: '索引重新分配成功'
+    indexesReassigned: '索引重新分配成功',
+    startAll: '全部启动',
+    stopAll: '全部停止',
+    restartAll: '全部重启'
   },
   common: {
-    copy: '复制'
+    copy: '复制',
+    description: '描述',
+    name: '名称',
+    uri: 'URI',
+    mimeType: 'MIME 类型',
+    logs: '日志',
+    config: '配置',
+    tools: '工具',
+    resources: '资源',
+    instance: '实例',
+    template: '模板',
+    addTag: '添加标签',
+    editTag: '编辑标签',
+    deleteTag: '删除标签'
   },
   sidebar: {
     title: 'MCP 服务器管理器',
@@ -51,10 +68,6 @@ export default {
     serverResources: '服务器资源',
     toolResources: '工具资源',
     dataResources: '数据资源',
-    name: '名称',
-    uri: 'URI',
-    mimeType: 'MIME 类型',
-    description: '描述',
     server: '服务器',
     contentPreview: '内容预览',
     preview: '预览',
@@ -124,9 +137,6 @@ export default {
     tagDescription: '描述',
     tagType: '类型',
     tagValues: '可选值',
-    addTag: '添加标签',
-    editTag: '编辑标签',
-    deleteTag: '删除标签',
     deleteTagConfirm: '确定要删除此标签定义吗？',
     noTagsDefined: '尚未定义标签',
     tagKeyPlaceholder: '输入标签键（如 environment, priority）',
@@ -147,27 +157,18 @@ export default {
     noSelection: '请选择模板或实例',
     deleteConfirm: '确定要删除此服务器吗？',
     deleteInstanceConfirm: '确定要删除此实例吗？',
-    version: '版本',
     pid: '进程ID',
     uptime: '运行时间',
     selectInstanceForTool: '选择要调用工具的实例',
     selectInstanceForResource: '选择要查看资源的实例',
     selectInstancePlaceholder: '选择一个实例...',
     confirm: '确认',
-    tabs: {
-      config: '配置',
-      logs: '日志',
-      tools: '工具',
-      resources: '资源'
-    },
+    tabs: {},
     configTabs: {
-      template: '模版',
       instances: '实例'
     },
     instanceTabs: {
-      config: '配置',
-      configOverride: '实例配置',
-      logs: '日志'
+      configOverride: '实例配置'
     },
     config: {
       transport: '传输方式',
@@ -187,7 +188,6 @@ export default {
       tags: '标签',
       save: '保存配置',
       editByJson: '通过 JSON 编辑',
-      description: '描述',
       descriptionPlaceholder: '请输入服务器描述'
     },
     instanceConfig: {
@@ -197,21 +197,17 @@ export default {
       override: '实例配置覆盖',
       editable: '可编辑',
       fromTemplate: '来自模板',
-      instance: '实例',
       noArgs: '无参数',
       noEnv: '无环境变量',
       noHeaders: '无请求头',
       noTags: '无标签',
-      addTag: '添加标签',
       mergedPreview: '合并后的最终配置预览',
       viewMerged: '查看合并配置'
     },
     logs: {
       autoScroll: '自动滚动',
       clear: '清空',
-      copy: '复制',
       copied: '日志已复制到剪贴板',
-      instance: '实例',
       selectInstance: '选择一个实例'
     },
     tools: {
@@ -225,9 +221,6 @@ export default {
       call: '调用'
     },
     resources: {
-      name: '名称',
-      uri: 'URI',
-      mimeType: 'MIME 类型',
       none: '暂无可用资源'
     },
     status: {
@@ -242,7 +235,6 @@ export default {
     editJsonTitle: '编辑 JSON 配置',
     instances: {
       title: '实例',
-      template: '模板',
       templateTag: '模板配置',
       unnamed: '未命名',
       add: '添加实例',
@@ -253,9 +245,7 @@ export default {
   addServer: {
     title: '添加新 MCP 服务器',
     transportType: '选择传输类型',
-    name: '服务器名称',
     namePlaceholder: '我的新服务器',
-    description: '描述',
     descriptionPlaceholder: '请输入服务器描述',
     executablePlaceholder: '/path/to/executable 或 npx',
     argPlaceholder: '参数',
@@ -276,7 +266,6 @@ export default {
     invalidServerConfig: '服务器配置无效',
     addServerFailed: '添加服务器失败',
     invalidJsonConfig: '无效的 JSON 配置',
-    unknown: '发生未知错误',
     saveFailed: '保存配置失败'
   },
   tools: {
@@ -306,7 +295,6 @@ export default {
     invalidJsonArguments: '无效的 JSON 参数',
     executionSuccessful: '工具执行成功',
     executionFailed: '工具执行失败',
-    instance: '实例',
     selectInstance: '选择一个实例'
   }
 };

@@ -5,7 +5,6 @@
   - Server status (running, error, starting, etc.)
   - Transport type and relevant details (command for stdio, URL for SSE)
   - Server version (if available)
-  - Uptime (optional, controlled by includeUptime prop)
 
   This component provides a compact, visual representation of server state
   for use in server lists and detail views.
@@ -36,24 +35,6 @@
         <template v-else-if="props.server.config.type === 'streamable-http'"></template>
       </span>
     </div>
-
-    <!-- Version -->
-    <div
-      v-if="props.server.version"
-      class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-    >
-      <span class="opacity-75">{{ $t('serverDetail.version') }}:</span>
-      <span class="font-medium break-all max-w-full">{{ props.server.version }}</span>
-    </div>
-
-    <!-- Uptime (only shown when includeUptime is true) -->
-    <div
-      v-if="includeUptime && props.formattedUptime"
-      class="flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-    >
-      <span class="opacity-75">{{ $t('serverDetail.uptime') }}:</span>
-      <span class="font-mono break-all max-w-full">{{ props.formattedUptime }}</span>
-    </div>
   </div>
 </template>
 
@@ -73,8 +54,6 @@ import { getExecutableName } from '@utils/format-utils';
  * @property {string} [server.config.command] - Command for stdio transport (optional)
  * @property {string} [server.config.url] - URL for SSE transport (optional)
  * @property {number} [server.startTime] - Server start timestamp (optional)
- * @property {boolean} [includeUptime] - Whether to display uptime information (optional)
- * @property {string} [formattedUptime] - Pre-formatted uptime string (optional)
  */
 interface ServerStatusTagsProps {
   server: {
@@ -88,8 +67,6 @@ interface ServerStatusTagsProps {
     };
     startTime?: number;
   };
-  includeUptime?: boolean;
-  formattedUptime?: string;
 }
 
 const props = defineProps<ServerStatusTagsProps>();

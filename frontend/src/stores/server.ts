@@ -628,6 +628,126 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
+   * Starts all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to start all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If starting fails
+   */
+  async function startAllServerInstances(serverName: string) {
+    try {
+      // Get all instances for the server
+      const serverInstances = servers.value.filter((s) => s.name === serverName);
+
+      // Update all instances to starting status for immediate UI feedback
+      serverInstances.forEach((server) => {
+        updateServerStatus(server.id, 'starting');
+      });
+
+      // Start each instance
+      for (const server of serverInstances) {
+        if (!server.id.startsWith('config-')) {
+          try {
+            await http.post(`/web/mcp/servers/${server.id}/connect`, {});
+          } catch (e) {
+            console.error(`Failed to start instance ${server.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to start server instances';
+      } else {
+        error.value = String(e) || 'Failed to start server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Stops all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to stop all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If stopping fails
+   */
+  async function stopAllServerInstances(serverName: string) {
+    try {
+      // Get all instances for the server
+      const serverInstances = servers.value.filter((s) => s.name === serverName);
+
+      // Stop each instance
+      for (const server of serverInstances) {
+        if (!server.id.startsWith('config-')) {
+          try {
+            await http.post(`/web/mcp/servers/${server.id}/disconnect`, {});
+          } catch (e) {
+            console.error(`Failed to stop instance ${server.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to stop server instances';
+      } else {
+        error.value = String(e) || 'Failed to stop server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Restarts all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to restart all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If restarting fails
+   */
+  async function restartAllServerInstances(serverName: string) {
+    try {
+      // First stop all running instances
+      const serverInstances = servers.value.filter((s) => s.name === serverName);
+
+      // Update all instances to starting status for immediate UI feedback
+      serverInstances.forEach((server) => {
+        updateServerStatus(server.id, 'starting');
+      });
+
+      // Restart each instance
+      for (const server of serverInstances) {
+        if (!server.id.startsWith('config-')) {
+          try {
+            // Stop first if it's online
+            if (server.status === 'online') {
+              await http.post(`/web/mcp/servers/${server.id}/disconnect`, {});
+            }
+            // Then start
+            await http.post(`/web/mcp/servers/${server.id}/connect`, {});
+          } catch (e) {
+            console.error(`Failed to restart instance ${server.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to restart server instances';
+      } else {
+        error.value = String(e) || 'Failed to restart server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
    * Imports multiple servers from JSON configuration
    *
    * Converts legacy JSON format to the new batch import format and
@@ -848,6 +968,9 @@ export const useServerStore = defineStore('server', () => {
     addServerInstance,
     updateServerInstance,
     removeServerInstance,
-    reassignInstanceIndexes
+    reassignInstanceIndexes,
+    startAllServerInstances,
+    stopAllServerInstances,
+    restartAllServerInstances
   };
 });

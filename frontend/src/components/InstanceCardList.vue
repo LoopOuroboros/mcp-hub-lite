@@ -40,7 +40,7 @@
             <!-- Template Name -->
             <div class="flex items-center gap-2">
               <span class="font-mono text-sm text-purple-600 dark:text-purple-400">
-                {{ $t('serverDetail.instances.template') }}
+                {{ $t('common.template') }}
               </span>
               <el-tag size="small" type="info">
                 {{ $t('serverDetail.instances.templateTag') }}
@@ -99,6 +99,18 @@
             >
               {{ $t(`serverDetail.status.${getInstanceStatus(instance)}`) }}
             </div>
+
+            <!-- PID Badge (only for stdio transport with running status) -->
+            <div
+              v-if="
+                instance.transportType === 'stdio' &&
+                instance.pid &&
+                getInstanceStatus(instance) === 'online'
+              "
+              class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            >
+              PID: {{ instance.pid }}
+            </div>
           </div>
 
           <!-- Right: Actions -->
@@ -142,14 +154,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Edit, Delete, Plus, Refresh } from '@element-plus/icons-vue';
-import type { ServerInstanceConfig } from '@shared-models/server.model';
-
-/**
- * Extended instance interface with status information
- */
-interface InstanceWithStatus extends ServerInstanceConfig {
-  status?: string;
-}
+import type { InstanceWithStatus } from '@/types/server-detail';
 
 /**
  * Props interface for InstanceCardList component

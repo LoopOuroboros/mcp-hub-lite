@@ -21,8 +21,7 @@ describe('ServerStatusTags', () => {
   test('renders server status tags correctly', () => {
     const wrapper = mount(ServerStatusTags, {
       props: {
-        server: mockServer,
-        includeUptime: false
+        server: mockServer
       },
       global: {
         plugins: [i18n]
@@ -35,28 +34,6 @@ describe('ServerStatusTags', () => {
     // Check transport info
     expect(wrapper.text()).toContain('stdio');
     expect(wrapper.text()).toContain('npm run start');
-
-    // Check version
-    expect(wrapper.text()).toContain('1.0.0');
-
-    // Should not contain uptime when includeUptime is false
-    expect(wrapper.text()).not.toContain('uptime');
-  });
-
-  test('includes uptime when includeUptime is true', () => {
-    const wrapper = mount(ServerStatusTags, {
-      props: {
-        server: mockServer,
-        includeUptime: true,
-        formattedUptime: '00:05:00'
-      },
-      global: {
-        plugins: [i18n]
-      }
-    });
-
-    // Should contain uptime
-    expect(wrapper.text()).toContain('00:05:00');
   });
 
   test('handles different server statuses', () => {
@@ -68,8 +45,7 @@ describe('ServerStatusTags', () => {
           server: {
             ...mockServer,
             status
-          },
-          includeUptime: false
+          }
         },
         global: {
           plugins: [i18n]
@@ -85,8 +61,7 @@ describe('ServerStatusTags', () => {
     // Test stdio
     const stdioWrapper = mount(ServerStatusTags, {
       props: {
-        server: mockServer,
-        includeUptime: false
+        server: mockServer
       },
       global: {
         plugins: [i18n]
@@ -105,8 +80,7 @@ describe('ServerStatusTags', () => {
     };
     const sseWrapper = mount(ServerStatusTags, {
       props: {
-        server: sseServer,
-        includeUptime: false
+        server: sseServer
       },
       global: {
         plugins: [i18n]
@@ -125,8 +99,7 @@ describe('ServerStatusTags', () => {
     };
     const httpWrapper = mount(ServerStatusTags, {
       props: {
-        server: httpServer,
-        includeUptime: false
+        server: httpServer
       },
       global: {
         plugins: [i18n]
@@ -149,8 +122,7 @@ describe('ServerStatusTags', () => {
 
     const wrapper = mount(ServerStatusTags, {
       props: {
-        server: serverWithoutVersion,
-        includeUptime: false
+        server: serverWithoutVersion
       },
       global: {
         plugins: [i18n]

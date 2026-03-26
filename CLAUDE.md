@@ -52,6 +52,8 @@ graph TD
     C --> C4["src/router/"];
     C --> C5["src/i18n/"];
     C --> C6["src/composables/"];
+    C --> C7["src/types/"];
+    C --> C8["src/utils/"];
 
     D --> D1["unit/"];
     D --> D2["integration/"];
@@ -74,6 +76,9 @@ graph TD
     click C3 "./frontend/src/stores/CLAUDE.md" "查看 Stores 模块文档"
     click C4 "./frontend/src/router/CLAUDE.md" "查看 Router 模块文档"
     click C5 "./frontend/src/i18n/CLAUDE.md" "查看 i18n 模块文档"
+    click C6 "./frontend/src/composables/CLAUDE.md" "查看 Composables 模块文档"
+    click C7 "./frontend/src/types/CLAUDE.md" "查看 Types 模块文档"
+    click C8 "./frontend/src/utils/CLAUDE.md" "查看 Utils 模块文档"
 
     click D1 "./tests/unit/CLAUDE.md" "查看 Unit Tests 文档"
     click D2 "./tests/integration/CLAUDE.md" "查看 Integration Tests 文档"
@@ -85,27 +90,30 @@ graph TD
 
 ## 模块索引
 
-| 模块路径                   | 职责描述                                                       | 语言           |
-| -------------------------- | -------------------------------------------------------------- | -------------- |
-| `src/`                     | 后端源代码，包含所有服务器端逻辑                               | TypeScript     |
-| `src/api/`                 | API 路由和协议处理器，包括 MCP JSON-RPC、Web API 和 WebSocket  | TypeScript     |
-| `src/services/`            | 核心业务逻辑服务，包括网关、连接管理、搜索、日志存储、会话管理 | TypeScript     |
-| `src/models/`              | 数据模型和类型定义                                             | TypeScript     |
-| `src/config/`              | 配置管理和验证                                                 | TypeScript     |
-| `src/utils/`               | 工具函数和通用实现                                             | TypeScript     |
-| `src/cli/`                 | 命令行接口和命令处理                                           | TypeScript     |
-| `src/pid/`                 | 进程 ID 管理和文件操作                                         | TypeScript     |
-| `src/server/`              | 服务器运行时和启动器                                           | TypeScript     |
-| `frontend/`                | Vue3 前端应用                                                  | TypeScript/Vue |
-| `frontend/src/components/` | 可复用 UI 组件                                                 | Vue            |
-| `frontend/src/views/`      | 页面视图组件                                                   | Vue            |
-| `frontend/src/stores/`     | Pinia 状态管理                                                 | TypeScript     |
-| `frontend/src/router/`     | Vue Router 路由配置                                            | TypeScript     |
-| `frontend/src/i18n/`       | 国际化支持                                                     | TypeScript     |
-| `shared/`                  | 前后端共享的模型和类型定义                                     | TypeScript     |
-| `tests/unit/`              | 单元测试                                                       | TypeScript     |
-| `tests/integration/`       | 集成测试                                                       | TypeScript     |
-| `tests/contract/`          | 契约测试                                                       | TypeScript     |
+| 模块路径                    | 职责描述                                                       | 语言           |
+| --------------------------- | -------------------------------------------------------------- | -------------- |
+| `src/`                      | 后端源代码，包含所有服务器端逻辑                               | TypeScript     |
+| `src/api/`                  | API 路由和协议处理器，包括 MCP JSON-RPC、Web API 和 WebSocket  | TypeScript     |
+| `src/services/`             | 核心业务逻辑服务，包括网关、连接管理、搜索、日志存储、会话管理 | TypeScript     |
+| `src/models/`               | 数据模型和类型定义                                             | TypeScript     |
+| `src/config/`               | 配置管理和验证                                                 | TypeScript     |
+| `src/utils/`                | 工具函数和通用实现                                             | TypeScript     |
+| `src/cli/`                  | 命令行接口和命令处理                                           | TypeScript     |
+| `src/pid/`                  | 进程 ID 管理和文件操作                                         | TypeScript     |
+| `src/server/`               | 服务器运行时和启动器                                           | TypeScript     |
+| `frontend/`                 | Vue3 前端应用                                                  | TypeScript/Vue |
+| `frontend/src/components/`  | 可复用 UI 组件                                                 | Vue            |
+| `frontend/src/views/`       | 页面视图组件                                                   | Vue            |
+| `frontend/src/stores/`      | Pinia 状态管理                                                 | TypeScript     |
+| `frontend/src/router/`      | Vue Router 路由配置                                            | TypeScript     |
+| `frontend/src/i18n/`        | 国际化支持                                                     | TypeScript     |
+| `frontend/src/composables/` | Vue 3 组合式函数                                               | TypeScript     |
+| `frontend/src/types/`       | 共享 TypeScript 类型定义                                       | TypeScript     |
+| `frontend/src/utils/`       | 前端工具函数                                                   | TypeScript     |
+| `shared/`                   | 前后端共享的模型和类型定义                                     | TypeScript     |
+| `tests/unit/`               | 单元测试                                                       | TypeScript     |
+| `tests/integration/`        | 集成测试                                                       | TypeScript     |
+| `tests/contract/`           | 契约测试                                                       | TypeScript     |
 
 ## 架构总览
 

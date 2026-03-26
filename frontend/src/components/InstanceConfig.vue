@@ -20,11 +20,31 @@
 -->
 <template>
   <div class="instance-config">
-    <!-- Header with title and preview button -->
+    <!-- Header with title, action buttons, and preview button -->
     <div class="header-bar flex justify-between items-center mb-4 pr-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        {{ $t('serverDetail.instanceConfig.title') }}
-      </h3>
+      <div class="flex items-center gap-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{ $t('serverDetail.instanceConfig.title') }}
+        </h3>
+        <!-- Instance Control Buttons -->
+        <div class="flex gap-2">
+          <el-button :icon="Refresh" plain @click="handleRestart">
+            {{ $t('action.restart') }}
+          </el-button>
+          <el-button
+            v-if="instanceStatus === 'online'"
+            type="warning"
+            plain
+            :icon="SwitchButton"
+            @click="handleStop"
+          >
+            {{ $t('action.stop') }}
+          </el-button>
+          <el-button v-else type="success" :icon="VideoPlay" @click="handleStart">
+            {{ $t('action.start') }}
+          </el-button>
+        </div>
+      </div>
       <el-button @click="showPreview = true">
         <el-icon><View /></el-icon>
         {{ $t('serverDetail.instanceConfig.viewMerged') }}
@@ -111,7 +131,7 @@
               @click="removeInstanceArg(index)"
             />
             <el-tag size="small" type="success">
-              {{ $t('serverDetail.instanceConfig.instance') }}
+              {{ $t('common.instance') }}
             </el-tag>
           </div>
         </div>
@@ -165,7 +185,7 @@
             />
             <el-button size="small" type="danger" :icon="Delete" @click="removeInstanceEnv(key)" />
             <el-tag size="small" type="success">
-              {{ $t('serverDetail.instanceConfig.instance') }}
+              {{ $t('common.instance') }}
             </el-tag>
           </div>
         </div>
@@ -227,7 +247,7 @@
               @click="removeInstanceHeader(key)"
             />
             <el-tag size="small" type="success">
-              {{ $t('serverDetail.instanceConfig.instance') }}
+              {{ $t('common.instance') }}
             </el-tag>
           </div>
         </div>
@@ -277,7 +297,7 @@
             {{ $t('serverDetail.config.tags') }}
           </label>
           <el-button size="small" :icon="Plus" @click="addInstanceTag">
-            {{ $t('serverDetail.instanceConfig.addTag') }}
+            {{ $t('common.addTag') }}
           </el-button>
         </div>
 
@@ -302,7 +322,7 @@
             />
             <el-button size="small" type="danger" :icon="Delete" @click="removeInstanceTag(key)" />
             <el-tag size="small" type="success">
-              {{ $t('serverDetail.instanceConfig.instance') }}
+              {{ $t('common.instance') }}
             </el-tag>
           </div>
         </div>
@@ -316,7 +336,7 @@
         <div class="flex gap-2 items-center">
           <el-switch v-model="localConfig.enabled" />
           <el-tag size="small" type="success">
-            {{ $t('serverDetail.instanceConfig.instance') }}
+            {{ $t('common.instance') }}
           </el-tag>
         </div>
       </div>
@@ -336,22 +356,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Delete, Plus, View } from '@element-plus/icons-vue';
+import { Delete, Plus, View, Refresh, SwitchButton, VideoPlay } from '@element-plus/icons-vue';
 import type { ServerTemplate } from '@shared-models/server.model';
+import type { InstanceConfigOverrides } from '@/types/server-detail';
 import MergedConfigPreviewDialog from './MergedConfigPreviewDialog.vue';
 import { useI18n } from 'vue-i18n';
-
-/**
- * Instance configuration override interface
- */
-interface InstanceConfigOverrides {
-  args?: string[];
-  env?: Record<string, string>;
-  headers?: Record<string, string>;
-  tags?: Record<string, string>;
-  displayName?: string;
-  enabled?: boolean;
-}
 
 /**
  * Props interface for InstanceConfig component
@@ -360,11 +369,13 @@ interface InstanceConfigOverrides {
  * @property {ServerConfig} templateConfig - The template configuration (read-only)
  * @property {InstanceConfigOverrides} instanceConfig - The instance configuration overrides
  * @property {string} serverName - Name of the server
+ * @property {string} instanceStatus - Status of the instance
  */
 interface InstanceConfigProps {
   templateConfig: ServerTemplate;
   instanceConfig: InstanceConfigOverrides;
   serverName: string;
+  instanceStatus?: string;
 }
 
 /**
@@ -372,14 +383,43 @@ interface InstanceConfigProps {
  *
  * @interface InstanceConfigEmits
  * @property {function} update - Emitted when configuration is updated
+ * @property {function} start-instance - Emitted when start button is clicked
+ * @property {function} stop-instance - Emitted when stop button is clicked
+ * @property {function} restart-instance - Emitted when restart button is clicked
  */
 interface InstanceConfigEmits {
   (e: 'update', config: Partial<InstanceConfigOverrides>): void;
+  (e: 'start-instance'): void;
+  (e: 'stop-instance'): void;
+  (e: 'restart-instance'): void;
 }
 
-const props = defineProps<InstanceConfigProps>();
+const props = withDefaults(defineProps<InstanceConfigProps>(), {
+  instanceStatus: 'offline'
+});
 const emit = defineEmits<InstanceConfigEmits>();
 const { t } = useI18n();
+
+/**
+ * Handles the start instance button click
+ */
+function handleStart() {
+  emit('start-instance');
+}
+
+/**
+ * Handles the stop instance button click
+ */
+function handleStop() {
+  emit('stop-instance');
+}
+
+/**
+ * Handles the restart instance button click
+ */
+function handleRestart() {
+  emit('restart-instance');
+}
 
 // Dialog visibility state
 const showPreview = ref(false);

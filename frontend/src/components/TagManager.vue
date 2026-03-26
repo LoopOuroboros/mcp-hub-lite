@@ -6,7 +6,7 @@
       </h3>
       <el-button type="primary" @click="openAddDialog">
         <el-icon class="mr-1"><Plus /></el-icon>
-        {{ $t('settings.addTag') }}
+        {{ $t('common.addTag') }}
       </el-button>
     </div>
 
@@ -53,7 +53,7 @@
     <!-- Add/Edit Dialog -->
     <el-dialog
       v-model="dialogVisible"
-      :title="isEditing ? $t('settings.editTag') : $t('settings.addTag')"
+      :title="isEditing ? $t('common.editTag') : $t('common.addTag')"
       width="500px"
       class="custom-dialog"
       :before-close="resetForm"
@@ -114,7 +114,7 @@
     <!-- Delete Confirmation -->
     <el-dialog
       v-model="deleteDialogVisible"
-      :title="$t('settings.deleteTag')"
+      :title="$t('common.deleteTag')"
       width="400px"
       class="custom-dialog"
     >

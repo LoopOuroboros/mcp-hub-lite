@@ -61,26 +61,27 @@ components/
 
 **主要功能**:
 
-- 路由同步和状态管理
+- 路由同步和状态管理（通过 useServerSelection composable）
+- 实例操作和状态管理（通过 useServerInstances composable）
+- 对话框状态管理（通过 useToolAndResourceDialogs composable）
 - 子组件之间的协调
 - Store 交互
-- 主要业务逻辑编排
+- 配置保存和删除操作
 
-**状态**:
+**状态管理**:
 
-```typescript
-{
-  activeTopTab: 'config' | 'tools' | 'resources';
-  activeConfigTab: 'template' | 'instances';
-  activeInstanceTab: 'config-override' | 'logs';
-  selectedInstanceIndex: number | null;
-  autoScroll: boolean;
-}
-```
+- 使用 `useServerSelection` 管理 Tab 和实例选择状态
+- 使用 `useServerInstances` 管理实例操作和状态
+- 使用 `useToolAndResourceDialogs` 管理工具调用和资源查看对话框
 
 **依赖**:
 
 - `useServerStore` - 服务器数据管理
+- `useServerSelection` - 路由和选择状态管理 composable
+- `useServerInstances` - 实例操作 composable
+- `useToolAndResourceDialogs` - 对话框管理 composable
+- `@/types/server-detail` - 共享类型定义
+- `@/utils/format-utils` - 共享工具函数
 - 所有 ServerDetail 子组件
 
 **子组件**:
@@ -94,6 +95,10 @@ components/
 - InstanceSelectDialog
 - InstanceCardList
 - InstanceConfig
+
+**重构历史**:
+
+- 2026-03-26: 从 1053 行重构为约 500 行，提取 3 个 composables
 
 ### ServerDetailHeader (`ServerDetailHeader.vue`)
 
@@ -123,14 +128,20 @@ interface Props {
 **主要功能**:
 
 - 返回按钮
-- 服务器名称标题
+- 服务器名称标题（带版本号 Tag）
 - ServerStatusTags 组件
 - 操作按钮（重启、启动、停止、删除）
 
 **依赖**:
 
 - ServerStatusTags
-- Element Plus 图标组件
+- Element Plus 图标和 Tag 组件
+
+**版本号显示**:
+
+- 版本号以 Element Plus Tag 组件形式显示在服务器名称右侧
+- 使用 `size="small"` 样式
+- 直接显示版本号内容，无前缀文字
 
 ### ConfigTemplateForm (`ConfigTemplateForm.vue`)
 
@@ -492,9 +503,10 @@ interface Props {
 
 - 显示服务器状态（running/stopped/error/starting）
 - 显示传输类型和相关信息（stdio/sse/streamable-http）
-- 显示服务器版本信息
 - 显示 PID 信息（仅 stdio 类型）
 - 可选显示运行时间
+
+**注意**: 版本号显示已移至服务器名称右侧的 Tag 组件（ServerDetailHeader 和 ServerListView）
 
 **依赖**:
 
@@ -591,7 +603,7 @@ components/
 - Dashboard 组件：服务器统计卡片、加载状态、活动日志显示
 - ToolCard 组件：标题/描述渲染、标签显示、点击事件触发
 - ToolCallDialog 组件：对话框显示、参数生成、执行调用
-- ServerStatusTags 组件：状态显示、版本信息、运行时间
+- ServerStatusTags 组件：状态显示、传输信息、运行时间（版本号已移至名称右侧）
 
 **建议测试**:
 

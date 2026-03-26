@@ -111,6 +111,7 @@ import { computed, onMounted, watch, ref, nextTick } from 'vue';
 import { useServerStore } from '@stores/server';
 import { useWebSocketStore } from '@stores/websocket';
 import { VideoPlay, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue';
+import { formatTimeOnly } from '@/utils/format-utils';
 
 /**
  * Dashboard component state and logic
@@ -181,7 +182,7 @@ const activities = computed(() => {
         serverName: server.name,
         serverStatus: server.status,
         message: log.message,
-        time: formatTimestamp(log.timestamp),
+        time: formatTimeOnly(log.timestamp),
         timestamp: log.timestamp,
         originalIndex: idx
       });
@@ -207,21 +208,6 @@ watch(
     });
   }
 );
-
-/**
- * Formats a Unix timestamp into a human-readable time string with milliseconds
- *
- * @param {number} timestamp - Unix timestamp in milliseconds
- * @returns {string} Formatted time string (HH:MM:SS.mmm)
- */
-function formatTimestamp(timestamp: number) {
-  const date = new Date(timestamp);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
-}
 
 /**
  * Returns the appropriate Element Plus icon component based on server status

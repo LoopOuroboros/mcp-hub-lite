@@ -1,7 +1,7 @@
 <template>
   <div class="h-full overflow-y-auto">
     <el-table :data="resources || []" style="width: 100%" class="custom-table">
-      <el-table-column prop="name" :label="$t('serverDetail.resources.name')" width="200">
+      <el-table-column prop="name" :label="$t('common.name')" width="200">
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <el-icon><Document /></el-icon>
@@ -9,8 +9,8 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="uri" :label="$t('serverDetail.resources.uri')" min-width="300" />
-      <el-table-column prop="mimeType" :label="$t('serverDetail.resources.mimeType')" width="150" />
+      <el-table-column prop="uri" :label="$t('common.uri')" min-width="300" />
+      <el-table-column prop="mimeType" :label="$t('common.mimeType')" width="150" />
       <el-table-column label="" width="100" align="right">
         <template #default="{ row }">
           <el-button size="small" plain @click="handleViewResource(row)">{{

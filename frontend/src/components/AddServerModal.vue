@@ -52,11 +52,11 @@
         </div>
       </el-form-item>
 
-      <el-form-item :label="$t('addServer.name')">
+      <el-form-item :label="$t('common.name')">
         <el-input v-model="form.name" :placeholder="$t('addServer.namePlaceholder')" />
       </el-form-item>
 
-      <el-form-item :label="$t('addServer.description')">
+      <el-form-item :label="$t('common.description')">
         <el-input
           v-model="form.description"
           type="textarea"

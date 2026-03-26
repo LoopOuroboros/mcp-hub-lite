@@ -34,3 +34,34 @@ export function getExecutableName(cmd?: string): string {
   // Only show the last part of path or just the command
   return cmd.split(/[/\\]/).pop() || cmd;
 }
+
+/**
+ * Format timestamp to human-readable string with date and time
+ * @param timestamp - The timestamp in milliseconds
+ * @returns Formatted timestamp string in YYYY-MM-DD HH:mm:ss.SSS format
+ */
+export function formatTimestamp(timestamp: number): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+}
+
+/**
+ * Format timestamp to time-only string
+ * @param timestamp - The timestamp in milliseconds
+ * @returns Formatted time string in HH:mm:ss.SSS format
+ */
+export function formatTimeOnly(timestamp: number): string {
+  const date = new Date(timestamp);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+}

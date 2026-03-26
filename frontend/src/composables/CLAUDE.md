@@ -1,0 +1,222 @@
+[根目录](../../../CLAUDE.md) > [frontend](../../) > [src](../) > **composables**
+
+# Composables 模块
+
+## 模块职责
+
+Composables 模块包含可复用的 Vue 3 组合式函数，用于封装和复用组件逻辑。
+
+## 目录结构
+
+```
+composables/
+├── useTheme.ts                         # 主题切换 composable
+├── use-server-selection.ts            # 服务器选择和 Tab 状态管理
+├── use-server-instances.ts            # 服务器实例操作管理
+└── use-tool-and-resource-dialogs.ts   # 工具和资源对话框管理
+```
+
+## Composables 列表
+
+### useTheme (`useTheme.ts`)
+
+**职责**: 管理应用主题切换（亮色/暗色模式）
+
+**主要功能**:
+
+- 主题状态管理
+- 主题切换逻辑
+- 本地存储持久化
+
+### useServerSelection (`use-server-selection.ts`)
+
+**职责**: 管理服务器详情页面的 Tab 选择和实例选择状态，以及路由同步
+
+**主要功能**:
+
+- 顶部 Tab 状态管理（config/tools/resources）
+- 实例选择状态管理
+- 实例详情 Tab 管理（config/logs）
+- 路由查询参数同步
+- 从路由初始化状态
+
+**状态**:
+
+```typescript
+{
+  activeTopTab: 'config' | 'tools' | 'resources';
+  selectedInstanceIndex: number | null;
+  activeInstanceTab: 'config' | 'logs';
+}
+```
+
+**方法**:
+
+- `getTabFromRoute()` - 从路由获取当前 Tab
+- `navigateToTab(tab)` - 导航到指定 Tab
+- `handleSelectTemplate()` - 选择模板
+- `handleSelectInstance(index)` - 选择实例
+
+**依赖**:
+
+- `vue-router` - 路由管理
+- `useServerStore` - 服务器状态管理
+
+### useServerInstances (`use-server-instances.ts`)
+
+**职责**: 管理服务器实例的操作和状态
+
+**主要功能**:
+
+- 服务器实例列表计算
+- 选中实例配置获取
+- 单个实例操作（启动/停止/重启）
+- 批量实例操作（启动全部/停止全部/重启全部）
+- 实例 CRUD 操作（添加/删除/更新显示名称/重新分配索引/更新配置）
+- 实例状态查询
+
+**Computed Properties**:
+
+- `serverInstances` - 带状态的实例列表
+- `selectedInstance` - 当前选中的实例
+- `selectedInstanceConfig` - 当前选中实例的配置覆盖
+- `templateConfigForInstance` - 模板配置
+- `allServers` - 同名服务器列表
+
+**方法**:
+
+- `getSelectedInstanceStatus()` - 获取选中实例状态
+- `getSelectedInstanceServerId()` - 获取选中实例的服务器 ID
+- `startSelectedInstance()` - 启动选中实例
+- `stopSelectedInstance()` - 停止选中实例
+- `restartSelectedInstance()` - 重启选中实例
+- `startAllInstances()` - 启动全部实例
+- `stopAllInstances()` - 停止全部实例
+- `restartAllInstances()` - 重启全部实例
+- `handleAddInstance()` - 添加新实例
+- `handleUpdateDisplayName()` - 更新实例显示名称
+- `handleDeleteInstance()` - 删除实例
+- `handleReassignIndexes()` - 重新分配实例索引
+- `handleUpdateInstanceConfig()` - 更新实例配置
+
+**依赖**:
+
+- `useServerStore` - 服务器状态管理
+- `useI18n` - 国际化支持
+- `Element Plus` - 消息和对话框组件
+
+### useToolAndResourceDialogs (`use-tool-and-resource-dialogs.ts`)
+
+**职责**: 管理工具调用和资源查看的对话框状态
+
+**主要功能**:
+
+- 实例选择对话框状态
+- 工具调用对话框状态
+- 资源查看对话框状态
+- 对话框确认回调处理
+
+**状态**:
+
+```typescript
+{
+  showInstanceSelectForTool: boolean;
+  selectedInstanceForTool: number | null;
+  showCallDialog: boolean;
+  pendingTool: Tool | null;
+  showInstanceSelectForResourceDialog: boolean;
+  showInstanceSelectForResource: Resource | null;
+  selectedInstanceForResource: number | null;
+}
+```
+
+**方法**:
+
+- `callToolWithInstance(instanceIndex)` - 使用选中实例调用工具
+- `viewResourceWithInstance(instanceIndex)` - 使用选中实例查看资源
+
+**依赖**:
+
+- `vue-router` - 路由管理（用于资源查看导航）
+
+## 使用指南
+
+### 在 ServerDetail.vue 中使用
+
+```typescript
+import { useServerSelection } from '@/composables/use-server-selection';
+import { useServerInstances } from '@/composables/use-server-instances';
+import { useToolAndResourceDialogs } from '@/composables/use-tool-and-resource-dialogs';
+
+const server = computed(() => store.selectedServer);
+
+const {
+  activeTopTab,
+  selectedInstanceIndex,
+  activeInstanceTab,
+  navigateToTab,
+  handleSelectTemplate,
+  handleSelectInstance
+} = useServerSelection(server);
+
+const {
+  serverInstances,
+  selectedInstanceConfig,
+  templateConfigForInstance,
+  allServers,
+  getSelectedInstanceStatus,
+  startSelectedInstance,
+  stopSelectedInstance,
+  restartSelectedInstance,
+  startAllInstances,
+  stopAllInstances,
+  restartAllInstances,
+  handleAddInstance,
+  handleUpdateDisplayName,
+  handleDeleteInstance,
+  handleReassignIndexes,
+  handleUpdateInstanceConfig
+} = useServerInstances(server, selectedInstanceIndex);
+
+const {
+  showInstanceSelectForTool,
+  selectedInstanceForTool,
+  showCallDialog,
+  pendingTool,
+  showInstanceSelectForResourceDialog,
+  showInstanceSelectForResource,
+  callToolWithInstance,
+  viewResourceWithInstance
+} = useToolAndResourceDialogs(server);
+```
+
+## 依赖关系
+
+```
+composables/
+├── useTheme.ts
+│   └── 独立使用
+│
+├── use-server-selection.ts
+│   ├── depends on: vue-router, useServerStore
+│   └── used by: ServerDetail.vue
+│
+├── use-server-instances.ts
+│   ├── depends on: useServerStore, useI18n, Element Plus
+│   └── used by: ServerDetail.vue
+│
+└── use-tool-and-resource-dialogs.ts
+    ├── depends on: vue-router
+    └── used by: ServerDetail.vue
+```
+
+## 相关文件清单
+
+| 文件路径                                       | 描述                  |
+| ---------------------------------------------- | --------------------- |
+| `composables/useTheme.ts`                      | 主题切换              |
+| `composables/use-server-selection.ts`          | 服务器选择和 Tab 管理 |
+| `composables/use-server-instances.ts`          | 实例操作管理          |
+| `composables/use-tool-and-resource-dialogs.ts` | 对话框管理            |
+| `types/server-detail.ts`                       | 共享类型定义          |
+| `utils/format-utils.ts`                        | 共享工具函数          |

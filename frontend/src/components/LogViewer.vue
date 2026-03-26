@@ -12,7 +12,7 @@
           $t('serverDetail.logs.clear')
         }}</el-button>
         <el-button size="small" :icon="CopyDocument" plain @click="handleCopy">{{
-          $t('serverDetail.logs.copy')
+          $t('common.copy')
         }}</el-button>
       </div>
     </div>
@@ -35,6 +35,7 @@ import { ref, watch, nextTick } from 'vue';
 import { Delete, CopyDocument } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import type { CheckboxValueType } from 'element-plus';
+import { formatTimestamp } from '@/utils/format-utils';
 
 interface LogEntry {
   timestamp: number;
@@ -108,17 +109,5 @@ function getLogLevelColor(level: string) {
     default:
       return 'text-gray-300';
   }
-}
-
-function formatTimestamp(timestamp: number) {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 </script>

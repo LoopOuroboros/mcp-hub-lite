@@ -5,6 +5,7 @@ export default {
     stop: 'Stop',
     restart: 'Restart',
     delete: 'Delete',
+    deleteServer: 'Delete Server',
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
@@ -27,10 +28,26 @@ export default {
     displayNameUpdated: 'Display name updated',
     instanceAdded: 'Instance added successfully',
     instanceDeleted: 'Instance deleted successfully',
-    indexesReassigned: 'Indexes reassigned successfully'
+    indexesReassigned: 'Indexes reassigned successfully',
+    startAll: 'Start All',
+    stopAll: 'Stop All',
+    restartAll: 'Restart All'
   },
   common: {
-    copy: 'Copy'
+    copy: 'Copy',
+    description: 'Description',
+    name: 'Name',
+    uri: 'URI',
+    mimeType: 'MIME Type',
+    logs: 'Logs',
+    config: 'Config',
+    tools: 'Tools',
+    resources: 'Resources',
+    instance: 'Instance',
+    template: 'Template',
+    addTag: 'Add Tag',
+    editTag: 'Edit Tag',
+    deleteTag: 'Delete Tag'
   },
   sidebar: {
     title: 'MCP Server Manager',
@@ -51,10 +68,6 @@ export default {
     serverResources: 'Server Resources',
     toolResources: 'Tool Resources',
     dataResources: 'Data Resources',
-    name: 'Name',
-    uri: 'URI',
-    mimeType: 'MIME Type',
-    description: 'Description',
     server: 'Server',
     contentPreview: 'Content Preview',
     preview: 'Preview',
@@ -124,9 +137,6 @@ export default {
     tagDescription: 'Description',
     tagType: 'Type',
     tagValues: 'Allowed Values',
-    addTag: 'Add Tag',
-    editTag: 'Edit Tag',
-    deleteTag: 'Delete Tag',
     deleteTagConfirm: 'Are you sure you want to delete this tag definition?',
     noTagsDefined: 'No tags defined yet',
     tagKeyPlaceholder: 'Enter tag key (e.g., environment, priority)',
@@ -147,27 +157,18 @@ export default {
     noSelection: 'Please select template or instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
     deleteInstanceConfirm: 'Are you sure you want to delete this instance?',
-    version: 'Version',
     pid: 'PID',
     uptime: 'Uptime',
     selectInstanceForTool: 'Select instance to call tool',
     selectInstanceForResource: 'Select instance to view resource',
     selectInstancePlaceholder: 'Select an instance...',
     confirm: 'Confirm',
-    tabs: {
-      config: 'Configuration',
-      logs: 'Logs',
-      tools: 'Tools',
-      resources: 'Resources'
-    },
+    tabs: {},
     configTabs: {
-      template: 'Template',
       instances: 'Instances'
     },
     instanceTabs: {
-      config: 'Config',
-      configOverride: 'Instance Config',
-      logs: 'Logs'
+      configOverride: 'Instance Config'
     },
     config: {
       transport: 'Transport',
@@ -187,7 +188,6 @@ export default {
       tags: 'Tags',
       save: 'Save Configuration',
       editByJson: 'Edit By Json',
-      description: 'Description',
       descriptionPlaceholder: 'Enter server description'
     },
     instanceConfig: {
@@ -197,21 +197,17 @@ export default {
       override: 'Instance Override',
       editable: 'Editable',
       fromTemplate: 'From template',
-      instance: 'Instance',
       noArgs: 'No arguments',
       noEnv: 'No environment variables',
       noHeaders: 'No headers',
       noTags: 'No tags',
-      addTag: 'Add Tag',
       mergedPreview: 'Merged Final Config Preview',
       viewMerged: 'View Merged Config'
     },
     logs: {
       autoScroll: 'Auto-scroll',
       clear: 'Clear',
-      copy: 'Copy',
       copied: 'Logs copied to clipboard',
-      instance: 'Instance',
       selectInstance: 'Select an instance'
     },
     tools: {
@@ -225,9 +221,6 @@ export default {
       call: 'Call'
     },
     resources: {
-      name: 'Name',
-      uri: 'URI',
-      mimeType: 'MIME Type',
       none: 'No resources available'
     },
     status: {
@@ -242,7 +235,6 @@ export default {
     editJsonTitle: 'Edit JSON Config',
     instances: {
       title: 'Instances',
-      template: 'Template',
       templateTag: 'Template Config',
       unnamed: 'Unnamed',
       add: 'Add Instance',
@@ -253,9 +245,7 @@ export default {
   addServer: {
     title: 'Add New MCP Server',
     transportType: 'Select Transport Type',
-    name: 'Server Name',
     namePlaceholder: 'My New Server',
-    description: 'Description',
     descriptionPlaceholder: 'Enter server description',
     executablePlaceholder: '/path/to/executable or npx',
     argPlaceholder: 'Argument',
@@ -305,7 +295,6 @@ export default {
     invalidJsonArguments: 'Invalid JSON arguments',
     executionSuccessful: 'Tool execution successful',
     executionFailed: 'Tool execution failed',
-    instance: 'Instance',
     selectInstance: 'Select an instance'
   }
 };

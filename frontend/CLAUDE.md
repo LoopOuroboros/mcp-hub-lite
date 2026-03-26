@@ -17,6 +17,7 @@ frontend/
 │   ├── router/              # Vue Router 路由配置
 │   ├── i18n/                # 国际化支持
 │   ├── composables/         # Vue 3 组合式函数
+│   ├── types/               # 共享 TypeScript 类型定义
 │   ├── utils/               # 工具函数
 │   ├── locales/             # 语言包
 │   ├── App.vue              # 根组件
@@ -79,6 +80,8 @@ npm run dev
 - `frontend/src/stores/` - 状态管理
 - `frontend/src/utils/` - 工具函数
 - `frontend/src/components/` - UI 组件
+- `frontend/src/composables/` - Vue 3 组合式函数
+- `frontend/src/types/` - 共享 TypeScript 类型定义
 
 ### 外部依赖
 
@@ -224,3 +227,6 @@ try {
 | `frontend/src/stores/server.ts` | 服务器状态管理 |
 | `frontend/src/components/`      | UI 组件        |
 | `frontend/src/views/`           | 页面视图       |
+| `frontend/src/composables/`     | 组合式函数     |
+| `frontend/src/types/`           | 共享类型定义   |
+| `frontend/src/utils/`           | 工具函数       |
