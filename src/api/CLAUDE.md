@@ -52,8 +52,6 @@ api/
 
 - `sessionId` - 会话标识符，用于区分不同客户端连接
 - `clientName` - 客户端名称
-- `cwd` - 当前工作目录
-- `project` - 项目名称
 - `ip` - 客户端 IP
 - `userAgent` - 用户代理信息
 
@@ -89,6 +87,13 @@ api/
 - 所有字段都是可选的
 - 不包含默认值，避免覆盖现有配置
 - 支持更新 displayName、enabled、env、args 等字段
+
+**索引类型支持**:
+
+- 服务器实例索引在存储和接口定义中使用 `number` 类型
+- API 操作（如更新、删除实例）支持传入 `string` 或 `number` 类型的索引参数
+- 字符串索引会在运行时自动转换为数字进行处理
+- 保持向后兼容性，现有代码无需修改
 
 ### 搜索 API (`api/web/search.ts`)
 
@@ -267,8 +272,6 @@ interface ServerStatus {
 interface ClientContext {
   sessionId: string;
   clientName?: string;
-  cwd?: string;
-  project?: string;
   ip?: string;
   userAgent?: string;
   timestamp: number;
@@ -282,8 +285,6 @@ interface SessionState {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
-  cwd?: string;
-  project?: string;
   createdAt: number;
   lastAccessedAt: number;
   metadata: Record<string, unknown>;

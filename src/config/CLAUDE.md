@@ -419,7 +419,7 @@ export interface ServerTemplate {
 
 export interface ServerInstance {
   id: string;
-  index?: number;
+  index?: number; // 存储为数字类型，但API操作支持字符串或数字索引
   displayName?: string;
   enabled: boolean;
   args: string[];
@@ -433,7 +433,7 @@ export interface ServerInstance {
 
 export interface ServerInstanceUpdate {
   id?: string;
-  index?: number;
+  index?: number; // 存储为数字类型，但API操作支持字符串或数字索引
   displayName?: string;
   enabled?: boolean;
   args?: string[];

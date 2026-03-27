@@ -95,7 +95,7 @@ shared/
 
 **主要接口**:
 
-- `ClientContext` - 客户端上下文信息
+- `ClientContext` - 客户端上下文信息（注意：已移除 cwd 和 project 字段）
 - `SessionContext` - 会话上下文类型
 
 ### Common Types (`types/common.types.ts`)

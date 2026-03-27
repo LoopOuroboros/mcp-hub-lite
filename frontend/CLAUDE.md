@@ -128,8 +128,6 @@ interface SessionInfo {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
-  cwd?: string;
-  project?: string;
   createdAt: number;
   lastAccessedAt: number;
 }
