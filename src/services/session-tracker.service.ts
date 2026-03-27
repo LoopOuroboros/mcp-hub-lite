@@ -5,7 +5,6 @@ import type {
 } from '@shared-types/session-context.types.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { eventBus } from './event-bus.service.js';
-import { fileURLToPath } from 'node:url';
 import { configManager } from '@config/config-manager.js';
 import { formatDuration } from '@utils/format-utils.js';
 
@@ -65,8 +64,6 @@ class SessionTrackerService {
    * @param context.clientName - Optional name of the client application
    * @param context.clientVersion - Optional version of the client application
    * @param context.protocolVersion - Optional MCP protocol version
-   * @param context.project - Optional project identifier
-   * @param context.cwd - Optional current working directory
    * @param context.userAgent - Optional user agent string
    * @param context.ip - Optional session IP address
    *
@@ -74,8 +71,7 @@ class SessionTrackerService {
    * sessionTrackerService.updateSession({
    *   sessionId: 'session-123',
    *   clientName: 'VS Code',
-   *   clientVersion: '1.85.0',
-   *   cwd: '/home/user/project'
+   *   clientVersion: '1.85.0'
    * });
    */
   public updateSession(context: SessionContext) {
@@ -87,8 +83,6 @@ class SessionTrackerService {
       clientVersion: context.clientVersion || existing?.clientVersion,
       protocolVersion: context.protocolVersion || existing?.protocolVersion,
       capabilities: context.capabilities || existing?.capabilities,
-      project: context.project || existing?.project,
-      cwd: context.cwd || existing?.cwd, // Preserve CWD if not provided in new request (e.g. inferred from roots)
       userAgent: context.userAgent || existing?.userAgent,
       ip: context.ip || existing?.ip,
 
@@ -110,12 +104,7 @@ class SessionTrackerService {
    * Updates the workspace roots for a specific session.
    *
    * This method is typically called when a session provides its workspace root
-   * directories, which helps determine the session's working directory context.
-   * If the session doesn't have a current working directory (cwd) set, it will
-   * attempt to infer one from the first root URI in the list.
-   *
-   * For file:// URIs, it converts them to local file paths using Node.js's
-   * fileURLToPath utility. For other URI schemes, it uses the URI directly.
+   * directories.
    *
    * @param sessionId - The unique session identifier for the session
    * @param roots - Array of session root objects containing URI information
@@ -131,50 +120,6 @@ class SessionTrackerService {
     if (session) {
       session.roots = roots;
       session.lastSeen = Date.now();
-
-      // If CWD is missing, try to infer from roots
-      if (!session.cwd && roots.length > 0) {
-        // Convert file:// uri to path if possible, or just use URI
-        const root = roots[0];
-        if (root.uri.startsWith('file://')) {
-          try {
-            session.cwd = fileURLToPath(root.uri);
-          } catch {
-            session.cwd = root.uri;
-          }
-        } else {
-          session.cwd = root.uri;
-        }
-        logger.debug(
-          `Inferred CWD for session ${sessionId} from roots: ${session.cwd}`,
-          LOG_MODULES.SESSION_TRACKER
-        );
-      }
-
-      // If project is missing, try to infer from roots (use name or last path segment)
-      if (!session.project && roots.length > 0) {
-        const root = roots[0];
-        if (root.name) {
-          session.project = root.name;
-        } else if (root.uri.startsWith('file://')) {
-          try {
-            const localPath = fileURLToPath(root.uri);
-            const pathSegments = localPath.split(/[/\\]/);
-            const lastSegment = pathSegments.filter(Boolean).pop();
-            if (lastSegment) {
-              session.project = lastSegment;
-            }
-          } catch {
-            // If path parsing fails, don't set project
-          }
-        }
-        if (session.project) {
-          logger.debug(
-            `Inferred project for session ${sessionId} from roots: ${session.project}`,
-            LOG_MODULES.SESSION_TRACKER
-          );
-        }
-      }
     }
   }
 

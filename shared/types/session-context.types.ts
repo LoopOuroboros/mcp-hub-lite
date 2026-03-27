@@ -22,8 +22,6 @@ export interface SessionContext {
   clientName?: string;
   clientVersion?: string;
   protocolVersion?: string;
-  cwd?: string;
-  project?: string;
   ip?: string;
   userAgent?: string;
   capabilities?: ClientCapabilities;

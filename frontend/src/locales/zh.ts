@@ -5,7 +5,7 @@ export default {
     stop: '停止',
     restart: '重启',
     delete: '删除',
-    deleteServer: '删除MCP服务器',
+    deleteServer: '删除服务器',
     edit: '编辑',
     save: '保存',
     cancel: '取消',
@@ -85,8 +85,6 @@ export default {
     protocolVersion: '协议版本',
     capabilities: '能力',
     userAgent: '用户代理',
-    cwd: '工作目录',
-    project: '项目',
     createdAt: '创建时间',
     lastAccessedAt: '最后访问时间'
   },

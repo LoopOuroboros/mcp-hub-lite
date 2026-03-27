@@ -58,13 +58,6 @@
           </template>
         </el-table-column>
         <el-table-column
-          prop="cwd"
-          :label="$t('sessions.cwd')"
-          min-width="200"
-          show-overflow-tooltip
-        />
-        <el-table-column prop="project" :label="$t('sessions.project')" min-width="150" />
-        <el-table-column
           prop="userAgent"
           :label="$t('sessions.userAgent')"
           min-width="250"

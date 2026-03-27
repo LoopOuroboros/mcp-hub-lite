@@ -10,7 +10,6 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
-import { getSessionCwd } from '@utils/request-context.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { SystemToolHandler } from '@services/system-tool-handler.js';
 import { ErrorHandler } from '@utils/error-handler.js';
@@ -155,15 +154,6 @@ export function registerCallToolHandler(
 
     const startTime = Date.now();
     try {
-      // Inject CWD if available and not present in args
-      const cwd = getSessionCwd();
-      if (cwd && !toolArgs.cwd) {
-        toolArgs.cwd = cwd;
-        logger.debug(
-          `Injected CWD into tool call ${toolName}: ${cwd}`,
-          LOG_MODULES.dynamic(toolName)
-        );
-      }
       logger.debug(
         `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
         LOG_MODULES.GATEWAY

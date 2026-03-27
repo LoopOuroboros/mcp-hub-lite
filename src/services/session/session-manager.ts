@@ -464,8 +464,6 @@ export class McpSessionManager {
       clientVersion: sessionInfo?.clientVersion,
       protocolVersion: sessionInfo?.protocolVersion,
       capabilities: sessionInfo?.capabilities,
-      cwd: sessionInfo?.cwd,
-      project: sessionInfo?.project,
       userAgent: sessionInfo?.userAgent,
       ip: sessionInfo?.ip
     };
@@ -499,8 +497,6 @@ export class McpSessionManager {
       clientVersion: clientMetadata.clientVersion || existing?.clientVersion,
       protocolVersion: clientMetadata.protocolVersion || existing?.protocolVersion,
       capabilities: clientMetadata.capabilities || existing?.capabilities,
-      cwd: clientMetadata.cwd || existing?.cwd,
-      project: clientMetadata.project || existing?.project,
       userAgent: clientMetadata.userAgent || existing?.userAgent,
       ip: clientMetadata.ip || existing?.ip,
       createdAt: existing?.createdAt || now,

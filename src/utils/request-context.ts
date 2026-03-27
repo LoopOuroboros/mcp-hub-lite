@@ -55,24 +55,3 @@ export const requestContext = new AsyncLocalStorage<SessionContext>();
 export function getSessionContext(): SessionContext | undefined {
   return requestContext.getStore();
 }
-
-/**
- * Retrieves the current request's working directory (cwd).
- *
- * This is a convenience function that extracts the cwd property from the
- * current request's session context. It's commonly used in file operations
- * that need to respect the session's current working directory.
- *
- * @returns {string | undefined} The current request's working directory, or undefined if not available
- *
- * @example
- * ```typescript
- * const cwd = getSessionCwd();
- * if (cwd) {
- *   const fullPath = path.join(cwd, relativePath);
- * }
- * ```
- */
-export function getSessionCwd(): string | undefined {
-  return requestContext.getStore()?.cwd;
-}

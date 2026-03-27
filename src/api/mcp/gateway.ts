@@ -57,7 +57,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     // Log the session context after extraction
     if (getMcpCommDebugSetting()) {
       let sessionLogMsg = `MCP Gateway Session Context [Session: ${sessionId}]`;
-      if (sessionContext.cwd) sessionLogMsg += ` [CWD: ${sessionContext.cwd}]`;
       if (sessionContext.clientName) sessionLogMsg += ` [Client: ${sessionContext.clientName}]`;
       logger.debug(sessionLogMsg, LOG_MODULES.COMMUNICATION);
     }

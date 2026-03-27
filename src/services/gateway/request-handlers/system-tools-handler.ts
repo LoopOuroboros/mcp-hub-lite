@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
-import { getSessionCwd } from '@utils/request-context.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import {
   LIST_SERVERS_TOOL,
@@ -137,13 +136,6 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   server.server.setRequestHandler(CallToolDirectRequestSchema, async (request) => {
     try {
       const params = { ...request.params };
-
-      // Inject CWD if available and not present in args
-      const cwd = getSessionCwd();
-      if (cwd && !params.toolArgs.cwd) {
-        params.toolArgs.cwd = cwd;
-        logger.debug(`Injected CWD into direct tool call: ${cwd}`);
-      }
 
       const result = await hubToolsService.callTool(params);
       // Wrap the result in a valid CallToolResult structure

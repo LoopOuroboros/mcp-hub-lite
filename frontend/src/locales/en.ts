@@ -85,8 +85,6 @@ export default {
     protocolVersion: 'Protocol Version',
     capabilities: 'Capabilities',
     userAgent: 'User Agent',
-    cwd: 'CWD',
-    project: 'Project',
     createdAt: 'Created At',
     lastAccessedAt: 'Last Accessed At'
   },

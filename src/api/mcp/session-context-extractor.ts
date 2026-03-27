@@ -142,8 +142,6 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     clientName,
     clientVersion,
     protocolVersion,
-    cwd: undefined, // Will be populated from roots/list response later
-    project: undefined, // Will be populated from roots/list response later
     ip: request.ip,
     userAgent: headers['user-agent'],
     timestamp: Date.now()

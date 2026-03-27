@@ -9,8 +9,6 @@ export const SessionStateSchema = z.object({
   clientName: z.string().optional(),
   clientVersion: z.string().optional(),
   protocolVersion: z.string().optional(),
-  cwd: z.string().optional(),
-  project: z.string().optional(),
   userAgent: z.string().optional(),
   ip: z.string().optional(),
   capabilities: z.any().optional(),

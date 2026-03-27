@@ -21,8 +21,6 @@ describe('Session Model', () => {
         sessionId: 'test-session-123',
         clientName: 'test-client',
         clientVersion: '1.0.0',
-        cwd: '/path/to/project',
-        project: 'test-project',
         createdAt: Date.now(),
         lastAccessedAt: Date.now(),
         metadata: {}
@@ -44,7 +42,6 @@ describe('Session Model', () => {
 
       expect(minimalState.sessionId).toBe('test-session');
       expect(minimalState.clientName).toBeUndefined();
-      expect(minimalState.cwd).toBeUndefined();
     });
 
     it('should handle metadata with arbitrary keys', () => {
@@ -526,8 +523,6 @@ describe('McpSessionManager with Real SDK', () => {
       sessionId: testSessionId,
       clientName: 'claude-code',
       clientVersion: '1.0.0',
-      cwd: '/test/project/path',
-      project: 'test-project',
       createdAt: Date.now() - 3600000,
       lastAccessedAt: Date.now() - 60000,
       metadata: {
@@ -574,7 +569,6 @@ describe('McpSessionManager with Real SDK', () => {
         sessionId: id,
         clientName: `client-${id}`,
         clientVersion: '2.0.0',
-        cwd: `/workspace/project-${id}`,
         createdAt: Date.now() - 7200000,
         lastAccessedAt: Date.now() - 300000,
         metadata: {
@@ -617,8 +611,6 @@ describe('McpSessionManager with Real SDK', () => {
       sessionId: 'full-session-001',
       clientName: 'test-client',
       clientVersion: '1.0.0',
-      cwd: '/test/path',
-      project: 'test-project',
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
       metadata: { foo: 'bar', count: 42 }
