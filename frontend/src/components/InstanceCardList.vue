@@ -92,8 +92,9 @@
               </template>
             </div>
 
-            <!-- Status Badge -->
+            <!-- Status Badge (hide when PID is present and status is online) -->
             <div
+              v-if="!(instance.pid && getInstanceStatus(instance) === 'online')"
               class="px-2 py-0.5 rounded-full text-xs"
               :class="getStatusBadgeClass(getInstanceStatus(instance))"
             >
@@ -381,6 +382,25 @@ function handleReassignIndexes() {
 
 .instance-card {
   @apply bg-white dark:bg-gray-800;
+}
+
+/* Prevent text wrapping in instance info */
+.instance-card .flex.items-center.gap-3 {
+  flex-wrap: nowrap;
+}
+
+.instance-card .flex.items-center.gap-2 {
+  min-width: 0;
+}
+
+.instance-card .font-mono.text-sm {
+  white-space: nowrap;
+}
+
+.instance-card .font-medium {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .instance-card:hover {
