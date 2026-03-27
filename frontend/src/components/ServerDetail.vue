@@ -84,6 +84,7 @@
                       :instance-config="selectedInstanceConfig"
                       :server-name="server.name"
                       :instance-status="getSelectedInstanceStatus()"
+                      :system-tag-definitions="systemTagDefinitions"
                       @update="handleUpdateInstanceConfig"
                       @start-instance="startSelectedInstance"
                       @stop-instance="stopSelectedInstance"
@@ -204,6 +205,8 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useServerStore } from '@stores/server';
 import { useWebSocketStore } from '@stores/websocket';
+import { useSystemStore } from '@stores/system';
+import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Files, Setting, Tools, Memo } from '@element-plus/icons-vue';
@@ -229,11 +232,16 @@ import type { ServerTemplate, ServerRuntimeConfig } from '@shared-models/server.
 
 const store = useServerStore();
 useWebSocketStore();
+const systemStore = useSystemStore();
+const { config } = storeToRefs(systemStore);
 const { t } = useI18n();
 const router = useRouter();
 
 // Computed property for the selected server
 const server = computed(() => store.selectedServer);
+
+// System tag definitions
+const systemTagDefinitions = computed(() => config.value?.tagDefinitions || []);
 
 // Use composables
 const {

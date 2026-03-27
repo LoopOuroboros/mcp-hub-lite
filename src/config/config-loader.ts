@@ -10,6 +10,7 @@ import { SystemConfigSchema, isLegacyV1Config } from './config.schema.js';
 import type { SystemConfig } from './config.schema.js';
 import { migrateConfig } from './config-migrator.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
+import { reassignServerInstanceIndexes } from './server-config-manager.js';
 
 /**
  * Loads configuration from the specified file path.
@@ -76,6 +77,10 @@ export function loadConfig(configPath: string, autoMigrate: boolean = true): Sys
               Object.entries(parsed.data.servers).sort(([a], [b]) => a.localeCompare(b))
             )
           };
+          // Ensure all server instances have proper indexes
+          for (const serverName of Object.keys(configWithSortedServers.servers)) {
+            reassignServerInstanceIndexes(serverName, configWithSortedServers.servers);
+          }
           return configWithSortedServers;
         } else {
           logger.error(`Config validation failed: ${parsed.error}`);

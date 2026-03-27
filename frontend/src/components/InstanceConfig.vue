@@ -301,25 +301,67 @@
           </el-button>
         </div>
 
-        <!-- Instance tags (editable) -->
-        <div v-if="localConfig.tags && Object.keys(localConfig.tags).length > 0" class="space-y-2">
+        <!-- Empty state guidance -->
+        <div v-if="systemTagDefinitions.length === 0" class="text-center py-4 text-gray-500">
+          <p>暂无标签定义</p>
+          <el-button size="small" type="primary" @click="goToTagSettings"> 前往标签设置 </el-button>
+        </div>
+
+        <!-- Instance tags with dropdown selection -->
+        <div
+          v-else-if="localConfig.tags && Object.keys(localConfig.tags).length > 0"
+          class="space-y-2"
+        >
           <div
             v-for="(_, key) in localConfig.tags"
             :key="`instance-tag-${key}`"
             class="flex gap-2 items-start"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
-            <el-input
-              :model-value="key"
+            <!-- Tag key - dropdown selection -->
+            <el-select
+              v-model="tagKeyMap[key]"
               style="width: 30%; min-width: 150px"
-              :placeholder="$t('addServer.keyPlaceholder')"
-              @update:model-value="(newKey) => updateInstanceTagKey(key, newKey as string)"
-            />
-            <el-input
-              v-model="localConfig.tags![key]"
-              style="flex: 1"
-              :placeholder="$t('addServer.valuePlaceholder')"
-            />
+              filterable
+              placeholder="选择标签键"
+              @change="(newKey) => updateTagKey(key, newKey as string)"
+            >
+              <el-option
+                v-for="tagDef in systemTagDefinitions"
+                :key="tagDef.key"
+                :label="tagDef.key"
+                :value="tagDef.key"
+              >
+                <!-- Display tag type as auxiliary info -->
+                <span>{{ tagDef.key }}</span>
+                <span class="text-xs text-gray-500 ml-2">{{ tagDef.type }}</span>
+              </el-option>
+            </el-select>
+
+            <!-- Tag value - dynamic based on type -->
+            <template v-if="tagKeyMap[key] && getTagType(tagKeyMap[key]) === 'enum'">
+              <el-select
+                v-model="localConfig.tags![key]"
+                style="flex: 1"
+                filterable
+                placeholder="选择标签值"
+              >
+                <el-option
+                  v-for="option in getTagValues(tagKeyMap[key])"
+                  :key="option"
+                  :label="option"
+                  :value="option"
+                />
+              </el-select>
+            </template>
+            <template v-else>
+              <el-input
+                v-model="localConfig.tags![key]"
+                style="flex: 1"
+                :placeholder="tagKeyMap[key] ? getValuePlaceholder(tagKeyMap[key]) : '输入标签值'"
+              />
+            </template>
+
             <el-button size="small" type="danger" :icon="Delete" @click="removeInstanceTag(key)" />
             <el-tag size="small" type="success">
               {{ $t('common.instance') }}
@@ -357,7 +399,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { Delete, Plus, View, Refresh, SwitchButton, VideoPlay } from '@element-plus/icons-vue';
-import type { ServerTemplate } from '@shared-models/server.model';
+import { ElMessage } from 'element-plus';
+import type { ServerTemplate, TagDefinition } from '@shared-models/server.model';
 import type { InstanceConfigOverrides } from '@/types/server-detail';
 import MergedConfigPreviewDialog from './MergedConfigPreviewDialog.vue';
 import { useI18n } from 'vue-i18n';
@@ -370,12 +413,14 @@ import { useI18n } from 'vue-i18n';
  * @property {InstanceConfigOverrides} instanceConfig - The instance configuration overrides
  * @property {string} serverName - Name of the server
  * @property {string} instanceStatus - Status of the instance
+ * @property {TagDefinition[]} systemTagDefinitions - System-level tag definitions for validation and UI
  */
 interface InstanceConfigProps {
   templateConfig: ServerTemplate;
   instanceConfig: InstanceConfigOverrides;
   serverName: string;
   instanceStatus?: string;
+  systemTagDefinitions: TagDefinition[];
 }
 
 /**
@@ -435,6 +480,9 @@ const instanceEnvKeys = ref<Record<string, string>>({});
 const instanceHeaderKeys = ref<Record<string, string>>({});
 const instanceTagKeys = ref<Record<string, string>>({});
 
+// Tag key mapping for dropdown selection
+const tagKeyMap = ref<Record<string, string>>({});
+
 // Computed properties for template field existence
 const hasTemplateArgs = computed(() => {
   return props.templateConfig.args && props.templateConfig.args.length > 0;
@@ -470,11 +518,21 @@ watch(
       });
     }
 
-    // Initialize tag keys
+    // Initialize tag keys and mapping
     instanceTagKeys.value = {};
+    tagKeyMap.value = {};
     if (newConfig.tags) {
       Object.keys(newConfig.tags).forEach((k) => {
         instanceTagKeys.value[k] = k;
+        // Check if tag key is in system definitions
+        const isValid = props.systemTagDefinitions.some((def) => def.key === k);
+        if (isValid) {
+          tagKeyMap.value[k] = k;
+        } else {
+          // For invalid tags, still keep the mapping but mark as custom
+          tagKeyMap.value[k] = k;
+          console.warn(`未定义的标签键: ${k}`);
+        }
       });
     }
   },
@@ -617,31 +675,76 @@ function updateInstanceHeaderKey(oldKey: string, newKey: string) {
   instanceHeaderKeys.value[newKey] = newKey;
 }
 
-// Tags helpers
+// Enhanced tag helpers with system tag definitions
 function addInstanceTag() {
   if (!localConfig.value.tags) {
     localConfig.value.tags = {};
   }
-  const newKey = `new-tag-${Date.now()}`;
-  localConfig.value.tags[newKey] = '';
-  instanceTagKeys.value[newKey] = newKey;
+
+  // If there are defined tags, use the first one as default
+  if (props.systemTagDefinitions.length > 0) {
+    const firstTagDef = props.systemTagDefinitions[0];
+    if (firstTagDef) {
+      const firstTagKey = firstTagDef.key;
+      // Ensure unique key name
+      let uniqueKey = firstTagKey;
+      let counter = 1;
+      while (
+        localConfig.value.tags &&
+        Object.prototype.hasOwnProperty.call(localConfig.value.tags, uniqueKey)
+      ) {
+        uniqueKey = `${firstTagKey}-${counter}`;
+        counter++;
+      }
+      localConfig.value.tags[uniqueKey] = '';
+      tagKeyMap.value[uniqueKey] = firstTagKey;
+    }
+  } else {
+    // No defined tags, provide creation prompt
+    ElMessage.warning('请先在设置中定义标签');
+    // Still allow adding custom tag for backward compatibility
+    const newKey = `new-tag-${Date.now()}`;
+    localConfig.value.tags[newKey] = '';
+    tagKeyMap.value[newKey] = newKey;
+  }
 }
 
 function removeInstanceTag(key: string) {
   if (localConfig.value.tags) {
     delete localConfig.value.tags[key];
     delete instanceTagKeys.value[key];
+    delete tagKeyMap.value[key];
   }
 }
 
-function updateInstanceTagKey(oldKey: string, newKey: string) {
-  if (!localConfig.value.tags || !oldKey || !newKey || oldKey === newKey) return;
+function updateTagKey(oldKey: string, newKey: string) {
+  if (!localConfig.value.tags || !newKey) return;
 
   const value = localConfig.value.tags[oldKey] ?? '';
   delete localConfig.value.tags[oldKey];
-  delete instanceTagKeys.value[oldKey];
+  delete tagKeyMap.value[oldKey];
   localConfig.value.tags[newKey] = value;
-  instanceTagKeys.value[newKey] = newKey;
+  tagKeyMap.value[newKey] = newKey;
+}
+
+function getTagType(key: string): string | null {
+  const tagDef = props.systemTagDefinitions.find((def) => def.key === key);
+  return tagDef ? tagDef.type : null;
+}
+
+function getTagValues(key: string): string[] {
+  const tagDef = props.systemTagDefinitions.find((def) => def.key === key);
+  return tagDef?.type === 'enum' ? tagDef.values || [] : [];
+}
+
+function getValuePlaceholder(key: string): string {
+  const tagDef = props.systemTagDefinitions.find((def) => def.key === key);
+  return tagDef?.description || '输入标签值';
+}
+
+function goToTagSettings() {
+  // Navigate to settings/tags route
+  window.location.hash = '#/settings/tags';
 }
 </script>
 

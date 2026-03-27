@@ -333,9 +333,10 @@ function startEditDisplayName(instance: InstanceWithStatus) {
  * @param {number} index - The instance index
  */
 function saveDisplayName(index: number) {
-  if (editingDisplayName.value.trim()) {
-    emit('update-display-name', index, editingDisplayName.value.trim());
-  }
+  // Always emit the update event, even for empty strings
+  // This allows resetting to default "unnamed" display
+  const displayName = editingDisplayName.value.trim();
+  emit('update-display-name', index, displayName);
   cancelEditDisplayName();
 }
 

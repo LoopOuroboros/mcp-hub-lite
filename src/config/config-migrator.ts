@@ -5,6 +5,7 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { ServerInstance, ServerTemplate, SystemConfig } from './config.schema.js';
 import { isLegacyV1Config, SystemConfigSchema } from './config.schema.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
+import { reassignServerInstanceIndexes } from './server-config-manager.js';
 
 /**
  * @deprecated Use ServerRuntimeConfig from @shared-models/server.model instead
@@ -189,6 +190,7 @@ function convertToServerInstance(
 
   return {
     id: generateInstanceId(serverName, instanceConfig),
+    index: 0, // Set initial index for migrated instances
     enabled: v1Config.enabled !== false,
     args: [], // In v1.1, instance args are just the append part
     env: v1Config.env || {},
@@ -218,6 +220,11 @@ function migrateV1ToV1_1(v1Config: LegacySystemConfigV1): {
       instances: [instance],
       tagDefinitions: []
     };
+  }
+
+  // Ensure all server instances have proper indexes
+  for (const serverName of Object.keys(servers)) {
+    reassignServerInstanceIndexes(serverName, servers);
   }
 
   const v1_1Config: SystemConfig = {

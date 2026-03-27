@@ -261,7 +261,9 @@ export function updateServerInstance(
 
       instances[instanceIndex] = {
         ...originalInstance,
-        ...updates
+        ...updates,
+        // Explicitly preserve the original index field
+        index: originalInstance.index
       };
 
       logger.debug(`[ServerConfigManager] Updated instance after merge:`, instances[instanceIndex]);
@@ -276,7 +278,9 @@ export function updateServerInstance(
         const originalInstance = instances[numericIndex];
         instances[numericIndex] = {
           ...originalInstance,
-          ...updates
+          ...updates,
+          // Ensure index field is set to the numericIndex when using array index fallback
+          index: numericIndex
         };
         logger.debug(
           `[ServerConfigManager] Updated instance via array index:`,
