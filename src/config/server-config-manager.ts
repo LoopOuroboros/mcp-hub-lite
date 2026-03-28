@@ -5,6 +5,7 @@
 
 import { ServerTemplateSchema, ServerInstanceSchema, ServerConfigSchema } from './config.schema.js';
 import type { ServerTemplate, ServerInstance, ServerConfig } from './config.schema.js';
+import type { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
 import { logger } from '@utils/logger.js';
 
@@ -74,9 +75,15 @@ export function addServers(
     // Create default instance
     const defaultInstance = createDefaultInstance(name, []);
 
+    // Extract instance selection strategy from config if provided, otherwise default to random
+    const { instanceSelectionStrategy = 'random' } = config as Partial<ServerTemplate> & {
+      instanceSelectionStrategy?: InstanceSelectionStrategy;
+    };
+
     currentServers[name] = ServerConfigSchema.parse({
       template,
-      instances: [defaultInstance]
+      instances: [defaultInstance],
+      instanceSelectionStrategy
     });
   }
 
@@ -105,9 +112,15 @@ export function addServer(
   // Create default instance
   const defaultInstance = createDefaultInstance(name, []);
 
+  // Extract instance selection strategy from config if provided, otherwise default to random
+  const { instanceSelectionStrategy = 'random' } = config as Partial<ServerTemplate> & {
+    instanceSelectionStrategy?: InstanceSelectionStrategy;
+  };
+
   const serverConfig = ServerConfigSchema.parse({
     template,
-    instances: [defaultInstance]
+    instances: [defaultInstance],
+    instanceSelectionStrategy
   });
 
   currentServers[name] = serverConfig;
@@ -179,25 +192,38 @@ export function reassignServerInstanceIndexes(
 }
 
 /**
- * Updates an existing server template configuration.
+ * Updates an existing server configuration (template and/or instance selection strategy).
  *
  * @param name - The name of the server to update
- * @param updates - The partial template updates to apply
+ * @param updates - The partial server configuration updates to apply (can include template and instanceSelectionStrategy)
  * @param currentServers - Current servers configuration object (will be modified)
  * @returns True if the server was updated
  */
 export function updateServerTemplate(
   name: string,
-  updates: Partial<ServerTemplate>,
+  updates: Partial<ServerTemplate> & { instanceSelectionStrategy?: InstanceSelectionStrategy },
   currentServers: Record<string, ServerConfig>
 ): boolean {
   if (currentServers[name]) {
-    // Unified type conversion: convert http to streamable-http
-    const convertedUpdates = convertHttpToStreamableHttp(updates) as Partial<ServerTemplate>;
-    currentServers[name].template = {
-      ...currentServers[name].template,
-      ...convertedUpdates
-    };
+    // Handle instance selection strategy update
+    if (updates.instanceSelectionStrategy !== undefined) {
+      currentServers[name].instanceSelectionStrategy = updates.instanceSelectionStrategy;
+    }
+
+    // Handle template updates
+    const templateUpdates = { ...updates };
+    delete templateUpdates.instanceSelectionStrategy;
+
+    if (Object.keys(templateUpdates).length > 0) {
+      // Unified type conversion: convert http to streamable-http
+      const convertedUpdates = convertHttpToStreamableHttp(
+        templateUpdates
+      ) as Partial<ServerTemplate>;
+      currentServers[name].template = {
+        ...currentServers[name].template,
+        ...convertedUpdates
+      };
+    }
 
     // Ensure server configurations are sorted by name
     const sortedServers = Object.fromEntries(

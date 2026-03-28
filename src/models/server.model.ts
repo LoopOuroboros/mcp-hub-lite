@@ -32,6 +32,9 @@ export type {
   SharedLogEntry as LogEntry
 };
 
+// Re-export shared constants (includes both value and type)
+export { InstanceSelectionStrategy } from '@shared-models/server.model.js';
+
 // ====== Legacy Backend Server Configuration (for backward compatibility) ======
 
 /**

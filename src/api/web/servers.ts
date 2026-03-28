@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
 import { ServerTemplateSchema, ServerInstanceUpdateSchema } from '@config/config.schema.js';
 import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
+import { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { stringifyForLogging, getApiDebugSetting } from '@utils/json-utils.js';
 
@@ -10,6 +11,19 @@ interface BatchResultSuccess {
   name: string;
   config: Partial<ServerTemplate>;
 }
+
+/**
+ * Server update schema that supports both template fields and server-level configuration fields
+ */
+const ServerUpdateSchema = ServerTemplateSchema.partial().extend({
+  instanceSelectionStrategy: z
+    .enum([
+      InstanceSelectionStrategy.RANDOM,
+      InstanceSelectionStrategy.ROUND_ROBIN,
+      InstanceSelectionStrategy.TAG_MATCH_UNIQUE
+    ])
+    .optional()
+});
 
 /**
  * MCP Server Management API Routes (v1.1 format)
@@ -152,11 +166,25 @@ export async function webServerRoutes(fastify: FastifyInstance) {
   // PUT /web/servers/:name
   fastify.put<{ Params: { name: string } }>('/web/servers/:name', async (request, reply) => {
     try {
-      const partialSchema = ServerTemplateSchema.partial();
-      const body = partialSchema.parse(request.body);
+      const body = ServerUpdateSchema.parse(request.body);
 
-      const updatedServer = await hubManager.updateServer(request.params.name, body);
+      // Separate template updates and server configuration updates
+      const { instanceSelectionStrategy, ...templateUpdates } = body;
 
+      // Update server template
+      if (Object.keys(templateUpdates).length > 0) {
+        await hubManager.updateServer(request.params.name, templateUpdates);
+      }
+
+      // Update instance selection strategy
+      if (instanceSelectionStrategy !== undefined) {
+        await hubManager.updateServerInstanceSelectionStrategy(
+          request.params.name,
+          instanceSelectionStrategy
+        );
+      }
+
+      const updatedServer = hubManager.getServerByName(request.params.name);
       if (!updatedServer) {
         return reply.code(404).send({ error: 'Server not found' });
       }

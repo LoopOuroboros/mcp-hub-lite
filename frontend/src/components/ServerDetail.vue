@@ -52,13 +52,17 @@
             <div v-if="selectedInstanceIndex === null">
               <ConfigTemplateForm
                 :config="
-                  server.rawV11Config?.template || {
-                    type: 'stdio',
-                    args: [],
-                    env: {},
-                    headers: {},
-                    timeout: 60000,
-                    aggregatedTools: []
+                  server.rawV11Config || {
+                    template: {
+                      type: 'stdio',
+                      args: [],
+                      env: {},
+                      headers: {},
+                      timeout: 60000,
+                      aggregatedTools: []
+                    },
+                    instances: [],
+                    tagDefinitions: []
                   }
                 "
                 @update:config="updateLocalConfig"

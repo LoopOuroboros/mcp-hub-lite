@@ -161,11 +161,47 @@ describe('Config Schema (v1.1)', () => {
             type: 'enum',
             values: ['dev', 'prod']
           }
-        ]
+        ],
+        instanceSelectionStrategy: 'random'
       };
 
       const result = ServerConfigSchema.safeParse(serverConfig);
       expect(result.success).toBe(true);
+    });
+
+    it('should validate all instance selection strategies', () => {
+      const strategies: ('random' | 'round-robin' | 'tag-match-unique')[] = [
+        'random',
+        'round-robin',
+        'tag-match-unique'
+      ];
+
+      for (const strategy of strategies) {
+        const serverConfig = {
+          template: {
+            command: 'npx my-server'
+          },
+          instanceSelectionStrategy: strategy
+        };
+
+        const result = ServerConfigSchema.safeParse(serverConfig);
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.instanceSelectionStrategy).toBe(strategy);
+        }
+      }
+    });
+
+    it('should reject invalid instance selection strategies', () => {
+      const serverConfig = {
+        template: {
+          command: 'npx my-server'
+        },
+        instanceSelectionStrategy: 'invalid-strategy'
+      };
+
+      const result = ServerConfigSchema.safeParse(serverConfig);
+      expect(result.success).toBe(false);
     });
 
     it('should use defaults for empty instances and tagDefinitions', () => {
@@ -180,6 +216,7 @@ describe('Config Schema (v1.1)', () => {
       if (result.success) {
         expect(result.data.instances).toEqual([]);
         expect(result.data.tagDefinitions).toEqual([]);
+        expect(result.data.instanceSelectionStrategy).toBeUndefined();
       }
     });
   });

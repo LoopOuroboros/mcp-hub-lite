@@ -6,7 +6,10 @@ import {
   ServerTemplate
 } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
-import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
+import type {
+  ServerRuntimeConfig,
+  InstanceSelectionStrategy
+} from '@shared-models/server.model.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from './mcp-connection-manager.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
@@ -263,6 +266,37 @@ export class HubManagerService {
    */
   async reassignInstanceIndexes(name: string): Promise<boolean> {
     return this.configManager.reassignInstanceIndexes(name);
+  }
+
+  /**
+   * Updates the instance selection strategy for a server.
+   */
+  async updateServerInstanceSelectionStrategy(
+    name: string,
+    strategy: InstanceSelectionStrategy
+  ): Promise<ServerConfig | null> {
+    const existing = this.getServerByName(name);
+    if (!existing) {
+      logger.warn(
+        `Attempted to update instance selection strategy for non-existent server: ${name}`,
+        LOG_MODULES.HUB_MANAGER
+      );
+      return null;
+    }
+
+    // Use updateServerConfig method which can handle both template and server-level updates
+    await this.configManager.updateServerConfig(name, { instanceSelectionStrategy: strategy });
+    logger.info(
+      `Server instance selection strategy updated: ${name} -> ${strategy}`,
+      LOG_MODULES.HUB_MANAGER
+    );
+
+    const updatedServer = this.getServerByName(name) || null;
+    if (updatedServer) {
+      eventBus.publish(EventTypes.SERVER_UPDATED, { name, config: updatedServer });
+    }
+
+    return updatedServer;
   }
 }
 

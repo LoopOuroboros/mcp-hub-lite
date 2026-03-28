@@ -26,6 +26,18 @@ export interface ServerRuntimeConfig {
 // ====== v1.1 Configuration Schema (Server Template + Instance Model) ======
 
 /**
+ * Instance selection strategy constants for multi-instance servers
+ */
+export const InstanceSelectionStrategy = {
+  RANDOM: 'random',
+  ROUND_ROBIN: 'round-robin',
+  TAG_MATCH_UNIQUE: 'tag-match-unique'
+} as const;
+
+export type InstanceSelectionStrategy =
+  (typeof InstanceSelectionStrategy)[keyof typeof InstanceSelectionStrategy];
+
+/**
  * Transport type constants for MCP server connections
  */
 export const TransportType = {
@@ -164,7 +176,15 @@ export type ServerTemplate = z.infer<typeof ServerTemplateSchema>;
 export const ServerConfigSchema = z.object({
   template: ServerTemplateSchema,
   instances: z.array(ServerInstanceSchema).default([]),
-  tagDefinitions: z.array(TagDefinitionSchema).default([])
+  tagDefinitions: z.array(TagDefinitionSchema).default([]),
+  // Instance selection strategy for multi-instance servers
+  instanceSelectionStrategy: z
+    .enum([
+      InstanceSelectionStrategy.RANDOM,
+      InstanceSelectionStrategy.ROUND_ROBIN,
+      InstanceSelectionStrategy.TAG_MATCH_UNIQUE
+    ])
+    .optional()
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;

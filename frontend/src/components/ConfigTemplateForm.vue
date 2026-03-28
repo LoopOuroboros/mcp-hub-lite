@@ -6,7 +6,7 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.transport')
         }}</label>
-        <el-radio-group v-model="localConfig.type" class="flex gap-4">
+        <el-radio-group v-model="localConfig.template.type" class="flex gap-4">
           <el-radio value="stdio">{{ $t('serverDetail.config.transportStdio') }}</el-radio>
           <el-radio value="sse">{{ $t('serverDetail.config.transportSse') }}</el-radio>
           <el-radio value="streamable-http">{{ $t('serverDetail.config.transportHttp') }}</el-radio>
@@ -14,21 +14,21 @@
       </div>
 
       <!-- Command / URL -->
-      <div v-if="localConfig.type === 'stdio'" class="pr-4">
+      <div v-if="localConfig.template.type === 'stdio'" class="pr-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.executable')
         }}</label>
-        <el-input v-model="localConfig.command" />
+        <el-input v-model="localConfig.template.command" />
       </div>
       <div v-else class="pr-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.url')
         }}</label>
-        <el-input v-model="localConfig.url" />
+        <el-input v-model="localConfig.template.url" />
       </div>
 
       <!-- Arguments (stdio only) -->
-      <div v-if="localConfig.type === 'stdio'" class="pr-4">
+      <div v-if="localConfig.template.type === 'stdio'" class="pr-4">
         <div class="flex items-center justify-between mb-2">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.args')
@@ -37,9 +37,12 @@
             $t('serverDetail.config.addArg')
           }}</el-button>
         </div>
-        <div v-if="localConfig.args && localConfig.args.length > 0" class="space-y-2">
-          <div v-for="(_, index) in localConfig.args" :key="index" class="flex gap-2 pr-4">
-            <el-input v-model="localConfig.args![index]" class="flex-1" />
+        <div
+          v-if="localConfig.template.args && localConfig.template.args.length > 0"
+          class="space-y-2"
+        >
+          <div v-for="(_, index) in localConfig.template.args" :key="index" class="flex gap-2 pr-4">
+            <el-input v-model="localConfig.template.args![index]" class="flex-1" />
             <el-button size="small" type="danger" :icon="Delete" @click="removeArg(index)" />
           </div>
         </div>
@@ -55,9 +58,12 @@
             $t('serverDetail.config.addEnv')
           }}</el-button>
         </div>
-        <div v-if="localConfig.env && Object.keys(localConfig.env).length > 0" class="space-y-2">
+        <div
+          v-if="localConfig.template.env && Object.keys(localConfig.template.env).length > 0"
+          class="space-y-2"
+        >
           <div
-            v-for="(_, key) in localConfig.env"
+            v-for="(_, key) in localConfig.template.env"
             :key="key"
             class="flex gap-2 items-start pr-4"
             style="display: flex; gap: 0.5rem; width: 100%"
@@ -69,7 +75,7 @@
               @update:model-value="(newKey) => updateEnvKey(key, newKey as string)"
             />
             <el-input
-              v-model="localConfig.env![key]"
+              v-model="localConfig.template.env![key]"
               style="flex: 1"
               :placeholder="$t('addServer.valuePlaceholder')"
             />
@@ -79,7 +85,7 @@
       </div>
 
       <!-- Headers (non-stdio only) -->
-      <div v-if="localConfig.type !== 'stdio'" class="pr-4">
+      <div v-if="localConfig.template.type !== 'stdio'" class="pr-4">
         <div class="flex items-center justify-between mb-2">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.headers')
@@ -89,11 +95,13 @@
           }}</el-button>
         </div>
         <div
-          v-if="localConfig.headers && Object.keys(localConfig.headers).length > 0"
+          v-if="
+            localConfig.template.headers && Object.keys(localConfig.template.headers).length > 0
+          "
           class="space-y-2"
         >
           <div
-            v-for="(_, key) in localConfig.headers"
+            v-for="(_, key) in localConfig.template.headers"
             :key="key"
             class="flex gap-2 items-start pr-4"
             style="display: flex; gap: 0.5rem; width: 100%"
@@ -105,7 +113,7 @@
               @update:model-value="(newKey) => updateHeaderKey(key, newKey as string)"
             />
             <el-input
-              v-model="localConfig.headers![key]"
+              v-model="localConfig.template.headers![key]"
               style="flex: 1"
               :placeholder="$t('addServer.valuePlaceholder')"
             />
@@ -128,11 +136,29 @@
           $t('common.description')
         }}</label>
         <el-input
-          v-model="localConfig.description"
+          v-model="localConfig.template.description"
           type="textarea"
           :rows="3"
           :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
         />
+      </div>
+
+      <!-- Instance Selection Strategy -->
+      <div class="pr-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('serverDetail.config.instanceSelectionStrategy')
+        }}</label>
+        <el-select
+          v-model="localConfig.instanceSelectionStrategy"
+          :placeholder="$t('serverDetail.config.strategyRandom') + '（默认）'"
+        >
+          <el-option value="random" :label="$t('serverDetail.config.strategyRandom')" />
+          <el-option value="round-robin" :label="$t('serverDetail.config.strategyRoundRobin')" />
+          <el-option
+            value="tag-match-unique"
+            :label="$t('serverDetail.config.strategyTagMatchUnique')"
+          />
+        </el-select>
       </div>
 
       <!-- Action Buttons -->
@@ -150,23 +176,27 @@
 import { ref, watch, computed } from 'vue';
 import { Plus, Delete } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import type { ServerTemplate } from '@shared-models/server.model';
+import type { ServerConfig, ServerTemplate } from '@shared-models/server.model';
 
 interface Props {
-  config: ServerTemplate;
+  config: ServerConfig;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'update:config', config: ServerTemplate): void;
+  (e: 'update:template', config: ServerTemplate): void;
+  (e: 'update:server-config', config: Partial<ServerConfig>): void;
   (e: 'save'): void;
   (e: 'edit-json'): void;
 }>();
 
 useI18n();
 
-const localConfig = ref<ServerTemplate>({ ...props.config });
+const localConfig = ref<ServerConfig>({
+  ...props.config,
+  instanceSelectionStrategy: props.config.instanceSelectionStrategy || 'random'
+});
 const envKeys = ref<Record<string, string>>({});
 const headerKeys = ref<Record<string, string>>({});
 
@@ -182,96 +212,119 @@ watch(
 
 const timeoutInSeconds = computed({
   get: () => {
-    if (localConfig.value?.timeout) {
-      return localConfig.value.timeout / 1000;
+    if (localConfig.value?.template?.timeout) {
+      return localConfig.value.template.timeout / 1000;
     }
     return 60;
   },
   set: (val: number) => {
     if (localConfig.value) {
-      localConfig.value.timeout = val * 1000;
+      localConfig.value.template.timeout = val * 1000;
     }
   }
 });
 
 function initializeEnvKeys() {
-  if (localConfig.value?.env) {
+  if (localConfig.value?.template?.env) {
     envKeys.value = {};
-    Object.keys(localConfig.value.env).forEach((k) => {
+    Object.keys(localConfig.value.template.env).forEach((k) => {
       envKeys.value[k] = k;
     });
   }
 }
 
 function initializeHeaderKeys() {
-  if (localConfig.value?.headers) {
+  if (localConfig.value?.template?.headers) {
     headerKeys.value = {};
-    Object.keys(localConfig.value.headers).forEach((k) => {
+    Object.keys(localConfig.value.template.headers).forEach((k) => {
       headerKeys.value[k] = k;
     });
   }
 }
 
 function addArg() {
-  if (!localConfig.value.args) localConfig.value.args = [];
-  localConfig.value.args.push('');
-  emit('update:config', { ...localConfig.value });
+  if (!localConfig.value.template.args) localConfig.value.template.args = [];
+  localConfig.value.template.args.push('');
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function removeArg(index: number) {
-  localConfig.value.args?.splice(index, 1);
-  emit('update:config', { ...localConfig.value });
+  localConfig.value.template.args?.splice(index, 1);
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function addEnv() {
-  if (!localConfig.value.env) localConfig.value.env = {};
-  const newKey = `NEW_VAR_${Object.keys(localConfig.value.env).length}`;
-  localConfig.value.env[newKey] = '';
+  if (!localConfig.value.template.env) localConfig.value.template.env = {};
+  const newKey = `NEW_VAR_${Object.keys(localConfig.value.template.env).length}`;
+  localConfig.value.template.env[newKey] = '';
   envKeys.value[newKey] = newKey;
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function removeEnv(key: string) {
-  delete localConfig.value.env![key];
+  delete localConfig.value.template.env![key];
   delete envKeys.value[key];
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function updateEnvKey(oldKey: string, newKey: string) {
   if (oldKey === newKey) return;
-  const val = localConfig.value.env![oldKey] || '';
-  delete localConfig.value.env![oldKey];
-  localConfig.value.env![newKey] = val;
+  const val = localConfig.value.template.env![oldKey] || '';
+  delete localConfig.value.template.env![oldKey];
+  localConfig.value.template.env![newKey] = val;
   delete envKeys.value[oldKey];
   envKeys.value[newKey] = newKey;
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function addHeader() {
-  if (!localConfig.value.headers) localConfig.value.headers = {};
-  const newKey = `NEW_HEADER_${Object.keys(localConfig.value.headers).length}`;
-  localConfig.value.headers[newKey] = '';
+  if (!localConfig.value.template.headers) localConfig.value.template.headers = {};
+  const newKey = `NEW_HEADER_${Object.keys(localConfig.value.template.headers).length}`;
+  localConfig.value.template.headers[newKey] = '';
   headerKeys.value[newKey] = newKey;
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function removeHeader(key: string) {
-  delete localConfig.value.headers![key];
+  delete localConfig.value.template.headers![key];
   delete headerKeys.value[key];
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function updateHeaderKey(oldKey: string, newKey: string) {
   if (oldKey === newKey) return;
-  const val = localConfig.value.headers![oldKey] || '';
-  delete localConfig.value.headers![oldKey];
-  localConfig.value.headers![newKey] = val;
+  const val = localConfig.value.template.headers![oldKey] || '';
+  delete localConfig.value.template.headers![oldKey];
+  localConfig.value.template.headers![newKey] = val;
   delete headerKeys.value[oldKey];
   headerKeys.value[newKey] = newKey;
-  emit('update:config', { ...localConfig.value });
+  emit('update:template', { ...localConfig.value.template });
 }
 
 function handleSave() {
+  // Extract template configuration
+  const templateConfig = {
+    command: localConfig.value.template.command,
+    args: localConfig.value.template.args,
+    env: localConfig.value.template.env,
+    headers: localConfig.value.template.headers,
+    type: localConfig.value.template.type,
+    timeout: localConfig.value.template.timeout,
+    url: localConfig.value.template.url,
+    aggregatedTools: localConfig.value.template.aggregatedTools,
+    description: localConfig.value.template.description
+  };
+
+  // Emit template update event
+  emit('update:template', templateConfig);
+
+  // If instance selection strategy is not default, emit server config update event
+  if (localConfig.value.instanceSelectionStrategy !== 'random') {
+    emit('update:server-config', {
+      instanceSelectionStrategy: localConfig.value.instanceSelectionStrategy
+    });
+  }
+
   emit('save');
 }
 

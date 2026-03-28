@@ -101,6 +101,18 @@
         <el-switch v-model="form.autoStart" />
       </el-form-item>
 
+      <!-- Instance Selection Strategy -->
+      <el-form-item :label="$t('serverDetail.config.instanceSelectionStrategy')">
+        <el-select v-model="form.instanceSelectionStrategy" placeholder="随机（默认）">
+          <el-option value="random" :label="$t('serverDetail.config.strategyRandom')" />
+          <el-option value="round-robin" :label="$t('serverDetail.config.strategyRoundRobin')" />
+          <el-option
+            value="tag-match-unique"
+            :label="$t('serverDetail.config.strategyTagMatchUnique')"
+          />
+        </el-select>
+      </el-form-item>
+
       <el-form-item :label="$t('serverDetail.config.env')">
         <div
           class="w-full flex flex-col gap-2"
@@ -282,6 +294,7 @@ import { useI18n } from 'vue-i18n';
 import { Plus, Delete } from '@element-plus/icons-vue';
 import { useServerStore } from '@stores/server';
 import { ElMessage } from 'element-plus';
+import { http } from '@utils/http';
 
 // Server type for import result
 interface ImportedServer {
@@ -333,7 +346,8 @@ const form = ref({
   args: [] as string[],
   url: '',
   timeout: 60,
-  autoStart: true
+  autoStart: true,
+  instanceSelectionStrategy: 'random' as 'random' | 'round-robin' | 'tag-match-unique'
 });
 
 const envItems = ref<{ key: string; value: string }[]>([]);
@@ -476,7 +490,8 @@ function resetForm() {
     args: [],
     url: '',
     timeout: 60,
-    autoStart: true
+    autoStart: true,
+    instanceSelectionStrategy: 'random'
   };
   envItems.value = [];
   headerItems.value = [];
@@ -514,6 +529,7 @@ async function createServer() {
   );
 
   try {
+    // Step 1: Create server with basic configuration
     await store.addServer({
       name: form.value.name || 'Unnamed Server',
       status: 'offline',
@@ -532,6 +548,13 @@ async function createServer() {
       },
       logs: []
     });
+
+    // Step 2: Update server to set instance selection strategy (only if not default)
+    if (form.value.instanceSelectionStrategy !== 'random') {
+      await http.put(`/web/servers/${form.value.name}`, {
+        instanceSelectionStrategy: form.value.instanceSelectionStrategy
+      });
+    }
 
     ElMessage.success(t('action.serverAdded'));
     handleClose();

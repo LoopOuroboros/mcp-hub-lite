@@ -1,4 +1,6 @@
 import { hubManager } from '@services/hub-manager.service.js';
+import { InstanceSelector } from './instance-selector.js';
+import { logger } from '@utils/logger.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
 
 /**
@@ -45,23 +47,20 @@ export function hasValidId(server: unknown): server is ValidServer {
  * Selects the best server instance based on server name and request options.
  *
  * This function resolves a server name to its configuration and instance details,
- * handling both single and multiple instance scenarios. Currently, it returns
- * the first instance for multi-instance servers, but the architecture supports
- * future extensions for intelligent instance selection based on session ID,
- * tags, client ID, or load conditions.
+ * handling both single and multiple instance scenarios using configurable instance
+ * selection strategies (random, round-robin, tag-match-unique).
  *
  * The function performs the following steps:
  * 1. Retrieves all instances of the specified server name
  * 2. Returns undefined if no instances are found
  * 3. Gets the server configuration from the hub manager
- * 4. For single-instance servers, returns the instance directly
- * 5. For multi-instance servers, currently returns the first instance (with future extension support)
+ * 4. Uses InstanceSelector to choose the best instance based on configured strategy
+ * 5. Handles errors gracefully and returns undefined on failure
  *
- * Future extensions planned include:
- * - Session-aware instance selection based on sessionId
- * - Tag-based instance selection for matching specific requirements
- * - Load-balancing across multiple instances
- * - Client-specific instance assignment
+ * Supported instance selection strategies:
+ * - random: Randomly selects from enabled instances
+ * - round-robin: Cycles through enabled instances in order
+ * - tag-match-unique: Selects instance that uniquely matches request tags
  *
  * @param {string} serverName - Name of the server to select an instance for
  * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
@@ -75,7 +74,7 @@ export function hasValidId(server: unknown): server is ValidServer {
  *   console.log(`Selected instance: ${serverInfo.instance.id}`);
  * }
  *
- * // With request options (future extension)
+ * // With request options for tag matching
  * const serverInfoWithOptions = selectBestInstance('my-mcp-server', {
  *   sessionId: 'session-123',
  *   tags: { environment: 'production' }
@@ -99,37 +98,26 @@ export function selectBestInstance(
     return undefined;
   }
 
-  // If there's only one instance, return it directly
-  if (instances.length === 1) {
+  try {
+    // Use the new instance selector
+    const selectedInstance = InstanceSelector.selectInstance(
+      serverName,
+      serverConfig,
+      requestOptions
+    );
+
+    if (!selectedInstance) {
+      return undefined;
+    }
+
     return {
       name: serverName,
       config: serverConfig,
-      instance: instances[0]
+      instance: selectedInstance
     };
+  } catch (error) {
+    // Handle tag matching errors and other exceptions gracefully
+    logger.error(`Instance selection failed for server ${serverName}:`, error);
+    return undefined;
   }
-
-  // Multi-instance selection logic (for future extension)
-  // Currently simplified implementation: return the first instance
-  // Future extensions could support:
-  // - Selecting specific instance based on sessionId
-  // - Selecting optimal instance based on tags matching
-  // - Selecting dedicated instance based on client ID
-  // - Selecting instance based on load conditions
-
-  // Although requestOptions is not currently used, it's kept for future extension
-  if (requestOptions?.sessionId) {
-    // In the future, specific instance can be selected based on sessionId
-    // Currently return the first instance temporarily
-  }
-
-  if (requestOptions?.tags) {
-    // In the future, optimal instance can be selected based on tags matching
-    // Currently return the first instance temporarily
-  }
-
-  return {
-    name: serverName,
-    config: serverConfig,
-    instance: instances[0] // Will be extended to intelligent selection logic later
-  };
 }

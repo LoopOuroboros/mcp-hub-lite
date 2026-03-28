@@ -304,7 +304,7 @@ describe('HubToolsService', () => {
           aggregatedTools: [],
           timeout: 30000
         },
-        instances: [],
+        instances: [mockInstance],
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
@@ -375,7 +375,7 @@ describe('HubToolsService', () => {
           aggregatedTools: [],
           timeout: 30000
         },
-        instances: [],
+        instances: [mockInstance],
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
@@ -420,7 +420,7 @@ describe('HubToolsService', () => {
           aggregatedTools: [],
           timeout: 30000
         },
-        instances: [],
+        instances: [mockInstance],
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
@@ -461,7 +461,7 @@ describe('HubToolsService', () => {
           aggregatedTools: [],
           timeout: 30000
         },
-        instances: [],
+        instances: [mockInstance],
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.callTool).mockResolvedValue(expectedResult);
@@ -715,12 +715,12 @@ describe('HubToolsService', () => {
       // Arrange
       const serverName = 'Test Server';
       const mockInstance = {
-        id: '1',
+        id: 'test-instance',
         enabled: true,
         args: [],
         env: {},
         headers: {},
-        tags: {},
+        tags: { env: 'test' },
         timestamp: Date.now(),
         hash: 'hash1',
         status: 'online',
@@ -744,7 +744,11 @@ describe('HubToolsService', () => {
             args: [],
             env: {},
             headers: {},
-            tags: { env: 'test' }
+            tags: { env: 'test' },
+            timestamp: Date.now(),
+            status: 'online',
+            lastHeartbeat: Date.now(),
+            uptime: 1000
           }
         ],
         tagDefinitions: []

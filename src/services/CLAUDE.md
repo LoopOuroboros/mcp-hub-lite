@@ -51,6 +51,7 @@ services/
     ├── index.ts
     ├── types.ts
     ├── server-selector.ts
+    ├── instance-selector.ts
     ├── system-tool-definitions.ts
     ├── resource-generator.ts
     └── use-guide.md
@@ -220,6 +221,7 @@ services/
 - `index.ts` - 统一导出模块
 - `types.ts` - 类型定义
 - `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance, getServerDescription）
+- `instance-selector.ts` - 实例选择器（支持随机、轮询、标签匹配唯一三种策略）
 - `system-tool-definitions.ts` - 系统工具定义（getSystemTools）
 - `resource-generator.ts` - 动态资源生成（generateDynamicResources, readResource）
 - `use-guide.md` - 用户使用指南
@@ -231,10 +233,12 @@ services/
 - 系统工具定义与 MCP 协议集成
 - 服务器实例选择逻辑
 - 通用服务器描述获取（getServerDescription）
+- 多实例服务器的智能实例选择策略
 
 **新增方法**:
 
 - `getServerDescription(serverConfig, serverName)` - 获取服务器描述，使用默认描述当配置中没有提供时
+- `InstanceSelector.selectInstance()` - 基于配置策略选择最佳实例
 
 ### SimpleSearchService (`simple-search.service.ts`)
 

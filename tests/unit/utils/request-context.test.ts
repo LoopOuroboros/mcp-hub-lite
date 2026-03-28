@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { requestContext, getSessionContext } from '@utils/request-context.js';
+import type { SessionContext } from '@shared-types/session-context.types.js';
 
 describe('Request Context', () => {
   beforeEach(() => {
@@ -54,8 +55,8 @@ describe('Request Context', () => {
       timestamp: Date.now()
     };
 
-    let result1: any;
-    let result2: any;
+    let result1: SessionContext | undefined;
+    let result2: SessionContext | undefined;
 
     const operation1 = requestContext.run(context1, async () => {
       // Simulate async operation
