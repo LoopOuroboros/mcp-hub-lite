@@ -274,7 +274,7 @@
       <!-- Description (from template, read-only) -->
       <div class="pr-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('serverDetail.config.description') }}
+          {{ $t('common.description') }}
         </label>
         <div class="flex gap-2 items-start">
           <el-input
