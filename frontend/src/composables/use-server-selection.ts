@@ -106,6 +106,19 @@ export function useServerSelection(
     }
   }
 
+  /**
+   * Parses instance tab state from route query parameters
+   */
+  function parseInstanceTabFromRoute() {
+    const tab = route.query.instanceTab;
+    if (tab === 'logs') {
+      activeInstanceTab.value = 'logs';
+    } else {
+      // Default to config tab for backward compatibility
+      activeInstanceTab.value = 'config';
+    }
+  }
+
   // Initialize server from route parameter
   onBeforeMount(() => {
     const serverNameFromRoute = route.params.name as string;
@@ -117,6 +130,7 @@ export function useServerSelection(
     }
     activeTopTab.value = getTabFromRoute();
     parseSelectionFromRoute();
+    parseInstanceTabFromRoute();
   });
 
   // Watch for route parameter changes
@@ -138,8 +152,34 @@ export function useServerSelection(
     () => {
       activeTopTab.value = getTabFromRoute();
       parseSelectionFromRoute();
+      parseInstanceTabFromRoute();
     }
   );
+
+  // Watch for activeInstanceTab changes and update route query params
+  watch(activeInstanceTab, (newInstanceTab) => {
+    if (!server.value?.name) return;
+
+    const currentQuery = { ...route.query };
+    const newQuery: Record<string, string | string[]> = {};
+    for (const [key, value] of Object.entries(currentQuery)) {
+      if (value !== null && value !== undefined) {
+        newQuery[key] = value as string | string[];
+      }
+    }
+
+    if (newInstanceTab === 'config') {
+      delete newQuery.instanceTab;
+    } else {
+      newQuery.instanceTab = newInstanceTab;
+    }
+
+    router.replace({
+      name: route.name as string,
+      params: route.params,
+      query: newQuery
+    });
+  });
 
   // Watch for servers list load completion - fix for F5 refresh issue
   watch(
@@ -153,6 +193,7 @@ export function useServerSelection(
         }
       }
       parseSelectionFromRoute();
+      parseInstanceTabFromRoute();
     }
   );
 
