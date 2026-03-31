@@ -72,9 +72,12 @@
             </div>
 
             <!-- Instance Config Panel -->
-            <div v-else-if="selectedInstanceIndex !== null">
-              <div class="mb-4">
-                <el-tabs v-model="activeInstanceTab" class="instance-detail-tabs">
+            <div v-else-if="selectedInstanceIndex !== null" class="h-full flex flex-col min-h-0">
+              <div class="flex-1 min-h-0 overflow-hidden">
+                <el-tabs
+                  v-model="activeInstanceTab"
+                  class="instance-detail-tabs h-full flex flex-col"
+                >
                   <!-- Instance Config Tab (Unified Form) -->
                   <el-tab-pane name="config">
                     <template #label>
@@ -467,5 +470,18 @@ const copyLogs = () => {
 
 .instance-detail-tabs :deep(.el-tabs__header) {
   margin-bottom: 1rem;
+}
+
+.instance-detail-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.instance-detail-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>
