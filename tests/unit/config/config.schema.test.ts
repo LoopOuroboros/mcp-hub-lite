@@ -262,7 +262,6 @@ describe('Config Schema (v1.1)', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         },
@@ -271,8 +270,6 @@ describe('Config Schema (v1.1)', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 1800000,
-          sessionFlushInterval: 900000,
           maxConnections: 50
         },
         servers: {},

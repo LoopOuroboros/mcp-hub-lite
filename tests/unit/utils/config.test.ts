@@ -96,7 +96,6 @@ describe('ConfigManager', () => {
             rotationAge: '30d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         },
@@ -174,7 +173,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         }
@@ -227,7 +225,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         }
@@ -276,7 +273,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         }
@@ -492,7 +488,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         },
@@ -554,7 +549,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         }
@@ -573,7 +567,6 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         },

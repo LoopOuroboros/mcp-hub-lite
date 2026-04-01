@@ -200,7 +200,6 @@ export const LoggingConfigSchema = z
     rotationAge: z.string().default('7d'),
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
-    sessionDebug: z.boolean().default(false),
     apiDebug: z.boolean().default(false)
   })
   .default({
@@ -208,7 +207,6 @@ export const LoggingConfigSchema = z
     rotationAge: '7d',
     jsonPretty: true,
     mcpCommDebug: false,
-    sessionDebug: false,
     apiDebug: false
   });
 
@@ -227,14 +225,6 @@ export const SecurityConfigSchema = z
     maxConcurrentConnections: z.number().min(1).max(1000).default(50),
     connectionTimeout: z.number().min(1000).default(30000),
     idleConnectionTimeout: z.number().min(30000).default(300000),
-    sessionTimeout: z
-      .number()
-      .min(60000)
-      .default(30 * 60 * 1000),
-    sessionFlushInterval: z
-      .number()
-      .min(1000)
-      .default(15 * 60 * 1000),
     maxConnections: z.number().min(1).max(1000).default(50)
   })
   .default({
@@ -242,8 +232,6 @@ export const SecurityConfigSchema = z
     maxConcurrentConnections: 50,
     connectionTimeout: 30000,
     idleConnectionTimeout: 300000,
-    sessionTimeout: 30 * 60 * 1000,
-    sessionFlushInterval: 15 * 60 * 1000,
     maxConnections: 50
   });
 
@@ -274,7 +262,6 @@ export const SystemConfigSchema = z.object({
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false,
         apiDebug: false
       }
     }),

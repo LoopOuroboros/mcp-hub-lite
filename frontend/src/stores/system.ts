@@ -48,7 +48,6 @@ export interface SystemConfig {
       rotationAge: string;
       jsonPretty: boolean;
       mcpCommDebug: boolean;
-      sessionDebug: boolean;
       apiDebug: boolean;
     };
   };
@@ -57,8 +56,6 @@ export interface SystemConfig {
     maxConcurrentConnections: number;
     connectionTimeout: number;
     idleConnectionTimeout: number;
-    sessionTimeout: number;
-    sessionFlushInterval: number;
     maxConnections: number;
   };
   tagDefinitions?: TagDefinition[];
@@ -78,7 +75,6 @@ export const useSystemStore = defineStore('system', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false,
         apiDebug: false
       }
     },
@@ -87,8 +83,6 @@ export const useSystemStore = defineStore('system', () => {
       maxConcurrentConnections: 50,
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
-      sessionTimeout: 30 * 60 * 1000,
-      sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
     },
     tagDefinitions: [],

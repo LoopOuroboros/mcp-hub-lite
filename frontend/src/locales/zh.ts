@@ -52,7 +52,6 @@ export default {
   sidebar: {
     title: 'MCP 服务器管理器',
     dashboard: '仪表板',
-    sessions: '会话',
     servers: 'MCP 服务器',
     resources: 'MCP 资源网关',
     addServer: '添加新服务器',
@@ -76,18 +75,6 @@ export default {
     loadingContent: '加载内容中...',
     noDescription: '无描述信息'
   },
-  sessions: {
-    title: '持久化会话',
-    refresh: '刷新',
-    sessionId: '会话 ID',
-    clientName: '客户端名称',
-    clientVersion: '客户端版本',
-    protocolVersion: '协议版本',
-    capabilities: '能力',
-    userAgent: '用户代理',
-    createdAt: '创建时间',
-    lastAccessedAt: '最后访问时间'
-  },
   settings: {
     title: '系统设置',
     save: '保存更改',
@@ -109,7 +96,6 @@ export default {
     debugOptions: '调试选项',
     jsonPretty: '日志中JSON格式化',
     mcpCommDebug: '启用MCP通信调试',
-    sessionDebug: '启用会话调试',
     apiDebug: '启用API调试',
     security: '安全设置',
     allowedNetworks: '允许的网络',
@@ -118,8 +104,6 @@ export default {
     maxConnections: '最大连接数',
     connectionTimeout: '连接超时',
     idleConnectionTimeout: '空闲连接超时',
-    sessionTimeout: '会话超时',
-    sessionFlushInterval: '会话刷盘间隔',
     fetchError: '获取配置失败',
     saveSuccess: '配置保存成功',
     saveError: '保存配置失败',

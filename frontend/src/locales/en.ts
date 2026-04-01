@@ -109,7 +109,6 @@ export default {
     debugOptions: 'Debug Options',
     jsonPretty: 'Pretty JSON in logs',
     mcpCommDebug: 'Enable MCP communication debug',
-    sessionDebug: 'Enable session debug',
     apiDebug: 'Enable API debug',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',

@@ -57,7 +57,6 @@ describe('Config Migrator', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false,
         apiDebug: false
       }
     },
@@ -66,8 +65,6 @@ describe('Config Migrator', () => {
       maxConcurrentConnections: 50,
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
-      sessionTimeout: 1800000,
-      sessionFlushInterval: 900000,
       maxConnections: 50
     },
     servers: {
@@ -130,7 +127,6 @@ describe('Config Migrator', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false,
             apiDebug: false
           }
         },
@@ -139,8 +135,6 @@ describe('Config Migrator', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 1800000,
-          sessionFlushInterval: 900000,
           maxConnections: 50
         },
         servers: {},
