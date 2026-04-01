@@ -75,14 +75,14 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
     }
   }
 
-  // If sessionId was extracted, check if it exists in persisted sessions (for debugging)
+  // If sessionId was extracted, check if it exists in memory (for debugging)
   if (sessionId) {
-    const persistedSession = mcpSessionManager.getSessionState(sessionId);
-    if (persistedSession) {
-      logger.debug(`Session ${sessionId} found in persisted sessions`, LOG_MODULES.CONTEXT);
+    const hasSession = mcpSessionManager.hasSession(sessionId);
+    if (hasSession) {
+      logger.debug(`Session ${sessionId} found in active sessions`, LOG_MODULES.CONTEXT);
     } else {
       logger.debug(
-        `Session ${sessionId} not found in persisted sessions (will create new)`,
+        `Session ${sessionId} not found in active sessions (will create new)`,
         LOG_MODULES.CONTEXT
       );
     }
@@ -123,17 +123,6 @@ export function extractSessionContext(request: FastifyRequest<{ Body: RequestBod
       );
     } else {
       logger.debug(`Generated new sessionId: ${sessionId}`, LOG_MODULES.CONTEXT);
-    }
-  }
-
-  // Add consistency check before returning session information
-  if (sessionId && mcpSessionManager.getSessionState(sessionId)) {
-    const hasSessionObject = mcpSessionManager.hasSession(sessionId);
-    if (!hasSessionObject) {
-      logger.warn(
-        `Session state exists but session object missing for ${sessionId}`,
-        LOG_MODULES.CONTEXT
-      );
     }
   }
 

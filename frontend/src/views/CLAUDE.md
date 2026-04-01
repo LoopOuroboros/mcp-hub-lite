@@ -14,7 +14,6 @@ views/
 ├── ServerDashboard.vue     # 服务器仪表板
 ├── ServerListView.vue      # 服务器列表页面
 ├── ToolsView.vue           # 工具浏览和搜索页面
-├── SessionsView.vue        # 会话管理页面
 ├── SettingsView.vue        # 设置页面
 ├── ResourcesView.vue       # 资源浏览页面
 └── ResourceDetailView.vue  # 资源详情页面
@@ -101,22 +100,6 @@ ToolsView
 - `/web/search` - 搜索工具
 - `ToolCard` - 工具卡片组件
 - `ToolCallDialog` - 工具调用对话框组件
-
-### SessionsView (`SessionsView.vue`)
-
-**职责**: 会话管理页面
-
-**主要功能**:
-
-- 会话列表展示
-- 会话详情查看
-- 会话删除
-- Capabilities 信息显示
-
-**依赖**:
-
-- `/web/sessions` - 会话管理 API
-- `useSessionStore` - 会话状态管理
 
 ### SettingsView (`SettingsView.vue`)
 
@@ -225,9 +208,6 @@ views/
 │   ├── depends on: useServerStore
 │   └── uses API: /web/hub-tools/system, /web/search
 │
-├── SessionsView.vue
-│   └── depends on: useSessionStore
-│
 ├── SettingsView.vue
 │   └── uses API: /web/config
 │
@@ -273,7 +253,6 @@ A: 使用 `useI18n()` 钩子获取 `t` 函数，然后在模板中使用 `$t('ke
 | `views/ServerDashboard.vue`    | 服务器仪表板       |
 | `views/ServerListView.vue`     | 服务器列表页面     |
 | `views/ToolsView.vue`          | 工具浏览和搜索页面 |
-| `views/SessionsView.vue`       | 会话管理页面       |
 | `views/SettingsView.vue`       | 设置页面           |
 | `views/ResourcesView.vue`      | 资源浏览页面       |
 | `views/ResourceDetailView.vue` | 资源详情页面       |

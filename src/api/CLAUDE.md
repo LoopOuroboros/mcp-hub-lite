@@ -23,8 +23,7 @@ api/
 │   ├── config.ts            # 配置管理 API
 │   ├── logs.ts             # 日志 API
 │   ├── hub-tools.ts         # 系统工具 API
-│   ├── resources.ts          # 资源 API
-│   └── sessions.ts          # 会话管理 API
+│   └── resources.ts          # 资源 API
 └── ws/                      # WebSocket 路由
     ├── events.ts           # WebSocket 事件处理
     └── ws-handler.ts        # WebSocket 处理器
@@ -178,37 +177,6 @@ api/
 | ---------------- | ---- | ------------ |
 | `/web/resources` | GET  | 获取资源列表 |
 
-### 会话管理 API (`api/web/sessions.ts`)
-
-| 路径                       | 方法   | 描述               |
-| -------------------------- | ------ | ------------------ |
-| `/web/sessions`            | GET    | 列出所有持久化会话 |
-| `/web/sessions/:sessionId` | GET    | 获取会话详情       |
-| `/web/sessions/:sessionId` | DELETE | 删除会话           |
-
-**响应格式**:
-
-```typescript
-// GET /web/sessions
-{
-  success: true,
-  data: SessionState[],
-  count: number
-}
-
-// GET /web/sessions/:sessionId
-{
-  success: true,
-  data: SessionState
-}
-
-// DELETE /web/sessions/:sessionId
-{
-  success: true,
-  message: 'Session deleted successfully'
-}
-```
-
 ### WebSocket 接口 (`api/ws/events.ts`, `api/ws/ws-handler.ts`)
 
 **功能**:
@@ -323,16 +291,6 @@ A: 会话 ID 生成优先级：
 3. 匹配现有的 clientName 查找已存在的会话
 4. 生成新的唯一会话 ID
 
-### Q: 如何使用会话管理 API？
-
-A:
-
-- 列出所有会话：`GET /web/sessions`
-- 获取特定会话：`GET /web/sessions/{sessionId}`
-- 删除会话：`DELETE /web/sessions/{sessionId}`
-
-删除会话会同时关闭该会话的活跃连接并从磁盘持久化存储中移除。
-
 ## 相关文件清单
 
 | 文件路径                | 描述                        |
@@ -346,6 +304,5 @@ A:
 | `api/web/logs.ts`       | 日志 API                    |
 | `api/web/hub-tools.ts`  | 系统工具 API                |
 | `api/web/resources.ts`  | 资源 API                    |
-| `api/web/sessions.ts`   | 会话管理 API                |
 | `api/ws/events.ts`      | WebSocket 事件处理          |
 | `api/ws/ws-handler.ts`  | WebSocket 处理器            |

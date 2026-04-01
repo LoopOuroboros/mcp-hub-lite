@@ -59,7 +59,6 @@ npm run dev
 - **配置管理**: `/web/config`
 - **日志获取**: `/web/servers/:id/logs`
 - **系统工具**: `/web/hub-tools`
-- **会话管理**: `/web/sessions`
 
 ### WebSocket 接口
 

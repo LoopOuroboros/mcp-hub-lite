@@ -11,7 +11,6 @@ Stores 模块使用 Pinia 实现前端状态管理，是前端的数据中心。
 ```
 stores/
 ├── server.ts              # 服务器状态管理
-├── session.ts             # 会话状态管理
 ├── system.ts              # 系统状态管理
 ├── tool-calls.ts          # 工具调用状态管理
 └── websocket.ts           # WebSocket 状态管理
@@ -53,29 +52,6 @@ stores/
 - `fetchLogs(serverId)` - 获取服务器日志
 - `clearLogs(serverId)` - 清除日志
 
-### Session Store (`session.ts`)
-
-**职责**: 管理会话状态和操作
-
-**State**:
-
-```typescript
-{
-  sessions: SessionState[]      // 会话列表
-  loading: boolean               // 加载状态
-  error: string | null          // 错误信息
-}
-```
-
-**Actions**:
-
-- `fetchSessions()` - 获取所有持久化会话
-- `deleteSession(sessionId)` - 删除指定会话
-
-**依赖**:
-
-- `@shared-types/session.types` - 会话类型定义
-
 ### System Store (`system.ts`)
 
 **职责**: 管理系统配置和状态
@@ -113,7 +89,6 @@ stores/
     connectionTimeout: number;
     idleConnectionTimeout: number;
     sessionTimeout: number;
-    sessionFlushInterval: number;
     maxConnections: number;
   };
 }
@@ -281,9 +256,6 @@ export interface Server {
 stores/
 ├── server.ts
 │   └── depends on: utils/http.ts
-├── session.ts
-│   ├── depends on: utils/http.ts
-│   └── depends on: @shared-types/session.types
 ├── system.ts
 │   └── depends on: utils/http.ts
 ├── tool-calls.ts
@@ -293,7 +265,6 @@ stores/
     ├── depends on: @stores/server
     ├── depends on: @stores/tool-calls
     ├── depends on: @stores/system
-    ├── depends on: @stores/session
     └── depends on: @shared-types/websocket.types
 ```
 
@@ -343,7 +314,6 @@ A: WebSocket Store 自动连接并处理事件，通过调用其他 Store 的方
 | 文件路径               | 描述               |
 | ---------------------- | ------------------ |
 | `stores/server.ts`     | 服务器状态管理     |
-| `stores/session.ts`    | 会话状态管理       |
 | `stores/system.ts`     | 系统状态管理       |
 | `stores/tool-calls.ts` | 工具调用状态管理   |
 | `stores/websocket.ts`  | WebSocket 状态管理 |

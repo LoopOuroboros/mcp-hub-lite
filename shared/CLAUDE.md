@@ -61,17 +61,11 @@ shared/
 
 ### Session Model (`models/session.model.ts`)
 
-**职责**: 定义会话状态和存储的数据模型
+**职责**: 定义会话状态的数据模型
 
 **主要接口**:
 
 - `SessionState` - 会话状态接口
-- `SessionStore` - 会话存储接口
-
-**主要函数**:
-
-- `createEmptySessionStore()` - 创建空的会话存储
-- `validateSessionStore()` - 验证和规范化会话存储数据
 
 **依赖**:
 
@@ -176,7 +170,7 @@ shared/
 ### 后端导入
 
 ```typescript
-import { SessionState, SessionStore } from '@shared-models/session.model.js';
+import { SessionState } from '@shared-models/session.model.js';
 import { ServerConfig } from '@shared-models/server.model.js';
 import { WebSocketEventType } from '@shared-types/websocket.types.js';
 ```
@@ -198,7 +192,6 @@ import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 **测试覆盖**:
 
 - 会话模型 Zod Schema 验证
-- 会话存储验证
 - 类型定义验证
 
 **测试文件**:

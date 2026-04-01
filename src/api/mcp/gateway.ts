@@ -77,10 +77,9 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       // Only explicit initialize requests require SDK initialization handling
       // For all other requests (tools/list, etc.), skip initialization checks
       const isInitializeRequest = request.body?.method === 'initialize';
-      const hasRestoredState = !!mcpSessionManager.getSessionState(sessionId);
       const requireInitialize = isInitializeRequest;
       logger.debug(
-        `Request for session: ${sessionId}, method: ${request.body?.method || 'GET'}, isInitialize: ${isInitializeRequest}, hasRestoredState: ${hasRestoredState}, requireInitialize: ${requireInitialize}`,
+        `Request for session: ${sessionId}, method: ${request.body?.method || 'GET'}, isInitialize: ${isInitializeRequest}, requireInitialize: ${requireInitialize}`,
         LOG_MODULES.GATEWAY
       );
 
