@@ -4,7 +4,7 @@
 
 ## 模块职责
 
-Services 模块包含核心业务逻辑，是应用的业务层实现，负责处理服务器管理、网关代理、搜索、会话管理等核心功能。
+Services 模块包含核心业务逻辑，是应用的业务层实现，负责处理服务器管理、网关代理、搜索等核心功能。
 
 ## 目录结构
 
@@ -18,7 +18,6 @@ services/
 ├── log-storage.service.ts     # 日志存储服务
 ├── event-bus.service.ts       # 事件总线服务
 ├── system-tool-handler.ts     # 系统工具处理器
-├── session-tracker.service.ts # 会话追踪服务
 ├── search/                    # 搜索服务子模块
 │   ├── index.ts
 │   ├── search-core.service.ts
@@ -28,6 +27,7 @@ services/
 ├── gateway/                   # Gateway 子模块
 │   ├── index.ts
 │   ├── gateway.service.ts
+│   ├── global-transport.ts   # 全局无状态 transport/server
 │   ├── types.ts
 │   ├── log-formatter.ts
 │   ├── tool-list-generator.ts
@@ -43,10 +43,6 @@ services/
 │   ├── connection-manager.ts
 │   ├── types.ts
 │   └── tool-cache.ts
-├── session/                   # Session 子模块
-│   ├── index.ts
-│   ├── session-manager.ts
-│   └── types.ts
 └── hub-tools/                 # Hub Tools 子模块
     ├── index.ts
     ├── types.ts
@@ -135,27 +131,16 @@ services/
 - `sse` - Server-Sent Events
 - `streamable-http` / `http` - HTTP 流传输
 
-### McpSessionManager (`session/session-manager.ts`)
+### GlobalTransport (`gateway/global-transport.ts`)
 
-**职责**: MCP 会话管理器，基于 sessionId 管理内存中的会话状态
-
-**主要方法**:
-
-- `getSession(sessionId, requireInitialize)` - 获取或创建会话
-- `hasSession(sessionId)` - 检查会话是否存在
-- `deleteSession(sessionId)` - 删除会话
+**职责**: 全局共享无状态 MCP transport/server 实例
 
 **功能特性**:
 
-- 基于 sessionId 的会话隔离
-- 共享服务器实例以优化性能
-- 自动清理过期会话（可配置超时，默认 30 分钟）
-- 纯内存会话管理（无持久化）
-- 可配置的会话超时（通过 `config.security.sessionTimeout`）
-
-**调试环境变量**:
-
-- `SESSION_DEBUG` - 启用会话调试日志
+- SDK 原生无状态模式
+- 全局单一 transport/server 实例
+- 无 sessionId 隔离，所有客户端共享同一实例
+- 简化的架构设计
 
 ### HubToolsService (`hub-tools.service.ts`)
 
@@ -289,26 +274,6 @@ services/
 - `TOOL_CALL_COMPLETED` - 工具调用完成
 - `TOOL_CALL_ERROR` - 工具调用错误
 - `CONFIGURATION_UPDATED` - 配置更新
-- `SESSION_CONNECTED` - 会话连接
-- `SESSION_DISCONNECTED` - 会话断开
-
-### SessionTrackerService (`session-tracker.service.ts`)
-
-**职责**: 会话追踪服务，管理会话连接和元数据
-
-**主要方法**:
-
-- `updateSession(context)` - 更新会话信息
-- `updateSessionRoots(sessionId, roots)` - 更新会话 roots
-- `getSessions()` - 获取所有会话
-- `getSession(sessionId)` - 获取特定会话
-
-**功能特性**:
-
-- 基于 sessionId 的会话追踪
-- 自动清理过期会话（可配置超时）
-- 会话连接/断开事件推送
-- 工作目录和项目推断
 
 ## 依赖关系
 
@@ -326,13 +291,6 @@ services/
 │   ├── depends on: hub-manager.service.ts
 │   └── depends on: utils/transports/
 │
-├── session/
-│   ├── depends on: gateway.service.ts
-│   ├── depends on: config/config-manager.ts
-│   ├── depends on: shared/models/session.model.ts
-│   ├── depends on: client-tracker.service.ts
-│   └── depends on: utils/transports/
-│
 ├── hub-tools.service.ts
 │   ├── depends on: hub-manager.service.ts
 │   └── depends on: mcp-connection-manager.ts
@@ -344,10 +302,7 @@ services/
 │
 ├── log-storage.service.ts
 │
-├── event-bus.service.ts
-│
-└── session-tracker.service.ts
-    └── depends on: event-bus.service.ts
+└── event-bus.service.ts
 ```
 
 ## 数据模型
@@ -374,18 +329,6 @@ enum ConnectionStatus {
 }
 ```
 
-### 会话状态
-
-```typescript
-interface SessionState {
-  sessionId: string;
-  clientName?: string;
-  clientVersion?: string;
-  createdAt: number;
-  lastAccessedAt: number;
-  metadata: Record<string, unknown>;
-}
-```
 
 ## 测试与质量
 
@@ -398,12 +341,10 @@ interface SessionState {
 - 服务器 CRUD 操作
 - 错误处理
 - 边界条件
-- 会话管理器功能
 - 搜索服务
 
 **测试文件**:
 
-- `tests/unit/services/session-manager.test.ts`
 - `tests/unit/services/hub-manager.test.ts`
 - `tests/unit/services/hub-tools.service.test.ts`
 - `tests/unit/services/hub-manager-service.test.ts`
@@ -422,36 +363,22 @@ A: 基于项目定位（独立开发者、轻量级），直接遍历在 50-200 
 
 A: 在 `utils/transports/` 目录下实现新的 Transport 类，然后在 `mcp-connection-manager.ts` 中注册。
 
-### Q: 会话管理如何工作？
-
-A: 会话状态完全在内存中管理：
-
-1. 会话创建和访问在内存中进行
-2. 过期会话会自动被清理（默认 30 分钟）
-3. 服务重启后会话会重置（无持久化）
-
-### Q: 如何配置会话超时？
-
-A: 通过配置文件中的 `security.sessionTimeout` 字段设置，单位为毫秒，默认 30 分钟（1800000ms）。
-
 ## 相关文件清单
 
 | 文件路径                                 | 描述                   |
 | ---------------------------------------- | ---------------------- |
 | `services/hub-manager.service.ts`        | 服务器管理器           |
 | `services/gateway.service.ts`            | Gateway 网关服务       |
+| `services/gateway/global-transport.ts`   | 全局无状态 transport   |
 | `services/simple-search.service.ts`      | 搜索服务               |
 | `services/mcp-connection-manager.ts`     | 连接管理器             |
-| `services/session/session-manager.ts`    | 会话管理器（内存管理） |
 | `services/hub-tools.service.ts`          | 系统工具服务           |
 | `services/log-storage.service.ts`        | 日志存储服务           |
 | `services/event-bus.service.ts`          | 事件总线服务           |
-| `services/session-tracker.service.ts`    | 会话追踪服务           |
 | `services/system-tool-handler.ts`        | 系统工具处理器         |
 | `services/search/search-core.service.ts` | 核心搜索服务           |
 | `services/search/search-scorer.ts`       | 搜索评分服务           |
 | `services/search/search-cache.ts`        | 搜索缓存服务           |
 | `services/gateway/`                      | Gateway 子模块         |
 | `services/connection/`                   | Connection 子模块      |
-| `services/session/`                      | Session 子模块         |
 | `services/hub-tools/`                    | Hub Tools 子模块       |

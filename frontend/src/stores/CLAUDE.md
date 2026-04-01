@@ -80,7 +80,7 @@ stores/
       rotationAge: string;
       jsonPretty: boolean;
       mcpCommDebug: boolean;
-      sessionDebug: boolean;
+      apiDebug: boolean;
     };
   };
   security: {
@@ -88,7 +88,6 @@ stores/
     maxConcurrentConnections: number;
     connectionTimeout: number;
     idleConnectionTimeout: number;
-    sessionTimeout: number;
     maxConnections: number;
   };
 }

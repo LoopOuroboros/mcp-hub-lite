@@ -15,11 +15,11 @@ shared/
 │   ├── server.model.ts  # 服务器数据模型
 │   ├── tool.model.ts    # 工具数据模型
 │   ├── resource.model.ts # 资源数据模型
-│   └── session.model.ts # 会话数据模型
+│   └── session.model.ts # 会话数据模型（已废弃，无生产引用）
 └── types/               # 共享类型定义
     ├── index.ts         # 统一导出
-    ├── session.types.ts # 会话相关类型
-    ├── session-context.types.ts # 会话上下文类型
+    ├── session.types.ts # 会话相关类型（已废弃，无引用）
+    ├── session-context.types.ts # 会话上下文类型（已废弃，无引用）
     ├── common.types.ts  # 通用类型
     └── websocket.types.ts # WebSocket 类型
 ```
@@ -59,38 +59,14 @@ shared/
 - `ResourceContent` - 资源内容类型
 - `ResourceList` - 资源列表类型
 
-### Session Model (`models/session.model.ts`)
+### Session Model / Types（已废弃）
 
-**职责**: 定义会话状态的数据模型
-
-**主要接口**:
-
-- `SessionState` - 会话状态接口
-
-**依赖**:
-
-- `zod` - 数据验证库
-
-### Session Types (`types/session.types.ts`)
-
-**职责**: 定义前端使用的会话相关类型
-
-**主要接口**:
-
-- `SessionInfo` - 用于前端显示的会话信息接口
-
-**依赖**:
-
-- `models/session.model.ts` - 会话数据模型
-
-### Session Context Types (`types/session-context.types.ts`)
-
-**职责**: 定义会话上下文相关类型
-
-**主要接口**:
-
-- `ClientContext` - 客户端上下文信息（注意：已移除 cwd 和 project 字段）
-- `SessionContext` - 会话上下文类型
+> ⚠️ 以下文件在会话改造后被移除且不再被任何生产代码引用：
+> - `shared/models/session.model.ts`
+> - `shared/types/session.types.ts`
+> - `shared/types/session-context.types.ts`
+>
+> 这些文件保留仅为避免 git diff 冲突，后续清理时可安全删除。
 
 ### Common Types (`types/common.types.ts`)
 

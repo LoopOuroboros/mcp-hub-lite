@@ -33,7 +33,6 @@ utils/
 ├── port-checker.ts          # 端口检查
 ├── mcp-error-handler.ts     # MCP 错误处理
 ├── error-handler.ts         # 错误处理
-├── request-context.ts       # 请求上下文
 └── tool-args-parser.ts      # 工具参数解析器
 ```
 
