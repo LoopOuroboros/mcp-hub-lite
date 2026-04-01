@@ -329,7 +329,6 @@ enum ConnectionStatus {
 }
 ```
 
-
 ## 测试与质量
 
 ### 单元测试
@@ -365,20 +364,20 @@ A: 在 `utils/transports/` 目录下实现新的 Transport 类，然后在 `mcp-
 
 ## 相关文件清单
 
-| 文件路径                                 | 描述                   |
-| ---------------------------------------- | ---------------------- |
-| `services/hub-manager.service.ts`        | 服务器管理器           |
-| `services/gateway.service.ts`            | Gateway 网关服务       |
-| `services/gateway/global-transport.ts`   | 全局无状态 transport   |
-| `services/simple-search.service.ts`      | 搜索服务               |
-| `services/mcp-connection-manager.ts`     | 连接管理器             |
-| `services/hub-tools.service.ts`          | 系统工具服务           |
-| `services/log-storage.service.ts`        | 日志存储服务           |
-| `services/event-bus.service.ts`          | 事件总线服务           |
-| `services/system-tool-handler.ts`        | 系统工具处理器         |
-| `services/search/search-core.service.ts` | 核心搜索服务           |
-| `services/search/search-scorer.ts`       | 搜索评分服务           |
-| `services/search/search-cache.ts`        | 搜索缓存服务           |
-| `services/gateway/`                      | Gateway 子模块         |
-| `services/connection/`                   | Connection 子模块      |
-| `services/hub-tools/`                    | Hub Tools 子模块       |
+| 文件路径                                 | 描述                 |
+| ---------------------------------------- | -------------------- |
+| `services/hub-manager.service.ts`        | 服务器管理器         |
+| `services/gateway.service.ts`            | Gateway 网关服务     |
+| `services/gateway/global-transport.ts`   | 全局无状态 transport |
+| `services/simple-search.service.ts`      | 搜索服务             |
+| `services/mcp-connection-manager.ts`     | 连接管理器           |
+| `services/hub-tools.service.ts`          | 系统工具服务         |
+| `services/log-storage.service.ts`        | 日志存储服务         |
+| `services/event-bus.service.ts`          | 事件总线服务         |
+| `services/system-tool-handler.ts`        | 系统工具处理器       |
+| `services/search/search-core.service.ts` | 核心搜索服务         |
+| `services/search/search-scorer.ts`       | 搜索评分服务         |
+| `services/search/search-cache.ts`        | 搜索缓存服务         |
+| `services/gateway/`                      | Gateway 子模块       |
+| `services/connection/`                   | Connection 子模块    |
+| `services/hub-tools/`                    | Hub Tools 子模块     |

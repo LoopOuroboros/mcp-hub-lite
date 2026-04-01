@@ -339,7 +339,8 @@ export interface Server {
   status: ServerStatus;
   type: ServerType;
   config: ServerRuntimeConfig;
-  instance: ServerInstanceConfig;
+  instance?: ServerInstanceConfig;
+  instances?: (ServerInstanceConfig & { status: ServerStatus })[];
   logs: LogEntry[];
   uptime?: string;
   startTime?: number;

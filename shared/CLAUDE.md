@@ -62,6 +62,7 @@ shared/
 ### Session Model / Types（已废弃）
 
 > ⚠️ 以下文件在会话改造后被移除且不再被任何生产代码引用：
+>
 > - `shared/models/session.model.ts`
 > - `shared/types/session.types.ts`
 > - `shared/types/session-context.types.ts`

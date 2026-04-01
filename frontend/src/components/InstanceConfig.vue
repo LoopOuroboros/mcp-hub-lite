@@ -19,9 +19,9 @@
   the relationship between template and instance configurations.
 -->
 <template>
-  <div class="instance-config">
+  <div class="instance-config h-full flex flex-col min-h-0">
     <!-- Header with title, action buttons, and preview button -->
-    <div class="header-bar flex justify-between items-center mb-4 pr-4">
+    <div class="header-bar flex justify-between items-center mb-4 pr-4 flex-shrink-0">
       <div class="flex items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ $t('serverDetail.instanceConfig.title') }}
@@ -52,7 +52,7 @@
     </div>
 
     <!-- Unified configuration form -->
-    <div class="config-form space-y-4">
+    <div class="config-form space-y-4 flex-1 overflow-y-auto min-h-0">
       <!-- Transport Type (from template, read-only) -->
       <div class="pr-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -168,7 +168,7 @@
         <div v-if="localConfig.env && Object.keys(localConfig.env).length > 0" class="space-y-2">
           <div
             v-for="(_, key) in localConfig.env"
-            :key="`instance-env-${key}`"
+            :key="instanceEnvIds[key]"
             class="flex gap-2 items-start"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
@@ -225,7 +225,7 @@
         >
           <div
             v-for="(_, key) in localConfig.headers"
-            :key="`instance-header-${key}`"
+            :key="instanceHeaderIds[key]"
             class="flex gap-2 items-start"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
@@ -314,7 +314,7 @@
         >
           <div
             v-for="(_, key) in localConfig.tags"
-            :key="`instance-tag-${key}`"
+            :key="instanceTagIds[key]"
             class="flex gap-2 items-start"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
@@ -475,10 +475,15 @@ const localConfig = ref<InstanceConfigOverrides>({
   ...props.instanceConfig
 });
 
-// Key tracking for dynamic fields
-const instanceEnvKeys = ref<Record<string, string>>({});
-const instanceHeaderKeys = ref<Record<string, string>>({});
-const instanceTagKeys = ref<Record<string, string>>({});
+// ID counters for stable keys
+let envIdCounter = 0;
+let headerIdCounter = 0;
+let tagIdCounter = 0;
+
+// Stable ID tracking for dynamic fields (key -> stableId)
+const instanceEnvIds = ref<Record<string, string>>({});
+const instanceHeaderIds = ref<Record<string, string>>({});
+const instanceTagIds = ref<Record<string, string>>({});
 
 // Tag key mapping for dropdown selection
 const tagKeyMap = ref<Record<string, string>>({});
@@ -502,28 +507,28 @@ watch(
   (newConfig) => {
     localConfig.value = { ...newConfig };
 
-    // Initialize env keys
-    instanceEnvKeys.value = {};
+    // Initialize env stable IDs
+    instanceEnvIds.value = {};
     if (newConfig.env) {
       Object.keys(newConfig.env).forEach((k) => {
-        instanceEnvKeys.value[k] = k;
+        instanceEnvIds.value[k] = `env-${envIdCounter++}`;
       });
     }
 
-    // Initialize header keys
-    instanceHeaderKeys.value = {};
+    // Initialize header stable IDs
+    instanceHeaderIds.value = {};
     if (newConfig.headers) {
       Object.keys(newConfig.headers).forEach((k) => {
-        instanceHeaderKeys.value[k] = k;
+        instanceHeaderIds.value[k] = `header-${headerIdCounter++}`;
       });
     }
 
-    // Initialize tag keys and mapping
-    instanceTagKeys.value = {};
+    // Initialize tag stable IDs and mapping
+    instanceTagIds.value = {};
     tagKeyMap.value = {};
     if (newConfig.tags) {
       Object.keys(newConfig.tags).forEach((k) => {
-        instanceTagKeys.value[k] = k;
+        instanceTagIds.value[k] = `tag-${tagIdCounter++}`;
         // Check if tag key is in system definitions
         const isValid = props.systemTagDefinitions.some((def) => def.key === k);
         if (isValid) {
@@ -628,13 +633,13 @@ function addInstanceEnv() {
   }
   const newKey = `NEW_ENV_${Date.now()}`;
   localConfig.value.env[newKey] = '';
-  instanceEnvKeys.value[newKey] = newKey;
+  instanceEnvIds.value[newKey] = `env-${envIdCounter++}`;
 }
 
 function removeInstanceEnv(key: string) {
   if (localConfig.value.env) {
     delete localConfig.value.env[key];
-    delete instanceEnvKeys.value[key];
+    delete instanceEnvIds.value[key];
   }
 }
 
@@ -642,10 +647,11 @@ function updateInstanceEnvKey(oldKey: string, newKey: string) {
   if (!localConfig.value.env || !oldKey || !newKey || oldKey === newKey) return;
 
   const value = localConfig.value.env[oldKey] ?? '';
+  const stableId = instanceEnvIds.value[oldKey] || `env-${envIdCounter++}`;
   delete localConfig.value.env[oldKey];
-  delete instanceEnvKeys.value[oldKey];
+  delete instanceEnvIds.value[oldKey];
   localConfig.value.env[newKey] = value;
-  instanceEnvKeys.value[newKey] = newKey;
+  instanceEnvIds.value[newKey] = stableId;
 }
 
 // Headers helpers
@@ -655,13 +661,13 @@ function addInstanceHeader() {
   }
   const newKey = `X-New-Header-${Date.now()}`;
   localConfig.value.headers[newKey] = '';
-  instanceHeaderKeys.value[newKey] = newKey;
+  instanceHeaderIds.value[newKey] = `header-${headerIdCounter++}`;
 }
 
 function removeInstanceHeader(key: string) {
   if (localConfig.value.headers) {
     delete localConfig.value.headers[key];
-    delete instanceHeaderKeys.value[key];
+    delete instanceHeaderIds.value[key];
   }
 }
 
@@ -669,10 +675,11 @@ function updateInstanceHeaderKey(oldKey: string, newKey: string) {
   if (!localConfig.value.headers || !oldKey || !newKey || oldKey === newKey) return;
 
   const value = localConfig.value.headers[oldKey] ?? '';
+  const stableId = instanceHeaderIds.value[oldKey] || `header-${headerIdCounter++}`;
   delete localConfig.value.headers[oldKey];
-  delete instanceHeaderKeys.value[oldKey];
+  delete instanceHeaderIds.value[oldKey];
   localConfig.value.headers[newKey] = value;
-  instanceHeaderKeys.value[newKey] = newKey;
+  instanceHeaderIds.value[newKey] = stableId;
 }
 
 // Enhanced tag helpers with system tag definitions
@@ -697,6 +704,7 @@ function addInstanceTag() {
         counter++;
       }
       localConfig.value.tags[uniqueKey] = '';
+      instanceTagIds.value[uniqueKey] = `tag-${tagIdCounter++}`;
       tagKeyMap.value[uniqueKey] = firstTagKey;
     }
   } else {
@@ -705,6 +713,7 @@ function addInstanceTag() {
     // Still allow adding custom tag for backward compatibility
     const newKey = `new-tag-${Date.now()}`;
     localConfig.value.tags[newKey] = '';
+    instanceTagIds.value[newKey] = `tag-${tagIdCounter++}`;
     tagKeyMap.value[newKey] = newKey;
   }
 }
@@ -712,7 +721,7 @@ function addInstanceTag() {
 function removeInstanceTag(key: string) {
   if (localConfig.value.tags) {
     delete localConfig.value.tags[key];
-    delete instanceTagKeys.value[key];
+    delete instanceTagIds.value[key];
     delete tagKeyMap.value[key];
   }
 }
@@ -721,9 +730,12 @@ function updateTagKey(oldKey: string, newKey: string) {
   if (!localConfig.value.tags || !newKey) return;
 
   const value = localConfig.value.tags[oldKey] ?? '';
+  const stableId = instanceTagIds.value[oldKey] || `tag-${tagIdCounter++}`;
   delete localConfig.value.tags[oldKey];
+  delete instanceTagIds.value[oldKey];
   delete tagKeyMap.value[oldKey];
   localConfig.value.tags[newKey] = value;
+  instanceTagIds.value[newKey] = stableId;
   tagKeyMap.value[newKey] = newKey;
 }
 
@@ -750,10 +762,10 @@ function goToTagSettings() {
 
 <style scoped>
 .instance-config {
-  @apply w-full;
+  @apply w-full h-full flex flex-col;
 }
 
 .config-form {
-  @apply w-full;
+  @apply w-full flex-1 overflow-y-auto;
 }
 </style>

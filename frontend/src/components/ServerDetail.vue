@@ -49,26 +49,28 @@
           <!-- Right: Config Panel -->
           <div class="flex-1 min-h-0 overflow-y-auto pl-4 pr-4">
             <!-- Template Config Panel -->
-            <div v-if="selectedInstanceIndex === null">
-              <ConfigTemplateForm
-                :config="
-                  server.rawV11Config || {
-                    template: {
-                      type: 'stdio',
-                      args: [],
-                      env: {},
-                      headers: {},
-                      timeout: 60000,
-                      aggregatedTools: []
-                    },
-                    instances: [],
-                    tagDefinitions: []
-                  }
-                "
-                @update:config="updateLocalConfig"
-                @save="saveConfig"
-                @edit-json="openEditJson"
-              />
+            <div v-if="selectedInstanceIndex === null" class="h-full flex flex-col min-h-0">
+              <div class="flex-1 min-h-0 overflow-hidden">
+                <ConfigTemplateForm
+                  :config="
+                    server.rawV11Config || {
+                      template: {
+                        type: 'stdio',
+                        args: [],
+                        env: {},
+                        headers: {},
+                        timeout: 60000,
+                        aggregatedTools: []
+                      },
+                      instances: [],
+                      tagDefinitions: []
+                    }
+                  "
+                  @update:config="updateLocalConfig"
+                  @save="saveConfig"
+                  @edit-json="openEditJson"
+                />
+              </div>
             </div>
 
             <!-- Instance Config Panel -->
@@ -79,24 +81,26 @@
                   class="instance-detail-tabs h-full flex flex-col"
                 >
                   <!-- Instance Config Tab (Unified Form) -->
-                  <el-tab-pane name="config">
+                  <el-tab-pane name="config" class="h-full flex flex-col min-h-0">
                     <template #label>
                       <span class="custom-tabs-label">
                         <el-icon><Setting /></el-icon>
                         <span>{{ $t('common.config') }}</span>
                       </span>
                     </template>
-                    <InstanceConfig
-                      :template-config="templateConfigForInstance"
-                      :instance-config="selectedInstanceConfig"
-                      :server-name="server.name"
-                      :instance-status="getSelectedInstanceStatus()"
-                      :system-tag-definitions="systemTagDefinitions"
-                      @update="handleUpdateInstanceConfig"
-                      @start-instance="startSelectedInstance"
-                      @stop-instance="stopSelectedInstance"
-                      @restart-instance="restartSelectedInstance"
-                    />
+                    <div class="flex-1 min-h-0 overflow-hidden">
+                      <InstanceConfig
+                        :template-config="templateConfigForInstance"
+                        :instance-config="selectedInstanceConfig"
+                        :server-name="server.name"
+                        :instance-status="getSelectedInstanceStatus()"
+                        :system-tag-definitions="systemTagDefinitions"
+                        @update="handleUpdateInstanceConfig"
+                        @start-instance="startSelectedInstance"
+                        @stop-instance="stopSelectedInstance"
+                        @restart-instance="restartSelectedInstance"
+                      />
+                    </div>
                   </el-tab-pane>
 
                   <!-- Instance Logs Tab -->

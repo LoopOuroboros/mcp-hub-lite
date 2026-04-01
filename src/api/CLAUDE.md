@@ -45,7 +45,6 @@ api/
 - `resources/list` - 列出所有资源
 - `resources/read` - 读取资源
 
-
 ## Web API 接口
 
 ### 服务器管理 API (`api/web/servers.ts`)
@@ -226,8 +225,6 @@ interface ServerStatus {
 }
 ```
 
-
-
 ## 常见问题 (FAQ)
 
 ### Q: 如何添加新的 API 端点？
@@ -242,7 +239,7 @@ A: 使用 SSE (Server-Sent Events) 传输机制，通过 SSE 传输实现。
 
 | 文件路径                | 描述                        |
 | ----------------------- | --------------------------- |
-| `api/mcp/gateway.ts`    | MCP Gateway 路由（无状态） |
+| `api/mcp/gateway.ts`    | MCP Gateway 路由（无状态）  |
 | `api/web/servers.ts`    | 服务器管理 API（v1.1 格式） |
 | `api/web/search.ts`     | 搜索 API                    |
 | `api/web/health.ts`     | 健康检查 API                |

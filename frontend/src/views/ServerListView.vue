@@ -271,23 +271,16 @@ function handleCardClick(server: Server) {
 }
 
 /**
- * Gets all instances for a specific server.
- *
- * @param {string} serverName - The name of the server
- * @returns {Server[]} Array of server instances
- */
-function getServerInstances(serverName: string) {
-  return store.servers.filter((s) => s.name === serverName);
-}
-
-/**
  * Gets the count of online instances for a specific server.
  *
  * @param {string} serverName - The name of the server
  * @returns {number} Number of online instances
  */
 function getServerOnlineCount(serverName: string) {
-  return getServerInstances(serverName).filter((s) => s.status === 'online').length;
+  const server = store.servers.find((s) => s.name === serverName);
+  if (!server) return 0;
+  const instances = server.instances || [];
+  return instances.filter((inst) => inst.status === 'online').length;
 }
 
 /**
@@ -297,7 +290,7 @@ function getServerOnlineCount(serverName: string) {
  * @returns {number} Number of offline instances
  */
 function getServerOfflineCount(serverName: string) {
-  return getServerInstances(serverName).filter((s) => s.status !== 'online').length;
+  return getServerTotalCount(serverName) - getServerOnlineCount(serverName);
 }
 
 /**
@@ -307,7 +300,8 @@ function getServerOfflineCount(serverName: string) {
  * @returns {number} Total number of instances
  */
 function getServerTotalCount(serverName: string) {
-  return getServerInstances(serverName).length;
+  const server = store.servers.find((s) => s.name === serverName);
+  return server?.instances?.length || 0;
 }
 
 /**

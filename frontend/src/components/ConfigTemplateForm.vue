@@ -1,6 +1,6 @@
 <template>
-  <div class="config-template-form">
-    <div class="space-y-4">
+  <div class="config-template-form h-full flex flex-col min-h-0">
+    <div class="space-y-4 flex-1 overflow-y-auto min-h-0">
       <!-- Transport Type -->
       <div class="pr-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
@@ -64,7 +64,7 @@
         >
           <div
             v-for="(_, key) in localConfig.template.env"
-            :key="key"
+            :key="envIds[key]"
             class="flex gap-2 items-start pr-4"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
@@ -102,7 +102,7 @@
         >
           <div
             v-for="(_, key) in localConfig.template.headers"
-            :key="key"
+            :key="headerIds[key]"
             class="flex gap-2 items-start pr-4"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
@@ -197,8 +197,14 @@ const localConfig = ref<ServerConfig>({
   ...props.config,
   instanceSelectionStrategy: props.config.instanceSelectionStrategy || 'random'
 });
-const envKeys = ref<Record<string, string>>({});
-const headerKeys = ref<Record<string, string>>({});
+
+// ID counters for stable keys
+let envIdCounter = 0;
+let headerIdCounter = 0;
+
+// Stable ID tracking for dynamic fields (key -> stableId)
+const envIds = ref<Record<string, string>>({});
+const headerIds = ref<Record<string, string>>({});
 
 watch(
   () => props.config,
@@ -226,18 +232,18 @@ const timeoutInSeconds = computed({
 
 function initializeEnvKeys() {
   if (localConfig.value?.template?.env) {
-    envKeys.value = {};
+    envIds.value = {};
     Object.keys(localConfig.value.template.env).forEach((k) => {
-      envKeys.value[k] = k;
+      envIds.value[k] = `env-${envIdCounter++}`;
     });
   }
 }
 
 function initializeHeaderKeys() {
   if (localConfig.value?.template?.headers) {
-    headerKeys.value = {};
+    headerIds.value = {};
     Object.keys(localConfig.value.template.headers).forEach((k) => {
-      headerKeys.value[k] = k;
+      headerIds.value[k] = `header-${headerIdCounter++}`;
     });
   }
 }
@@ -257,23 +263,24 @@ function addEnv() {
   if (!localConfig.value.template.env) localConfig.value.template.env = {};
   const newKey = `NEW_VAR_${Object.keys(localConfig.value.template.env).length}`;
   localConfig.value.template.env[newKey] = '';
-  envKeys.value[newKey] = newKey;
+  envIds.value[newKey] = `env-${envIdCounter++}`;
   emit('update:template', { ...localConfig.value.template });
 }
 
 function removeEnv(key: string) {
   delete localConfig.value.template.env![key];
-  delete envKeys.value[key];
+  delete envIds.value[key];
   emit('update:template', { ...localConfig.value.template });
 }
 
 function updateEnvKey(oldKey: string, newKey: string) {
   if (oldKey === newKey) return;
   const val = localConfig.value.template.env![oldKey] || '';
+  const stableId = envIds.value[oldKey] || `env-${envIdCounter++}`;
   delete localConfig.value.template.env![oldKey];
+  delete envIds.value[oldKey];
   localConfig.value.template.env![newKey] = val;
-  delete envKeys.value[oldKey];
-  envKeys.value[newKey] = newKey;
+  envIds.value[newKey] = stableId;
   emit('update:template', { ...localConfig.value.template });
 }
 
@@ -281,23 +288,24 @@ function addHeader() {
   if (!localConfig.value.template.headers) localConfig.value.template.headers = {};
   const newKey = `NEW_HEADER_${Object.keys(localConfig.value.template.headers).length}`;
   localConfig.value.template.headers[newKey] = '';
-  headerKeys.value[newKey] = newKey;
+  headerIds.value[newKey] = `header-${headerIdCounter++}`;
   emit('update:template', { ...localConfig.value.template });
 }
 
 function removeHeader(key: string) {
   delete localConfig.value.template.headers![key];
-  delete headerKeys.value[key];
+  delete headerIds.value[key];
   emit('update:template', { ...localConfig.value.template });
 }
 
 function updateHeaderKey(oldKey: string, newKey: string) {
   if (oldKey === newKey) return;
   const val = localConfig.value.template.headers![oldKey] || '';
+  const stableId = headerIds.value[oldKey] || `header-${headerIdCounter++}`;
   delete localConfig.value.template.headers![oldKey];
+  delete headerIds.value[oldKey];
   localConfig.value.template.headers![newKey] = val;
-  delete headerKeys.value[oldKey];
-  headerKeys.value[newKey] = newKey;
+  headerIds.value[newKey] = stableId;
   emit('update:template', { ...localConfig.value.template });
 }
 
@@ -332,3 +340,9 @@ function handleEditJson() {
   emit('edit-json');
 }
 </script>
+
+<style scoped>
+.config-template-form {
+  @apply w-full h-full flex flex-col;
+}
+</style>

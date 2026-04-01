@@ -163,58 +163,85 @@ export const useServerStore = defineStore('server', () => {
         const instances = serverConfig.instances || [];
 
         if (instances.length > 0) {
-          // Case with instances - process each instance
-          instances.forEach((instanceConfig) => {
-            const serverId = instanceConfig.id; // Use instance ID as unique server ID
-            const statusInfo = statuses.find((s) => s.id === serverId)?.status;
+          // Case with instances - create ONE Server object aggregating all instances
+          const serverId = serverName;
 
-            // Resolve the actual configuration by merging template and instance
-            const resolvedConfig = resolveInstanceConfig(template, instanceConfig);
-
-            // Determine status based on instance enabled and statusInfo
-            let status: ServerStatus;
-            if (statusInfo?.connected) {
-              status = 'online';
-            } else if (statusInfo?.error) {
-              status = 'error';
-            } else if (instanceConfig.enabled !== false) {
-              // If configured as enabled but not yet connected, show as starting
-              status = 'starting';
-            } else {
-              status = 'offline';
-            }
-
-            // Create compatible instance config for frontend
-            const compatibleInstance: ServerInstanceConfig = {
-              id: instanceConfig.id,
-              timestamp: instanceConfig.timestamp ?? Date.now(),
-              index: instanceConfig.index,
-              displayName: instanceConfig.displayName
-            };
-
-            combinedServers.push({
-              id: serverId,
-              name: serverName,
-              status,
-              type:
-                template.type === 'sse' ||
-                template.type === 'streamable-http' ||
-                template.type === 'http'
-                  ? 'remote'
-                  : 'local',
-              config: resolvedConfig,
-              instance: compatibleInstance,
-              logs: existingLogs.get(serverId) || [],
-              tools: existingTools.get(serverId),
-              resources: existingResources.get(serverId),
-              uptime: statusInfo?.connected ? 'Active' : undefined,
-              startTime: statusInfo?.startTime ?? instanceConfig.startTime,
-              pid: statusInfo?.pid ?? instanceConfig.pid,
-              toolsCount: statusInfo?.toolsCount ?? 0,
-              resourcesCount: statusInfo?.resourcesCount ?? 0,
-              version: statusInfo?.version,
-              rawV11Config: serverConfig
+          // Compute per-instance status and build instances array
+          const instanceConfigs: (ServerInstanceConfig & { status: ServerStatus })[] =
+            instances.map((inst) => {
+              const statusInfo = statuses.find((s) => s.id === inst.id)?.status;
+              let instStatus: ServerStatus;
+              if (statusInfo?.connected) {
+                instStatus = 'online';
+              } else if (statusInfo?.error) {
+                instStatus = 'error';
+              } else if (inst.enabled !== false) {
+                instStatus = 'starting';
+              } else {
+                instStatus = 'offline';
+              }
+              return {
+                id: inst.id,
+                timestamp: inst.timestamp ?? Date.now(),
+                index: inst.index,
+                displayName: inst.displayName,
+                status: instStatus
+              };
             });
+
+          // Use first instance for resolved config and runtime info (guaranteed to exist since we're in the instances.length > 0 branch)
+          const firstInstance = instances[0]!;
+          const resolvedConfig = resolveInstanceConfig(template, firstInstance);
+
+          // Aggregate status: any instance online → online, any instance error → error, else offline
+          let anyOnline = false;
+          let anyError = false;
+          let totalToolsCount = 0;
+          let totalResourcesCount = 0;
+          let firstOnlineStartTime: number | undefined;
+          let firstOnlinePid: number | undefined;
+          let firstOnlineVersion: string | undefined;
+
+          instances.forEach((inst) => {
+            const statusInfo = statuses.find((s) => s.id === inst.id)?.status;
+            if (statusInfo?.connected) {
+              anyOnline = true;
+              if (!firstOnlineStartTime) {
+                firstOnlineStartTime = statusInfo.startTime;
+                firstOnlinePid = statusInfo.pid;
+                firstOnlineVersion = statusInfo.version;
+              }
+            } else if (statusInfo?.error) {
+              anyError = true;
+            }
+            totalToolsCount += statusInfo?.toolsCount ?? 0;
+            totalResourcesCount += statusInfo?.resourcesCount ?? 0;
+          });
+
+          const status: ServerStatus = anyOnline ? 'online' : anyError ? 'error' : 'offline';
+
+          combinedServers.push({
+            id: serverId,
+            name: serverName,
+            status,
+            type:
+              template.type === 'sse' ||
+              template.type === 'streamable-http' ||
+              template.type === 'http'
+                ? 'remote'
+                : 'local',
+            config: resolvedConfig,
+            instances: instanceConfigs,
+            logs: existingLogs.get(serverId) || [],
+            tools: existingTools.get(serverId),
+            resources: existingResources.get(serverId),
+            uptime: anyOnline ? 'Active' : undefined,
+            startTime: firstOnlineStartTime ?? firstInstance.startTime,
+            pid: firstOnlinePid ?? firstInstance.pid,
+            toolsCount: totalToolsCount,
+            resourcesCount: totalResourcesCount,
+            version: firstOnlineVersion,
+            rawV11Config: serverConfig
           });
         } else {
           // Case without instances - create a virtual instance for display
@@ -389,30 +416,34 @@ export const useServerStore = defineStore('server', () => {
    * status updates.
    *
    * @async
-   * @param {string} id - Server ID to start
+   * @param {string} id - Server/instance ID to start
    * @returns {Promise<void>}
-   * @throws {Error} If server not found or start fails
+   * @throws {Error} If start fails
    */
   async function startServer(id: string) {
     try {
       const server = servers.value.find((s) => s.id === id);
-      if (!server) {
-        throw new Error('Server not found');
-      }
-
-      // Immediately update status to starting for better user experience
-      updateServerStatus(id, 'starting');
-
       let actualServerId = id;
 
-      // If it's a config-only server (virtual ID), need to create an instance
-      if (id.startsWith('config-')) {
+      // If we found a server and it's a config-only server, need to create an instance
+      if (server && id.startsWith('config-')) {
+        // Immediately update status to starting for better user experience
+        updateServerStatus(id, 'starting');
+
         // Create server instance
         const response = await http.post<ServerInstanceConfig>(
           `/web/server-instances/${server.name}`,
           {}
         );
         actualServerId = response.id;
+      } else {
+        // Try to find the server by instance in instances array to update status
+        for (const s of servers.value) {
+          if (s.instances?.some((inst) => inst.id === id)) {
+            updateServerStatus(s.id, 'starting');
+            break;
+          }
+        }
       }
 
       // Connect server (using actual instance ID)
@@ -424,8 +455,6 @@ export const useServerStore = defineStore('server', () => {
       } else {
         error.value = String(e) || 'Failed to start server';
       }
-      // Update to error state on failure
-      updateServerStatus(id, 'error');
       throw e;
     }
   }
@@ -437,19 +466,16 @@ export const useServerStore = defineStore('server', () => {
    * and regular instances by calling the disconnect API endpoint.
    *
    * @async
-   * @param {string} id - Server ID to stop
+   * @param {string} id - Server/instance ID to stop
    * @returns {Promise<void>}
-   * @throws {Error} If server not found or stop fails
+   * @throws {Error} If stop fails
    */
   async function stopServer(id: string) {
     try {
       const server = servers.value.find((s) => s.id === id);
-      if (!server) {
-        throw new Error('Server not found');
-      }
 
       // If it's a config-only server, no need to disconnect
-      if (id.startsWith('config-')) {
+      if (server && id.startsWith('config-')) {
         await fetchServers();
         return;
       }

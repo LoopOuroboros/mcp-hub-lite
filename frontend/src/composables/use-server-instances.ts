@@ -81,13 +81,19 @@ export function useServerInstances(
 
     return server.value.rawV11Config.instances.map(
       (instance: ServerInstance, arrayIndex: number) => {
-        const statusInfo = allServers.value.find((s) => s.instance.id === instance.id);
+        // Find status by matching instance ID in the aggregated server's instances array
+        const statusServer = allServers.value.find((s) =>
+          s.instances?.some((inst) => inst.id === instance.id)
+        );
+        const statusInfo = statusServer?.instances?.find((inst) => inst.id === instance.id) as
+          | InstanceWithStatus
+          | undefined;
 
         let status: string = 'offline';
         let pid: number | undefined = undefined;
         const transportType = server.value?.rawV11Config?.template?.type;
 
-        if (statusInfo) {
+        if (statusInfo?.status) {
           status = statusInfo.status;
           pid = statusInfo.pid ?? undefined;
         } else if (instance.enabled !== false) {
@@ -194,20 +200,16 @@ export function useServerInstances(
   }
 
   /**
-   * Gets the server ID for the currently selected instance
+   * Gets the instance ID for the currently selected instance
    *
-   * @returns {string|null} The server ID or null if not found
+   * @returns {string|null} The instance ID or null if not found
    */
   function getSelectedInstanceServerId(): string | null {
-    if (selectedInstanceIndex.value === null || !server.value?.name) return null;
+    if (selectedInstanceIndex.value === null) return null;
     const instance = serverInstances.value.find(
       (inst) => inst.index === selectedInstanceIndex.value
     );
-    if (!instance) return null;
-
-    // Find the corresponding server in allServers by instance ID
-    const statusInfo = allServers.value.find((s) => s.instance.id === instance.id);
-    return statusInfo?.id || null;
+    return instance?.id || null;
   }
 
   /**
@@ -232,28 +234,12 @@ export function useServerInstances(
    * Starts the currently selected instance
    */
   async function startSelectedInstance() {
-    const serverId = getSelectedInstanceServerId();
-    if (!serverId) {
-      // If no server ID found, try to find or create an instance
-      if (selectedInstanceIndex.value !== null && server.value?.name) {
-        const instance = serverInstances.value.find(
-          (inst) => inst.index === selectedInstanceIndex.value
-        );
-        if (instance) {
-          // First, make sure we have the latest server list
-          await store.fetchServers();
-          // Try to find the instance again
-          const statusInfo = allServers.value.find((s) => s.instance.id === instance.id);
-          if (statusInfo) {
-            await startServerInstance(statusInfo.id);
-            return;
-          }
-        }
-      }
+    const instanceId = getSelectedInstanceServerId();
+    if (!instanceId) {
       ElMessage.warning(t('serverDetail.noInstanceSelected'));
       return;
     }
-    await startServerInstance(serverId);
+    await startServerInstance(instanceId);
   }
 
   /**
@@ -289,15 +275,16 @@ export function useServerInstances(
   /**
    * Restarts a specific server instance
    *
-   * @param {string} serverId - The server ID to restart
+   * @param {string} instanceId - The instance ID to restart
    */
-  async function restartServerInstance(serverId: string) {
+  async function restartServerInstance(instanceId: string) {
     try {
-      const serverInfo = allServers.value.find((s) => s.id === serverId);
-      if (serverInfo && serverInfo.status === 'online') {
-        await store.stopServer(serverId);
+      // Find the instance to check its current status
+      const instance = serverInstances.value.find((inst) => inst.id === instanceId);
+      if (instance && instance.status === 'online') {
+        await store.stopServer(instanceId);
       }
-      await store.startServer(serverId);
+      await store.startServer(instanceId);
       ElMessage.success(t('action.restarted'));
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -381,6 +368,34 @@ export function useServerInstances(
     if (!server.value?.name) return;
 
     try {
+      // Create temporary instance with unique ID for immediate local update
+      const newId = `temp-${Date.now()}`;
+      const instances = server.value.rawV11Config?.instances || [];
+      const maxIndex = instances.length > 0 ? Math.max(...instances.map((i) => i.index ?? 0)) : -1;
+
+      // Prepare the new instance
+      const newInstance: ServerInstance = {
+        id: newId,
+        timestamp: Date.now(),
+        index: maxIndex + 1,
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      };
+
+      // Ensure instances array exists
+      if (server.value.rawV11Config) {
+        if (!server.value.rawV11Config.instances) {
+          server.value.rawV11Config.instances = [];
+        }
+
+        // Add the new instance locally for immediate UI update
+        server.value.rawV11Config.instances.push(newInstance);
+      }
+
+      // Then call the store to add the instance
       await store.addServerInstance(server.value.name);
       ElMessage.success(t('action.instanceAdded'));
     } catch (e: unknown) {
@@ -402,6 +417,14 @@ export function useServerInstances(
     if (!server.value?.name) return;
 
     try {
+      // Update locally first for immediate UI update
+      const instances = server.value.rawV11Config?.instances;
+      const instance = instances?.find((inst) => inst.index === index);
+      if (instance) {
+        instance.displayName = displayName;
+      }
+
+      // Then call the store to update the server
       await store.updateServerInstance(server.value.name, index, { displayName });
       ElMessage.success(t('action.displayNameUpdated'));
     } catch (e: unknown) {
@@ -428,6 +451,21 @@ export function useServerInstances(
         type: 'warning'
       });
 
+      // Remove locally first for immediate UI update
+      const instances = server.value.rawV11Config?.instances;
+      if (instances) {
+        const removeIndex = instances.findIndex((inst) => inst.index === index);
+        if (removeIndex !== -1) {
+          instances.splice(removeIndex, 1);
+        }
+      }
+
+      // If this was the selected instance, clear the selection
+      if (selectedInstanceIndex.value === index) {
+        selectedInstanceIndex.value = null;
+      }
+
+      // Then call the store to remove the instance
       await store.removeServerInstance(server.value.name, index);
       ElMessage.success(t('action.instanceDeleted'));
     } catch (e: unknown) {
