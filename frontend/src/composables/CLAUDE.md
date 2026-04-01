@@ -81,12 +81,12 @@ composables/
 - `selectedInstance` - 当前选中的实例
 - `selectedInstanceConfig` - 当前选中实例的配置覆盖
 - `templateConfigForInstance` - 模板配置
-- `allServers` - 同名服务器列表
+- `allServers` - 聚合服务器列表（v1.1 格式）
 
 **方法**:
 
 - `getSelectedInstanceStatus()` - 获取选中实例状态
-- `getSelectedInstanceServerId()` - 获取选中实例的服务器 ID
+- `getSelectedInstanceServerId()` - 获取选中实例的实例 ID（原方法名保留，功能变更）
 - `startSelectedInstance()` - 启动选中实例
 - `stopSelectedInstance()` - 停止选中实例
 - `restartSelectedInstance()` - 重启选中实例
@@ -98,6 +98,16 @@ composables/
 - `handleDeleteInstance()` - 删除实例
 - `handleReassignIndexes()` - 重新分配实例索引
 - `handleUpdateInstanceConfig()` - 更新实例配置
+
+**v1.1 关键改进**:
+
+- **实例状态查找**: 在聚合服务器的 `instances[]` 数组中匹配实例ID来查找状态
+- **即时UI更新**: 在调用API前先进行本地状态更新，提供更好的用户体验
+  - 添加实例时创建临时ID并立即显示
+  - 更新显示名称时先本地更新
+  - 删除实例时先本地移除
+- **ID变更**: `getSelectedInstanceServerId()` 现在返回实例ID而非服务器ID
+- **状态更新**: 在实例操作中先更新本地状态再调用API
 
 **依赖**:
 

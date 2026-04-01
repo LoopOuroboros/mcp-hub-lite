@@ -100,6 +100,11 @@ components/
 
 - 2026-03-26: 从 1053 行重构为约 500 行，提取 3 个 composables
 
+**v1.1 关键改进**:
+
+- **Flexbox 滚动布局**: 使用 `h-full flex flex-col min-h-0` 实现正确的垂直滚动
+- 确保在分割布局中各区域能够正确独立滚动
+
 ### ServerDetailHeader (`ServerDetailHeader.vue`)
 
 **职责**: 显示服务器信息和操作按钮
@@ -183,6 +188,12 @@ interface Props {
 - 与后端保持一致的默认值逻辑，确保用户体验一致性
 
 **注意**: 自动启动（autoStart/enabled）配置已移至实例级别配置，不再在模板级别配置。
+
+**v1.1 关键改进**:
+
+- **Flexbox 滚动布局**: 使用 `h-full flex flex-col min-h-0` 实现正确的垂直滚动
+- **Vue Key 稳定性**: 为动态字段（args、env、headers、tags）使用稳定的唯一ID，确保Vue能够正确追踪和更新DOM元素
+- 避免使用数组索引作为v-for的key，防止渲染错误和状态混乱
 
 ### LogViewer (`LogViewer.vue`)
 
@@ -400,6 +411,12 @@ interface Props {
 
 - `useI18n` - 国际化支持
 - Element Plus 图标组件
+
+**v1.1 关键改进**:
+
+- **Flexbox 滚动布局**: 使用 `h-full flex flex-col min-h-0` 实现正确的垂直滚动
+- **Vue Key 稳定性**: 为动态字段（args、env、headers、tags）使用稳定的唯一ID，确保Vue能够正确追踪和更新DOM元素
+- 避免使用数组索引作为v-for的key，防止渲染错误和状态混乱
 
 ### Header (`HeaderView.vue`)
 
