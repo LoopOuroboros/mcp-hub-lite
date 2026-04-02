@@ -3,6 +3,7 @@
  */
 
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
@@ -72,7 +73,10 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
 
     // Skip if server configuration not found
     if (!serverConfig) {
-      logger.warn(`Server configuration not found for serverId: ${serverId}, skipping tools`);
+      logger.warn(
+        `Server configuration not found for serverId: ${serverId}, skipping tools`,
+        LOG_MODULES.TOOL_LIST_GENERATOR
+      );
       continue;
     }
 

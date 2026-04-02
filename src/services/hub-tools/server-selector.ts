@@ -1,6 +1,7 @@
 import { hubManager } from '@services/hub-manager.service.js';
 import { InstanceSelector } from './instance-selector.js';
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
 
 /**
@@ -117,7 +118,11 @@ export function selectBestInstance(
     };
   } catch (error) {
     // Handle tag matching errors and other exceptions gracefully
-    logger.error(`Instance selection failed for server ${serverName}:`, error);
+    logger.error(
+      `Instance selection failed for server ${serverName}:`,
+      error,
+      LOG_MODULES.SERVER_SELECTOR
+    );
     return undefined;
   }
 }

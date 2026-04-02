@@ -83,18 +83,18 @@ export function loadConfig(configPath: string, autoMigrate: boolean = true): Sys
           }
           return configWithSortedServers;
         } else {
-          logger.error(`Config validation failed: ${parsed.error}`);
+          logger.error(`Config validation failed: ${parsed.error}`, LOG_MODULES.CONFIG_LOADER);
           return SystemConfigSchema.parse({});
         }
       } catch (e) {
-        logger.error(`Failed to parse config: ${e}`);
+        logger.error(`Failed to parse config: ${e}`, LOG_MODULES.CONFIG_LOADER);
         return SystemConfigSchema.parse({});
       }
     } else {
       return SystemConfigSchema.parse({});
     }
   } catch (error) {
-    logger.error(`Failed to load config: ${error}`);
+    logger.error(`Failed to load config: ${error}`, LOG_MODULES.CONFIG_LOADER);
     return SystemConfigSchema.parse({});
   }
 }

@@ -3,6 +3,7 @@ import { PassThrough } from 'stream';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import type { LogStorageService } from '@services/log-storage.service.js';
 
 // Re-implement ReadBuffer as it is not exported from SDK root
@@ -338,7 +339,10 @@ export class StdioTransport implements Transport {
             // Set timeout protection to force kill if child process doesn't exit within 5 seconds
             const timeout = setTimeout(() => {
               if (this._process) {
-                logger.warn('Child process did not exit gracefully, force killing...');
+                logger.warn(
+                  'Child process did not exit gracefully, force killing...',
+                  LOG_MODULES.STDIO_TRANSPORT
+                );
                 this._process.kill('SIGKILL');
               }
             }, 5000);
@@ -347,7 +351,7 @@ export class StdioTransport implements Transport {
             this._process.once('close', () => clearTimeout(timeout));
             this._process.once('exit', () => clearTimeout(timeout));
           } catch (error) {
-            logger.error('Error closing stdio transport:', error);
+            logger.error('Error closing stdio transport:', error, LOG_MODULES.STDIO_TRANSPORT);
             cleanup();
           }
         } else {

@@ -37,8 +37,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       logger.debug(initialLogMsg, LOG_MODULES.COMMUNICATION);
     }
 
-    logger.info(`MCP Gateway ${request.method} ${request.url}`, LOG_MODULES.GATEWAY);
-
     reply.header('Content-Type', 'application/json');
     if (!request.headers['accept']) {
       request.headers['accept'] = 'application/json, text/event-stream';
@@ -48,13 +46,8 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
 
     reply.hijack();
 
-    const startTime = Date.now();
-
     try {
       await globalTransport.handleRequest(request.raw, reply.raw, request.body);
-
-      const duration = Date.now() - startTime;
-      logger.info(`MCP Gateway response: handled in ${duration}ms`, LOG_MODULES.GATEWAY);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 

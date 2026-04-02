@@ -24,21 +24,19 @@ export const LOG_MODULES = {
   // Core system modules
   SERVER: { module: 'Server' } satisfies LogOptions,
   DEV_SERVER: { module: 'DevServer' } satisfies LogOptions,
+  RUNNER: { module: 'Runner' } satisfies LogOptions,
 
   // Config management
   CONFIG_MANAGER: { module: 'ConfigManager' } satisfies LogOptions,
   CONFIG_LOADER: { module: 'ConfigLoader' } satisfies LogOptions,
-  CONFIG_CHANGES: { module: 'System Config Changes' } satisfies LogOptions,
-
-  // Session management
-  SESSION_MANAGER: { module: 'SessionManager' } satisfies LogOptions,
-  SESSION: { module: 'Session' } satisfies LogOptions,
-  SESSION_API: { module: 'Session API' } satisfies LogOptions,
-  SESSION_TRACKER: { module: 'SessionTracker' } satisfies LogOptions,
+  CONFIG_SAVER: { module: 'ConfigSaver' } satisfies LogOptions,
+  CONFIG_CHANGES: { module: 'SystemConfigManager' } satisfies LogOptions,
+  SERVER_CONFIG_MANAGER: { module: 'ServerConfigManager' } satisfies LogOptions,
 
   // Connection management
   CONNECTION_MANAGER: { module: 'ConnectionManager' } satisfies LogOptions,
   HUB_MANAGER: { module: 'HubManager' } satisfies LogOptions,
+  SERVER_SELECTOR: { module: 'ServerSelector' } satisfies LogOptions,
 
   // Gateway related
   GATEWAY: { module: 'Gateway' } satisfies LogOptions,
@@ -48,6 +46,7 @@ export const LOG_MODULES = {
   HUB_TOOLS: { module: 'HubTools' } satisfies LogOptions,
   SYSTEM_TOOL: { module: 'SystemTool' } satisfies LogOptions,
   TOOL_LIST: { module: 'ToolList' } satisfies LogOptions,
+  TOOL_LIST_GENERATOR: { module: 'ToolListGenerator' } satisfies LogOptions,
 
   // Gateway request handlers
   INITIALIZE_HANDLER: { module: 'Initialize' } satisfies LogOptions,
@@ -57,6 +56,9 @@ export const LOG_MODULES = {
 
   // Search service
   SEARCH: { module: 'Search' } satisfies LogOptions,
+
+  // Error handling
+  ERROR_HANDLER: { module: 'ErrorHandler' } satisfies LogOptions,
 
   // Communication
   COMMUNICATION: { module: 'Communication' } satisfies LogOptions,

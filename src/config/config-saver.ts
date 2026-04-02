@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import path from 'path';
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 
 /**
  * Saves the configuration to disk at the specified path.
@@ -21,14 +22,14 @@ import { logger } from '@utils/logger.js';
  */
 export function saveConfig(configPath: string, config: unknown): void {
   try {
-    logger.debug(`[ConfigSaver] Saving configuration to: ${configPath}`);
+    logger.debug(`Saving configuration to: ${configPath}`, LOG_MODULES.CONFIG_SAVER);
     const dir = path.dirname(configPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    logger.debug(`[ConfigSaver] Configuration saved successfully`);
+    logger.debug(`Configuration saved successfully`, LOG_MODULES.CONFIG_SAVER);
   } catch (error) {
-    logger.error(`[ConfigSaver] Failed to save configuration:`, error);
+    logger.error(`Failed to save configuration:`, error, LOG_MODULES.CONFIG_SAVER);
   }
 }

@@ -7,15 +7,16 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**
- * Logs the differences between two system configurations.
+ * Gets the changes between two objects.
  *
- * This function performs a deep comparison of two configuration objects
- * and logs all changes at the field level for audit purposes.
+ * This function performs a deep comparison of two objects
+ * and returns all changes at the field level.
  *
- * @param oldConfig - The original configuration
- * @param newConfig - The new configuration
+ * @param oldObj - The original object
+ * @param newObj - The new object
+ * @returns An array of change strings
  */
-export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfig): void {
+export function getObjectChanges(oldObj: unknown, newObj: unknown): string[] {
   const changes: string[] = [];
 
   const compare = (obj1: unknown, obj2: unknown, path: string) => {
@@ -46,9 +47,46 @@ export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfi
     }
   };
 
-  compare(oldConfig, newConfig, '');
+  compare(oldObj, newObj, '');
+  return changes;
+}
+
+/**
+ * Logs object changes with a custom title.
+ *
+ * @param title - The title to display before the changes
+ * @param oldObj - The original object
+ * @param newObj - The new object
+ * @param logModule - The log module to use
+ */
+export function logObjectChangesWithTitle(
+  title: string,
+  oldObj: unknown,
+  newObj: unknown,
+  logModule: { module: string } = LOG_MODULES.CONFIG_CHANGES
+): void {
+  const changes = getObjectChanges(oldObj, newObj);
 
   if (changes.length > 0) {
-    logger.info(`${changes.join('\n')}`, LOG_MODULES.CONFIG_CHANGES);
+    const message = `${title}\n${changes.join('\n')}`;
+    logger.info(message, logModule);
+  }
+}
+
+/**
+ * Logs the differences between two system configurations.
+ *
+ * This function performs a deep comparison of two configuration objects
+ * and logs all changes at the field level for audit purposes.
+ *
+ * @param oldConfig - The original configuration
+ * @param newConfig - The new configuration
+ */
+export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfig): void {
+  const changes = getObjectChanges(oldConfig, newConfig);
+
+  if (changes.length > 0) {
+    const message = `System Config Changes：\n${changes.join('\n')}`;
+    logger.info(message, LOG_MODULES.CONFIG_CHANGES);
   }
 }

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { searchCoreService } from '@services/search/search-core.service.js';
 import { SearchOptions } from '@services/search/types.js';
 import { hubManager } from '@services/hub-manager.service.js';
@@ -76,10 +77,10 @@ export function registerToolsHandlers(server: McpServer): void {
       };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        logger.error(`Search tools error:`, error);
+        logger.error(`Search tools error:`, error, LOG_MODULES.TOOLS_HANDLER);
         throw new McpError(-32802, `Search failed: ${error.message}`);
       } else {
-        logger.error(`Search tools error:`, error);
+        logger.error(`Search tools error:`, error, LOG_MODULES.TOOLS_HANDLER);
         throw new McpError(-32802, `Search failed: ${String(error)}`);
       }
     }

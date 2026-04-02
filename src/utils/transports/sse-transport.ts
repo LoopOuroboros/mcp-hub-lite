@@ -1,6 +1,7 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 
 // Use EventSource from the 'eventsource' package for Node.js compatibility
 import { EventSource } from 'eventsource';
@@ -88,26 +89,27 @@ export class SseTransport implements Transport {
           this.onmessage?.(message);
           this.reconnectAttempts = 0; // Reset on successful message
         } catch (error) {
-          logger.error('Failed to parse SSE message:', error);
+          logger.error('Failed to parse SSE message:', error, LOG_MODULES.SSE_TRANSPORT);
           this.onerror?.(new Error(`Invalid JSON in SSE message: ${event.data}`));
         }
       };
 
       this.eventSource.onerror = () => {
         const error = new Error(`SSE connection error for ${this.url}`);
-        logger.error('SSE connection error:', error);
+        logger.error('SSE connection error:', error, LOG_MODULES.SSE_TRANSPORT);
 
         if (!this.isClosing) {
           this.reconnectAttempts++;
           if (this.reconnectAttempts <= this.maxReconnectAttempts) {
             logger.info(
-              `Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+              `Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`,
+              LOG_MODULES.SSE_TRANSPORT
             );
             setTimeout(() => {
               this.restart();
             }, this.reconnectInterval);
           } else {
-            logger.error('Max reconnection attempts reached for SSE');
+            logger.error('Max reconnection attempts reached for SSE', LOG_MODULES.SSE_TRANSPORT);
             this.onerror?.(error);
             this.closeInternal();
           }
@@ -115,10 +117,10 @@ export class SseTransport implements Transport {
       };
 
       this.eventSource.onopen = () => {
-        logger.info(`SSE connection opened to ${this.url}`);
+        logger.info(`SSE connection opened to ${this.url}`, LOG_MODULES.SSE_TRANSPORT);
       };
     } catch (error) {
-      logger.error('Failed to create SSE connection:', error);
+      logger.error('Failed to create SSE connection:', error, LOG_MODULES.SSE_TRANSPORT);
       throw error;
     }
   }
@@ -196,10 +198,14 @@ export class SseTransport implements Transport {
     const messageId = 'id' in message ? String(message.id) : 'unknown';
     const method = 'method' in message ? String(message.method) : 'unknown';
 
-    logger.warn('Attempted to send message via SSE transport', {
-      messageId,
-      method
-    });
+    logger.warn(
+      'Attempted to send message via SSE transport',
+      {
+        messageId,
+        method
+      },
+      LOG_MODULES.SSE_TRANSPORT
+    );
 
     throw error;
   }

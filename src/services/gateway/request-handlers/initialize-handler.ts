@@ -51,10 +51,13 @@ export function registerInitializeHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
     if (request.params?.clientInfo) {
-      const { name, version } = request.params.clientInfo;
+      const { name, version, mcpVersion } = request.params.clientInfo;
       const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
 
-      logger.info(`Initialized client: ${name} v${version}`, LOG_MODULES.GATEWAY);
+      logger.info(
+        `Initialized client: Name=${name} Version=${version} MCP Version=${mcpVersion || 'unknown'}`,
+        LOG_MODULES.GATEWAY
+      );
 
       if (clientCapabilities?.roots) {
         logger.debug(`Client ${name} supports roots capability`, LOG_MODULES.GATEWAY);

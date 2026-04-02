@@ -1,5 +1,6 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 
 /**
  * Unified error handler
@@ -60,7 +61,7 @@ export class ErrorHandler {
    * Handles general errors
    */
   static handleGeneralError(error: unknown, message: string): never {
-    logger.error(message, error);
+    logger.error(message, error, LOG_MODULES.ERROR_HANDLER);
 
     if (error instanceof McpError) {
       throw error;

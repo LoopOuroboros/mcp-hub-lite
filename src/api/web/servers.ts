@@ -4,7 +4,8 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { ServerTemplateSchema, ServerInstanceUpdateSchema } from '@config/config.schema.js';
 import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
 import { InstanceSelectionStrategy } from '@shared-models/server.model.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { stringifyForLogging, getApiDebugSetting } from '@utils/json-utils.js';
 
 interface BatchResultSuccess {
@@ -114,7 +115,11 @@ export async function webServerRoutes(fastify: FastifyInstance) {
           // Instance is already created by addServer, no need to create again
         } catch (error) {
           // Auto-start failure does not affect server addition operation
-          logger.warn(`Failed to auto-start server instance for ${body.name}:`, error);
+          logger.warn(
+            `Failed to auto-start server instance for ${body.name}:`,
+            error,
+            LOG_MODULES.SERVER_API
+          );
         }
       }
 

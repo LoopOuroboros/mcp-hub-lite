@@ -24,6 +24,7 @@
  * PidManager.removePid();
  */
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { writePidFile, readPidFile, removePidFile, pidFileExists } from './file.js';
 import type { PidFileOptions } from './types.js';
 
@@ -62,7 +63,7 @@ export class PidManager {
         process.exit();
       });
     } catch (error) {
-      logger.error('Failed to write PID file:', error);
+      logger.error('Failed to write PID file:', error, LOG_MODULES.PID_MANAGER);
     }
   }
 

@@ -234,7 +234,12 @@ describe('Server Runner', () => {
 
       // Verify
       expect(logger.error).toHaveBeenCalledWith(
-        'MCP Hub Lite is already running on port 3000 (PID: 1234)'
+        'MCP Hub Lite is already running on port 3000 (PID: 1234)',
+        expect.any(Object)
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        "Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.",
+        expect.any(Object)
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
 
@@ -294,10 +299,18 @@ describe('Server Runner', () => {
 
       // Verify
       expect(logger.error).toHaveBeenCalledWith(
-        'Port 3000 is already in use by another application:'
+        'Port 3000 is already in use by another application:',
+        expect.any(Object)
       );
-      expect(logger.error).toHaveBeenCalledWith('  Process: other-app (PID: 5678)');
-      expect(logger.error).toHaveBeenCalledWith('  Command: node other-app.js');
+      expect(logger.error).toHaveBeenCalledWith(
+        '  Process: other-app (PID: 5678)',
+        expect.any(Object)
+      );
+      expect(logger.error).toHaveBeenCalledWith('  Command: node other-app.js', expect.any(Object));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Please stop the conflicting application or use a different port.',
+        expect.any(Object)
+      );
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       // Restore

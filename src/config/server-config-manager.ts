@@ -7,7 +7,8 @@ import { ServerTemplateSchema, ServerInstanceSchema, ServerConfigSchema } from '
 import type { ServerTemplate, ServerInstance, ServerConfig } from './config.schema.js';
 import type { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
+import { getObjectChanges, logObjectChangesWithTitle } from './config-change-logger.js';
 
 /**
  * Generates a unique server instance ID.
@@ -205,6 +206,8 @@ export function updateServerTemplate(
   currentServers: Record<string, ServerConfig>
 ): boolean {
   if (currentServers[name]) {
+    const oldServerConfig = JSON.parse(JSON.stringify(currentServers[name]));
+
     // Handle instance selection strategy update
     if (updates.instanceSelectionStrategy !== undefined) {
       currentServers[name].instanceSelectionStrategy = updates.instanceSelectionStrategy;
@@ -234,6 +237,18 @@ export function updateServerTemplate(
     Object.keys(currentServers).forEach((key) => delete currentServers[key]);
     Object.assign(currentServers, sortedServers);
 
+    // Log template changes
+    const changes = getObjectChanges(oldServerConfig, currentServers[name]);
+    if (changes.length > 0) {
+      const title = `Template updated: ${name}`;
+      logObjectChangesWithTitle(
+        title,
+        oldServerConfig,
+        currentServers[name],
+        LOG_MODULES.SERVER_CONFIG_MANAGER
+      );
+    }
+
     return true;
   }
   return false;
@@ -257,15 +272,17 @@ export function updateServerInstance(
   const numericIndex = typeof index === 'string' ? parseInt(index, 10) : index;
 
   logger.debug(
-    `[ServerConfigManager] updateServerInstance called for server: ${name}, index: ${numericIndex} (type: ${typeof numericIndex})`
+    `updateServerInstance called for server: ${name}, index: ${numericIndex} (type: ${typeof numericIndex})`,
+    LOG_MODULES.SERVER_CONFIG_MANAGER
   );
-  logger.debug(`[ServerConfigManager] Updates received:`, updates);
+  logger.debug(`Updates received:`, LOG_MODULES.SERVER_CONFIG_MANAGER, updates);
 
   if (currentServers[name]?.instances) {
     const instances = currentServers[name].instances;
-    logger.debug(`[ServerConfigManager] All instances for server ${name}:`, instances);
+    logger.debug(`All instances for server ${name}:`, LOG_MODULES.SERVER_CONFIG_MANAGER, instances);
     logger.debug(
-      `[ServerConfigManager] Instance indexes:`,
+      `Instance indexes:`,
+      LOG_MODULES.SERVER_CONFIG_MANAGER,
       instances.map((inst, i) => ({
         arrayIndex: i,
         instanceIndex: inst.index,
@@ -276,48 +293,92 @@ export function updateServerInstance(
     const instanceIndex = instances.findIndex((inst) => {
       const match = inst.index === numericIndex;
       logger.debug(
-        `[ServerConfigManager] Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${numericIndex} (${typeof numericIndex}) => ${match}`
+        `Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${numericIndex} (${typeof numericIndex}) => ${match}`,
+        LOG_MODULES.SERVER_CONFIG_MANAGER
       );
       return match;
     });
 
     if (instanceIndex !== -1) {
-      const originalInstance = instances[instanceIndex];
-      logger.debug(`[ServerConfigManager] Original instance before update:`, originalInstance);
+      const originalInstance = JSON.parse(JSON.stringify(instances[instanceIndex]));
+      logger.debug(
+        `Original instance before update:`,
+        LOG_MODULES.SERVER_CONFIG_MANAGER,
+        originalInstance
+      );
 
       instances[instanceIndex] = {
-        ...originalInstance,
+        ...instances[instanceIndex],
         ...updates,
         // Explicitly preserve the original index field
         index: originalInstance.index
       };
 
-      logger.debug(`[ServerConfigManager] Updated instance after merge:`, instances[instanceIndex]);
+      logger.debug(
+        `Updated instance after merge:`,
+        LOG_MODULES.SERVER_CONFIG_MANAGER,
+        instances[instanceIndex]
+      );
+
+      // Log instance changes
+      const changes = getObjectChanges(originalInstance, instances[instanceIndex]);
+      if (changes.length > 0) {
+        const title = `Instance updated: ${name}, instanceId=${originalInstance.id}, displayName=${originalInstance.displayName || 'N/A'}`;
+        logObjectChangesWithTitle(
+          title,
+          originalInstance,
+          instances[instanceIndex],
+          LOG_MODULES.SERVER_CONFIG_MANAGER
+        );
+      }
+
       return true;
     } else {
-      logger.debug(`[ServerConfigManager] Instance with index ${numericIndex} not found`);
+      logger.debug(
+        `Instance with index ${numericIndex} not found`,
+        LOG_MODULES.SERVER_CONFIG_MANAGER
+      );
       // Try fallback to array index
       if (numericIndex >= 0 && numericIndex < instances.length) {
         logger.debug(
-          `[ServerConfigManager] Falling back to array index ${numericIndex} (since index field match failed)`
+          `Falling back to array index ${numericIndex} (since index field match failed)`,
+          LOG_MODULES.SERVER_CONFIG_MANAGER
         );
-        const originalInstance = instances[numericIndex];
+        const originalInstance = JSON.parse(JSON.stringify(instances[numericIndex]));
         instances[numericIndex] = {
-          ...originalInstance,
+          ...instances[numericIndex],
           ...updates,
           // Ensure index field is set to the numericIndex when using array index fallback
           index: numericIndex
         };
         logger.debug(
-          `[ServerConfigManager] Updated instance via array index:`,
+          `Updated instance via array index:`,
+          LOG_MODULES.SERVER_CONFIG_MANAGER,
           instances[numericIndex]
         );
+
+        // Log instance changes
+        const changes = getObjectChanges(originalInstance, instances[numericIndex]);
+        if (changes.length > 0) {
+          const title = `Instance updated: ${name}, instanceId=${originalInstance.id}, displayName=${originalInstance.displayName || 'N/A'}`;
+          logObjectChangesWithTitle(
+            title,
+            originalInstance,
+            instances[numericIndex],
+            LOG_MODULES.SERVER_CONFIG_MANAGER
+          );
+        }
+
         return true;
       }
     }
   } else {
-    logger.debug(`[ServerConfigManager] Server ${name} not found or has no instances`);
-    logger.debug(`[ServerConfigManager] Current servers keys:`, Object.keys(currentServers));
+    logger.debug(`Server ${name} not found or has no instances`, LOG_MODULES.SERVER_CONFIG_MANAGER);
+    logger.debug(
+      `Current servers keys:`,
+      LOG_MODULES.SERVER_CONFIG_MANAGER,
+      Object.keys(currentServers)
+    );
   }
   return false;
 }

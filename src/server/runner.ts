@@ -1,7 +1,8 @@
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { gateway } from '@services/gateway.service.js';
@@ -85,17 +86,32 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
       if (portCheck.inUse) {
         if (portCheck.isSelfProject) {
           // This project is already running
-          logger.error(`MCP Hub Lite is already running on port ${port} (PID: ${portCheck.pid})`);
-          logger.error(`Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.`);
+          logger.error(
+            `MCP Hub Lite is already running on port ${port} (PID: ${portCheck.pid})`,
+            LOG_MODULES.SERVER
+          );
+          logger.error(
+            `Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.`,
+            LOG_MODULES.SERVER
+          );
           process.exit(1);
         } else {
           // Port is occupied by another application
-          logger.error(`Port ${port} is already in use by another application:`);
-          logger.error(`  Process: ${portCheck.processName} (PID: ${portCheck.pid})`);
+          logger.error(
+            `Port ${port} is already in use by another application:`,
+            LOG_MODULES.SERVER
+          );
+          logger.error(
+            `  Process: ${portCheck.processName} (PID: ${portCheck.pid})`,
+            LOG_MODULES.SERVER
+          );
           if (portCheck.commandLine) {
-            logger.error(`  Command: ${portCheck.commandLine}`);
+            logger.error(`  Command: ${portCheck.commandLine}`, LOG_MODULES.SERVER);
           }
-          logger.error(`Please stop the conflicting application or use a different port.`);
+          logger.error(
+            `Please stop the conflicting application or use a different port.`,
+            LOG_MODULES.SERVER
+          );
           process.exit(1);
         }
       }

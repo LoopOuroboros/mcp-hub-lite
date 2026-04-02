@@ -20,6 +20,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import {
   registerInitializeHandlers,
@@ -127,7 +128,7 @@ export class GatewayService {
   public async start() {
     this.transport = new StdioServerTransport();
     await this.server.connect(this.transport);
-    logger.info('MCP Gateway started on stdio');
+    logger.info('MCP Gateway started on stdio', LOG_MODULES.GATEWAY_SERVICE);
   }
 }
 
