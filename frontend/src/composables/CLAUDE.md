@@ -37,8 +37,9 @@ composables/
 - 顶部 Tab 状态管理（config/tools/resources）
 - 实例选择状态管理
 - 实例详情 Tab 管理（config/logs）
-- 路由查询参数同步
+- 路由查询参数同步（instanceTab、instanceIndex、selection）
 - 从路由初始化状态
+- 支持 URL 书签和分享（实例标签路由同步）
 
 **状态**:
 
@@ -56,6 +57,37 @@ composables/
 - `navigateToTab(tab)` - 导航到指定 Tab
 - `handleSelectTemplate()` - 选择模板
 - `handleSelectInstance(index)` - 选择实例
+- `parseSelectionFromRoute()` - 从路由查询参数解析选择状态
+- `parseInstanceTabFromRoute()` - 从路由查询参数解析实例 Tab 状态
+
+**支持的 URL 查询参数**:
+
+| 参数名          | 类型                 | 说明                                 |
+| --------------- | -------------------- | ------------------------------------ |
+| `instanceTab`   | `'config' \| 'logs'` | 实例详情页的子 Tab（默认：'config'） |
+| `instanceIndex` | number               | 选中的实例索引（0-based）            |
+| `selection`     | `'template'`         | 选择模板（与 instanceIndex 互斥）    |
+
+**实例标签路由同步功能**:
+
+- **双向同步**: 状态变化自动反映到 URL，URL 变化自动更新状态
+- **向后兼容性**: 默认 `instanceTab='config'` 保持现有行为
+- **书签支持**: 用户可以书签特定实例的特定 Tab
+- **分享支持**: 分享的 URL 会保留用户的查看状态
+- **F5 刷新**: 页面刷新后会恢复到相同的 Tab 和实例选择
+
+**路由查询参数示例**:
+
+```
+# 查看实例 0 的配置 Tab
+/servers/my-server?instanceIndex=0&instanceTab=config
+
+# 查看实例 1 的日志 Tab
+/servers/my-server?instanceIndex=1&instanceTab=logs
+
+# 查看模板配置（无实例选中）
+/servers/my-server?selection=template
+```
 
 **依赖**:
 
