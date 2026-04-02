@@ -36,6 +36,75 @@ class ReadBuffer {
   }
 }
 
+/**
+ * Line buffer for handling text lines across multiple data chunks.
+ * Similar to ReadBuffer but designed for plain text lines instead of JSON-RPC messages.
+ */
+class LineBuffer {
+  private _buffer?: Buffer;
+
+  /**
+   * Append a data chunk to the buffer.
+   */
+  append(chunk: Buffer) {
+    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
+  }
+
+  /**
+   * Read all complete lines from the buffer and remove them.
+   * Incomplete lines remain in the buffer for future appends.
+   * @returns Array of complete lines (without trailing newlines)
+   */
+  readLines(): string[] {
+    const lines: string[] = [];
+
+    if (!this._buffer || this._buffer.length === 0) {
+      return lines;
+    }
+
+    let startIndex = 0;
+
+    while (startIndex < this._buffer.length) {
+      // Find next newline character
+      const newlineIndex = this._buffer.indexOf('\n', startIndex);
+
+      if (newlineIndex === -1) {
+        // No more complete lines, leave remaining in buffer
+        break;
+      }
+
+      // Extract line between startIndex and newlineIndex
+      // Remove trailing \r if present (for \r\n line endings)
+      const line = this._buffer.toString('utf8', startIndex, newlineIndex).replace(/\r$/, '');
+
+      // Only add non-empty lines (skip empty lines caused by double newlines)
+      if (line.trim().length > 0) {
+        lines.push(line);
+      }
+
+      startIndex = newlineIndex + 1;
+    }
+
+    // If we processed some lines, update buffer to contain only remaining data
+    if (startIndex > 0) {
+      if (startIndex < this._buffer.length) {
+        this._buffer = this._buffer.subarray(startIndex);
+      } else {
+        this._buffer = undefined;
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Clear the buffer completely.
+   */
+  clear() {
+    this._buffer = undefined;
+  }
+}
+
 export interface StdioServerParameters {
   command: string;
   args?: string[];
@@ -69,6 +138,7 @@ export interface StdioTransportOptions {
 export class StdioTransport implements Transport {
   private _process?: ChildProcess;
   private _readBuffer = new ReadBuffer();
+  private _stderrLineBuffer = new LineBuffer();
   private _stderrStream: PassThrough | null = null;
   private _serverParams: StdioServerParameters;
   private _serverName?: string;
@@ -190,7 +260,7 @@ export class StdioTransport implements Transport {
       });
 
       /**
-       * Handles stderr data with common processing logic.
+       * Handles stderr data with line buffering and common processing logic.
        *
        * @param chunk - The stderr data chunk
        * @param writeToStream - Whether to write data to the PassThrough stream
@@ -200,51 +270,64 @@ export class StdioTransport implements Transport {
         // Forward raw stderr data
         this.onstderr?.(dataStr);
 
-        const trimmedData = dataStr.trim();
-        let logLevel: 'error' | 'warn' | 'info' = 'info';
+        // Add chunk to line buffer
+        this._stderrLineBuffer.append(chunk);
 
-        // Identify log levels by keywords: only explicit error/warning markers
-        // use corresponding levels, everything else defaults to info
-        const lowerData = trimmedData.toLowerCase();
+        // Read all complete lines from buffer
+        const lines = this._stderrLineBuffer.readLines();
 
-        // Error level keywords
-        if (
-          lowerData.includes('error') ||
-          lowerData.includes('err') ||
-          lowerData.includes('exception') ||
-          lowerData.includes('fatal') ||
-          lowerData.includes('critical')
-        ) {
-          logLevel = 'error';
-        }
-        // Warn level keywords
-        else if (
-          lowerData.includes('warn') ||
-          lowerData.includes('wrn') ||
-          lowerData.includes('warning') ||
-          lowerData.includes('deprecation') ||
-          lowerData.includes('deprecated')
-        ) {
-          logLevel = 'warn';
-        }
+        // Process each complete line
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) {
+            continue;
+          }
 
-        if (this._serverName) {
-          logger.serverLog(logLevel, this._serverName, trimmedData, {
-            pid: this._process?.pid
-          });
-        } else {
-          logger.serverLog(logLevel, 'Unknown Server', trimmedData, {
-            pid: this._process?.pid
-          });
-        }
+          let logLevel: 'error' | 'warn' | 'info' = 'info';
 
-        // Store in logStorage for frontend display if available
-        if (this._logStorage && this._serverId) {
-          this._logStorage.append(
-            this._serverId,
-            logLevel,
-            `[${this._serverName || 'Unknown Server'}] [STDERR] ${trimmedData}`
-          );
+          // Identify log levels by keywords: only explicit error/warning markers
+          // use corresponding levels, everything else defaults to info
+          const lowerData = trimmedLine.toLowerCase();
+
+          // Error level keywords
+          if (
+            lowerData.includes('error') ||
+            lowerData.includes('err') ||
+            lowerData.includes('exception') ||
+            lowerData.includes('fatal') ||
+            lowerData.includes('critical')
+          ) {
+            logLevel = 'error';
+          }
+          // Warn level keywords
+          else if (
+            lowerData.includes('warn') ||
+            lowerData.includes('wrn') ||
+            lowerData.includes('warning') ||
+            lowerData.includes('deprecation') ||
+            lowerData.includes('deprecated')
+          ) {
+            logLevel = 'warn';
+          }
+
+          if (this._serverName) {
+            logger.serverLog(logLevel, this._serverName, trimmedLine, {
+              pid: this._process?.pid
+            });
+          } else {
+            logger.serverLog(logLevel, 'Unknown Server', trimmedLine, {
+              pid: this._process?.pid
+            });
+          }
+
+          // Store in logStorage for frontend display if available
+          if (this._logStorage && this._serverId) {
+            this._logStorage.append(
+              this._serverId,
+              logLevel,
+              `[${this._serverName || 'Unknown Server'}] [STDERR] ${trimmedLine}`
+            );
+          }
         }
 
         // Optionally write to PassThrough stream if configured
@@ -325,6 +408,7 @@ export class StdioTransport implements Transport {
         const cleanup = () => {
           this._process = undefined;
           this._readBuffer.clear();
+          this._stderrLineBuffer.clear();
           resolve();
         };
 
@@ -361,6 +445,7 @@ export class StdioTransport implements Transport {
       });
     }
     this._readBuffer.clear();
+    this._stderrLineBuffer.clear();
   }
 
   /**
