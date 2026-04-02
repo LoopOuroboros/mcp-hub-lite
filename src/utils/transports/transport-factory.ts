@@ -53,7 +53,9 @@ export class TransportFactory {
           config.url,
           config.headers,
           config.reconnectInterval,
-          config.maxReconnectAttempts
+          config.maxReconnectAttempts,
+          server.name,
+          serverId
         );
 
       case 'streamable-http':
@@ -61,7 +63,13 @@ export class TransportFactory {
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
-        return new StreamableHttpTransport(config.url, config.headers, config.timeout);
+        return new StreamableHttpTransport(
+          config.url,
+          config.headers,
+          config.timeout,
+          server.name,
+          serverId
+        );
 
       default:
         throw new Error(

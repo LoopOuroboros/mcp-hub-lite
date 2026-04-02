@@ -44,6 +44,18 @@ export class StreamableHttpTransport implements Transport {
   private isClosing = false;
 
   /**
+   * Server name for logging context
+   * @private
+   */
+  private _serverName?: string;
+
+  /**
+   * Server ID for logging context
+   * @private
+   */
+  private _serverId?: string;
+
+  /**
    * Event handler called when a JSON-RPC message is received from the server
    * @public
    */
@@ -69,12 +81,35 @@ export class StreamableHttpTransport implements Transport {
    *                 Commonly used for authentication tokens, API keys, or custom headers
    * @param timeout - Request timeout in milliseconds (default: 30000 = 30 seconds)
    *                  Controls how long to wait for HTTP responses before timing out
+   * @param serverName - Optional server name for logging
+   * @param serverId - Optional server ID for logging
    */
   constructor(
     private url: string,
     private headers: Record<string, string> = {},
-    private timeout: number = 30000
-  ) {}
+    private timeout: number = 30000,
+    serverName?: string,
+    serverId?: string
+  ) {
+    this._serverName = serverName;
+    this._serverId = serverId;
+  }
+
+  /**
+   * Helper method to format log messages with server context.
+   *
+   * @param message - The base message
+   * @returns Formatted message with server context if available
+   */
+  private formatLogMessage(message: string): string {
+    if (this._serverId) {
+      return `${message} (serverId=${this._serverId}, url=${this.url})`;
+    } else if (this._serverName) {
+      return `${message} (server=${this._serverName}, url=${this.url})`;
+    } else {
+      return `${message} (url=${this.url})`;
+    }
+  }
 
   /**
    * Initializes and starts the Streamable HTTP transport connection
@@ -109,6 +144,13 @@ export class StreamableHttpTransport implements Transport {
 
     this.isClosing = false;
 
+    logger.info(
+      this.formatLogMessage(
+        `Attempting to connect to Streamable HTTP server: timeout=${this.timeout}ms, headers=${JSON.stringify(Object.keys(this.headers))}`
+      ),
+      LOG_MODULES.HTTP_TRANSPORT
+    );
+
     try {
       const url = new URL(this.url);
       const requestInit: RequestInit = {
@@ -129,12 +171,21 @@ export class StreamableHttpTransport implements Transport {
       };
 
       this.transport.onerror = (error: Error) => {
-        logger.error('Streamable HTTP transport error:', error, LOG_MODULES.HTTP_TRANSPORT);
+        logger.error(
+          this.formatLogMessage(
+            `Streamable HTTP transport error occurred: errorType=${error.name || 'unknown'}, message=${error.message || 'no message'}`
+          ),
+          error,
+          LOG_MODULES.HTTP_TRANSPORT
+        );
         this.onerror?.(error);
       };
 
       this.transport.onclose = () => {
-        logger.info('Streamable HTTP transport closed', LOG_MODULES.HTTP_TRANSPORT);
+        logger.info(
+          this.formatLogMessage('Streamable HTTP transport closed'),
+          LOG_MODULES.HTTP_TRANSPORT
+        );
         if (!this.isClosing) {
           // Unexpected close, trigger error
           const error = new Error('Streamable HTTP transport closed unexpectedly');
@@ -143,17 +194,23 @@ export class StreamableHttpTransport implements Transport {
         this.onclose?.();
       };
 
+      logger.debug(
+        this.formatLogMessage('Starting underlying transport connection...'),
+        LOG_MODULES.HTTP_TRANSPORT
+      );
       await this.transport.start();
       logger.info(
-        `Streamable HTTP transport initialized for ${this.url}`,
+        this.formatLogMessage('Streamable HTTP transport successfully initialized'),
         LOG_MODULES.HTTP_TRANSPORT
       );
     } catch (error) {
       logger.error(
-        'Failed to create Streamable HTTP transport:',
-        error,
+        this.formatLogMessage(
+          `Failed to create Streamable HTTP transport: error=${error instanceof Error ? error.message : String(error)}`
+        ),
         LOG_MODULES.HTTP_TRANSPORT
       );
+      logger.error('Complete error details:', error, LOG_MODULES.HTTP_TRANSPORT);
       throw error;
     }
   }
@@ -224,11 +281,19 @@ export class StreamableHttpTransport implements Transport {
       throw new Error('Streamable HTTP transport not started');
     }
 
+    const method = 'method' in message ? message.method : 'notification';
+    logger.debug(
+      this.formatLogMessage(`Sending message via Streamable HTTP: method=${method}`),
+      LOG_MODULES.HTTP_TRANSPORT
+    );
+
     try {
       await this.transport.send(message);
     } catch (error) {
       logger.error(
-        'Failed to send message via Streamable HTTP:',
+        this.formatLogMessage(
+          `Failed to send message via Streamable HTTP: method=${method}, error=${error instanceof Error ? error.message : String(error)}`
+        ),
         error,
         LOG_MODULES.HTTP_TRANSPORT
       );

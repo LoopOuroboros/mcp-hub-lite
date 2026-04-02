@@ -310,7 +310,11 @@ export class StdioTransport implements Transport {
             logLevel = 'warn';
           }
 
-          if (this._serverName) {
+          if (this._serverId) {
+            logger.serverLog(logLevel, this._serverId, trimmedLine, {
+              pid: this._process?.pid
+            });
+          } else if (this._serverName) {
             logger.serverLog(logLevel, this._serverName, trimmedLine, {
               pid: this._process?.pid
             });
@@ -325,7 +329,7 @@ export class StdioTransport implements Transport {
             this._logStorage.append(
               this._serverId,
               logLevel,
-              `[${this._serverName || 'Unknown Server'}] [STDERR] ${trimmedLine}`
+              `[${this._serverId || this._serverName || 'Unknown Server'}] [STDERR] ${trimmedLine}`
             );
           }
         }
