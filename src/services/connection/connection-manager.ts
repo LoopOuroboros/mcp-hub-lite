@@ -107,19 +107,19 @@ export class McpConnectionManager {
     server: ServerRuntimeConfig & Partial<ServerInstanceConfig>
   ): Promise<boolean> {
     let serverInfo: { name: string; config: ServerConfig; instance: ServerInstance } | undefined;
-    try {
-      logger.info(
-        `Connecting to server [${server.id || 'unknown'}]...`,
-        LOG_MODULES.CONNECTION_MANAGER
-      );
+    // Extract serverId at the very beginning for consistent usage in both try and catch blocks
+    const serverId = server.id || 'unknown';
 
+    try {
       // Validate server configuration
       if (!server.id) {
         throw new Error('Server ID is required');
       }
 
+      logger.info(`Connecting to server [${serverId}]...`, LOG_MODULES.CONNECTION_MANAGER);
+
       // First set starting state (connected: false, no error)
-      this.serverStatus.set(server.id, {
+      this.serverStatus.set(serverId, {
         connected: false,
         lastCheck: Date.now(),
         toolsCount: 0,
@@ -127,9 +127,9 @@ export class McpConnectionManager {
       });
 
       // Get server name from server instance ID (via hubManager.getServerById)
-      serverInfo = hubManager.getServerById(server.id);
+      serverInfo = hubManager.getServerById(serverId);
       if (!serverInfo) {
-        throw new Error(`Server not found for instance: ${server.id}`);
+        throw new Error(`Server not found for instance: ${serverId}`);
       }
 
       if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
@@ -151,7 +151,7 @@ export class McpConnectionManager {
           ...server,
           name: serverName
         },
-        server.id
+        serverId
       );
 
       // Always set up message handler for notifications/message
@@ -163,7 +163,7 @@ export class McpConnectionManager {
         }
 
         // Log notifications/message to application logs (always enabled)
-        logNotificationMessage(message, serverName, server.id);
+        logNotificationMessage(message, serverName, serverId);
       };
 
       // Wrap send method for debug logging (if enabled)
@@ -188,11 +188,11 @@ export class McpConnectionManager {
       // Handle transport close events
       if ('onclose' in transport) {
         transport.onclose = () => {
-          logger.info(`Transport closed for server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
-          const currentStatus = this.serverStatus.get(server.id!);
+          logger.info(`Transport closed for server [${serverId}]`, LOG_MODULES.CONNECTION_MANAGER);
+          const currentStatus = this.serverStatus.get(serverId);
           // Only update status if it was previously connected or starting
           if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-            this.serverStatus.set(server.id!, {
+            this.serverStatus.set(serverId, {
               connected: false,
               lastCheck: Date.now(),
               toolsCount: 0,
@@ -225,7 +225,6 @@ export class McpConnectionManager {
             }
             if (!isJsonRpc) {
               // Use server ID and name for log storage
-              const serverId = server?.id ?? 'unknown';
               logStorage.append(serverId, 'info', `[${serverName}] [STDOUT] ${data}`);
             }
           }
@@ -234,7 +233,6 @@ export class McpConnectionManager {
       if ('onstderr' in transport) {
         transport.onstderr = (data: string) => {
           // Use server ID and name for log storage
-          const serverId = server?.id ?? 'unknown';
           logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
         };
       }
@@ -251,9 +249,9 @@ export class McpConnectionManager {
 
       await client.connect(transport);
 
-      this.clients.set(server.id, client);
-      this.transports.set(server.id, transport);
-      this._toolCache.setNameMapping(serverInfo.name, server.id);
+      this.clients.set(serverId, client);
+      this.transports.set(serverId, transport);
+      this._toolCache.setNameMapping(serverInfo.name, serverId);
 
       // Get PID if available (only for stdio transport)
       let pid: number | undefined;
@@ -267,12 +265,12 @@ export class McpConnectionManager {
 
       // Update server instance info (merge pid and startTime)
       const instances = hubManager.getServerInstancesByName(serverName);
-      const instance = instances.find((inst) => inst.id === server.id);
+      const instance = instances.find((inst) => inst.id === serverId);
       if (instance && instance.index !== undefined) {
         // pid and startTime are runtime-only fields, not stored in config
       }
 
-      this.serverStatus.set(server.id, {
+      this.serverStatus.set(serverId, {
         connected: true,
         lastCheck: Date.now(),
         toolsCount: 0,
@@ -282,35 +280,35 @@ export class McpConnectionManager {
         version: serverVersion
       });
 
-      logger.info(`Connected to server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
+      logger.info(`Connected to server [${serverId}]`, LOG_MODULES.CONNECTION_MANAGER);
 
       // Publish server connected event
       eventBus.publish(EventTypes.SERVER_CONNECTED, {
-        serverId: server.id,
+        serverId,
         status: 'online',
         timestamp: Date.now()
       });
 
       // Publish server status change event
       eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId: server.id,
+        serverId,
         status: 'online',
         timestamp: Date.now()
       });
 
       // Fetch tools and resources immediately (only for bidirectional transports)
       if (server.type !== 'sse') {
-        const tools = await this.refreshTools(server.id);
-        const resources = await this.refreshResources(server.id);
+        const tools = await this.refreshTools(serverId);
+        const resources = await this.refreshResources(serverId);
 
         // Publish tools and resources updated event
         eventBus.publish(EventTypes.TOOLS_UPDATED, {
-          serverId: server.id,
+          serverId,
           tools
         });
 
         eventBus.publish(EventTypes.RESOURCES_UPDATED, {
-          serverId: server.id,
+          serverId,
           resources
         });
       } else {
@@ -323,11 +321,10 @@ export class McpConnectionManager {
       return true;
     } catch (error) {
       logger.error(
-        `Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`,
+        `Failed to connect to server ${serverId}:`,
         error,
         LOG_MODULES.CONNECTION_MANAGER
       );
-      const serverId = server.id || 'unknown';
       this.serverStatus.set(serverId, {
         connected: false,
         error: error instanceof Error ? error.message : String(error),

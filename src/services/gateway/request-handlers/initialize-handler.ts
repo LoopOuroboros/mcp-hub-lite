@@ -51,11 +51,12 @@ export function registerInitializeHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
     if (request.params?.clientInfo) {
-      const { name, version, mcpVersion } = request.params.clientInfo;
+      const { name, version } = request.params.clientInfo;
+      const protocolVersion = request.params?.protocolVersion || '2024-11-05';
       const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
 
       logger.info(
-        `Initialized client: Name=${name} Version=${version} MCP Version=${mcpVersion || 'unknown'}`,
+        `Initialized client: Name=${name}, Version=${version}, ProtocolVersion=${protocolVersion}`,
         LOG_MODULES.GATEWAY
       );
 
