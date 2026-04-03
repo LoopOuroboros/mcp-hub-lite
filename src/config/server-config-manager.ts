@@ -9,6 +9,7 @@ import type { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { getObjectChanges, logObjectChangesWithTitle } from './config-change-logger.js';
+import { sortServerConfigEnvHeaders } from '@utils/sort-utils.js';
 
 /**
  * Generates a unique server instance ID.
@@ -71,10 +72,16 @@ export function addServers(
   for (const { name, config } of servers) {
     // Unified type conversion: convert http to streamable-http
     const convertedConfig = convertHttpToStreamableHttp(config) as Partial<ServerTemplate>;
-    const template = ServerTemplateSchema.parse(convertedConfig);
+    let template = ServerTemplateSchema.parse(convertedConfig);
+
+    // Sort env and headers keys for consistency
+    template = sortServerConfigEnvHeaders(template);
 
     // Create default instance
-    const defaultInstance = createDefaultInstance(name, []);
+    let defaultInstance = createDefaultInstance(name, []);
+
+    // Sort env and headers keys for consistency
+    defaultInstance = sortServerConfigEnvHeaders(defaultInstance);
 
     // Extract instance selection strategy from config if provided, otherwise default to random
     const { instanceSelectionStrategy = 'random' } = config as Partial<ServerTemplate> & {
@@ -108,10 +115,16 @@ export function addServer(
 ): ServerConfig {
   // Unified type conversion: convert http to streamable-http
   const convertedConfig = convertHttpToStreamableHttp(config);
-  const template = ServerTemplateSchema.parse(convertedConfig);
+  let template = ServerTemplateSchema.parse(convertedConfig);
+
+  // Sort env and headers keys for consistency
+  template = sortServerConfigEnvHeaders(template);
 
   // Create default instance
-  const defaultInstance = createDefaultInstance(name, []);
+  let defaultInstance = createDefaultInstance(name, []);
+
+  // Sort env and headers keys for consistency
+  defaultInstance = sortServerConfigEnvHeaders(defaultInstance);
 
   // Extract instance selection strategy from config if provided, otherwise default to random
   const { instanceSelectionStrategy = 'random' } = config as Partial<ServerTemplate> & {
@@ -156,7 +169,10 @@ export function addServerInstance(
   }
 
   const existingInstances = currentServers[name].instances || [];
-  const newInstance = createDefaultInstance(name, existingInstances, instance);
+  let newInstance = createDefaultInstance(name, existingInstances, instance);
+
+  // Sort env and headers keys for consistency
+  newInstance = sortServerConfigEnvHeaders(newInstance);
 
   currentServers[name].instances = [...existingInstances, newInstance];
   return newInstance;
@@ -226,6 +242,8 @@ export function updateServerTemplate(
         ...currentServers[name].template,
         ...convertedUpdates
       };
+      // Sort env and headers keys for consistency
+      currentServers[name].template = sortServerConfigEnvHeaders(currentServers[name].template);
     }
 
     // Ensure server configurations are sorted by name
@@ -302,12 +320,15 @@ export function updateServerInstance(
     if (instanceIndex !== -1) {
       const originalInstance = JSON.parse(JSON.stringify(instances[instanceIndex]));
 
-      instances[instanceIndex] = {
+      let updatedInstance = {
         ...instances[instanceIndex],
         ...updates,
         // Explicitly preserve the original index field
         index: originalInstance.index
       };
+      // Sort env and headers keys for consistency
+      updatedInstance = sortServerConfigEnvHeaders(updatedInstance);
+      instances[instanceIndex] = updatedInstance;
 
       // Log instance changes
       const changes = getObjectChanges(originalInstance, instances[instanceIndex]);
@@ -336,12 +357,15 @@ export function updateServerInstance(
           LOG_MODULES.SERVER_CONFIG_MANAGER
         );
         const originalInstance = JSON.parse(JSON.stringify(instances[numericIndex]));
-        instances[numericIndex] = {
+        let updatedInstance = {
           ...instances[numericIndex],
           ...updates,
           // Ensure index field is set to the numericIndex when using array index fallback
           index: numericIndex
         };
+        // Sort env and headers keys for consistency
+        updatedInstance = sortServerConfigEnvHeaders(updatedInstance);
+        instances[numericIndex] = updatedInstance;
 
         // Log instance changes
         const changes = getObjectChanges(originalInstance, instances[numericIndex]);
