@@ -301,11 +301,6 @@ export function updateServerInstance(
 
     if (instanceIndex !== -1) {
       const originalInstance = JSON.parse(JSON.stringify(instances[instanceIndex]));
-      logger.debug(
-        `Original instance before update:`,
-        LOG_MODULES.SERVER_CONFIG_MANAGER,
-        originalInstance
-      );
 
       instances[instanceIndex] = {
         ...instances[instanceIndex],
@@ -314,16 +309,12 @@ export function updateServerInstance(
         index: originalInstance.index
       };
 
-      logger.debug(
-        `Updated instance after merge:`,
-        LOG_MODULES.SERVER_CONFIG_MANAGER,
-        instances[instanceIndex]
-      );
-
       // Log instance changes
       const changes = getObjectChanges(originalInstance, instances[instanceIndex]);
       if (changes.length > 0) {
-        const title = `Instance updated: ${name}, instanceId=${originalInstance.id}, displayName=${originalInstance.displayName || 'N/A'}`;
+        const title = originalInstance.displayName
+          ? `Instance [id=${originalInstance.id}, displayName=${originalInstance.displayName}] updated:`
+          : `Instance [id=${originalInstance.id}] updated:`;
         logObjectChangesWithTitle(
           title,
           originalInstance,
@@ -351,16 +342,13 @@ export function updateServerInstance(
           // Ensure index field is set to the numericIndex when using array index fallback
           index: numericIndex
         };
-        logger.debug(
-          `Updated instance via array index:`,
-          LOG_MODULES.SERVER_CONFIG_MANAGER,
-          instances[numericIndex]
-        );
 
         // Log instance changes
         const changes = getObjectChanges(originalInstance, instances[numericIndex]);
         if (changes.length > 0) {
-          const title = `Instance updated: ${name}, instanceId=${originalInstance.id}, displayName=${originalInstance.displayName || 'N/A'}`;
+          const title = originalInstance.displayName
+            ? `Instance [id=${originalInstance.id}, displayName=${originalInstance.displayName}] updated:`
+            : `Instance [id=${originalInstance.id}] updated:`;
           logObjectChangesWithTitle(
             title,
             originalInstance,
