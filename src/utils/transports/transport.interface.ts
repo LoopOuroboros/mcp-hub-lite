@@ -19,6 +19,9 @@ export interface SseTransportConfig {
   headers?: Record<string, string>;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+  proxy?: {
+    url: string;
+  };
 }
 
 /**
@@ -29,6 +32,9 @@ export interface StreamableHttpTransportConfig {
   url: string;
   headers?: Record<string, string>;
   timeout?: number;
+  proxy?: {
+    url: string;
+  };
 }
 
 /**

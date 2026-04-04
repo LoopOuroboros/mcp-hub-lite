@@ -17,7 +17,7 @@
     <!-- Top Level Tabs -->
     <el-tabs
       :model-value="activeTopTab"
-      @tab-change="(tab) => navigateToTab(tab as string)"
+      @tab-change="(tab: string | number) => navigateToTab(String(tab))"
       class="flex-1 flex flex-col overflow-hidden custom-tabs"
     >
       <!-- Config Tab (Unified: Template + Instances) -->
@@ -66,7 +66,7 @@
                       tagDefinitions: []
                     }
                   "
-                  @update:config="updateLocalConfig"
+                  @update:template="updateLocalConfig"
                   @save="saveConfig"
                   @edit-json="openEditJson"
                 />

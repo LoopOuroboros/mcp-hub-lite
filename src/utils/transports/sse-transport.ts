@@ -2,6 +2,7 @@ import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 // Use EventSource from the 'eventsource' package for Node.js compatibility
 import { EventSource } from 'eventsource';
@@ -50,6 +51,7 @@ export class SseTransport implements Transport {
    * @param headers - Optional HTTP headers to include in the SSE connection request
    * @param reconnectInterval - Time interval (in milliseconds) between reconnection attempts (default: 3000ms)
    * @param maxReconnectAttempts - Maximum number of reconnection attempts before giving up (default: 5)
+   * @param proxy - Optional proxy configuration
    * @param serverName - Optional server name for logging
    * @param serverId - Optional server ID for logging
    */
@@ -58,6 +60,7 @@ export class SseTransport implements Transport {
     private headers: Record<string, string> = {},
     private reconnectInterval: number = 3000,
     private maxReconnectAttempts: number = 5,
+    private proxy?: { url: string },
     serverName?: string,
     serverId?: string
   ) {
@@ -106,7 +109,36 @@ export class SseTransport implements Transport {
       if (Object.keys(this.headers).length > 0) {
         options.headers = this.headers;
       }
-      this.eventSource = new EventSource(this.url, options);
+
+      const proxyInfo = this.proxy?.url ? `, proxy=${this.proxy.url}` : '';
+      logger.info(
+        this.formatLogMessage(`Attempting to connect to SSE server${proxyInfo}`),
+        LOG_MODULES.SSE_TRANSPORT
+      );
+
+      // Add proxy support if configured
+      if (this.proxy?.url) {
+        const agent = new ProxyAgent(this.proxy.url);
+
+        // Create custom fetch function with proxy
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const customFetch = (input: any, init?: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const fetchOptions: any = {
+            ...init,
+            dispatcher: agent
+          };
+          return undiciFetch(input, fetchOptions) as unknown as Promise<Response>;
+        };
+
+        options.fetch = customFetch;
+        logger.info(
+          this.formatLogMessage(`SSE transport configured with proxy: ${this.proxy.url}`),
+          LOG_MODULES.SSE_TRANSPORT
+        );
+      }
+
+      this.eventSource = new EventSource(this.url, options as Record<string, unknown>);
 
       this.eventSource.onmessage = (event) => {
         try {

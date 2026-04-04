@@ -2,8 +2,8 @@
   <div class="config-template-form h-full flex flex-col min-h-0">
     <div class="space-y-4 flex-1 overflow-y-auto min-h-0">
       <!-- Transport Type -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.transport')
         }}</label>
         <el-radio-group v-model="localConfig.template.type" class="flex gap-4">
@@ -14,23 +14,23 @@
       </div>
 
       <!-- Command / URL -->
-      <div v-if="localConfig.template.type === 'stdio'" class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+      <div v-if="localConfig.template.type === 'stdio'" class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.executable')
         }}</label>
         <el-input v-model="localConfig.template.command" />
       </div>
-      <div v-else class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+      <div v-else class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.url')
         }}</label>
         <el-input v-model="localConfig.template.url" />
       </div>
 
       <!-- Arguments (stdio only) -->
-      <div v-if="localConfig.template.type === 'stdio'" class="pr-4">
+      <div v-if="localConfig.template.type === 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.args')
           }}</label>
           <el-button size="small" :icon="Plus" @click="addArg">{{
@@ -41,7 +41,7 @@
           v-if="localConfig.template.args && localConfig.template.args.length > 0"
           class="space-y-2"
         >
-          <div v-for="(_, index) in localConfig.template.args" :key="index" class="flex gap-2 pr-4">
+          <div v-for="(_, index) in localConfig.template.args" :key="index" class="flex gap-2 px-4">
             <el-input v-model="localConfig.template.args![index]" class="flex-1" />
             <el-button size="small" type="danger" :icon="Delete" @click="removeArg(index)" />
           </div>
@@ -49,9 +49,9 @@
       </div>
 
       <!-- Environment Variables -->
-      <div class="pr-4">
+      <div class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.env')
           }}</label>
           <el-button size="small" :icon="Plus" @click="addEnv">{{
@@ -65,7 +65,7 @@
           <div
             v-for="(_, key) in localConfig.template.env"
             :key="envIds[key]"
-            class="flex gap-2 items-start pr-4"
+            class="flex gap-2 items-start px-4"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
             <el-input
@@ -85,9 +85,9 @@
       </div>
 
       <!-- Headers (non-stdio only) -->
-      <div v-if="localConfig.template.type !== 'stdio'" class="pr-4">
+      <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.headers')
           }}</label>
           <el-button size="small" :icon="Plus" @click="addHeader">{{
@@ -103,7 +103,7 @@
           <div
             v-for="(_, key) in localConfig.template.headers"
             :key="headerIds[key]"
-            class="flex gap-2 items-start pr-4"
+            class="flex gap-2 items-start px-4"
             style="display: flex; gap: 0.5rem; width: 100%"
           >
             <el-input
@@ -123,29 +123,42 @@
       </div>
 
       <!-- Timeout -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.timeout')
         }}</label>
         <el-input-number v-model="timeoutInSeconds" :min="1" :max="3600" />
       </div>
 
-      <!-- Description -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
-          $t('common.description')
-        }}</label>
-        <el-input
-          v-model="localConfig.template.description"
-          type="textarea"
-          :rows="3"
-          :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
-        />
+      <!-- Proxy (non-stdio only) -->
+      <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.proxy') }}
+          </label>
+          <el-button
+            size="small"
+            :icon="Plus"
+            @click="toggleProxy"
+            v-if="!localConfig.template.proxy"
+          >
+            {{ $t('serverDetail.config.addProxy') }}
+          </el-button>
+          <el-button size="small" type="danger" :icon="Delete" @click="toggleProxy" v-else>
+            {{ $t('serverDetail.config.removeProxy') }}
+          </el-button>
+        </div>
+        <div v-if="localConfig.template.proxy" class="flex gap-2 items-start">
+          <el-input
+            v-model="localConfig.template.proxy.url"
+            :placeholder="$t('serverDetail.config.proxyPlaceholder')"
+          />
+        </div>
       </div>
 
       <!-- Instance Selection Strategy -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.instanceSelectionStrategy')
         }}</label>
         <el-select
@@ -162,7 +175,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 pr-4">
+      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4">
         <el-button type="primary" @click="handleSave">{{
           $t('serverDetail.config.save')
         }}</el-button>
@@ -309,6 +322,15 @@ function updateHeaderKey(oldKey: string, newKey: string) {
   emit('update:template', { ...localConfig.value.template });
 }
 
+function toggleProxy() {
+  if (localConfig.value.template.proxy) {
+    localConfig.value.template.proxy = undefined;
+  } else {
+    localConfig.value.template.proxy = { url: '' };
+  }
+  emit('update:template', { ...localConfig.value.template });
+}
+
 function handleSave() {
   // Extract template configuration
   const templateConfig = {
@@ -320,7 +342,8 @@ function handleSave() {
     timeout: localConfig.value.template.timeout,
     url: localConfig.value.template.url,
     aggregatedTools: localConfig.value.template.aggregatedTools,
-    description: localConfig.value.template.description
+    description: localConfig.value.template.description,
+    proxy: localConfig.value.template.proxy
   };
 
   // Emit template update event

@@ -54,6 +54,7 @@ export class TransportFactory {
           config.headers,
           config.reconnectInterval,
           config.maxReconnectAttempts,
+          config.proxy,
           server.name,
           serverId
         );
@@ -67,6 +68,7 @@ export class TransportFactory {
           config.url,
           config.headers,
           config.timeout,
+          config.proxy,
           server.name,
           serverId
         );
@@ -112,14 +114,16 @@ export class TransportFactory {
         url: server.url || '',
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
         reconnectInterval: 3000,
-        maxReconnectAttempts: 5
+        maxReconnectAttempts: 5,
+        proxy: server.proxy
       };
     } else if (type === 'streamable-http' || type === 'http') {
       return {
         type: 'streamable-http', // Unified conversion to streamable-http
         url: server.url || '',
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
-        timeout: server.timeout || 30000
+        timeout: server.timeout || 30000,
+        proxy: server.proxy
       };
     } else {
       // Default to stdio type to avoid returning never type

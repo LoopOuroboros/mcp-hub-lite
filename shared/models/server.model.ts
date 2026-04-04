@@ -21,6 +21,9 @@ export interface ServerRuntimeConfig {
   type: ServerTransport;
   tags?: Record<string, string>;
   description?: string;
+  proxy?: {
+    url: string;
+  };
 }
 
 // ====== v1.1 Configuration Schema (Server Template + Instance Model) ======
@@ -58,7 +61,12 @@ export type TransportType = (typeof TransportType)[keyof typeof TransportType];
 export const ServerEnvConfigSchema = z.object({
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).default({}),
-  headers: z.record(z.string(), z.string()).default({})
+  headers: z.record(z.string(), z.string()).default({}),
+  proxy: z
+    .object({
+      url: z.string()
+    })
+    .optional()
 });
 
 export type ServerEnvConfig = z.infer<typeof ServerEnvConfigSchema>;
@@ -116,6 +124,11 @@ export const ServerInstanceSchema = ServerInstanceMetadataSchema.merge(
   args: z.array(z.string()).default([]),
   env: z.record(z.string(), z.string()).default({}),
   headers: z.record(z.string(), z.string()).default({}),
+  proxy: z
+    .object({
+      url: z.string()
+    })
+    .optional(),
   // Instance-specific tags
   tags: z.record(z.string(), z.string()).default({})
 });
@@ -138,6 +151,11 @@ export const ServerInstanceUpdateSchema = z.object({
   args: z.array(z.string()).optional(),
   env: z.record(z.string(), z.string()).optional(),
   headers: z.record(z.string(), z.string()).optional(),
+  proxy: z
+    .object({
+      url: z.string()
+    })
+    .optional(),
   tags: z.record(z.string(), z.string()).optional()
 });
 

@@ -69,20 +69,25 @@ export function useServerInstances(
   /**
    * Get all servers from store to find statuses for all instances of the same server
    */
-  const allServers = computed(() => store.servers.filter((s) => s.name === server.value?.name));
+  const allServers = computed(() => {
+    console.log('[useServerInstances] Computing allServers, store.servers:', store.servers);
+    return store.servers.filter((s) => s.name === server.value?.name);
+  });
 
   /**
    * Server instances computed from rawV11Config
    */
   const serverInstances = computed((): InstanceWithStatus[] => {
+    console.log('[useServerInstances] Computing serverInstances');
     if (!server.value?.rawV11Config?.instances) {
+      console.log('[useServerInstances] No instances found in rawV11Config');
       return [];
     }
 
     return server.value.rawV11Config.instances.map(
       (instance: ServerInstance, arrayIndex: number) => {
         // Find status by matching instance ID in the aggregated server's instances array
-        const statusServer = allServers.value.find((s) =>
+        const statusServer = store.servers.find((s) =>
           s.instances?.some((inst) => inst.id === instance.id)
         );
         const statusInfo = statusServer?.instances?.find((inst) => inst.id === instance.id) as
@@ -219,9 +224,13 @@ export function useServerInstances(
    */
   async function startServerInstance(serverId: string) {
     try {
+      console.log('[startServerInstance] Starting instance:', serverId);
+      // Immediate status update for better UX
+      store.updateServerStatus(serverId, 'starting');
       await store.startServer(serverId);
       ElMessage.success(t('action.started'));
     } catch (e: unknown) {
+      console.error('[startServerInstance] Error:', e);
       if (e instanceof Error) {
         ElMessage.error(e.message);
       } else {
@@ -249,9 +258,11 @@ export function useServerInstances(
    */
   async function stopServerInstance(serverId: string) {
     try {
+      console.log('[stopServerInstance] Stopping instance:', serverId);
       await store.stopServer(serverId);
       ElMessage.success(t('action.stopped'));
     } catch (e: unknown) {
+      console.error('[stopServerInstance] Error:', e);
       if (e instanceof Error) {
         ElMessage.error(e.message);
       } else {
@@ -279,6 +290,9 @@ export function useServerInstances(
    */
   async function restartServerInstance(instanceId: string) {
     try {
+      console.log('[restartServerInstance] Restarting instance:', instanceId);
+      // Immediate status update for better UX
+      store.updateServerStatus(instanceId, 'starting');
       // Find the instance to check its current status
       const instance = serverInstances.value.find((inst) => inst.id === instanceId);
       if (instance && instance.status === 'online') {
@@ -287,6 +301,7 @@ export function useServerInstances(
       await store.startServer(instanceId);
       ElMessage.success(t('action.restarted'));
     } catch (e: unknown) {
+      console.error('[restartServerInstance] Error:', e);
       if (e instanceof Error) {
         ElMessage.error(e.message);
       } else {
@@ -517,6 +532,7 @@ export function useServerInstances(
         if (config.env !== undefined) instance.env = config.env;
         if (config.headers !== undefined) instance.headers = config.headers;
         if (config.tags !== undefined) instance.tags = config.tags;
+        if (config.proxy !== undefined) instance.proxy = config.proxy;
         if (config.displayName !== undefined) instance.displayName = config.displayName;
         if (config.enabled !== undefined) instance.enabled = config.enabled;
       }

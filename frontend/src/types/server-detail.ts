@@ -11,6 +11,9 @@ export interface InstanceConfigOverrides {
   args?: string[];
   env?: Record<string, string>;
   headers?: Record<string, string>;
+  proxy?: {
+    url: string;
+  };
   tags?: Record<string, string>;
   displayName?: string;
   enabled?: boolean;

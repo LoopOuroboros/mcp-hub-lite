@@ -21,7 +21,7 @@
 <template>
   <div class="instance-config h-full flex flex-col min-h-0">
     <!-- Header with title, action buttons, and preview button -->
-    <div class="header-bar flex justify-between items-center mb-4 pr-4 flex-shrink-0">
+    <div class="header-bar flex justify-between items-center mb-4 px-4 flex-shrink-0">
       <div class="flex items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ $t('serverDetail.instanceConfig.title') }}
@@ -54,8 +54,8 @@
     <!-- Unified configuration form -->
     <div class="config-form space-y-4 flex-1 overflow-y-auto min-h-0">
       <!-- Transport Type (from template, read-only) -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
           {{ $t('serverDetail.config.transport') }}
         </label>
         <div class="flex items-center gap-2">
@@ -69,8 +69,8 @@
       </div>
 
       <!-- Command / URL (from template, read-only) -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
           {{
             templateConfig.type === 'stdio'
               ? $t('serverDetail.config.executable')
@@ -92,9 +92,9 @@
       </div>
 
       <!-- Arguments (stdio only) -->
-      <div v-if="templateConfig.type === 'stdio'" class="pr-4">
+      <div v-if="templateConfig.type === 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
             {{ $t('serverDetail.config.args') }}
           </label>
           <el-button size="small" :icon="Plus" @click="addInstanceArg">
@@ -138,9 +138,9 @@
       </div>
 
       <!-- Environment Variables -->
-      <div class="pr-4">
+      <div class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
             {{ $t('serverDetail.config.env') }}
           </label>
           <el-button size="small" :icon="Plus" @click="addInstanceEnv">
@@ -192,9 +192,9 @@
       </div>
 
       <!-- Headers (non-stdio only) -->
-      <div v-if="templateConfig.type !== 'stdio'" class="pr-4">
+      <div v-if="templateConfig.type !== 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
             {{ $t('serverDetail.config.headers') }}
           </label>
           <el-button size="small" :icon="Plus" @click="addInstanceHeader">
@@ -254,8 +254,8 @@
       </div>
 
       <!-- Timeout (from template, read-only) -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
           {{ $t('serverDetail.config.timeout') }}
         </label>
         <div class="flex gap-2 items-center">
@@ -272,8 +272,8 @@
       </div>
 
       <!-- Description (from template, read-only) -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
           {{ $t('common.description') }}
         </label>
         <div class="flex gap-2 items-start">
@@ -290,10 +290,48 @@
         </div>
       </div>
 
-      <!-- Tags (instance only, editable) -->
-      <div class="pr-4">
+      <!-- Proxy (non-stdio only) -->
+      <div v-if="templateConfig.type !== 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
+            {{ $t('serverDetail.config.proxy') }}
+          </label>
+          <template v-if="!localConfig.proxy">
+            <el-button size="small" :icon="Plus" @click="toggleInstanceProxy">
+              {{ $t('serverDetail.config.addProxy') }}
+            </el-button>
+          </template>
+          <template v-else>
+            <el-button size="small" type="danger" :icon="Delete" @click="toggleInstanceProxy">
+              {{ $t('serverDetail.config.removeProxy') }}
+            </el-button>
+          </template>
+        </div>
+        <!-- Template proxy (read-only) -->
+        <div v-if="templateConfig.proxy && !localConfig.proxy" class="space-y-2 mb-3">
+          <div class="flex gap-2 items-start">
+            <el-input :model-value="templateConfig.proxy.url" disabled />
+            <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+              {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+            </span>
+          </div>
+        </div>
+        <!-- Instance proxy (editable) -->
+        <div v-if="localConfig.proxy" class="flex gap-2 items-start">
+          <el-input
+            v-model="localConfig.proxy.url"
+            :placeholder="$t('serverDetail.config.proxyPlaceholder')"
+          />
+          <el-tag size="small" type="success">
+            {{ $t('common.instance') }}
+          </el-tag>
+        </div>
+      </div>
+
+      <!-- Tags (instance only, editable) -->
+      <div class="px-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
             {{ $t('serverDetail.config.tags') }}
           </label>
           <el-button size="small" :icon="Plus" @click="addInstanceTag">
@@ -371,8 +409,8 @@
       </div>
 
       <!-- Auto-start (instance only, editable) -->
-      <div class="pr-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
           {{ $t('serverDetail.config.autoStart') }}
         </label>
         <div class="flex gap-2 items-center">
@@ -384,7 +422,7 @@
       </div>
 
       <!-- Save Button -->
-      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 pr-4">
+      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4">
         <el-button type="primary" @click="saveInstanceConfig">
           {{ $t('serverDetail.config.save') }}
         </el-button>
@@ -571,6 +609,10 @@ const mergedConfig = computed(() => {
     };
   }
 
+  if (localConfig.value.proxy) {
+    merged.proxy = localConfig.value.proxy;
+  }
+
   if (localConfig.value.tags && Object.keys(localConfig.value.tags).length > 0) {
     merged.tags = localConfig.value.tags;
   }
@@ -610,6 +652,17 @@ function getTransportLabel(type: string): string {
  */
 function saveInstanceConfig() {
   emit('update', localConfig.value);
+}
+
+/**
+ * Toggles the instance proxy configuration
+ */
+function toggleInstanceProxy() {
+  if (localConfig.value.proxy) {
+    localConfig.value.proxy = undefined;
+  } else {
+    localConfig.value.proxy = { url: '' };
+  }
 }
 
 // Args helpers

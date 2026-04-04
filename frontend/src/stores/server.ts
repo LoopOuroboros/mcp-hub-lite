@@ -56,6 +56,7 @@ export interface ServerInstanceUpdate {
   env?: Record<string, string>;
   headers?: Record<string, string>;
   tags?: Record<string, string>;
+  proxy?: { url: string };
   enabled?: boolean;
 }
 
@@ -81,6 +82,7 @@ function resolveInstanceConfig(
     aggregatedTools: template.aggregatedTools ?? [],
     description: template.description,
     tags: instance.tags,
+    proxy: instance.proxy ?? template.proxy,
     // v1.1 doesn't have enabled at template level, use instance level
     enabled: instance.enabled !== false
   };
@@ -420,8 +422,24 @@ export const useServerStore = defineStore('server', () => {
    * @returns {Promise<void>}
    * @throws {Error} If start fails
    */
+  /**
+   * Finds a server by instance ID in the instances array
+   *
+   * @param {string} instanceId - The instance ID to search for
+   * @returns {Server|undefined} The server containing the instance, or undefined
+   */
+  function findServerByInstanceId(instanceId: string) {
+    for (const server of servers.value) {
+      if (server.instances?.some((inst) => inst.id === instanceId)) {
+        return server;
+      }
+    }
+    return undefined;
+  }
+
   async function startServer(id: string) {
     try {
+      console.log('[startServer] Starting server/instance:', id);
       const server = servers.value.find((s) => s.id === id);
       let actualServerId = id;
 
@@ -438,11 +456,16 @@ export const useServerStore = defineStore('server', () => {
         actualServerId = response.id;
       } else {
         // Try to find the server by instance in instances array to update status
-        for (const s of servers.value) {
-          if (s.instances?.some((inst) => inst.id === id)) {
-            updateServerStatus(s.id, 'starting');
-            break;
+        const serverByInstance = findServerByInstanceId(id);
+        if (serverByInstance) {
+          // Update the specific instance status
+          const instance = serverByInstance.instances?.find((inst) => inst.id === id);
+          if (instance) {
+            instance.status = 'starting';
           }
+          // Also update the aggregated server status
+          updateServerStatus(serverByInstance.id, 'starting');
+          console.log('[startServer] Updated instance status to starting:', id);
         }
       }
 
@@ -472,6 +495,7 @@ export const useServerStore = defineStore('server', () => {
    */
   async function stopServer(id: string) {
     try {
+      console.log('[stopServer] Stopping server/instance:', id);
       const server = servers.value.find((s) => s.id === id);
 
       // If it's a config-only server, no need to disconnect
@@ -820,18 +844,65 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
-   * Updates the status of a specific server
+   * Updates the status of a specific server or instance
    *
    * Directly modifies the server status in the local state without API calls.
    * Used for immediate UI feedback during server operations.
    *
-   * @param {string} id - Server ID to update
+   * @param {string} id - Server ID or instance ID to update
    * @param {ServerStatus} status - New status value
    */
   function updateServerStatus(id: string, status: ServerStatus) {
+    // First try to find by server ID
     const server = servers.value.find((s) => s.id === id);
     if (server) {
       server.status = status;
+      return;
+    }
+
+    // If not found, try to find by instance ID
+    const serverByInstance = findServerByInstanceId(id);
+    if (serverByInstance) {
+      // Update the specific instance status
+      const instance = serverByInstance.instances?.find((inst) => inst.id === id);
+      if (instance) {
+        instance.status = status;
+      }
+
+      // Recompute the aggregated server status
+      let anyOnline = false;
+      let anyError = false;
+      let anyStarting = false;
+
+      for (const inst of serverByInstance.instances || []) {
+        if (inst.status === 'online') {
+          anyOnline = true;
+          break;
+        } else if (inst.status === 'error') {
+          anyError = true;
+        } else if (inst.status === 'starting') {
+          anyStarting = true;
+        }
+      }
+
+      if (anyOnline) {
+        serverByInstance.status = 'online';
+      } else if (anyError) {
+        serverByInstance.status = 'error';
+      } else if (anyStarting) {
+        serverByInstance.status = 'starting';
+      } else {
+        serverByInstance.status = 'offline';
+      }
+
+      console.log(
+        '[updateServerStatus] Updated instance status:',
+        id,
+        '->',
+        status,
+        'Aggregated:',
+        serverByInstance.status
+      );
     }
   }
 
@@ -997,6 +1068,7 @@ export const useServerStore = defineStore('server', () => {
     reassignInstanceIndexes,
     startAllServerInstances,
     stopAllServerInstances,
-    restartAllServerInstances
+    restartAllServerInstances,
+    findServerByInstanceId
   };
 });

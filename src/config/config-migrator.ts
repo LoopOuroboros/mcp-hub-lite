@@ -491,6 +491,7 @@ export function resolveInstanceConfig(
     args: [...(template.args || []), ...(targetInstance.args || [])],
     env: { ...template.env, ...targetInstance.env },
     headers: { ...template.headers, ...targetInstance.headers },
+    proxy: targetInstance.proxy || template.proxy,
     type: template.type,
     timeout: template.timeout,
     url: template.url,

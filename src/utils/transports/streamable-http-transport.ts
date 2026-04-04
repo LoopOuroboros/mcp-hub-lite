@@ -3,6 +3,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { URL } from 'url';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 /**
  * Streamable HTTP Transport implementation for MCP (Model Context Protocol)
@@ -81,6 +82,7 @@ export class StreamableHttpTransport implements Transport {
    *                 Commonly used for authentication tokens, API keys, or custom headers
    * @param timeout - Request timeout in milliseconds (default: 30000 = 30 seconds)
    *                  Controls how long to wait for HTTP responses before timing out
+   * @param proxy - Optional proxy configuration
    * @param serverName - Optional server name for logging
    * @param serverId - Optional server ID for logging
    */
@@ -88,6 +90,7 @@ export class StreamableHttpTransport implements Transport {
     private url: string,
     private headers: Record<string, string> = {},
     private timeout: number = 30000,
+    private proxy?: { url: string },
     serverName?: string,
     serverId?: string
   ) {
@@ -144,9 +147,10 @@ export class StreamableHttpTransport implements Transport {
 
     this.isClosing = false;
 
+    const proxyInfo = this.proxy?.url ? `, proxy=${this.proxy.url}` : '';
     logger.info(
       this.formatLogMessage(
-        `Attempting to connect to Streamable HTTP server: timeout=${this.timeout}ms, headers=${JSON.stringify(Object.keys(this.headers))}`
+        `Attempting to connect to Streamable HTTP server: timeout=${this.timeout}ms, headers=${JSON.stringify(Object.keys(this.headers))}${proxyInfo}`
       ),
       LOG_MODULES.HTTP_TRANSPORT
     );
@@ -161,9 +165,39 @@ export class StreamableHttpTransport implements Transport {
         signal: AbortSignal.timeout(this.timeout)
       };
 
-      this.transport = new StreamableHTTPClientTransport(url, {
+      // Create transport options
+      const transportOptions: Record<string, unknown> = {
         requestInit
-      });
+      };
+
+      // Add proxy support if configured
+      if (this.proxy?.url) {
+        const agent = new ProxyAgent(this.proxy.url);
+
+        // Create custom fetch function with proxy
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const customFetch = (input: any, init?: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const fetchOptions: any = {
+            ...init,
+            dispatcher: agent
+          };
+          return undiciFetch(input, fetchOptions) as unknown as Promise<Response>;
+        };
+
+        transportOptions.fetch = customFetch;
+        logger.info(
+          this.formatLogMessage(
+            `Streamable HTTP transport configured with proxy: ${this.proxy.url}`
+          ),
+          LOG_MODULES.HTTP_TRANSPORT
+        );
+      }
+
+      this.transport = new StreamableHTTPClientTransport(
+        url,
+        transportOptions as Record<string, unknown>
+      );
 
       // Set up event handlers
       this.transport.onmessage = (message: JSONRPCMessage) => {
@@ -282,8 +316,9 @@ export class StreamableHttpTransport implements Transport {
     }
 
     const method = 'method' in message ? message.method : 'notification';
+    const proxyInfo = this.proxy?.url ? `, proxy=${this.proxy.url}` : '';
     logger.debug(
-      this.formatLogMessage(`Sending message via Streamable HTTP: method=${method}`),
+      this.formatLogMessage(`Sending message via Streamable HTTP: method=${method}${proxyInfo}`),
       LOG_MODULES.HTTP_TRANSPORT
     );
 
@@ -292,7 +327,7 @@ export class StreamableHttpTransport implements Transport {
     } catch (error) {
       logger.error(
         this.formatLogMessage(
-          `Failed to send message via Streamable HTTP: method=${method}, error=${error instanceof Error ? error.message : String(error)}`
+          `Failed to send message via Streamable HTTP: method=${method}${proxyInfo}, error=${error instanceof Error ? error.message : String(error)}`
         ),
         error,
         LOG_MODULES.HTTP_TRANSPORT
