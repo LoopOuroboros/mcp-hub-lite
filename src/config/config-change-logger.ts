@@ -7,6 +7,45 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**
+ * Normalizes a URL string by removing trailing slashes.
+ *
+ * @param url - The URL to normalize
+ * @returns Normalized URL
+ */
+function normalizeUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+/**
+ * Checks if a path looks like a URL field.
+ *
+ * @param path - The field path to check
+ * @returns True if the path looks like a URL field
+ */
+function isUrlField(path: string): boolean {
+  const urlPatterns = [/\.url$/, /^url$/, /\.proxy\.url$/];
+  return urlPatterns.some((pattern) => pattern.test(path));
+}
+
+/**
+ * Compares two values with URL normalization support.
+ *
+ * @param val1 - First value
+ * @param val2 - Second value
+ * @param path - The field path for context
+ * @returns True if values are considered equal
+ */
+function areValuesEqual(val1: unknown, val2: unknown, path: string): boolean {
+  // Special handling for URL fields
+  if (isUrlField(path)) {
+    if (typeof val1 === 'string' && typeof val2 === 'string') {
+      return normalizeUrl(val1) === normalizeUrl(val2);
+    }
+  }
+  return JSON.stringify(val1) === JSON.stringify(val2);
+}
+
+/**
  * Gets the changes between two objects.
  *
  * This function performs a deep comparison of two objects
@@ -29,7 +68,7 @@ export function getObjectChanges(oldObj: unknown, newObj: unknown): string[] {
       const val2 =
         obj2 && typeof obj2 === 'object' ? (obj2 as Record<string, unknown>)[key] : undefined;
 
-      if (JSON.stringify(val1) === JSON.stringify(val2)) continue;
+      if (areValuesEqual(val1, val2, currentPath)) continue;
 
       if (
         typeof val1 === 'object' &&

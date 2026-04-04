@@ -24,19 +24,19 @@ describe('sort-utils', () => {
     });
 
     it('should return the same object if input is null or undefined', () => {
-      expect(sortObjectKeys(null as any)).toBe(null);
-      expect(sortObjectKeys(undefined as any)).toBe(undefined);
+      expect(sortObjectKeys(null as unknown as Record<string, unknown>)).toBe(null);
+      expect(sortObjectKeys(undefined as unknown as Record<string, unknown>)).toBe(undefined);
     });
 
     it('should return the same object if input is an array', () => {
       const arr = [3, 1, 2];
-      expect(sortObjectKeys(arr as any)).toBe(arr);
+      expect(sortObjectKeys(arr as unknown as Record<string, unknown>)).toBe(arr);
     });
 
     it('should return the same object if input is not an object', () => {
-      expect(sortObjectKeys('string' as any)).toBe('string');
-      expect(sortObjectKeys(42 as any)).toBe(42);
-      expect(sortObjectKeys(true as any)).toBe(true);
+      expect(sortObjectKeys('string' as unknown as Record<string, unknown>)).toBe('string');
+      expect(sortObjectKeys(42 as unknown as Record<string, unknown>)).toBe(42);
+      expect(sortObjectKeys(true as unknown as Record<string, unknown>)).toBe(true);
     });
 
     it('should preserve the original object (return a new object)', () => {
@@ -87,8 +87,10 @@ describe('sort-utils', () => {
     });
 
     it('should return the same object if input is null or undefined', () => {
-      expect(sortObjectKeysCaseInsensitive(null as any)).toBe(null);
-      expect(sortObjectKeysCaseInsensitive(undefined as any)).toBe(undefined);
+      expect(sortObjectKeysCaseInsensitive(null as unknown as Record<string, unknown>)).toBe(null);
+      expect(sortObjectKeysCaseInsensitive(undefined as unknown as Record<string, unknown>)).toBe(
+        undefined
+      );
     });
   });
 

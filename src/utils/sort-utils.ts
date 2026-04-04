@@ -3,6 +3,56 @@
  */
 
 /**
+ * Normalizes a URL string by removing trailing slashes.
+ *
+ * @param url - The URL to normalize
+ * @returns Normalized URL
+ */
+function normalizeUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+/**
+ * Normalizes URL fields in a configuration object.
+ * Currently handles:
+ * - url fields at any level
+ * - proxy.url fields
+ *
+ * @param obj - Object to normalize
+ * @returns New object with normalized URLs
+ */
+function normalizeConfigUrls<T>(obj: T): T {
+  if (!obj) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => normalizeConfigUrls(item)) as T;
+  }
+
+  if (typeof obj === 'object') {
+    const result = {} as Record<string, unknown>;
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === 'url' && typeof value === 'string') {
+        result[key] = normalizeUrl(value);
+      } else if (key === 'proxy' && typeof value === 'object' && value !== null) {
+        const proxy = value as Record<string, unknown>;
+        if (typeof proxy.url === 'string') {
+          result[key] = { ...proxy, url: normalizeUrl(proxy.url) };
+        } else {
+          result[key] = normalizeConfigUrls(value);
+        }
+      } else {
+        result[key] = normalizeConfigUrls(value);
+      }
+    }
+    return result as T;
+  }
+
+  return obj;
+}
+
+/**
  * Sorts object keys alphabetically using localeCompare.
  * Returns a new object with sorted keys, preserving the original object.
  *
@@ -75,14 +125,17 @@ export function sortObjectKeysDeep<T>(obj: T): T {
 /**
  * Sorts env and headers objects in a server configuration.
  * This is a convenience function for server template/instance configurations.
+ * Also normalizes URL fields by removing trailing slashes.
  *
  * @param config - Server configuration object with optional env and headers
- * @returns New object with sorted env and headers keys
+ * @returns New object with sorted env and headers keys and normalized URLs
  */
 export function sortServerConfigEnvHeaders<
   T extends { env?: Record<string, string>; headers?: Record<string, string> }
 >(config: T): T {
-  const result = { ...config };
+  // First normalize URLs
+  const normalized = normalizeConfigUrls(config);
+  const result = { ...normalized };
 
   if (result.env) {
     result.env = sortObjectKeysCaseInsensitive(result.env);
