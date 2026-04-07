@@ -72,7 +72,7 @@
               :model-value="key"
               style="width: 30%; min-width: 150px"
               :placeholder="$t('addServer.keyPlaceholder')"
-              @update:model-value="(newKey) => updateEnvKey(key, newKey as string)"
+              @update:model-value="(newKey: string) => updateEnvKey(key, newKey)"
             />
             <el-input
               v-model="localConfig.template.env![key]"
@@ -110,7 +110,7 @@
               :model-value="key"
               style="width: 30%; min-width: 150px"
               :placeholder="$t('addServer.keyPlaceholder')"
-              @update:model-value="(newKey) => updateHeaderKey(key, newKey as string)"
+              @update:model-value="(newKey: string) => updateHeaderKey(key, newKey)"
             />
             <el-input
               v-model="localConfig.template.headers![key]"

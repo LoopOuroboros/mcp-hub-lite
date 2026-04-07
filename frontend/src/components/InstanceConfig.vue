@@ -176,7 +176,7 @@
               :model-value="key"
               style="width: 30%; min-width: 150px"
               :placeholder="$t('addServer.keyPlaceholder')"
-              @update:model-value="(newKey) => updateInstanceEnvKey(key, newKey as string)"
+              @update:model-value="(newKey: string) => updateInstanceEnvKey(key, newKey)"
             />
             <el-input
               v-model="localConfig.env![key]"
@@ -233,7 +233,7 @@
               :model-value="key"
               style="width: 30%; min-width: 150px"
               :placeholder="$t('addServer.keyPlaceholder')"
-              @update:model-value="(newKey) => updateInstanceHeaderKey(key, newKey as string)"
+              @update:model-value="(newKey: string) => updateInstanceHeaderKey(key, newKey)"
             />
             <el-input
               v-model="localConfig.headers![key]"
@@ -362,7 +362,7 @@
               style="width: 30%; min-width: 150px"
               filterable
               placeholder="选择标签键"
-              @change="(newKey) => updateTagKey(key, newKey as string)"
+              @change="(newKey: string) => updateTagKey(key, newKey)"
             >
               <el-option
                 v-for="tagDef in systemTagDefinitions"
