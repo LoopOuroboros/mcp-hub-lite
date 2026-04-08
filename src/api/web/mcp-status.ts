@@ -120,10 +120,10 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
           return reply.code(500).send({ error: 'Failed to connect to server' });
         }
 
-        // Update instance enabled status
-        await hubManager.updateServerInstance(serverInfo.name, serverInfo.instance.index!, {
-          enabled: true
-        });
+        // Note: Do NOT update the instance's enabled field here.
+        // The enabled field is a configuration parameter that should only be modified
+        // by the user explicitly via the configuration panel.
+        // Runtime connect/disconnect operations should not affect persistent configuration.
 
         return { success: true };
       } catch (error) {
@@ -140,13 +140,10 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       try {
         await mcpConnectionManager.disconnect(request.params.id);
 
-        // Update instance enabled status
-        const serverInfo = hubManager.getServerById(request.params.id);
-        if (serverInfo) {
-          await hubManager.updateServerInstance(serverInfo.name, serverInfo.instance.index!, {
-            enabled: false
-          });
-        }
+        // Note: Do NOT update the instance's enabled field here.
+        // The enabled field is a configuration parameter that should only be modified
+        // by the user explicitly via the configuration panel.
+        // Runtime connect/disconnect operations should not affect persistent configuration.
 
         return { success: true };
       } catch (error) {
