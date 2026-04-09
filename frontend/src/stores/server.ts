@@ -177,8 +177,6 @@ export const useServerStore = defineStore('server', () => {
                 instStatus = 'online';
               } else if (statusInfo?.error) {
                 instStatus = 'error';
-              } else if (inst.enabled !== false) {
-                instStatus = 'starting';
               } else {
                 instStatus = 'offline';
               }
@@ -473,6 +471,13 @@ export const useServerStore = defineStore('server', () => {
       await http.post(`/web/mcp/servers/${actualServerId}/connect`, {});
       await fetchServers();
     } catch (e: unknown) {
+      // Revert status on failure
+      try {
+        await fetchServers();
+      } catch (fetchErr) {
+        console.error('Failed to fetch servers after start error:', fetchErr);
+      }
+      
       if (e instanceof Error) {
         error.value = e.message || 'Failed to start server';
       } else {
@@ -687,21 +692,30 @@ export const useServerStore = defineStore('server', () => {
    */
   async function startAllServerInstances(serverName: string) {
     try {
-      // Get all instances for the server
-      const serverInstances = servers.value.filter((s) => s.name === serverName);
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all offline/error instances for this server
+      const instancesToStart = aggregatedServer.instances.filter(
+        (inst) => inst.status === 'offline' || inst.status === 'error'
+      );
 
       // Update all instances to starting status for immediate UI feedback
-      serverInstances.forEach((server) => {
-        updateServerStatus(server.id, 'starting');
+      instancesToStart.forEach((instance) => {
+        updateServerStatus(instance.id, 'starting');
       });
 
       // Start each instance
-      for (const server of serverInstances) {
-        if (!server.id.startsWith('config-')) {
+      for (const instance of instancesToStart) {
+        if (!instance.id.startsWith('config-')) {
           try {
-            await http.post(`/web/mcp/servers/${server.id}/connect`, {});
+            console.log('[startAllServerInstances] Starting instance:', instance.id);
+            await http.post(`/web/mcp/servers/${instance.id}/connect`, {});
           } catch (e) {
-            console.error(`Failed to start instance ${server.id}:`, e);
+            console.error(`Failed to start instance ${instance.id}:`, e);
           }
         }
       }
@@ -727,16 +741,25 @@ export const useServerStore = defineStore('server', () => {
    */
   async function stopAllServerInstances(serverName: string) {
     try {
-      // Get all instances for the server
-      const serverInstances = servers.value.filter((s) => s.name === serverName);
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all online/starting instances for this server
+      const instancesToStop = aggregatedServer.instances.filter(
+        (inst) => inst.status === 'online' || inst.status === 'starting'
+      );
 
       // Stop each instance
-      for (const server of serverInstances) {
-        if (!server.id.startsWith('config-')) {
+      for (const instance of instancesToStop) {
+        if (!instance.id.startsWith('config-')) {
           try {
-            await http.post(`/web/mcp/servers/${server.id}/disconnect`, {});
+            console.log('[stopAllServerInstances] Stopping instance:', instance.id);
+            await http.post(`/web/mcp/servers/${instance.id}/disconnect`, {});
           } catch (e) {
-            console.error(`Failed to stop instance ${server.id}:`, e);
+            console.error(`Failed to stop instance ${instance.id}:`, e);
           }
         }
       }
@@ -762,26 +785,33 @@ export const useServerStore = defineStore('server', () => {
    */
   async function restartAllServerInstances(serverName: string) {
     try {
-      // First stop all running instances
-      const serverInstances = servers.value.filter((s) => s.name === serverName);
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all instances for this server
+      const allInstances = aggregatedServer.instances;
 
       // Update all instances to starting status for immediate UI feedback
-      serverInstances.forEach((server) => {
-        updateServerStatus(server.id, 'starting');
+      allInstances.forEach((instance) => {
+        updateServerStatus(instance.id, 'starting');
       });
 
       // Restart each instance
-      for (const server of serverInstances) {
-        if (!server.id.startsWith('config-')) {
+      for (const instance of allInstances) {
+        if (!instance.id.startsWith('config-')) {
           try {
+            console.log('[restartAllServerInstances] Restarting instance:', instance.id);
             // Stop first if it's online
-            if (server.status === 'online') {
-              await http.post(`/web/mcp/servers/${server.id}/disconnect`, {});
+            if (instance.status === 'online') {
+              await http.post(`/web/mcp/servers/${instance.id}/disconnect`, {});
             }
             // Then start
-            await http.post(`/web/mcp/servers/${server.id}/connect`, {});
+            await http.post(`/web/mcp/servers/${instance.id}/connect`, {});
           } catch (e) {
-            console.error(`Failed to restart instance ${server.id}:`, e);
+            console.error(`Failed to restart instance ${instance.id}:`, e);
           }
         }
       }

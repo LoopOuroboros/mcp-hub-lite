@@ -87,7 +87,8 @@ export function useServerInstances(
     return server.value.rawV11Config.instances.map(
       (instance: ServerInstance, arrayIndex: number) => {
         // Find status by matching instance ID in the aggregated server's instances array
-        const statusServer = store.servers.find((s) =>
+        // Use allServers.value.find() instead of store.servers.find() for proper reactivity tracking
+        const statusServer = allServers.value.find((s) =>
           s.instances?.some((inst) => inst.id === instance.id)
         );
         const statusInfo = statusServer?.instances?.find((inst) => inst.id === instance.id) as
@@ -101,7 +102,7 @@ export function useServerInstances(
         if (statusInfo?.status) {
           status = statusInfo.status;
           pid = statusInfo.pid ?? undefined;
-        } else if (instance.enabled !== false) {
+        } else {
           status = 'offline';
         }
 
