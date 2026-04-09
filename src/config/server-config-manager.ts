@@ -10,17 +10,7 @@ import { convertHttpToStreamableHttp } from './type-converter.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { getObjectChanges, logObjectChangesWithTitle } from './config-change-logger.js';
 import { sortServerConfigEnvHeaders } from '@utils/sort-utils.js';
-
-/**
- * Generates a unique server instance ID.
- *
- * @param serverName - Name of the server
- * @returns A unique instance ID
- */
-function generateInstanceId(serverName: string): string {
-  const ts = Date.now();
-  return `${serverName}-${ts}-${Math.random().toString(36).substr(2, 5)}`;
-}
+import { generateInstanceId } from '@utils/instance-id.js';
 
 /**
  * Creates a default server instance with index assignment.
@@ -39,9 +29,16 @@ function createDefaultInstance(
     ...partialInstance
   };
 
-  // Minimal identity generation logic
+  // Generate content-based ID with deduplication
   if (!instance.id) {
-    instance.id = generateInstanceId(serverName);
+    const baseId = generateInstanceId(serverName, partialInstance);
+    let id = baseId;
+    let suffix = 2;
+    while (existingInstances.some((inst) => inst.id === id)) {
+      id = `${baseId}-${suffix}`;
+      suffix++;
+    }
+    instance.id = id;
   }
 
   // Assign index: max index + 1, or 0 if no existing instances
@@ -290,32 +287,13 @@ export function updateServerInstance(
   const numericIndex = typeof index === 'string' ? parseInt(index, 10) : index;
 
   logger.debug(
-    `updateServerInstance called for server: ${name}, index: ${numericIndex} (type: ${typeof numericIndex})`,
+    `updateServerInstance called: server=${name}, index=${numericIndex}`,
     LOG_MODULES.SERVER_CONFIG_MANAGER
   );
-  logger.debug(`Updates received:`, LOG_MODULES.SERVER_CONFIG_MANAGER, updates);
 
   if (currentServers[name]?.instances) {
     const instances = currentServers[name].instances;
-    logger.debug(`All instances for server ${name}:`, LOG_MODULES.SERVER_CONFIG_MANAGER, instances);
-    logger.debug(
-      `Instance indexes:`,
-      LOG_MODULES.SERVER_CONFIG_MANAGER,
-      instances.map((inst, i) => ({
-        arrayIndex: i,
-        instanceIndex: inst.index,
-        type: typeof inst.index
-      }))
-    );
-
-    const instanceIndex = instances.findIndex((inst) => {
-      const match = inst.index === numericIndex;
-      logger.debug(
-        `Comparing: inst.index=${inst.index} (${typeof inst.index}) === index=${numericIndex} (${typeof numericIndex}) => ${match}`,
-        LOG_MODULES.SERVER_CONFIG_MANAGER
-      );
-      return match;
-    });
+    const instanceIndex = instances.findIndex((inst) => inst.index === numericIndex);
 
     if (instanceIndex !== -1) {
       const originalInstance = JSON.parse(JSON.stringify(instances[instanceIndex]));
@@ -328,6 +306,17 @@ export function updateServerInstance(
       };
       // Sort env and headers keys for consistency
       updatedInstance = sortServerConfigEnvHeaders(updatedInstance);
+
+      // Always recalculate ID based on current content
+      const newId = generateInstanceId(name, updatedInstance);
+      let finalId = newId;
+      let suffix = 2;
+      while (instances.some((inst, i) => i !== instanceIndex && inst.id === finalId)) {
+        finalId = `${newId}-${suffix}`;
+        suffix++;
+      }
+      updatedInstance.id = finalId;
+
       instances[instanceIndex] = updatedInstance;
 
       // Log instance changes
@@ -346,16 +335,8 @@ export function updateServerInstance(
 
       return true;
     } else {
-      logger.debug(
-        `Instance with index ${numericIndex} not found`,
-        LOG_MODULES.SERVER_CONFIG_MANAGER
-      );
-      // Try fallback to array index
+      // Fallback: try array index directly
       if (numericIndex >= 0 && numericIndex < instances.length) {
-        logger.debug(
-          `Falling back to array index ${numericIndex} (since index field match failed)`,
-          LOG_MODULES.SERVER_CONFIG_MANAGER
-        );
         const originalInstance = JSON.parse(JSON.stringify(instances[numericIndex]));
         let updatedInstance = {
           ...instances[numericIndex],
@@ -365,6 +346,17 @@ export function updateServerInstance(
         };
         // Sort env and headers keys for consistency
         updatedInstance = sortServerConfigEnvHeaders(updatedInstance);
+
+        // Always recalculate ID based on current content
+        const newId = generateInstanceId(name, updatedInstance);
+        let finalId = newId;
+        let suffix = 2;
+        while (instances.some((inst, i) => i !== numericIndex && inst.id === finalId)) {
+          finalId = `${newId}-${suffix}`;
+          suffix++;
+        }
+        updatedInstance.id = finalId;
+
         instances[numericIndex] = updatedInstance;
 
         // Log instance changes
@@ -386,11 +378,6 @@ export function updateServerInstance(
     }
   } else {
     logger.debug(`Server ${name} not found or has no instances`, LOG_MODULES.SERVER_CONFIG_MANAGER);
-    logger.debug(
-      `Current servers keys:`,
-      LOG_MODULES.SERVER_CONFIG_MANAGER,
-      Object.keys(currentServers)
-    );
   }
   return false;
 }

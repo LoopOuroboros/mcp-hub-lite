@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { createHash } from 'node:crypto';
 import { logger, LOG_MODULES } from '@utils/logger.js';
+import { generateInstanceId } from '@utils/instance-id.js';
 import type { ServerInstance, ServerTemplate, SystemConfig } from './config.schema.js';
 import { isLegacyV1Config, SystemConfigSchema } from './config.schema.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
@@ -79,38 +79,6 @@ function generateTimestamp(): string {
 }
 
 /**
- * Generates a stable 8-character hash from an object
- * Uses SHA-256 and returns first 8 hex characters
- */
-function generateInstanceHash(obj: Record<string, unknown>): string {
-  // Create a stable string representation by recursively sorting all keys
-  function stableStringify(value: unknown): string {
-    if (value === null || typeof value !== 'object') {
-      return JSON.stringify(value);
-    }
-    if (Array.isArray(value)) {
-      return '[' + value.map(stableStringify).join(',') + ']';
-    }
-    const sortedObj: Record<string, unknown> = {};
-    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
-      sortedObj[key] = (value as Record<string, unknown>)[key];
-    }
-    return (
-      '{' +
-      Object.keys(sortedObj)
-        .map((key) => JSON.stringify(key) + ':' + stableStringify(sortedObj[key]))
-        .join(',') +
-      '}'
-    );
-  }
-
-  const stableString = stableStringify(obj);
-  const hash = createHash('sha256');
-  hash.update(stableString);
-  return hash.digest('hex').slice(0, 8);
-}
-
-/**
  * Creates a backup of the configuration file
  */
 function createBackup(configPath: string): string | null {
@@ -148,29 +116,6 @@ function convertToServerTemplate(v1Config: LegacyServerConfigV1): ServerTemplate
     aggregatedTools: v1Config.allowedTools || [],
     description: v1Config.description
   };
-}
-
-/**
- * Generates a default instance ID for a server using content hash
- */
-function generateInstanceId(serverName: string, instanceConfig: Partial<ServerInstance>): string {
-  // Create an object with only the relevant fields for hashing
-  const hashableContent: Record<string, unknown> = {};
-  if (instanceConfig.args && instanceConfig.args.length > 0) {
-    hashableContent.args = instanceConfig.args;
-  }
-  if (instanceConfig.env) {
-    hashableContent.env = instanceConfig.env;
-  }
-  if (instanceConfig.headers) {
-    hashableContent.headers = instanceConfig.headers;
-  }
-  if (instanceConfig.tags && Object.keys(instanceConfig.tags).length > 0) {
-    hashableContent.tags = instanceConfig.tags;
-  }
-
-  const hash = generateInstanceHash(hashableContent);
-  return `${serverName}-${hash}`;
 }
 
 /**

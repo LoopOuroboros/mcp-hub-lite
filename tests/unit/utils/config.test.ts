@@ -392,7 +392,7 @@ describe('ConfigManager', () => {
 
       const instance = await configManager.addServerInstance('test-server', instanceConfig);
 
-      expect(instance.id).toBeDefined();
+      expect(instance.id).toMatch(/^test-server-[0-9a-f]{8}(-[0-9]+)?$/);
       expect(instance.enabled).toBe(false);
     });
 
