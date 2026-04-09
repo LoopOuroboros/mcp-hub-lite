@@ -263,7 +263,7 @@ export default {
     searchPlaceholder: "搜索所有工具 (例如：'file', 'database', 'list')...",
     systemTools: '网关系统工具',
     aggregatedTools: '聚合服务器工具',
-    noToolsFound: '未找到工具。请连接一些服务器以开始使用。',
+    noToolsFound: '未聚合工具，请在服务器选中工具进行聚合。',
     call: '调用',
     noDescription: '未提供描述',
     systemTag: '系统',

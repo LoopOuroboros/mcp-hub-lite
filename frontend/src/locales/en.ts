@@ -278,7 +278,7 @@ export default {
     searchPlaceholder: "Search all tools (e.g., 'file', 'database', 'list')...",
     systemTools: 'Gateway System Tools',
     aggregatedTools: 'Aggregated Server Tools',
-    noToolsFound: 'No tools found. Connect some servers to get started.',
+    noToolsFound: 'No aggregated tools. Select tools in servers to aggregate.',
     call: 'Call',
     noDescription: 'No description provided',
     systemTag: 'System',
