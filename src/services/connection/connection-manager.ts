@@ -7,6 +7,7 @@ import {
   formatMcpMessageForLogging,
   logNotificationMessage
 } from '@utils/logger.js';
+import { getAppVersion } from '@utils/version.js';
 import { getMcpCommDebugSetting } from '@utils/json-utils.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
@@ -240,7 +241,7 @@ export class McpConnectionManager {
       const client = new Client(
         {
           name: MCP_HUB_LITE_SERVER,
-          version: '1.0.0'
+          version: getAppVersion()
         },
         {
           capabilities: {}

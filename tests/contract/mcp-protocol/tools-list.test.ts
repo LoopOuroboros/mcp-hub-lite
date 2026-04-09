@@ -4,7 +4,7 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK
-const mockListTools = vi.fn();
+const mockListTools = vi.fn().mockResolvedValue({ tools: [] });
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {

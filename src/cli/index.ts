@@ -8,6 +8,7 @@
 import { Command } from 'commander';
 import { argv } from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { getAppVersion } from '@utils/version.js';
 import { startCommand } from '@cli/commands/start.js';
 import { stopCommand } from '@cli/commands/stop.js';
 import { statusCommand } from '@cli/commands/status.js';
@@ -75,7 +76,7 @@ export function createCli(): Command {
   program
     .name('mcp-hub-lite')
     .description('Lightweight MCP Gateway for managing MCP servers')
-    .version('1.0.0');
+    .version(process.env.npm_package_version ?? getAppVersion(), '-v, --version');
 
   // Register all core commands
   program.addCommand(startCommand);

@@ -4,11 +4,14 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK
+const mockListTools = vi.fn().mockResolvedValue({ tools: [] });
+
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
       connect = vi.fn().mockResolvedValue(undefined);
       close = vi.fn().mockResolvedValue(undefined);
+      listTools = mockListTools;
       callTool = vi.fn().mockImplementation((toolCall) => {
         if (toolCall.name === 'calculator') {
           const { a, b, operation } = toolCall.arguments;
