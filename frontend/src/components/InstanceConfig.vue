@@ -52,7 +52,7 @@
     </div>
 
     <!-- Unified configuration form -->
-    <div class="config-form space-y-4 flex-1 overflow-y-auto min-h-0">
+    <div class="config-form space-y-4 flex-1 overflow-y-auto min-h-0 pb-4">
       <!-- Transport Type (from template, read-only) -->
       <div class="px-4">
         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -422,7 +422,7 @@
       </div>
 
       <!-- Save Button -->
-      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4">
+      <div class="flex gap-2 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 px-4">
         <el-button type="primary" @click="saveInstanceConfig">
           {{ $t('serverDetail.config.save') }}
         </el-button>

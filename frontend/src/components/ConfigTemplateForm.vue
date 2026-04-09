@@ -175,7 +175,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4">
+      <div class="flex gap-2 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 px-4">
         <el-button type="primary" @click="handleSave">{{
           $t('serverDetail.config.save')
         }}</el-button>
