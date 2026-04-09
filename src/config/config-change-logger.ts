@@ -7,6 +7,61 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**
+ * Sensitive KEY patterns (case-insensitive).
+ * Fields whose key contains any of these patterns will have their values masked.
+ */
+const SENSITIVE_KEY_PATTERNS = [
+  'token',
+  'key',
+  'authorization',
+  'secret',
+  'password',
+  'credential'
+];
+
+/**
+ * Sensitive VALUE patterns.
+ * String values containing any of these patterns will be masked.
+ */
+const SENSITIVE_VALUE_PATTERNS = ['Bearer', 'sk-', 'sk_', 'api_key', 'apikey'];
+
+/**
+ * Checks if a key looks sensitive based on its name.
+ *
+ * @param key - The key to check
+ * @returns True if the key is sensitive
+ */
+function isSensitiveKey(key: string): boolean {
+  const lowerKey = key.toLowerCase();
+  return SENSITIVE_KEY_PATTERNS.some((pattern) => lowerKey.includes(pattern));
+}
+
+/**
+ * Checks if a value looks sensitive based on its content.
+ *
+ * @param value - The value to check
+ * @returns True if the value is sensitive
+ */
+function isSensitiveValue(value: string): boolean {
+  return SENSITIVE_VALUE_PATTERNS.some((pattern) => value.includes(pattern));
+}
+
+/**
+ * Masks a sensitive value while preserving partial visibility.
+ * - For values with length < 8: preserves first and last character
+ * - For values with length >= 8: preserves first 4 and last 4 characters
+ *
+ * @param value - The value to mask
+ * @returns The masked value
+ */
+function maskSensitiveValue(value: string): string {
+  if (value.length < 8) {
+    return value[0] + '****' + value[value.length - 1];
+  }
+  return value.substring(0, 4) + '********' + value.substring(value.length - 4);
+}
+
+/**
  * Normalizes a URL string by removing trailing slashes.
  *
  * @param url - The URL to normalize
@@ -80,8 +135,15 @@ export function getObjectChanges(oldObj: unknown, newObj: unknown): string[] {
       ) {
         compare(val1, val2, currentPath);
       } else {
-        const formatVal = (v: unknown) => (v === undefined ? 'undefined' : JSON.stringify(v));
-        changes.push(`${currentPath} = ${formatVal(val1)} -> ${formatVal(val2)}`);
+        const formatVal = (key: string, v: unknown) => {
+          if (v === undefined) return 'undefined';
+          const str = JSON.stringify(v);
+          if (typeof v === 'string' && (isSensitiveKey(key) || isSensitiveValue(v))) {
+            return `"${maskSensitiveValue(v)}"`;
+          }
+          return str;
+        };
+        changes.push(`${currentPath} = ${formatVal(key, val1)} -> ${formatVal(key, val2)}`);
       }
     }
   };
