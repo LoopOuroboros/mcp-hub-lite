@@ -312,14 +312,14 @@ const selectedTool = ref<Tool | null>(null);
 
 // Tab switching logic - fetch data when tab changes
 watch(
-  activeTopTab,
-  async (tab) => {
-    if (!server.value?.id) return;
+  [activeTopTab, () => server.value?.name],
+  async ([tab, serverName]) => {
+    if (!serverName) return;
 
     if (tab === 'tools') {
-      await store.fetchTools(server.value.id);
+      await store.fetchTools(serverName);
     } else if (tab === 'resources') {
-      await store.fetchResources(server.value.id);
+      await store.fetchResources(serverName);
     }
   },
   { immediate: true }

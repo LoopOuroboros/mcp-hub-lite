@@ -943,13 +943,13 @@ export const useServerStore = defineStore('server', () => {
    * Includes error handling to prevent crashes on failed requests.
    *
    * @async
-   * @param {string} serverId - Server ID to fetch tools from
+   * @param {string} serverName - Server name to fetch tools from
    * @returns {Promise<Tool[]>} Array of available tools
    */
-  async function fetchTools(serverId: string) {
+  async function fetchTools(serverName: string) {
     try {
-      const tools = await http.get<Tool[]>(`/web/mcp/servers/${serverId}/tools`);
-      const server = servers.value.find((s) => s.id === serverId);
+      const tools = await http.get<Tool[]>(`/web/mcp/servers/${serverName}/tools`);
+      const server = servers.value.find((s) => s.name === serverName);
       if (server) {
         server.tools = tools;
       }
@@ -967,13 +967,13 @@ export const useServerStore = defineStore('server', () => {
    * Includes error handling to prevent crashes on failed requests.
    *
    * @async
-   * @param {string} serverId - Server ID to fetch resources from
+   * @param {string} serverName - Server name to fetch resources from
    * @returns {Promise<Resource[]>} Array of available resources
    */
-  async function fetchResources(serverId: string) {
+  async function fetchResources(serverName: string) {
     try {
-      const resources = await http.get<Resource[]>(`/web/mcp/servers/${serverId}/resources`);
-      const server = servers.value.find((s) => s.id === serverId);
+      const resources = await http.get<Resource[]>(`/web/mcp/servers/${serverName}/resources`);
+      const server = servers.value.find((s) => s.name === serverName);
       if (server) {
         server.resources = resources;
       }

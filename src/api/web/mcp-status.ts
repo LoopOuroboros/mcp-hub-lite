@@ -153,28 +153,35 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // GET /web/mcp/servers/:id/tools - Get tools for a specific server
-  fastify.get<{ Params: { id: string } }>('/web/mcp/servers/:id/tools', async (request, reply) => {
-    try {
-      logger.info(`API request tools for server: ${request.params.id}`, LOG_MODULES.MCP_STATUS);
-      const tools = mcpConnectionManager.getTools(request.params.id);
-      return tools;
-    } catch (error) {
-      logger.error('Failed to get MCP tools:', error, LOG_MODULES.MCP_STATUS);
-      return reply.code(500).send({ error: 'Internal Server Error' });
-    }
-  });
-
-  // GET /web/mcp/servers/:id/resources - Get resources for a specific server
-  fastify.get<{ Params: { id: string } }>(
-    '/web/mcp/servers/:id/resources',
+  // GET /web/mcp/servers/:name/tools - Get tools for a specific server
+  fastify.get<{ Params: { name: string } }>(
+    '/web/mcp/servers/:name/tools',
     async (request, reply) => {
       try {
-        logger.info(
-          `API request resources for server: ${request.params.id}`,
-          LOG_MODULES.MCP_STATUS
-        );
-        const resources = mcpConnectionManager.getResources(request.params.id);
+        const serverName = request.params.name;
+        logger.info(`API request tools for server: ${serverName}`, LOG_MODULES.MCP_STATUS);
+
+        // Use getToolsByServerName which queries serverNameToolCache
+        // This aggregates tools from all instances of the same server name
+        const tools = mcpConnectionManager.getToolsByServerName(serverName);
+        return tools;
+      } catch (error) {
+        logger.error('Failed to get MCP tools:', error, LOG_MODULES.MCP_STATUS);
+        return reply.code(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  // GET /web/mcp/servers/:name/resources - Get resources for a specific server
+  fastify.get<{ Params: { name: string } }>(
+    '/web/mcp/servers/:name/resources',
+    async (request, reply) => {
+      try {
+        const serverName = request.params.name;
+        logger.info(`API request resources for server: ${serverName}`, LOG_MODULES.MCP_STATUS);
+
+        // Use getResourcesByName which queries resourceCache by server name
+        const resources = mcpConnectionManager.getResourcesByName(serverName);
         return resources;
       } catch (error) {
         logger.error('Failed to get MCP resources:', error, LOG_MODULES.MCP_STATUS);

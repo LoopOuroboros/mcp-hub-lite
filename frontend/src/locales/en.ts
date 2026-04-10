@@ -9,6 +9,7 @@ export default {
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
+    confirm: 'Confirm',
     configure: 'Configure',
     create: 'Create Server',
     view: 'View',

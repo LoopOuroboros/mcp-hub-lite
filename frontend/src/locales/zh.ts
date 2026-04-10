@@ -9,6 +9,7 @@ export default {
     edit: '编辑',
     save: '保存',
     cancel: '取消',
+    confirm: '确认',
     configure: '配置',
     create: '创建服务器',
     view: '查看',
