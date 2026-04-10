@@ -130,6 +130,19 @@
         <el-input-number v-model="timeoutInSeconds" :min="1" :max="3600" />
       </div>
 
+      <!-- Description -->
+      <div class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('common.description')
+        }}</label>
+        <el-input
+          v-model="localConfig.template.description"
+          type="textarea"
+          :rows="3"
+          :placeholder="$t('serverDetail.config.descriptionPlaceholder')"
+        />
+      </div>
+
       <!-- Proxy (non-stdio only) -->
       <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
         <div class="flex items-center justify-between mb-2">
