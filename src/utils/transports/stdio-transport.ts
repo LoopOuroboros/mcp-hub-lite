@@ -14,20 +14,20 @@ class ReadBuffer {
     this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
   }
 
-  readMessage(): JSONRPCMessage | null {
+  readMessage(): { message: JSONRPCMessage | null; raw: string } {
     if (!this._buffer) {
-      return null;
+      return { message: null, raw: '' };
     }
     const index = this._buffer.indexOf('\n');
     if (index === -1) {
-      return null;
+      return { message: null, raw: '' };
     }
     const line = this._buffer.toString('utf8', 0, index).replace(/\r$/, '');
     this._buffer = this._buffer.subarray(index + 1);
     try {
-      return JSON.parse(line);
+      return { message: JSON.parse(line), raw: line };
     } catch {
-      return null;
+      return { message: null, raw: line };
     }
   }
 
@@ -283,55 +283,10 @@ export class StdioTransport implements Transport {
             continue;
           }
 
-          let logLevel: 'error' | 'warn' | 'info' = 'info';
-
-          // Identify log levels by keywords: only explicit error/warning markers
-          // use corresponding levels, everything else defaults to info
-          const lowerData = trimmedLine.toLowerCase();
-
-          // Error level keywords
-          if (
-            lowerData.includes('error') ||
-            lowerData.includes('err') ||
-            lowerData.includes('exception') ||
-            lowerData.includes('fatal') ||
-            lowerData.includes('critical')
-          ) {
-            logLevel = 'error';
-          }
-          // Warn level keywords
-          else if (
-            lowerData.includes('warn') ||
-            lowerData.includes('wrn') ||
-            lowerData.includes('warning') ||
-            lowerData.includes('deprecation') ||
-            lowerData.includes('deprecated')
-          ) {
-            logLevel = 'warn';
-          }
-
-          if (this._serverId) {
-            logger.serverLog(logLevel, this._serverId, trimmedLine, {
-              pid: this._process?.pid
-            });
-          } else if (this._serverName) {
-            logger.serverLog(logLevel, this._serverName, trimmedLine, {
-              pid: this._process?.pid
-            });
-          } else {
-            logger.serverLog(logLevel, 'Unknown Server', trimmedLine, {
-              pid: this._process?.pid
-            });
-          }
-
-          // Store in logStorage for frontend display if available
-          if (this._logStorage && this._serverId) {
-            this._logStorage.append(
-              this._serverId,
-              logLevel,
-              `[${this._serverId || this._serverName || 'Unknown Server'}] [STDERR] ${trimmedLine}`
-            );
-          }
+          // All stderr output is logged at info level per MCP spec:
+          // "The client MAY capture, forward, or ignore the server's stderr output
+          // and SHOULD NOT assume stderr output indicates error conditions."
+          this._logToServer('info', trimmedLine, '[STDERR]');
         }
 
         // Optionally write to PassThrough stream if configured
@@ -380,14 +335,41 @@ export class StdioTransport implements Transport {
   processReadBuffer() {
     while (true) {
       try {
-        const message = this._readBuffer.readMessage();
+        const { message, raw } = this._readBuffer.readMessage();
         if (message === null) {
+          // If we have a raw line but parsing failed, it's non-JSON-RPC output
+          if (raw.trim()) {
+            this._logToServer('info', raw.trim(), '[STDOUT]');
+          }
           break;
         }
         this.onmessage?.(message);
       } catch (error) {
         this.onerror?.(error as Error);
       }
+    }
+  }
+
+  /**
+   * Logs a message to the server logger and logStorage.
+   *
+   * @param severity - Log severity level
+   * @param message - The message to log
+   * @param tag - Optional tag to prepend to the message (e.g., '[STDOUT]', '[STDERR]')
+   */
+  private _logToServer(severity: 'info', message: string, tag?: string): void {
+    const serverIdentifier = this._serverId || this._serverName || 'Unknown Server';
+
+    logger.serverLog(severity, serverIdentifier, message, {
+      pid: this._process?.pid
+    });
+
+    if (this._logStorage && this._serverId) {
+      this._logStorage.append(
+        this._serverId,
+        severity,
+        `[${serverIdentifier}] ${tag || ''} ${message}`.trim()
+      );
     }
   }
 
