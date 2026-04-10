@@ -84,8 +84,30 @@ export class TransportFactory {
    * Build system environment variables
    * Add necessary system environment variables for stdio transport
    */
-  private static buildSystemEnv(): Record<string, string> {
-    return {};
+  private static buildSystemEnv(command?: string): Record<string, string> {
+    const env: Record<string, string> = {};
+
+    // For Python-related commands, set PYTHONUTF8=1 to ensure proper UTF-8 handling
+    if (command && this.isPythonCommand(command)) {
+      env.PYTHONUTF8 = '1';
+    }
+
+    return env;
+  }
+
+  /**
+   * Check if a command is related to Python execution
+   * Detects python, python3, py, uv, uvx, and similar commands
+   */
+  private static isPythonCommand(command: string): boolean {
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand) return false;
+
+    // Extract the basename (last part after / or \)
+    const parts = trimmedCommand.split(/[\\/]/);
+    const basename = parts[parts.length - 1].toLowerCase();
+
+    return basename.includes('python') || basename.startsWith('uv') || basename.startsWith('py');
   }
 
   /**
@@ -102,7 +124,7 @@ export class TransportFactory {
         command: server.command || '',
         args: server.args,
         env: {
-          ...this.buildSystemEnv(), // System environment variables
+          ...this.buildSystemEnv(server.command), // System environment variables
           ...(server.env || {}) // User-defined environment variables (can override system defaults)
         },
         cwd: process.cwd(),
