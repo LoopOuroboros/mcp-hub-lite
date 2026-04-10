@@ -200,7 +200,7 @@ export class McpConnectionManager {
               resourcesCount: 0,
               error: 'Connection closed unexpectedly'
             });
-            
+
             // Publish server status change event
             eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
               serverId,

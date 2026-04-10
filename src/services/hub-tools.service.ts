@@ -259,7 +259,9 @@ export class HubToolsService {
     serverName: string;
     description: string;
   }> {
-    const { serverName, description } = args;
+    // Handle both direct call (UpdateServerDescriptionParams) and call_tool wrapper (CallToolParams with nested toolArgs)
+    const { serverName, description } =
+      'toolArgs' in args && args.toolArgs ? (args.toolArgs as UpdateServerDescriptionParams) : args;
 
     // Validate server exists
     const existing = hubManager.getServerByName(serverName);

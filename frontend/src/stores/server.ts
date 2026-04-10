@@ -477,7 +477,7 @@ export const useServerStore = defineStore('server', () => {
       } catch (fetchErr) {
         console.error('Failed to fetch servers after start error:', fetchErr);
       }
-      
+
       if (e instanceof Error) {
         error.value = e.message || 'Failed to start server';
       } else {
