@@ -78,9 +78,10 @@ describe('Server Store', () => {
     expect(store.loading).toBe(false);
     expect(store.error).toBeNull();
     expect(store.servers.length).toBe(1);
-    expect(store.servers[0].name).toBe('test-server');
-    expect(store.servers[0].status).toBe('online');
-    expect(store.servers[0].rawV11Config).toBeDefined();
+    const firstServer = store.servers[0]!;
+    expect(firstServer.name).toBe('test-server');
+    expect(firstServer.status).toBe('online');
+    expect(firstServer.rawV11Config).toBeDefined();
   });
 
   it('should handle fetch servers error', async () => {
@@ -158,14 +159,14 @@ describe('Server Store', () => {
         status: 'offline',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'test-id', timestamp: 1234567890, hash: 'abc123' },
+        instance: { id: 'test-id', timestamp: 1234567890 },
         logs: []
       }
     ];
 
     store.updateServerStatus('test-id', 'online');
 
-    expect(store.servers[0].status).toBe('online');
+    expect(store.servers[0]!.status).toBe('online');
   });
 
   it('should compute stats correctly with mixed server statuses', () => {
@@ -178,7 +179,7 @@ describe('Server Store', () => {
         status: 'online',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-1', timestamp: 1234567890, hash: 'abc123' },
+        instance: { id: 'server-1', timestamp: 1234567890 },
         logs: []
       },
       {
@@ -187,7 +188,7 @@ describe('Server Store', () => {
         status: 'offline',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-2', timestamp: 1234567890, hash: 'def456' },
+        instance: { id: 'server-2', timestamp: 1234567890 },
         logs: []
       },
       {
@@ -196,7 +197,7 @@ describe('Server Store', () => {
         status: 'error',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-3', timestamp: 1234567890, hash: 'ghi789' },
+        instance: { id: 'server-3', timestamp: 1234567890 },
         logs: []
       }
     ];

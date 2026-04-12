@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import ServerDetailHeader from '@frontend/components/ServerDetailHeader.vue';
+import type { Server } from '@shared-models/server.model';
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -10,35 +11,70 @@ vi.mock('vue-i18n', () => ({
 
 describe('ServerDetailHeader', () => {
   it('显示聚合实例的正确操作数量', () => {
+    const server: Server = {
+      id: 'server-1',
+      name: 'mcp-test',
+      status: 'online',
+      type: 'local',
+      config: {
+        type: 'stdio',
+        command: 'npm'
+      },
+      logs: [],
+      instances: [
+        { id: 'instance-1', timestamp: 1, index: 0, status: 'online' },
+        { id: 'instance-2', timestamp: 2, index: 1, status: 'online' },
+        { id: 'instance-3', timestamp: 3, index: 2, status: 'online' }
+      ],
+      rawV11Config: {
+        template: {
+          type: 'stdio',
+          command: 'npm',
+          args: [],
+          env: {},
+          headers: {},
+          timeout: 60000,
+          aggregatedTools: []
+        },
+        instances: [
+          {
+            id: 'instance-1',
+            timestamp: 1,
+            index: 0,
+            enabled: true,
+            args: [],
+            env: {},
+            headers: {},
+            tags: {}
+          },
+          {
+            id: 'instance-2',
+            timestamp: 2,
+            index: 1,
+            enabled: true,
+            args: [],
+            env: {},
+            headers: {},
+            tags: {}
+          },
+          {
+            id: 'instance-3',
+            timestamp: 3,
+            index: 2,
+            enabled: true,
+            args: [],
+            env: {},
+            headers: {},
+            tags: {}
+          }
+        ],
+        tagDefinitions: []
+      }
+    };
+
     const wrapper = mount(ServerDetailHeader, {
       props: {
-        server: {
-          id: 'server-1',
-          name: 'mcp-test',
-          status: 'online',
-          type: 'local',
-          config: {
-            type: 'stdio',
-            command: 'npm'
-          },
-          logs: [],
-          instances: [
-            { id: 'instance-1', timestamp: 1, index: 0, status: 'online' },
-            { id: 'instance-2', timestamp: 2, index: 1, status: 'online' },
-            { id: 'instance-3', timestamp: 3, index: 2, status: 'online' }
-          ],
-          rawV11Config: {
-            template: {
-              type: 'stdio',
-              args: []
-            },
-            instances: [
-              { id: 'instance-1', timestamp: 1, index: 0 },
-              { id: 'instance-2', timestamp: 2, index: 1 },
-              { id: 'instance-3', timestamp: 3, index: 2 }
-            ]
-          }
-        }
+        server
       },
       global: {
         stubs: {
