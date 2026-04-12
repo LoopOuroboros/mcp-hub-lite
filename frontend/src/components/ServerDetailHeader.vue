@@ -46,12 +46,9 @@ import type { Server } from '@shared-models/server.model';
 
 interface Props {
   server: Server;
-  allServerInstances?: Server[];
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  allServerInstances: () => []
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -64,27 +61,32 @@ const emit = defineEmits<{
 useI18n();
 
 // Compute instance counts
-const totalInstanceCount = computed(() => {
-  if (props.allServerInstances.length > 0) {
-    return props.allServerInstances.length;
+const configuredInstanceCount = computed(() => {
+  if (props.server.rawV11Config?.instances?.length) {
+    return props.server.rawV11Config.instances.length;
   }
-  // Fallback: if no allServerInstances provided, just show 1
+  if (props.server.instances?.length) {
+    return props.server.instances.length;
+  }
   return 1;
 });
 
+const totalInstanceCount = computed(() => configuredInstanceCount.value);
+
 const onlineInstanceCount = computed(() => {
-  if (props.allServerInstances.length > 0) {
-    return props.allServerInstances.filter((s) => s.status === 'online').length;
+  if (props.server.instances?.length) {
+    return props.server.instances.filter((instance) => instance.status === 'online').length;
   }
-  // Fallback: check the current server's status
   return props.server.status === 'online' ? 1 : 0;
 });
 
 const offlineInstanceCount = computed(() => {
-  if (props.allServerInstances.length > 0) {
-    return props.allServerInstances.filter((s) => s.status !== 'online').length;
+  if (props.server.instances?.length) {
+    return props.server.instances.filter((instance) => instance.status !== 'online').length;
   }
-  // Fallback: check the current server's status
+  if (configuredInstanceCount.value > 1) {
+    return configuredInstanceCount.value - onlineInstanceCount.value;
+  }
   return props.server.status !== 'online' ? 1 : 0;
 });
 

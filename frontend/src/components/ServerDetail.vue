@@ -6,7 +6,6 @@
     <!-- Header -->
     <ServerDetailHeader
       :server="server"
-      :all-server-instances="allServers"
       @back="navigateBack"
       @delete="deleteServer"
       @restart-all="restartAllInstances"
@@ -272,7 +271,6 @@ const {
   selectedInstance,
   selectedInstanceConfig,
   templateConfigForInstance,
-  allServers,
   getSelectedInstanceStatus,
   getSelectedInstanceServerId,
   startSelectedInstance,
