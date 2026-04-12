@@ -85,10 +85,12 @@ export function addServers(
       instanceSelectionStrategy?: InstanceSelectionStrategy;
     };
 
+    // Add instance selection strategy to template
+    template.instanceSelectionStrategy = instanceSelectionStrategy;
+
     currentServers[name] = ServerConfigSchema.parse({
       template,
-      instances: [defaultInstance],
-      instanceSelectionStrategy
+      instances: [defaultInstance]
     });
   }
 
@@ -128,10 +130,12 @@ export function addServer(
     instanceSelectionStrategy?: InstanceSelectionStrategy;
   };
 
+  // Add instance selection strategy to template
+  template.instanceSelectionStrategy = instanceSelectionStrategy;
+
   const serverConfig = ServerConfigSchema.parse({
     template,
-    instances: [defaultInstance],
-    instanceSelectionStrategy
+    instances: [defaultInstance]
   });
 
   currentServers[name] = serverConfig;
@@ -215,26 +219,16 @@ export function reassignServerInstanceIndexes(
  */
 export function updateServerTemplate(
   name: string,
-  updates: Partial<ServerTemplate> & { instanceSelectionStrategy?: InstanceSelectionStrategy },
+  updates: Partial<ServerTemplate>,
   currentServers: Record<string, ServerConfig>
 ): boolean {
   if (currentServers[name]) {
     const oldServerConfig = JSON.parse(JSON.stringify(currentServers[name]));
 
-    // Handle instance selection strategy update
-    if (updates.instanceSelectionStrategy !== undefined) {
-      currentServers[name].instanceSelectionStrategy = updates.instanceSelectionStrategy;
-    }
-
     // Handle template updates
-    const templateUpdates = { ...updates };
-    delete templateUpdates.instanceSelectionStrategy;
-
-    if (Object.keys(templateUpdates).length > 0) {
+    if (Object.keys(updates).length > 0) {
       // Unified type conversion: convert http to streamable-http
-      const convertedUpdates = convertHttpToStreamableHttp(
-        templateUpdates
-      ) as Partial<ServerTemplate>;
+      const convertedUpdates = convertHttpToStreamableHttp(updates) as Partial<ServerTemplate>;
       currentServers[name].template = {
         ...currentServers[name].template,
         ...convertedUpdates

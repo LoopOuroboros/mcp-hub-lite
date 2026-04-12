@@ -24,14 +24,16 @@ describe('InstanceSelector', () => {
   describe('random strategy', () => {
     it('should select random instance from enabled instances', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'random'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, enabled: true },
           { ...baseInstance, id: '2', index: 1, enabled: true },
           { ...baseInstance, id: '3', index: 2, enabled: false }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'random'
+        tagDefinitions: []
       };
 
       const selected = InstanceSelector.selectInstance('test-server', config);
@@ -41,13 +43,15 @@ describe('InstanceSelector', () => {
 
     it('should return undefined when no enabled instances', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'random'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, enabled: false },
           { ...baseInstance, id: '2', index: 1, enabled: false }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'random'
+        tagDefinitions: []
       };
 
       const selected = InstanceSelector.selectInstance('test-server', config);
@@ -58,14 +62,16 @@ describe('InstanceSelector', () => {
   describe('round-robin strategy', () => {
     it('should cycle through enabled instances', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'round-robin'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, enabled: true },
           { ...baseInstance, id: '2', index: 1, enabled: true },
           { ...baseInstance, id: '3', index: 2, enabled: true }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'round-robin'
+        tagDefinitions: []
       };
 
       const selected1 = InstanceSelector.selectInstance('test-server-rr', config);
@@ -83,14 +89,16 @@ describe('InstanceSelector', () => {
   describe('tag-match-unique strategy', () => {
     it('should select instance that uniquely matches tags', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'tag-match-unique'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, tags: { env: 'dev', region: 'us' } },
           { ...baseInstance, id: '2', index: 1, tags: { env: 'prod', region: 'us' } },
           { ...baseInstance, id: '3', index: 2, tags: { env: 'prod', region: 'eu' } }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'tag-match-unique'
+        tagDefinitions: []
       };
 
       const selected = InstanceSelector.selectInstance('test-server', config, {
@@ -103,13 +111,15 @@ describe('InstanceSelector', () => {
 
     it('should throw error when no instance matches tags', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'tag-match-unique'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, tags: { env: 'dev' } },
           { ...baseInstance, id: '2', index: 1, tags: { env: 'prod' } }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'tag-match-unique'
+        tagDefinitions: []
       };
 
       expect(() => {
@@ -121,13 +131,15 @@ describe('InstanceSelector', () => {
 
     it('should throw error when multiple instances match tags', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'tag-match-unique'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0, tags: { env: 'prod' } },
           { ...baseInstance, id: '2', index: 1, tags: { env: 'prod' } }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'tag-match-unique'
+        tagDefinitions: []
       };
 
       expect(() => {
@@ -139,13 +151,15 @@ describe('InstanceSelector', () => {
 
     it('should return first instance when no tags provided', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'tag-match-unique'
+        },
         instances: [
           { ...baseInstance, id: '1', index: 0 },
           { ...baseInstance, id: '2', index: 1 }
         ],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'tag-match-unique'
+        tagDefinitions: []
       };
 
       const selected = InstanceSelector.selectInstance('test-server', config);
@@ -157,10 +171,12 @@ describe('InstanceSelector', () => {
   describe('single instance', () => {
     it('should return the single instance regardless of strategy', () => {
       const config: ServerConfig = {
-        template: baseTemplate,
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'round-robin'
+        },
         instances: [{ ...baseInstance, id: '1', index: 0 }],
-        tagDefinitions: [],
-        instanceSelectionStrategy: 'round-robin'
+        tagDefinitions: []
       };
 
       const selected = InstanceSelector.selectInstance('test-server', config);

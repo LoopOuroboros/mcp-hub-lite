@@ -175,7 +175,7 @@
           $t('serverDetail.config.instanceSelectionStrategy')
         }}</label>
         <el-select
-          v-model="localConfig.instanceSelectionStrategy"
+          v-model="localConfig.template.instanceSelectionStrategy"
           :placeholder="$t('serverDetail.config.strategyRandom') + '（默认）'"
         >
           <el-option value="random" :label="$t('serverDetail.config.strategyRandom')" />
@@ -212,7 +212,6 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: 'update:template', config: ServerTemplate): void;
-  (e: 'update:server-config', config: Partial<ServerConfig>): void;
   (e: 'save'): void;
   (e: 'edit-json'): void;
 }>();
@@ -221,7 +220,10 @@ useI18n();
 
 const localConfig = ref<ServerConfig>({
   ...props.config,
-  instanceSelectionStrategy: props.config.instanceSelectionStrategy || 'random'
+  template: {
+    ...props.config.template,
+    instanceSelectionStrategy: props.config.template.instanceSelectionStrategy || 'random'
+  }
 });
 
 // ID counters for stable keys
@@ -235,7 +237,13 @@ const headerIds = ref<Record<string, string>>({});
 watch(
   () => props.config,
   (newConfig) => {
-    localConfig.value = { ...newConfig };
+    localConfig.value = {
+      ...newConfig,
+      template: {
+        ...newConfig.template,
+        instanceSelectionStrategy: newConfig.template.instanceSelectionStrategy || 'random'
+      }
+    };
     initializeEnvKeys();
     initializeHeaderKeys();
   },
@@ -345,7 +353,7 @@ function toggleProxy() {
 }
 
 function handleSave() {
-  // Extract template configuration
+  // Extract template configuration (including instanceSelectionStrategy)
   const templateConfig = {
     command: localConfig.value.template.command,
     args: localConfig.value.template.args,
@@ -356,18 +364,12 @@ function handleSave() {
     url: localConfig.value.template.url,
     aggregatedTools: localConfig.value.template.aggregatedTools,
     description: localConfig.value.template.description,
-    proxy: localConfig.value.template.proxy
+    proxy: localConfig.value.template.proxy,
+    instanceSelectionStrategy: localConfig.value.template.instanceSelectionStrategy
   };
 
-  // Emit template update event
+  // Emit template update event (now includes instanceSelectionStrategy)
   emit('update:template', templateConfig);
-
-  // If instance selection strategy is not default, emit server config update event
-  if (localConfig.value.instanceSelectionStrategy !== 'random') {
-    emit('update:server-config', {
-      instanceSelectionStrategy: localConfig.value.instanceSelectionStrategy
-    });
-  }
 
   emit('save');
 }

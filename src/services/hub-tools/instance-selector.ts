@@ -16,8 +16,9 @@ export class InstanceSelector {
     serverConfig: ServerConfig,
     requestOptions?: { sessionId?: string; tags?: Record<string, string> }
   ): ServerInstance | undefined {
-    const { instances, instanceSelectionStrategy = InstanceSelectionStrategy.RANDOM } =
-      serverConfig;
+    const { instances } = serverConfig;
+    const instanceSelectionStrategy =
+      serverConfig.template.instanceSelectionStrategy || InstanceSelectionStrategy.RANDOM;
 
     // Filter enabled instances
     const enabledInstances = instances.filter((instance) => instance.enabled !== false);

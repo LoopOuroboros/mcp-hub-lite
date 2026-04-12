@@ -180,7 +180,15 @@ export const ServerTemplateSchema = ServerEnvConfigSchema.extend({
   timeout: z.number().default(60000),
   url: z.string().optional(),
   aggregatedTools: z.array(z.string()).default([]),
-  description: z.string().optional()
+  description: z.string().optional(),
+  // Instance selection strategy for multi-instance servers
+  instanceSelectionStrategy: z
+    .enum([
+      InstanceSelectionStrategy.RANDOM,
+      InstanceSelectionStrategy.ROUND_ROBIN,
+      InstanceSelectionStrategy.TAG_MATCH_UNIQUE
+    ])
+    .optional()
 });
 
 export type ServerTemplate = z.infer<typeof ServerTemplateSchema>;
@@ -194,15 +202,7 @@ export type ServerTemplate = z.infer<typeof ServerTemplateSchema>;
 export const ServerConfigSchema = z.object({
   template: ServerTemplateSchema,
   instances: z.array(ServerInstanceSchema).default([]),
-  tagDefinitions: z.array(TagDefinitionSchema).default([]),
-  // Instance selection strategy for multi-instance servers
-  instanceSelectionStrategy: z
-    .enum([
-      InstanceSelectionStrategy.RANDOM,
-      InstanceSelectionStrategy.ROUND_ROBIN,
-      InstanceSelectionStrategy.TAG_MATCH_UNIQUE
-    ])
-    .optional()
+  tagDefinitions: z.array(TagDefinitionSchema).default([])
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;

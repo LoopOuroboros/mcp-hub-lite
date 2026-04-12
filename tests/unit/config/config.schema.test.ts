@@ -161,8 +161,7 @@ describe('Config Schema (v1.1)', () => {
             type: 'enum',
             values: ['dev', 'prod']
           }
-        ],
-        instanceSelectionStrategy: 'random'
+        ]
       };
 
       const result = ServerConfigSchema.safeParse(serverConfig);
@@ -179,15 +178,15 @@ describe('Config Schema (v1.1)', () => {
       for (const strategy of strategies) {
         const serverConfig = {
           template: {
-            command: 'npx my-server'
-          },
-          instanceSelectionStrategy: strategy
+            command: 'npx my-server',
+            instanceSelectionStrategy: strategy
+          }
         };
 
         const result = ServerConfigSchema.safeParse(serverConfig);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.instanceSelectionStrategy).toBe(strategy);
+          expect(result.data.template.instanceSelectionStrategy).toBe(strategy);
         }
       }
     });
@@ -195,9 +194,9 @@ describe('Config Schema (v1.1)', () => {
     it('should reject invalid instance selection strategies', () => {
       const serverConfig = {
         template: {
-          command: 'npx my-server'
-        },
-        instanceSelectionStrategy: 'invalid-strategy'
+          command: 'npx my-server',
+          instanceSelectionStrategy: 'invalid-strategy'
+        }
       };
 
       const result = ServerConfigSchema.safeParse(serverConfig);
@@ -216,7 +215,7 @@ describe('Config Schema (v1.1)', () => {
       if (result.success) {
         expect(result.data.instances).toEqual([]);
         expect(result.data.tagDefinitions).toEqual([]);
-        expect(result.data.instanceSelectionStrategy).toBeUndefined();
+        expect(result.data.template.instanceSelectionStrategy).toBeUndefined();
       }
     });
   });

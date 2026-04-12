@@ -38,7 +38,6 @@ import type {
   ServerInstance,
   ServerConfig
 } from './config.schema.js';
-import type { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { loadConfig } from './config-loader.js';
 import { saveConfig } from './config-saver.js';
 import { logConfigChanges } from './config-change-logger.js';
@@ -197,15 +196,15 @@ export class ConfigManager {
   }
 
   /**
-   * Updates an existing server configuration including server-level properties like instanceSelectionStrategy.
+   * Updates an existing server configuration.
    *
    * @param name - The name of the server to update
-   * @param updates - The partial server configuration updates to apply (can include template and instanceSelectionStrategy)
+   * @param updates - The partial server template updates to apply
    * @returns The updated server configuration or null if not found
    */
   public async updateServerConfig(
     name: string,
-    updates: Partial<ServerTemplate> & { instanceSelectionStrategy?: InstanceSelectionStrategy }
+    updates: Partial<ServerTemplate>
   ): Promise<ServerConfig | null> {
     if (updateServerTemplate(name, updates, this.config.servers)) {
       this.persistConfig();

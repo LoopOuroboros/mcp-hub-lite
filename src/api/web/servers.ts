@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
 import { ServerTemplateSchema, ServerInstanceUpdateSchema } from '@config/config.schema.js';
 import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
-import { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { stringifyForLogging, getApiDebugSetting } from '@utils/json-utils.js';
@@ -14,17 +13,9 @@ interface BatchResultSuccess {
 }
 
 /**
- * Server update schema that supports both template fields and server-level configuration fields
+ * Server update schema that supports template fields
  */
-const ServerUpdateSchema = ServerTemplateSchema.partial().extend({
-  instanceSelectionStrategy: z
-    .enum([
-      InstanceSelectionStrategy.RANDOM,
-      InstanceSelectionStrategy.ROUND_ROBIN,
-      InstanceSelectionStrategy.TAG_MATCH_UNIQUE
-    ])
-    .optional()
-});
+const ServerUpdateSchema = ServerTemplateSchema.partial();
 
 /**
  * MCP Server Management API Routes (v1.1 format)
@@ -173,21 +164,8 @@ export async function webServerRoutes(fastify: FastifyInstance) {
     try {
       const body = ServerUpdateSchema.parse(request.body);
 
-      // Separate template updates and server configuration updates
-      const { instanceSelectionStrategy, ...templateUpdates } = body;
-
-      // Update server template
-      if (Object.keys(templateUpdates).length > 0) {
-        await hubManager.updateServer(request.params.name, templateUpdates);
-      }
-
-      // Update instance selection strategy
-      if (instanceSelectionStrategy !== undefined) {
-        await hubManager.updateServerInstanceSelectionStrategy(
-          request.params.name,
-          instanceSelectionStrategy
-        );
-      }
+      // Update server template (includes instanceSelectionStrategy in template)
+      await hubManager.updateServer(request.params.name, body);
 
       const updatedServer = hubManager.getServerByName(request.params.name);
       if (!updatedServer) {

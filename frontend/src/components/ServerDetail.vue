@@ -59,7 +59,8 @@
                         env: {},
                         headers: {},
                         timeout: 60000,
-                        aggregatedTools: []
+                        aggregatedTools: [],
+                        instanceSelectionStrategy: 'random'
                       },
                       instances: [],
                       tagDefinitions: []

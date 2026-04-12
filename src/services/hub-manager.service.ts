@@ -284,8 +284,8 @@ export class HubManagerService {
       return null;
     }
 
-    // Use updateServerConfig method which can handle both template and server-level updates
-    await this.configManager.updateServerConfig(name, { instanceSelectionStrategy: strategy });
+    // Update strategy in template instead of server-level configuration
+    await this.configManager.updateServer(name, { instanceSelectionStrategy: strategy });
     logger.info(
       `Server instance selection strategy updated: ${name} -> ${strategy}`,
       LOG_MODULES.HUB_MANAGER

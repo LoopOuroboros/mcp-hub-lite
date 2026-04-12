@@ -67,6 +67,36 @@ export function loadConfig(configPath: string, autoMigrate: boolean = true): Sys
       // Unified type conversion: convert http to streamable-http
       config = convertHttpToStreamableHttp(config) as SystemConfig;
 
+      // Handle backward compatibility for instanceSelectionStrategy in root level
+      if (config.servers) {
+        for (const [serverName, serverConfig] of Object.entries(config.servers)) {
+          if (
+            serverConfig &&
+            typeof serverConfig === 'object' &&
+            'instanceSelectionStrategy' in serverConfig &&
+            serverConfig.instanceSelectionStrategy !== undefined
+          ) {
+            // Move instanceSelectionStrategy from root level to template
+            interface LegacyServerConfig {
+              instanceSelectionStrategy?: string;
+              template: {
+                instanceSelectionStrategy?: string;
+              };
+            }
+            const legacyConfig = serverConfig as LegacyServerConfig;
+            const strategy = legacyConfig.instanceSelectionStrategy;
+            if (typeof strategy === 'string') {
+              legacyConfig.template.instanceSelectionStrategy = strategy;
+            }
+            delete legacyConfig.instanceSelectionStrategy;
+            logger.debug(
+              `Migrated instanceSelectionStrategy for server ${serverName} to template`,
+              LOG_MODULES.CONFIG_LOADER
+            );
+          }
+        }
+      }
+
       // Validate and return configuration
       try {
         const parsed = SystemConfigSchema.safeParse(config);

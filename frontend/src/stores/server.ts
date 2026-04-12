@@ -161,6 +161,31 @@ export const useServerStore = defineStore('server', () => {
       const combinedServers: Server[] = [];
 
       serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
+        // Handle backward compatibility for instanceSelectionStrategy in root level
+        if (
+          serverConfig &&
+          typeof serverConfig === 'object' &&
+          'instanceSelectionStrategy' in serverConfig &&
+          serverConfig.instanceSelectionStrategy !== undefined
+        ) {
+          // Move instanceSelectionStrategy from root level to template
+          interface LegacyServerConfig {
+            instanceSelectionStrategy?: string;
+            template: {
+              instanceSelectionStrategy?: 'random' | 'round-robin' | 'tag-match-unique';
+            };
+          }
+          const legacyConfig = serverConfig as LegacyServerConfig;
+          const strategy = legacyConfig.instanceSelectionStrategy;
+          if (typeof strategy === 'string') {
+            serverConfig.template.instanceSelectionStrategy = strategy as
+              | 'random'
+              | 'round-robin'
+              | 'tag-match-unique';
+          }
+          delete legacyConfig.instanceSelectionStrategy;
+        }
+
         const template = serverConfig.template;
         const instances = serverConfig.instances || [];
 
@@ -376,21 +401,24 @@ export const useServerStore = defineStore('server', () => {
       }
 
       if (serverData.config) {
-        // Update server configuration
-        const payload: Partial<ServerRuntimeConfig> = {};
+        // Update server configuration - use ServerTemplate type to include instanceSelectionStrategy
+        const payload: Partial<ServerTemplate> = {};
         if (serverData.config.command) payload.command = serverData.config.command;
         if (serverData.config.args) payload.args = serverData.config.args;
         if (serverData.config.env) payload.env = serverData.config.env;
         if (serverData.config.headers !== undefined) payload.headers = serverData.config.headers;
         if (serverData.config.url) payload.url = serverData.config.url;
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout;
-        if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled;
         if (serverData.config.aggregatedTools !== undefined)
           payload.aggregatedTools = serverData.config.aggregatedTools;
         if (serverData.config.type) payload.type = serverData.config.type;
-        if (serverData.config.tags) payload.tags = serverData.config.tags;
         if (serverData.config.description !== undefined)
           payload.description = serverData.config.description;
+        // Include instance selection strategy from template
+        if (server.rawV11Config?.template.instanceSelectionStrategy !== undefined) {
+          payload.instanceSelectionStrategy =
+            server.rawV11Config.template.instanceSelectionStrategy;
+        }
 
         await http.put(`/web/servers/${server.name}`, payload);
       }
