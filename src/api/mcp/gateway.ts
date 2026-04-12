@@ -37,10 +37,21 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       logger.debug(initialLogMsg, LOG_MODULES.COMMUNICATION);
     }
 
-    reply.header('Content-Type', 'application/json');
-    if (!request.headers['accept']) {
-      request.headers['accept'] = 'application/json, text/event-stream';
+    // Reject GET requests without Accept: text/event-stream (health-check hook compatibility)
+    const accept = request.raw.headers['accept'] || '';
+    if (request.method === 'GET' && !accept.includes('text/event-stream')) {
+      reply.raw.writeHead(400, { 'Content-Type': 'application/json' });
+      reply.raw.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32000, message: 'Bad Request: Accept: text/event-stream required' },
+          id: null
+        })
+      );
+      return;
     }
+
+    reply.header('Content-Type', 'application/json');
 
     wrapReplyForDebug(reply, '');
 

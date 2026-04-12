@@ -114,7 +114,10 @@ export class StdioTransport implements Transport {
         }
 
         // Also write to our PassThrough stream for compatibility
-        this._stderrStream?.write(chunk);
+        // Guard against write after end during close() race condition
+        if (this._stderrStream && !this._stderrStream.writableEnded) {
+          this._stderrStream.write(chunk);
+        }
       });
     }
   }
