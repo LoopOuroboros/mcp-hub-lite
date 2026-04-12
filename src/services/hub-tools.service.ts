@@ -6,6 +6,7 @@ import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   MCP_HUB_LITE_SERVER,
   LIST_SERVERS_TOOL,
@@ -421,9 +422,13 @@ export class HubToolsService {
       serverName = MCP_HUB_LITE_SERVER;
     }
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
-      // Check if it's a system tool
+      // System tools cannot be called via call_tool - they must be called directly
       if (SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
-        return await this.callSystemTool(toolName as SystemToolName, args);
+        throw new McpError(
+          -32801,
+          `System tools cannot be called via 'call_tool'. Use 'tools/call' with the system tool name directly. ` +
+            `Example: use 'list_servers' directly instead of call_tool(serverName: "mcp-hub-lite", toolName: "list_servers").`
+        );
       }
 
       // Not a system tool - find it in all connected servers
