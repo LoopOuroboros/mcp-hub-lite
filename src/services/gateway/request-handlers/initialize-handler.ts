@@ -55,7 +55,26 @@ export function registerInitializeHandlers(server: McpServer): void {
     return { pong: true };
   });
 
-  server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
+  server.server.setNotificationHandler(InitializedNotificationSchema, async (notification) => {
     logger.debug('Received initialized notification from client', LOG_MODULES.GATEWAY);
+    logger.debug(
+      `Initialized notification details: ${JSON.stringify(notification)}`,
+      LOG_MODULES.GATEWAY
+    );
+    try {
+      // Process the notification
+      logger.debug('Successfully processed initialized notification', LOG_MODULES.GATEWAY);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(
+        `Error processing initialized notification: ${errorMessage}`,
+        LOG_MODULES.GATEWAY
+      );
+      logger.error(
+        `Notification that caused error: ${JSON.stringify(notification)}`,
+        LOG_MODULES.GATEWAY
+      );
+      throw error; // Re-throw to see if this is the source of the problem
+    }
   });
 }

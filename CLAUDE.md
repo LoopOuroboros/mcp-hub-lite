@@ -151,13 +151,21 @@ graph TD
 
 ### 传输协议支持
 
-项目通过 `src/utils/transports/` 目录支持多种 MCP 传输协议：
+项目支持多种 MCP 传输协议：
+
+**后端服务器传输协议**（通过 `src/utils/transports/` 目录）：
 
 - **StdioTransport**: 标准输入输出传输，用于本地进程
 - **SseTransport**: Server-Sent Events 传输，用于单向 HTTP-Stream 通信
 - **StreamableHttpTransport**: HTTP 流传输，支持流式响应
 
 传输工厂（`TransportFactory`）根据服务器配置自动创建对应的传输实例。
+
+**MCP Gateway 传输协议**（通过 `src/services/gateway/global-transport.ts`）：
+
+- **Per-Request StreamableHTTPServerTransport**: 每个 HTTP 请求创建独立的 transport 实例，确保多客户端状态隔离
+- 采用 **Per-Request Transport 模式**，解决全局无状态 transport 导致的连接错误问题
+- 符合 MCP 协议最佳实践，每个客户端连接拥有独立的状态机实例
 
 ## 运行与开发
 
