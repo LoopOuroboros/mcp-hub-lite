@@ -22,13 +22,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-              {{ $t('resources.uri') }}
+              {{ $t('common.uri') }}
             </div>
             <div class="font-mono text-sm break-all select-all">{{ resourceUri }}</div>
           </div>
           <div>
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-              {{ $t('resources.mimeType') }}
+              {{ $t('common.mimeType') }}
             </div>
             <div class="font-mono text-sm">{{ resourceMimeType }}</div>
           </div>
@@ -125,13 +125,23 @@ const router = useRouter();
 const store = useServerStore();
 const { t: $t } = useI18n();
 
-const serverName = computed(() => route.params.name as string);
+const serverName = computed(() => {
+  // Extract server name from route.params.name
+  // May be a full URI (hub://servers/{name}/...) or a plain server name
+  const name = route.params.name as string;
+  if (name.startsWith('hub://')) {
+    // hub://servers/{serverName}/...
+    const parts = name.replace('hub://', '').split('/');
+    return parts[1] || name;
+  }
+  return name;
+});
 const resourceUri = computed(() => route.query.uri as string);
 const resourceName = computed(() => {
-  // 1. 优先使用查询参数
+  // 1. Prefer query parameter
   if (route.query.name) return route.query.name as string;
 
-  // 2. 从 URI 中提取文件名
+  // 2. Extract filename from URI
   const uri = route.query.uri as string;
   if (uri) {
     const parts = uri.split('/');
@@ -141,7 +151,7 @@ const resourceName = computed(() => {
     }
   }
 
-  // 3. 最后的默认值
+  // 3. Default fallback
   return 'Unknown Resource';
 });
 const resourceMimeType = computed(

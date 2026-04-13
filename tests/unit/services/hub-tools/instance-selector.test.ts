@@ -180,7 +180,7 @@ describe('InstanceSelector', () => {
       expect(() => {
         InstanceSelector.selectInstance('test-server', config);
       }).toThrow(
-        'No tags provided for tag-match-unique strategy with 2 instances. Expected exactly one instance or specific tags for unique selection.'
+        'No tags provided for tag-match-unique strategy with 2 instances. Available: [0:{}, 1:{}]. Pass matching tags to select.'
       );
     });
   });

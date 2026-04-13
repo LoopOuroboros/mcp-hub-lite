@@ -194,17 +194,15 @@ export class HubToolsService {
       };
     }
 
-    const serverInfo = selectBestInstance(args.serverName, args.requestOptions, true);
+    // Use server name level cache to get tools directly without triggering instance selection
+    // This avoids tag-match-unique errors for multi-instance servers when listing tools
+    const tools = mcpConnectionManager.getToolsByServerName(args.serverName);
 
-    if (!serverInfo) {
+    if (tools.length === 0) {
       throw new Error(`Server not found: ${args.serverName}`);
     }
 
-    // Get instance ID
-    const serverId = serverInfo.instance.id as string as string;
-
-    // Get tool list from connection manager and convert to ToolSummary
-    const tools = mcpConnectionManager.getTools(serverId);
+    // Convert to ToolSummary format (without inputSchema)
     const toolSummaries: ToolSummary[] = tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
@@ -242,14 +240,13 @@ export class HubToolsService {
       return undefined;
     }
 
-    const serverInfo = selectBestInstance(args.serverName, args.requestOptions, true);
-
-    if (!serverInfo) {
+    // Use server name level cache to get tools directly without triggering instance selection
+    // This avoids tag-match-unique errors for multi-instance servers when getting tool details
+    const tools = mcpConnectionManager.getToolsByServerName(args.serverName);
+    if (tools.length === 0) {
       throw new Error(`Server not found: ${args.serverName}`);
     }
-
-    const tools = mcpConnectionManager.getTools(serverInfo.instance.id as string);
-    return tools.find((tool) => tool.name === args.toolName);
+    return tools.find((t) => t.name === args.toolName);
   }
 
   /**

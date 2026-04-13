@@ -402,7 +402,7 @@ describe('HubToolsService', () => {
         instances: [mockInstance],
         tagDefinitions: []
       });
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.listToolsInServer({ serverName });
@@ -412,16 +412,13 @@ describe('HubToolsService', () => {
         serverName,
         tools: expectedToolSummaries
       });
-      expect(hubManager.getServerInstancesByName).toHaveBeenCalledTimes(1);
-      expect(hubManager.getServerInstancesByName).toHaveBeenCalledWith(serverName);
-      expect(mcpConnectionManager.getTools).toHaveBeenCalledWith(serverId);
+      expect(mcpConnectionManager.getToolsByServerName).toHaveBeenCalledWith(serverName);
     });
 
     it('should throw error if server not found', async () => {
       // Arrange
       const serverName = 'Non-existent Server';
-      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([]);
-      vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue([]);
 
       // Act & Assert
       await expect(hubToolsService.listToolsInServer({ serverName })).rejects.toThrow(
@@ -473,7 +470,7 @@ describe('HubToolsService', () => {
         instances: [mockInstance],
         tagDefinitions: []
       });
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
 
       // Act
       const tool = await hubToolsService.getTool({ serverName, toolName });
@@ -935,6 +932,52 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(result).toEqual(mockResources);
+    });
+
+    it('should restore missing mapping and forward Hub resource reads to the MCP URI', async () => {
+      // Arrange
+      const mockConfig = {
+        template: {
+          type: 'stdio' as const,
+          command: 'test-command',
+          args: [],
+          env: {},
+          headers: {},
+          aggregatedTools: [],
+          timeout: 30000
+        },
+        instances: [
+          {
+            id: 'exa-instance-0',
+            index: 0,
+            enabled: true,
+            args: [],
+            env: {},
+            headers: {},
+            tags: {}
+          }
+        ],
+        tagDefinitions: []
+      };
+      const forwardedResponse = {
+        contents: [{ uri: 'exa://tools/list', mimeType: 'application/json', text: '[]' }]
+      };
+
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
+      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
+        { uri: 'exa://tools/list', name: 'Tools List' }
+      ]);
+      vi.mocked(mcpConnectionManager.readResource).mockResolvedValue(forwardedResponse);
+
+      // Act
+      const result = await hubToolsService.readResource('hub://servers/exa-ai/0/tools/list');
+
+      // Assert
+      expect(result).toEqual(forwardedResponse);
+      expect(mcpConnectionManager.readResource).toHaveBeenCalledWith(
+        'exa-instance-0',
+        'exa://tools/list'
+      );
     });
 
     it('should throw error for unknown resource type', async () => {

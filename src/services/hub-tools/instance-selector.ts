@@ -8,11 +8,18 @@ import { InstanceSelectionStrategy } from '@models/server.model.js';
 export class TagMatchUniqueError extends Error {
   constructor(
     public readonly instanceCount: number,
-    public readonly requestTags?: Record<string, string>
+    public readonly requestTags?: Record<string, string>,
+    public readonly availableInstances?: Record<number, Record<string, string>>
   ) {
     let message: string;
     if (!requestTags) {
-      message = `No tags provided for tag-match-unique strategy with ${instanceCount} instances. Expected exactly one instance or specific tags for unique selection.`;
+      // Format available instances as index:tags for easy selection
+      const instancesStr = availableInstances
+        ? Object.entries(availableInstances)
+            .map(([index, tags]) => `${index}:${JSON.stringify(tags)}`)
+            .join(', ')
+        : '';
+      message = `No tags provided for tag-match-unique strategy with ${instanceCount} instances. Available: [${instancesStr}]. Pass matching tags to select.`;
     } else if (instanceCount === 0) {
       message = `No instance found matching tags: ${JSON.stringify(requestTags)}`;
     } else {
@@ -87,12 +94,18 @@ export class InstanceSelector {
     instances: ServerInstance[],
     requestTags?: Record<string, string>
   ): ServerInstance | undefined {
+    // Build available instances map with index:tags format
+    const availableInstances: Record<number, Record<string, string>> = {};
+    instances.forEach((instance, index) => {
+      availableInstances[index] = instance.tags || {};
+    });
+
     if (!requestTags || Object.keys(requestTags).length === 0) {
       // If no request tags provided, must have exactly one instance to avoid ambiguity
       if (instances.length === 1) {
         return instances[0];
       } else {
-        throw new TagMatchUniqueError(instances.length);
+        throw new TagMatchUniqueError(instances.length, undefined, availableInstances);
       }
     }
 
@@ -105,7 +118,7 @@ export class InstanceSelector {
 
     // Must have exactly one matching instance
     if (matchingInstances.length !== 1) {
-      throw new TagMatchUniqueError(matchingInstances.length, requestTags);
+      throw new TagMatchUniqueError(matchingInstances.length, requestTags, availableInstances);
     }
 
     return matchingInstances[0];
