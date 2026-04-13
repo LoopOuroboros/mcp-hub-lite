@@ -144,6 +144,14 @@ export class HubToolsService {
       if (!status?.connected) {
         continue;
       }
+
+      // Use non-strict mode for management operations to avoid tag-match-unique errors
+      const serverInfo = selectBestInstance(server.name, undefined, false);
+      if (!serverInfo) {
+        // Skip servers that can't be selected (e.g., tag-match-unique without tags)
+        continue;
+      }
+
       const description = getServerDescription(server.config, server.name);
       result[server.name] = description;
     }
@@ -186,7 +194,7 @@ export class HubToolsService {
       };
     }
 
-    const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
+    const serverInfo = selectBestInstance(args.serverName, args.requestOptions, true);
 
     if (!serverInfo) {
       throw new Error(`Server not found: ${args.serverName}`);
@@ -234,7 +242,7 @@ export class HubToolsService {
       return undefined;
     }
 
-    const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
+    const serverInfo = selectBestInstance(args.serverName, args.requestOptions, true);
 
     if (!serverInfo) {
       throw new Error(`Server not found: ${args.serverName}`);
@@ -446,7 +454,7 @@ export class HubToolsService {
           continue;
         }
 
-        const serverInfo = selectBestInstance(server.name, requestOptions);
+        const serverInfo = selectBestInstance(server.name, requestOptions, true);
         if (serverInfo && (serverInfo.instance.id as string)) {
           const tools = mcpConnectionManager.getTools(serverInfo.instance.id as string);
           if (tools.some((tool) => tool.name === toolName)) {
@@ -476,7 +484,20 @@ export class HubToolsService {
       LOG_MODULES.HUB_TOOLS
     );
 
-    const serverInfo = selectBestInstance(serverName, requestOptions);
+    // Validate tool exists before doing strict instance selection
+    // Use strictMode=false to get serverInfo without triggering tag-match-unique errors
+    const validationServerInfo = selectBestInstance(serverName, requestOptions, false);
+    if (validationServerInfo && validationServerInfo.instance.id) {
+      const tools = mcpConnectionManager.getTools(validationServerInfo.instance.id as string);
+      if (!tools.some((tool) => tool.name === toolName)) {
+        throw new Error(
+          `Tool '${toolName}' not found in server '${serverName}'. ` +
+            `Use list_tools_in_server(serverName: "${serverName}") to see available tools.`
+        );
+      }
+    }
+
+    const serverInfo = selectBestInstance(serverName, requestOptions, true);
     const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     if (!serverInfo) {

@@ -1,5 +1,5 @@
 import { hubManager } from '@services/hub-manager.service.js';
-import { InstanceSelector } from './instance-selector.js';
+import { InstanceSelector, TagMatchUniqueError } from './instance-selector.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
@@ -56,7 +56,7 @@ export function hasValidId(server: unknown): server is ValidServer {
  * 2. Returns undefined if no instances are found
  * 3. Gets the server configuration from the hub manager
  * 4. Uses InstanceSelector to choose the best instance based on configured strategy
- * 5. Handles errors gracefully and returns undefined on failure
+ * 5. Handles errors based on the strictMode parameter
  *
  * Supported instance selection strategies:
  * - random: Randomly selects from enabled instances
@@ -65,6 +65,7 @@ export function hasValidId(server: unknown): server is ValidServer {
  *
  * @param {string} serverName - Name of the server to select an instance for
  * @param {RequestOptions} [requestOptions] - Optional request options for instance selection
+ * @param {boolean} [strictMode=true] - Whether to throw errors for tag-match-unique failures (default: true)
  * @returns {{ name: string; config: ServerConfig; instance: ServerInstanceConfig & Record<string, unknown> } | undefined}
  * Server information with configuration and instance details, or undefined if not found
  *
@@ -80,11 +81,15 @@ export function hasValidId(server: unknown): server is ValidServer {
  *   sessionId: 'session-123',
  *   tags: { environment: 'production' }
  * });
+ *
+ * // Non-strict mode for management operations
+ * const serverInfoNonStrict = selectBestInstance('my-mcp-server', undefined, false);
  * ```
  */
 export function selectBestInstance(
   serverName: string,
-  requestOptions?: RequestOptions
+  requestOptions?: RequestOptions,
+  strictMode: boolean = true
 ): ServerInstanceInfo | undefined {
   // Get all instances of the server
   const instances = hubManager.getServerInstancesByName(serverName);
@@ -117,7 +122,13 @@ export function selectBestInstance(
       instance: selectedInstance
     };
   } catch (error) {
-    // Handle tag matching errors and other exceptions gracefully
+    // In strict mode, re-throw tag matching errors to maintain correct semantics
+    if (strictMode && error instanceof TagMatchUniqueError) {
+      // Re-throw with server context added to message
+      throw new Error(`[${serverName}] ${error.message}`);
+    }
+
+    // Handle other errors or non-strict mode gracefully
     logger.error(
       `Instance selection failed for server ${serverName}:`,
       error,

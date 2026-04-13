@@ -38,7 +38,16 @@ describe('HubToolsService', () => {
               description: 'File system operations',
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'test-server-1-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         },
@@ -55,13 +64,30 @@ describe('HubToolsService', () => {
               timeout: 30000,
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'test-server-2-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         }
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config.instances || [];
+      });
+      vi.mocked(hubManager.getServerByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config;
+      });
       vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
         return {
           connected: true,
@@ -98,13 +124,30 @@ describe('HubToolsService', () => {
               timeout: 30000,
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'server1-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         }
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config.instances || [];
+      });
+      vi.mocked(hubManager.getServerByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config;
+      });
       vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
         return {
           connected: true,
@@ -140,7 +183,16 @@ describe('HubToolsService', () => {
               description: 'File system operations',
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'filesystem-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         },
@@ -158,13 +210,30 @@ describe('HubToolsService', () => {
               description: 'Time and timezone utilities',
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'time-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         }
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config.instances || [];
+      });
+      vi.mocked(hubManager.getServerByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config;
+      });
       vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
         return {
           connected: true,
@@ -201,7 +270,16 @@ describe('HubToolsService', () => {
               description: 'This server is connected',
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'connected-server-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         },
@@ -219,13 +297,30 @@ describe('HubToolsService', () => {
               description: 'This server is disconnected',
               tags: {}
             },
-            instances: [],
+            instances: [
+              {
+                id: 'disconnected-server-instance',
+                enabled: true,
+                args: [],
+                env: {},
+                headers: {},
+                tags: {}
+              }
+            ],
             tagDefinitions: []
           }
         }
       ];
 
       vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config.instances || [];
+      });
+      vi.mocked(hubManager.getServerByName).mockImplementation((name) => {
+        const server = mockServers.find((s) => s.name === name);
+        return server?.config;
+      });
       vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation((name) => {
         if (name === 'Connected Server') {
           return {

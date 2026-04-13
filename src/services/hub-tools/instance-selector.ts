@@ -2,6 +2,28 @@ import type { ServerConfig, ServerInstance } from '@shared-models/server.model.j
 import { InstanceSelectionStrategy } from '@models/server.model.js';
 
 /**
+ * Error thrown when tag-match-unique instance selection fails.
+ * Passes raw data so the error class itself can format the message.
+ */
+export class TagMatchUniqueError extends Error {
+  constructor(
+    public readonly instanceCount: number,
+    public readonly requestTags?: Record<string, string>
+  ) {
+    let message: string;
+    if (!requestTags) {
+      message = `No tags provided for tag-match-unique strategy with ${instanceCount} instances. Expected exactly one instance or specific tags for unique selection.`;
+    } else if (instanceCount === 0) {
+      message = `No instance found matching tags: ${JSON.stringify(requestTags)}`;
+    } else {
+      message = `Multiple instances match tags: ${JSON.stringify(requestTags)}. Expected unique match.`;
+    }
+    super(message);
+    this.name = 'TagMatchUniqueError';
+  }
+}
+
+/**
  * Instance selector for multi-instance servers
  * Implements three selection strategies: random, round-robin, and tag-match-unique
  */
@@ -66,8 +88,12 @@ export class InstanceSelector {
     requestTags?: Record<string, string>
   ): ServerInstance | undefined {
     if (!requestTags || Object.keys(requestTags).length === 0) {
-      // If no request tags provided, return first instance
-      return instances[0];
+      // If no request tags provided, must have exactly one instance to avoid ambiguity
+      if (instances.length === 1) {
+        return instances[0];
+      } else {
+        throw new TagMatchUniqueError(instances.length);
+      }
     }
 
     const matchingInstances = instances.filter((instance) => {
@@ -77,14 +103,9 @@ export class InstanceSelector {
       return Object.entries(requestTags).every(([key, value]) => instance.tags![key] === value);
     });
 
-    if (matchingInstances.length === 0) {
-      throw new Error(`No instance found matching tags: ${JSON.stringify(requestTags)}`);
-    }
-
-    if (matchingInstances.length > 1) {
-      throw new Error(
-        `Multiple instances match tags: ${JSON.stringify(requestTags)}. Expected unique match.`
-      );
+    // Must have exactly one matching instance
+    if (matchingInstances.length !== 1) {
+      throw new TagMatchUniqueError(matchingInstances.length, requestTags);
     }
 
     return matchingInstances[0];

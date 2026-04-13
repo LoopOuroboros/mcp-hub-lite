@@ -104,6 +104,7 @@ export function generateDynamicResources(): Resource[] {
   });
 
   // Use the same access pattern as tools - directly access manager cache
+  // Use strictMode=false to avoid tag-match-unique errors for multi-instance servers
   const servers = hubManager.getAllServers();
 
   for (const server of servers) {
@@ -116,7 +117,7 @@ export function generateDynamicResources(): Resource[] {
       continue;
     }
 
-    const bestInstance = selectBestInstance(server.name);
+    const bestInstance = selectBestInstance(server.name, undefined, false);
     if (!bestInstance || !bestInstance.instance.id) {
       continue;
     }

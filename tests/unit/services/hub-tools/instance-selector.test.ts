@@ -149,7 +149,22 @@ describe('InstanceSelector', () => {
       }).toThrow('Multiple instances match tags');
     });
 
-    it('should return first instance when no tags provided', () => {
+    it('should return the single instance when no tags provided and only one instance exists', () => {
+      const config: ServerConfig = {
+        template: {
+          ...baseTemplate,
+          instanceSelectionStrategy: 'tag-match-unique'
+        },
+        instances: [{ ...baseInstance, id: '1', index: 0 }],
+        tagDefinitions: []
+      };
+
+      const selected = InstanceSelector.selectInstance('test-server', config);
+      expect(selected).toBeDefined();
+      expect(selected!.id).toBe('1');
+    });
+
+    it('should throw error when no tags provided with multiple instances', () => {
       const config: ServerConfig = {
         template: {
           ...baseTemplate,
@@ -162,9 +177,11 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
-      expect(selected).toBeDefined();
-      expect(selected!.id).toBe('1');
+      expect(() => {
+        InstanceSelector.selectInstance('test-server', config);
+      }).toThrow(
+        'No tags provided for tag-match-unique strategy with 2 instances. Expected exactly one instance or specific tags for unique selection.'
+      );
     });
   });
 
