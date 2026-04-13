@@ -218,6 +218,10 @@ const groupedTools = computed(() => {
   const groups: Record<string, SearchResult[]> = {};
 
   searchResults.value.forEach((result) => {
+    // Skip results without a valid tool
+    if (!result?.tool) {
+      return;
+    }
     // Use tool.serverName directly for grouping (backend has already handled allowedTools filtering)
     const server = store.servers.find((s) => s.name === result.tool.serverName);
 
