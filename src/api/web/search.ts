@@ -1,75 +1,51 @@
 import { FastifyInstance } from 'fastify';
-import { searchCoreService } from '@services/search/search-core.service.js';
-import type { SearchOptions } from '@services/search/types.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 
 /**
  * Tool Search API Routes
  *
- * Provides powerful fuzzy search capabilities for discovering tools across all connected MCP (Model Context Protocol) servers.
- * This module enables users to quickly find relevant tools based on name, description, or other metadata using
- * advanced search algorithms with pagination support.
- *
- * The search API supports flexible query parameters including result limits, offsets for pagination,
- * and various search modes. It integrates with the core search service to provide fast and accurate
- * tool discovery across the entire MCP ecosystem.
- *
- * Additionally includes a dedicated health check endpoint for monitoring the search service availability
- * in production environments.
+ * Provides simple string-based search for discovering tools across all connected MCP servers.
+ * Uses straightforward string matching on tool name and description.
  *
  * @param fastify - The Fastify instance to register routes on
  * @returns Promise that resolves when all routes are registered
- *
- * @example
- * ```typescript
- * // Register search routes
- * await webSearchRoutes(app);
- * ```
  */
 export async function webSearchRoutes(fastify: FastifyInstance) {
-  // GET /web/search - Search for tools with query and optional filters
+  // GET /web/search - Search for tools with simple string matching
   fastify.get<{
     Querystring: {
       q: string;
       limit?: number;
-      offset?: number;
     };
   }>('/web/search', async (request) => {
-    const { q, limit, offset } = request.query;
+    const { q, limit = 50 } = request.query;
 
-    // Parse search options
-    const options: Partial<SearchOptions> = {
-      mode: 'fuzzy',
-      limit: limit ? Number(limit) : 50,
-      offset: offset ? Number(offset) : 0,
-      filters: {}
-    };
+    const allTools = mcpConnectionManager.getAllTools();
+    const query = q?.toLowerCase() || '';
 
-    // Perform search
-    const results = await searchCoreService.search(q || '', options);
+    const filtered = allTools.filter((tool) => {
+      if (!query) return true;
+      const nameMatch = tool.name.toLowerCase().includes(query);
+      const descMatch = tool.description?.toLowerCase().includes(query);
+      return nameMatch || descMatch;
+    });
+
+    const results = filtered.slice(0, limit);
 
     return {
-      results,
+      results: results.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        serverName: tool.serverName
+      })),
       pagination: {
-        total: results.length,
-        limit: options.limit,
-        offset: options.offset,
-        hasMore: results.length >= options.limit!
+        total: filtered.length,
+        limit,
+        returned: results.length
       },
       metadata: {
-        query: q,
-        filters: options.filters,
-        processingTime: 0, // To be implemented: measure processing time
-        cached: false // To be implemented: check cache status
+        query: q
       }
-    };
-  });
-
-  // GET /web/search/health - Search service health check (for monitoring)
-  fastify.get('/web/search/health', async () => {
-    return {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'search-core-service'
     };
   });
 }

@@ -16,10 +16,10 @@
  * // Get the config manager instance
  * const configManager = getConfigManager();
  *
- * // Get all servers
+ * // Get all servers (v1.1 format)
  * const servers = configManager.getServers();
  *
- * // Add a new server
+ * // Add a new server with template and default instance
  * await configManager.addServer('my-server', {
  *   type: 'stdio',
  *   command: 'npx my-mcp-server',
@@ -31,40 +31,42 @@
 import path from 'path';
 import os from 'os';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import {
-  SystemConfigSchema,
-  ServerConfigSchema,
-  ServerInstanceConfigSchema
+import { SystemConfigSchema, ServerInstanceSchema, ServerConfigSchema } from './config.schema.js';
+import type {
+  SystemConfig,
+  ServerTemplate,
+  ServerInstance,
+  ServerConfig
 } from './config.schema.js';
-import type { ServerConfig, SystemConfig, ServerInstanceConfig } from './config.schema.js';
 import { loadConfig } from './config-loader.js';
 import { saveConfig } from './config-saver.js';
-import { convertHttpToStreamableHttp } from './type-converter.js';
 import { logConfigChanges } from './config-change-logger.js';
+import { convertHttpToStreamableHttp } from './type-converter.js';
 import {
   addServers,
   addServer,
   addServerInstance,
-  updateServer,
+  updateServerTemplate,
   updateServerInstance,
   removeServer,
-  removeServerInstance
+  removeServerInstance,
+  reassignServerInstanceIndexes
 } from './server-config-manager.js';
 
 // Re-export types for external use
 export {
   ServerConfig,
   SystemConfig,
-  ServerInstanceConfig,
+  ServerInstance,
+  ServerTemplate,
   SystemConfigSchema,
   ServerConfigSchema,
-  ServerInstanceConfigSchema
+  ServerInstanceSchema
 };
 
 export class ConfigManager {
   private configPath: string;
   private config!: SystemConfig;
-  private serverInstances: Record<string, ServerInstanceConfig[]> = {};
 
   constructor(configPath?: string) {
     this.configPath =
@@ -72,19 +74,7 @@ export class ConfigManager {
       process.env.MCP_HUB_CONFIG_PATH ||
       path.join(os.homedir(), '.mcp-hub-lite', 'config', '.mcp-hub.json');
     logger.info(`Using config file: ${this.configPath}`, LOG_MODULES.CONFIG_MANAGER);
-    this.config = loadConfig(this.configPath);
-    this.initServerInstances();
-  }
-
-  private initServerInstances(): void {
-    // Init server instances
-    if (this.config && this.config.servers && typeof this.config.servers === 'object') {
-      Object.keys(this.config.servers).forEach((name) => {
-        if (!this.serverInstances[name]) this.serverInstances[name] = [];
-      });
-    } else if (!this.config) {
-      this.config = SystemConfigSchema.parse({});
-    }
+    this.config = loadConfig(this.configPath, true);
   }
 
   /**
@@ -97,7 +87,7 @@ export class ConfigManager {
   }
 
   /**
-   * Retrieves all configured servers with their configurations.
+   * Retrieves all configured servers with their configurations (v1.1 format).
    *
    * @param sortByName - Whether to sort servers by name
    * @returns Array of server objects with name and config
@@ -114,22 +104,13 @@ export class ConfigManager {
   }
 
   /**
-   * Retrieves a server configuration by name.
+   * Retrieves a server configuration by name (v1.1 format).
    *
    * @param name - The name of the server to retrieve
-   * @returns The server configuration or undefined if not found
+   * @returns The server configuration (v1.1) or undefined if not found
    */
   public getServerByName(name: string): ServerConfig | undefined {
     return this.config.servers?.[name];
-  }
-
-  /**
-   * Retrieves all server instances grouped by server name.
-   *
-   * @returns Server instances grouped by server name
-   */
-  public getServerInstances(): Record<string, ServerInstanceConfig[]> {
-    return { ...this.serverInstances };
   }
 
   /**
@@ -138,49 +119,44 @@ export class ConfigManager {
    * @param name - The name of the server to retrieve instances for
    * @returns Array of server instances, or empty array if none exist
    */
-  public getServerInstanceByName(name: string): ServerInstanceConfig[] {
-    return this.serverInstances[name] || [];
+  public getServerInstancesByName(name: string): ServerInstance[] {
+    return this.config.servers?.[name]?.instances || [];
   }
 
   /**
-   * Retrieves server information by its unique instance ID.
+   * Retrieves a specific server instance by index.
    *
-   * @param id - The unique instance ID to search for
-   * @returns Complete server information including name, configuration, and instance details
+   * @param name - The name of the server
+   * @param index - The index of the instance
+   * @returns The server instance or undefined if not found
    */
-  public getServerById(
-    id: string
-  ): { name: string; config: ServerConfig; instance: ServerInstanceConfig } | undefined {
-    for (const [serverName, instances] of Object.entries(this.serverInstances)) {
-      const instance = instances.find((inst) => inst.id === id);
-      if (instance) {
-        return { name: serverName, config: this.config.servers[serverName], instance };
-      }
-    }
-    return undefined;
+  public getServerInstanceByIndex(name: string, index: number): ServerInstance | undefined {
+    const instances = this.getServerInstancesByName(name);
+    return instances[index];
   }
 
   /**
    * Adds multiple server configurations to the system in a single operation.
    *
-   * @param servers - Array of server objects containing name and partial configuration
+   * @param servers - Array of server objects containing name and partial template configuration
    */
   public async addServers(
-    servers: Array<{ name: string; config: Partial<ServerConfig> }>
+    servers: Array<{ name: string; config: Partial<ServerTemplate> }>
   ): Promise<void> {
-    this.config.servers = addServers(servers, this.config.servers, this.serverInstances);
+    this.config.servers = addServers(servers, this.config.servers);
     this.persistConfig();
   }
 
   /**
-   * Adds a new server configuration to the system.
+   * Adds a new server configuration to the system (v1.1 format).
+   * Creates a template and a default instance.
    *
    * @param name - The unique name for the server
-   * @param config - The server configuration
-   * @returns The validated and complete server configuration
+   * @param config - The server template configuration
+   * @returns The complete server configuration (v1.1)
    */
-  public async addServer(name: string, config: Partial<ServerConfig>): Promise<ServerConfig> {
-    const validated = addServer(name, config, this.config.servers, this.serverInstances);
+  public async addServer(name: string, config: Partial<ServerTemplate>): Promise<ServerConfig> {
+    const validated = addServer(name, config, this.config.servers);
     this.persistConfig();
     return validated;
   }
@@ -194,58 +170,110 @@ export class ConfigManager {
    */
   public async addServerInstance(
     name: string,
-    instance: Partial<ServerInstanceConfig>
-  ): Promise<ServerInstanceConfig> {
-    return addServerInstance(name, instance, this.serverInstances);
+    instance: Partial<ServerInstance>
+  ): Promise<ServerInstance> {
+    const newInstance = addServerInstance(name, instance, this.config.servers);
+    this.persistConfig();
+    return newInstance;
   }
 
   /**
-   * Updates an existing server configuration with the provided changes.
+   * Updates an existing server template configuration.
    *
    * @param name - The name of the server to update
-   * @param updates - The partial configuration updates to apply
+   * @param updates - The partial template updates to apply
+   * @returns The updated server configuration or null if not found
    */
-  public async updateServer(name: string, updates: Partial<ServerConfig>): Promise<void> {
-    if (updateServer(name, updates, this.config.servers)) {
+  public async updateServer(
+    name: string,
+    updates: Partial<ServerTemplate>
+  ): Promise<ServerConfig | null> {
+    if (updateServerTemplate(name, updates, this.config.servers)) {
       this.persistConfig();
+      return this.config.servers[name] || null;
     }
+    return null;
   }
 
   /**
-   * Updates an existing server instance configuration with the provided changes.
+   * Updates an existing server configuration.
+   *
+   * @param name - The name of the server to update
+   * @param updates - The partial server template updates to apply
+   * @returns The updated server configuration or null if not found
+   */
+  public async updateServerConfig(
+    name: string,
+    updates: Partial<ServerTemplate>
+  ): Promise<ServerConfig | null> {
+    if (updateServerTemplate(name, updates, this.config.servers)) {
+      this.persistConfig();
+      return this.config.servers[name] || null;
+    }
+    return null;
+  }
+
+  /**
+   * Updates an existing server instance configuration.
    *
    * @param name - The name of the server containing the instance to update
-   * @param index - The index of the instance to update in the instances array
-   * @param updates - The partial instance configuration updates to apply
+   * @param index - The index of the instance to update
+   * @param updates - The partial instance updates to apply
+   * @returns True if the instance was updated
    */
   public async updateServerInstance(
     name: string,
     index: number,
-    updates: Partial<ServerInstanceConfig>
-  ): Promise<void> {
-    updateServerInstance(name, index, updates, this.serverInstances);
+    updates: Partial<ServerInstance>
+  ): Promise<boolean> {
+    const result = updateServerInstance(name, index, updates, this.config.servers);
+    if (result) {
+      this.persistConfig();
+    }
+    return result;
   }
 
   /**
    * Removes a server configuration and all its instances from the system.
    *
    * @param name - The name of the server to remove
-   * @returns True if the server was removed, false if it didn't exist
+   * @returns True if the server was removed
    */
-  public async removeServer(name: string): Promise<void> {
-    if (removeServer(name, this.config.servers, this.serverInstances)) {
+  public async removeServer(name: string): Promise<boolean> {
+    if (removeServer(name, this.config.servers)) {
       this.persistConfig();
+      return true;
     }
+    return false;
   }
 
   /**
    * Removes a specific server instance from the system.
    *
    * @param name - The name of the server containing the instance to remove
-   * @param index - The index of the instance to remove from the instances array
+   * @param index - The index of the instance to remove
+   * @returns True if the instance was removed
    */
-  public async removeServerInstance(name: string, index: number): Promise<void> {
-    removeServerInstance(name, index, this.serverInstances);
+  public async removeServerInstance(name: string, index: number): Promise<boolean> {
+    if (removeServerInstance(name, index, this.config.servers)) {
+      this.persistConfig();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Reassigns server instance indexes to be consecutive (0, 1, 2, ...).
+   *
+   * @param name - The name of the server to reassign indexes for
+   * @returns True if the server exists and indexes were reassigned
+   */
+  public async reassignInstanceIndexes(name: string): Promise<boolean> {
+    if (reassignServerInstanceIndexes(name, this.config.servers)) {
+      this.persistConfig();
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -269,8 +297,7 @@ export class ConfigManager {
    * Synchronizes the in-memory configuration with the on-disk configuration file.
    */
   public async syncConfig(): Promise<void> {
-    this.config = loadConfig(this.configPath);
-    this.initServerInstances();
+    this.config = loadConfig(this.configPath, true);
   }
 }
 

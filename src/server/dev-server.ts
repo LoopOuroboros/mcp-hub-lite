@@ -1,6 +1,7 @@
 import { buildApp } from '@src/app.js';
 import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
@@ -77,32 +78,49 @@ async function startDevServer() {
     logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
     const serverConfigs = configManager.getServers();
     for (const { name: serverName, config: serverConfig } of serverConfigs) {
-      if (serverConfig.enabled) {
-        // Check if there are existing instances
-        const existingInstances = configManager.getServerInstanceByName(serverName);
-        if (existingInstances.length === 0) {
-          // Auto-create instance for enabled servers
-          try {
-            const newInstance = await configManager.addServerInstance(serverName, {});
-            // Connect the new instance
-            mcpConnectionManager.connect({ ...serverConfig, ...newInstance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
-            });
-          } catch (err) {
-            logger.error(
-              `Failed to create instance for ${serverName}:`,
-              err,
-              LOG_MODULES.DEV_SERVER
-            );
+      // Check if there are existing instances
+      const existingInstances = configManager.getServerInstancesByName(serverName);
+      if (existingInstances.length === 0) {
+        // Auto-create instance for enabled servers
+        try {
+          const newInstance = await configManager.addServerInstance(serverName, {});
+          // Connect the new instance
+          const resolvedConfig = resolveInstanceConfig(serverConfig, newInstance.id);
+          if (resolvedConfig && resolvedConfig.enabled !== false) {
+            mcpConnectionManager
+              .connect(serverName, newInstance.index ?? 0, {
+                ...resolvedConfig,
+                id: newInstance.id
+              })
+              .catch((err) => {
+                logger.error(
+                  `Failed to auto-connect to ${serverName}:`,
+                  err,
+                  LOG_MODULES.DEV_SERVER
+                );
+              });
           }
-        } else {
-          // Connect existing instances
-          existingInstances.forEach((instance) => {
-            mcpConnectionManager.connect({ ...serverConfig, ...instance }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
-            });
-          });
+        } catch (err) {
+          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
         }
+      } else {
+        // Connect existing instances
+        existingInstances.forEach((instance) => {
+          if (instance.enabled !== false) {
+            const resolvedConfig = resolveInstanceConfig(serverConfig, instance.id);
+            if (resolvedConfig) {
+              mcpConnectionManager
+                .connect(serverName, instance.index ?? 0, { ...resolvedConfig, id: instance.id })
+                .catch((err) => {
+                  logger.error(
+                    `Failed to auto-connect to ${serverName}:`,
+                    err,
+                    LOG_MODULES.DEV_SERVER
+                  );
+                });
+            }
+          }
+        });
       }
     }
 
@@ -186,7 +204,7 @@ process.on('uncaughtException', (err) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason, LOG_MODULES.DEV_SERVER);
+  logger.error('Unhandled Rejection:', { promise, reason }, LOG_MODULES.DEV_SERVER);
   process.exit(1);
 });
 

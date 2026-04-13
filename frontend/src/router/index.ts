@@ -19,6 +19,29 @@ const router = createRouter({
           component: () => import('@views/ServerListView.vue')
         },
         {
+          path: 'servers/:name',
+          name: 'server-detail',
+          component: () => import('@components/ServerDetail.vue'),
+          redirect: { name: 'server-detail-config' },
+          children: [
+            {
+              path: 'config',
+              name: 'server-detail-config',
+              component: () => import('@components/ServerDetail.vue')
+            },
+            {
+              path: 'tools',
+              name: 'server-detail-tools',
+              component: () => import('@components/ServerDetail.vue')
+            },
+            {
+              path: 'resources',
+              name: 'server-detail-resources',
+              component: () => import('@components/ServerDetail.vue')
+            }
+          ]
+        },
+        {
           path: 'tools',
           name: 'tools',
           component: () => import('@views/ToolsView.vue')
@@ -27,11 +50,6 @@ const router = createRouter({
           path: 'resources',
           name: 'resources',
           component: () => import('@views/ResourcesView.vue')
-        },
-        {
-          path: 'sessions',
-          name: 'sessions',
-          component: () => import('@views/SessionsView.vue')
         },
         {
           path: 'servers/:name/resources/detail',

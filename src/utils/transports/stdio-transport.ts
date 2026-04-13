@@ -1,57 +1,22 @@
-import { spawn, ChildProcess } from 'child_process';
-import { PassThrough } from 'stream';
-import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import {
+  StdioClientTransport,
+  StdioServerParameters
+} from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { logger } from '@utils/logger.js';
 import type { LogStorageService } from '@services/log-storage.service.js';
-
-// Re-implement ReadBuffer as it is not exported from SDK root
-class ReadBuffer {
-  private _buffer?: Buffer;
-
-  append(chunk: Buffer) {
-    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-  }
-
-  readMessage(): JSONRPCMessage | null {
-    if (!this._buffer) {
-      return null;
-    }
-    const index = this._buffer.indexOf('\n');
-    if (index === -1) {
-      return null;
-    }
-    const line = this._buffer.toString('utf8', 0, index).replace(/\r$/, '');
-    this._buffer = this._buffer.subarray(index + 1);
-    try {
-      return JSON.parse(line);
-    } catch {
-      return null;
-    }
-  }
-
-  clear() {
-    this._buffer = undefined;
-  }
-}
-
-export interface StdioServerParameters {
-  command: string;
-  args?: string[];
-  env?: NodeJS.ProcessEnv;
-  stderr?: 'inherit' | 'pipe' | 'ignore';
-  cwd?: string;
-}
+import { PassThrough } from 'stream';
 
 export interface StdioTransportOptions {
-  serverId?: string;
+  compositeKey?: string;
   logStorage?: LogStorageService;
 }
 
 /**
  * A transport implementation for communicating with MCP (Model Context Protocol) servers
- * via standard input/output streams. This transport spawns a child process and establishes
- * bidirectional communication using stdin/stdout for JSON-RPC message exchange.
+ * via standard input/output streams. This transport wraps the official SDK's StdioClientTransport
+ * and provides consistent logging and integration with the MCP Hub Lite system.
  *
  * The StdioTransport handles:
  * - Cross-platform process spawning (including Windows batch file compatibility)
@@ -66,22 +31,11 @@ export interface StdioTransportOptions {
  * @implements {Transport}
  */
 export class StdioTransport implements Transport {
-  private _process?: ChildProcess;
-  private _readBuffer = new ReadBuffer();
-  private _stderrStream: PassThrough | null = null;
-  private _serverParams: StdioServerParameters;
+  private _transport: StdioClientTransport;
   private _serverName?: string;
-  private _serverId?: string;
+  private _compositeKey?: string;
   private _logStorage?: LogStorageService;
-
-  /**
-   * Gets the process ID of the spawned child process.
-   *
-   * @returns {number | undefined} The PID of the child process, or undefined if not started
-   */
-  public get pid(): number | undefined {
-    return this._process?.pid;
-  }
+  private _stderrStream: PassThrough | null = null;
 
   public onclose?: () => void;
   public onerror?: (error: Error) => void;
@@ -97,284 +51,120 @@ export class StdioTransport implements Transport {
    * @param {StdioTransportOptions} [options] - Additional options for the transport
    */
   constructor(server: StdioServerParameters, serverName?: string, options?: StdioTransportOptions) {
-    this._serverParams = server;
+    // Convert our server parameters to match SDK format
+    const sdkParams = {
+      command: server.command,
+      args: server.args,
+      env: server.env,
+      stderr: 'pipe' as const, // Always use pipe for stderr to enable logging
+      cwd: server.cwd
+    };
+
+    this._transport = new StdioClientTransport(sdkParams);
     this._serverName = serverName;
-    this._serverId = options?.serverId;
+    this._compositeKey = options?.compositeKey;
     this._logStorage = options?.logStorage;
-    if (server.stderr === 'pipe') {
-      this._stderrStream = new PassThrough();
-    }
+    this._stderrStream = new PassThrough();
   }
 
   /**
    * Starts the transport by spawning the child process and establishing communication channels.
    *
-   * This method handles platform-specific considerations:
-   * - On Windows, it automatically wraps batch commands (like npx, npm, etc.) with cmd.exe /c
-   * - Sets up proper stdio configuration based on the server parameters
-   * - Configures event listeners for process lifecycle events
-   * - Establishes data flow for stdout and stderr handling
+   * This method delegates to the SDK's StdioClientTransport.start() method which handles:
+   * - Platform-specific process spawning (including Windows batch file compatibility)
+   * - Proper stdio configuration
+   * - Event listeners for process lifecycle events
+   * - Data flow for stdout and stderr handling
    *
    * @returns {Promise<void>} Resolves when the child process is successfully spawned
    * @throws {Error} If the transport is already started
    */
   async start(): Promise<void> {
-    if (this._process) {
-      throw new Error('StdioTransport already started!');
-    }
+    // Set up event handlers before starting
+    this._transport.onmessage = (message: JSONRPCMessage) => {
+      this.onmessage?.(message);
+    };
 
-    let command = this._serverParams.command;
-    let args = this._serverParams.args ?? [];
+    this._transport.onerror = (error: Error) => {
+      this.onerror?.(error);
+    };
 
-    // Windows compatibility: Batch files (npx, npm, etc.) need cmd.exe /c to run with shell: false
-    if (process.platform === 'win32') {
-      const knownBatchCommands = ['npx', 'npm', 'pnpm', 'yarn', 'uvx'];
-      if (
-        knownBatchCommands.includes(command) ||
-        command.endsWith('.cmd') ||
-        command.endsWith('.bat')
-      ) {
-        // Use cmd.exe /c to execute the batch file
-        args = ['/c', command, ...args];
-        command = 'cmd.exe';
-      }
-    }
+    this._transport.onclose = () => {
+      this.onclose?.();
+    };
 
-    return new Promise((resolve, reject) => {
-      this._process = spawn(command, args, {
-        env: { ...process.env, ...this._serverParams.env },
-        stdio: [
-          'pipe',
-          'pipe',
-          this._serverParams.stderr === 'pipe' ? 'pipe' : this._serverParams.stderr || 'inherit'
-        ],
-        shell: false,
-        windowsHide: true, // Force hide window on Windows
-        cwd: this._serverParams.cwd
-      });
+    // Start the underlying transport
+    await this._transport.start();
 
-      this._process.on('error', (error: Error) => {
-        reject(error);
-        this.onerror?.(error);
-      });
+    // Handle stderr data by listening to the transport's stderr stream
+    if (this._transport.stderr) {
+      this._transport.stderr.on('data', (chunk: Buffer | string) => {
+        const dataStr = chunk.toString('utf8').trim();
+        if (!dataStr) return;
 
-      this._process.on('spawn', () => {
-        resolve();
-      });
-
-      this._process.on('close', () => {
-        this._process = undefined;
-        this.onclose?.();
-      });
-
-      this._process.stdin?.on('error', (error: Error) => {
-        this.onerror?.(error);
-      });
-
-      this._process.stdout?.on('data', (chunk: Buffer) => {
-        const dataStr = chunk.toString('utf8');
-
-        // Forward raw stdout data
-        this.onstdout?.(dataStr);
-
-        // Don't log raw JSON-RPC communication to avoid log noise
-        // Only need to view raw communication during development debugging
-        // Parse JSON-RPC messages
-        this._readBuffer.append(chunk);
-        this.processReadBuffer();
-      });
-
-      this._process.stdout?.on('error', (error: Error) => {
-        this.onerror?.(error);
-      });
-
-      /**
-       * Handles stderr data with common processing logic.
-       *
-       * @param chunk - The stderr data chunk
-       * @param writeToStream - Whether to write data to the PassThrough stream
-       */
-      const handleStderrData = (chunk: Buffer, writeToStream: boolean = false) => {
-        const dataStr = chunk.toString('utf8');
         // Forward raw stderr data
         this.onstderr?.(dataStr);
 
-        const trimmedData = dataStr.trim();
-        let logLevel: 'error' | 'warn' | 'info' = 'info';
+        // Log stderr output (per MCP spec, stderr is not necessarily errors)
+        const serverIdentifier = this._compositeKey || this._serverName || 'Unknown Server';
+        logger.serverLog('info', serverIdentifier, dataStr, { pid: this.pid });
 
-        // Identify log levels by keywords: only explicit error/warning markers
-        // use corresponding levels, everything else defaults to info
-        const lowerData = trimmedData.toLowerCase();
-
-        // Error level keywords
-        if (
-          lowerData.includes('error') ||
-          lowerData.includes('err') ||
-          lowerData.includes('exception') ||
-          lowerData.includes('fatal') ||
-          lowerData.includes('critical')
-        ) {
-          logLevel = 'error';
-        }
-        // Warn level keywords
-        else if (
-          lowerData.includes('warn') ||
-          lowerData.includes('wrn') ||
-          lowerData.includes('warning') ||
-          lowerData.includes('deprecation') ||
-          lowerData.includes('deprecated')
-        ) {
-          logLevel = 'warn';
+        if (this._logStorage && this._compositeKey) {
+          this._logStorage.append(this._compositeKey, 'info', dataStr);
         }
 
-        if (this._serverName) {
-          logger.serverLog(logLevel, this._serverName, trimmedData, {
-            pid: this._process?.pid
-          });
-        } else {
-          logger.serverLog(logLevel, 'Unknown Server', trimmedData, {
-            pid: this._process?.pid
-          });
+        // Also write to our PassThrough stream for compatibility
+        // Guard against write after end during close() race condition
+        if (this._stderrStream && !this._stderrStream.writableEnded) {
+          this._stderrStream.write(chunk);
         }
-
-        // Store in logStorage for frontend display if available
-        if (this._logStorage && this._serverId) {
-          this._logStorage.append(
-            this._serverId,
-            logLevel,
-            `[${this._serverName || 'Unknown Server'}] [STDERR] ${trimmedData}`
-          );
-        }
-
-        // Optionally write to PassThrough stream if configured
-        if (writeToStream) {
-          this._stderrStream?.write(chunk);
-        }
-      };
-
-      if (this._stderrStream && this._process.stderr) {
-        this._process.stderr.on('data', (chunk: Buffer) => {
-          handleStderrData(chunk, true); // Write to PassThrough stream for piped stderr
-        });
-      } else if (this._process.stderr) {
-        // If stderr is not in pipe mode, listen directly
-        this._process.stderr.on('data', (chunk: Buffer) => {
-          handleStderrData(chunk, false); // No PassThrough stream for non-piped stderr
-        });
-      }
-    });
+      });
+    }
   }
 
   /**
    * Gets the stderr stream for the child process.
    *
-   * Returns a PassThrough stream if stderr is configured as 'pipe', otherwise returns
-   * the actual stderr stream from the child process, or null if no stderr is available.
+   * Returns our PassThrough stream that captures stderr data.
    *
-   * @returns {PassThrough | NodeJS.ReadableStream | null} The stderr stream or null
+   * @returns {PassThrough | null} The stderr stream or null
    */
   get stderr() {
-    return this._stderrStream ?? this._process?.stderr ?? null;
+    return this._stderrStream;
   }
 
   /**
-   * Processes the internal read buffer to extract and dispatch JSON-RPC messages.
+   * Gets the process ID of the spawned child process.
    *
-   * This method continuously reads complete JSON-RPC messages from the buffer
-   * and dispatches them to the onmessage callback. It handles partial messages
-   * by leaving incomplete data in the buffer for future processing.
-   *
-   * The method uses a while loop to process all available complete messages
-   * in a single call, ensuring efficient message handling without blocking.
-   *
-   * @private
+   * @returns {number | undefined} The PID of the child process, or undefined if not started
    */
-  processReadBuffer() {
-    while (true) {
-      try {
-        const message = this._readBuffer.readMessage();
-        if (message === null) {
-          break;
-        }
-        this.onmessage?.(message);
-      } catch (error) {
-        this.onerror?.(error as Error);
-      }
-    }
+  public get pid(): number | undefined {
+    return this._transport.pid ?? undefined;
   }
 
   /**
    * Closes the transport by gracefully terminating the child process.
    *
-   * This method implements a graceful shutdown sequence:
-   * 1. Sends SIGTERM to allow the child process to clean up
-   * 2. Waits up to 5 seconds for graceful termination
-   * 3. Forces termination with SIGKILL if the process doesn't exit
-   * 4. Cleans up internal state and resolves the promise
-   *
-   * The method ensures proper cleanup of the read buffer and handles
-   * any errors that occur during the shutdown process.
+   * This method delegates to the SDK's StdioClientTransport.close() method which handles:
+   * - Graceful shutdown sequence with SIGTERM/SIGKILL
+   * - Proper cleanup of internal state
    *
    * @returns {Promise<void>} Resolves when the transport is fully closed
    */
   async close(): Promise<void> {
-    if (this._process) {
-      return new Promise((resolve) => {
-        // Listen for child process exit events
-        const cleanup = () => {
-          this._process = undefined;
-          this._readBuffer.clear();
-          resolve();
-        };
-
-        if (this._process) {
-          this._process.once('close', cleanup);
-          this._process.once('exit', cleanup);
-
-          // Send SIGTERM signal to give child process a chance to shut down gracefully
-          try {
-            this._process.kill('SIGTERM');
-
-            // Set timeout protection to force kill if child process doesn't exit within 5 seconds
-            const timeout = setTimeout(() => {
-              if (this._process) {
-                logger.warn('Child process did not exit gracefully, force killing...');
-                this._process.kill('SIGKILL');
-              }
-            }, 5000);
-
-            // Ensure timeout timer is cleared after process exits
-            this._process.once('close', () => clearTimeout(timeout));
-            this._process.once('exit', () => clearTimeout(timeout));
-          } catch (error) {
-            logger.error('Error closing stdio transport:', error);
-            cleanup();
-          }
-        } else {
-          // Process is already undefined, just resolve
-          resolve();
-        }
-      });
-    }
-    this._readBuffer.clear();
+    await this._transport.close();
+    this._stderrStream?.end();
   }
 
   /**
    * Sends a JSON-RPC message to the child process via stdin.
    *
-   * This method serializes the message to JSON, appends a newline character,
-   * and writes it to the child process's stdin stream. It validates that
-   * the transport is connected before attempting to send the message.
+   * This method delegates to the SDK's StdioClientTransport.send() method.
    *
    * @param {JSONRPCMessage} message - The JSON-RPC message to send
    * @returns {Promise<void>} Resolves when the message is written to stdin
-   * @throws {Error} If the transport is not connected (no active child process)
    */
   async send(message: JSONRPCMessage): Promise<void> {
-    if (!this._process?.stdin) {
-      throw new Error('Not connected');
-    }
-    const json = JSON.stringify(message) + '\n';
-    this._process.stdin.write(json);
+    await this._transport.send(message);
   }
 }

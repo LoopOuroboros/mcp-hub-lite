@@ -52,8 +52,17 @@
         </div>
       </el-form-item>
 
-      <el-form-item :label="$t('addServer.name')">
+      <el-form-item :label="$t('common.name')">
         <el-input v-model="form.name" :placeholder="$t('addServer.namePlaceholder')" />
+      </el-form-item>
+
+      <el-form-item :label="$t('common.description')">
+        <el-input
+          v-model="form.description"
+          type="textarea"
+          :rows="2"
+          :placeholder="$t('addServer.descriptionPlaceholder')"
+        />
       </el-form-item>
 
       <template v-if="form.transport === 'stdio'">
@@ -92,6 +101,18 @@
         <el-switch v-model="form.autoStart" />
       </el-form-item>
 
+      <!-- Instance Selection Strategy -->
+      <el-form-item :label="$t('serverDetail.config.instanceSelectionStrategy')">
+        <el-select v-model="form.instanceSelectionStrategy" placeholder="随机（默认）">
+          <el-option value="random" :label="$t('serverDetail.config.strategyRandom')" />
+          <el-option value="round-robin" :label="$t('serverDetail.config.strategyRoundRobin')" />
+          <el-option
+            value="tag-match-unique"
+            :label="$t('serverDetail.config.strategyTagMatchUnique')"
+          />
+        </el-select>
+      </el-form-item>
+
       <el-form-item :label="$t('serverDetail.config.env')">
         <div
           class="w-full flex flex-col gap-2"
@@ -124,7 +145,7 @@
       </el-form-item>
 
       <template v-if="form.transport !== 'stdio'">
-        <el-form-item label="Headers">
+        <el-form-item :label="$t('serverDetail.config.headers')">
           <div
             class="w-full flex flex-col gap-2"
             style="display: flex; flex-direction: column; width: 100%"
@@ -149,7 +170,7 @@
             </div>
             <div>
               <el-button :icon="Plus" plain size="small" @click="addHeader"
-                >+ {{ $t('serverDetail.config.addEnv') }}</el-button
+                >+ {{ $t('serverDetail.config.addHeader') }}</el-button
               >
             </div>
           </div>
@@ -273,6 +294,7 @@ import { useI18n } from 'vue-i18n';
 import { Plus, Delete } from '@element-plus/icons-vue';
 import { useServerStore } from '@stores/server';
 import { ElMessage } from 'element-plus';
+import { http } from '@utils/http';
 
 // Server type for import result
 interface ImportedServer {
@@ -308,7 +330,7 @@ watch(dialogVisible, (val) => {
 const defaultJsonConfig = `{\n  "mcpServers": {\n  }\n}`;
 const jsonConfig = ref(defaultJsonConfig);
 const batchJsonConfig = ref(
-  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`
+  `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true,\n      "description": "A sample MCP server using stdio transport"\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true,\n      "description": "A sample MCP server using HTTP transport"\n    }\n  }\n}`
 );
 
 const importResult = ref({
@@ -319,11 +341,13 @@ const importResult = ref({
 const form = ref({
   transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
   name: '',
+  description: '',
   command: '',
   args: [] as string[],
   url: '',
   timeout: 60,
-  autoStart: true
+  autoStart: true,
+  instanceSelectionStrategy: 'random' as 'random' | 'round-robin' | 'tag-match-unique'
 });
 
 const envItems = ref<{ key: string; value: string }[]>([]);
@@ -378,6 +402,10 @@ function importJson() {
         key,
         value: String(value)
       }));
+    }
+
+    if (configToUse.description) {
+      form.value.description = configToUse.description;
     }
 
     showImportJson.value = false;
@@ -457,16 +485,18 @@ function resetForm() {
   form.value = {
     transport: 'stdio',
     name: '',
+    description: '',
     command: '',
     args: [],
     url: '',
     timeout: 60,
-    autoStart: true
+    autoStart: true,
+    instanceSelectionStrategy: 'random'
   };
   envItems.value = [];
   headerItems.value = [];
   jsonConfig.value = defaultJsonConfig;
-  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true\n    }\n  }\n}`;
+  batchJsonConfig.value = `{\n  "mcpServers": {\n    "server1": {\n      "command": "npx @anthropic-ai/mcp",\n      "args": ["--model", "claude-3-opus-20250620"],\n      "enabled": true,\n      "description": "A sample MCP server using stdio transport"\n    },\n    "server2": {\n      "type": "streamable-http",\n      "url": "http://localhost:3000",\n      "headers": { "Authorization": "Bearer token" },\n      "enabled": true,\n      "description": "A sample MCP server using HTTP transport"\n    }\n  }\n}`;
   importResult.value = {
     success: [],
     errors: []
@@ -499,6 +529,7 @@ async function createServer() {
   );
 
   try {
+    // Step 1: Create server with basic configuration
     await store.addServer({
       name: form.value.name || 'Unnamed Server',
       status: 'offline',
@@ -510,12 +541,20 @@ async function createServer() {
         url: form.value.url,
         timeout: form.value.timeout * 1000,
         enabled: form.value.autoStart,
-        allowedTools: [],
+        aggregatedTools: [],
         env,
-        headers: Object.keys(headers).length > 0 ? headers : undefined
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
+        description: form.value.description || undefined
       },
       logs: []
     });
+
+    // Step 2: Update server to set instance selection strategy (only if not default)
+    if (form.value.instanceSelectionStrategy !== 'random') {
+      await http.put(`/web/servers/${form.value.name}`, {
+        instanceSelectionStrategy: form.value.instanceSelectionStrategy
+      });
+    }
 
     ElMessage.success(t('action.serverAdded'));
     handleClose();

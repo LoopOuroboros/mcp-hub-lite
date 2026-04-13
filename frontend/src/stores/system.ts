@@ -30,6 +30,13 @@ function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   return result as T;
 }
 
+export interface TagDefinition {
+  key: string;
+  description?: string;
+  type: 'string' | 'number' | 'boolean' | 'enum';
+  values?: string[];
+}
+
 export interface SystemConfig {
   system: {
     host: string;
@@ -41,7 +48,7 @@ export interface SystemConfig {
       rotationAge: string;
       jsonPretty: boolean;
       mcpCommDebug: boolean;
-      sessionDebug: boolean;
+      apiDebug: boolean;
     };
   };
   security: {
@@ -49,10 +56,9 @@ export interface SystemConfig {
     maxConcurrentConnections: number;
     connectionTimeout: number;
     idleConnectionTimeout: number;
-    sessionTimeout: number;
-    sessionFlushInterval: number;
     maxConnections: number;
   };
+  tagDefinitions?: TagDefinition[];
   isDevMode?: boolean;
   [key: string]: unknown;
 }
@@ -69,7 +75,7 @@ export const useSystemStore = defineStore('system', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        sessionDebug: false
+        apiDebug: false
       }
     },
     security: {
@@ -77,10 +83,9 @@ export const useSystemStore = defineStore('system', () => {
       maxConcurrentConnections: 50,
       connectionTimeout: 30000,
       idleConnectionTimeout: 300000,
-      sessionTimeout: 30 * 60 * 1000,
-      sessionFlushInterval: 15 * 60 * 1000,
       maxConnections: 50
     },
+    tagDefinitions: [],
     isDevMode: false
   });
 

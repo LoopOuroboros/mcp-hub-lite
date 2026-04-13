@@ -7,15 +7,110 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**
- * Logs the differences between two system configurations.
- *
- * This function performs a deep comparison of two configuration objects
- * and logs all changes at the field level for audit purposes.
- *
- * @param oldConfig - The original configuration
- * @param newConfig - The new configuration
+ * Sensitive KEY patterns (case-insensitive).
+ * Fields whose key contains any of these patterns will have their values masked.
  */
-export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfig): void {
+const SENSITIVE_KEY_PATTERNS = [
+  'token',
+  'key',
+  'authorization',
+  'secret',
+  'password',
+  'credential'
+];
+
+/**
+ * Sensitive VALUE patterns.
+ * String values containing any of these patterns will be masked.
+ */
+const SENSITIVE_VALUE_PATTERNS = ['Bearer', 'sk-', 'sk_', 'api_key', 'apikey'];
+
+/**
+ * Checks if a key looks sensitive based on its name.
+ *
+ * @param key - The key to check
+ * @returns True if the key is sensitive
+ */
+function isSensitiveKey(key: string): boolean {
+  const lowerKey = key.toLowerCase();
+  return SENSITIVE_KEY_PATTERNS.some((pattern) => lowerKey.includes(pattern));
+}
+
+/**
+ * Checks if a value looks sensitive based on its content.
+ *
+ * @param value - The value to check
+ * @returns True if the value is sensitive
+ */
+function isSensitiveValue(value: string): boolean {
+  return SENSITIVE_VALUE_PATTERNS.some((pattern) => value.includes(pattern));
+}
+
+/**
+ * Masks a sensitive value while preserving partial visibility.
+ * - For values with length < 8: preserves first and last character
+ * - For values with length >= 8: preserves first 4 and last 4 characters
+ *
+ * @param value - The value to mask
+ * @returns The masked value
+ */
+function maskSensitiveValue(value: string): string {
+  if (value.length < 8) {
+    return value[0] + '****' + value[value.length - 1];
+  }
+  return value.substring(0, 4) + '********' + value.substring(value.length - 4);
+}
+
+/**
+ * Normalizes a URL string by removing trailing slashes.
+ *
+ * @param url - The URL to normalize
+ * @returns Normalized URL
+ */
+function normalizeUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+/**
+ * Checks if a path looks like a URL field.
+ *
+ * @param path - The field path to check
+ * @returns True if the path looks like a URL field
+ */
+function isUrlField(path: string): boolean {
+  const urlPatterns = [/\.url$/, /^url$/, /\.proxy\.url$/];
+  return urlPatterns.some((pattern) => pattern.test(path));
+}
+
+/**
+ * Compares two values with URL normalization support.
+ *
+ * @param val1 - First value
+ * @param val2 - Second value
+ * @param path - The field path for context
+ * @returns True if values are considered equal
+ */
+function areValuesEqual(val1: unknown, val2: unknown, path: string): boolean {
+  // Special handling for URL fields
+  if (isUrlField(path)) {
+    if (typeof val1 === 'string' && typeof val2 === 'string') {
+      return normalizeUrl(val1) === normalizeUrl(val2);
+    }
+  }
+  return JSON.stringify(val1) === JSON.stringify(val2);
+}
+
+/**
+ * Gets the changes between two objects.
+ *
+ * This function performs a deep comparison of two objects
+ * and returns all changes at the field level.
+ *
+ * @param oldObj - The original object
+ * @param newObj - The new object
+ * @returns An array of change strings
+ */
+export function getObjectChanges(oldObj: unknown, newObj: unknown): string[] {
   const changes: string[] = [];
 
   const compare = (obj1: unknown, obj2: unknown, path: string) => {
@@ -28,7 +123,7 @@ export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfi
       const val2 =
         obj2 && typeof obj2 === 'object' ? (obj2 as Record<string, unknown>)[key] : undefined;
 
-      if (JSON.stringify(val1) === JSON.stringify(val2)) continue;
+      if (areValuesEqual(val1, val2, currentPath)) continue;
 
       if (
         typeof val1 === 'object' &&
@@ -40,15 +135,59 @@ export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfi
       ) {
         compare(val1, val2, currentPath);
       } else {
-        const formatVal = (v: unknown) => (v === undefined ? 'undefined' : JSON.stringify(v));
-        changes.push(`${currentPath} = ${formatVal(val1)} -> ${formatVal(val2)}`);
+        const formatVal = (key: string, v: unknown) => {
+          if (v === undefined) return 'undefined';
+          const str = JSON.stringify(v);
+          if (typeof v === 'string' && (isSensitiveKey(key) || isSensitiveValue(v))) {
+            return `"${maskSensitiveValue(v)}"`;
+          }
+          return str;
+        };
+        changes.push(`${currentPath} = ${formatVal(key, val1)} -> ${formatVal(key, val2)}`);
       }
     }
   };
 
-  compare(oldConfig, newConfig, '');
+  compare(oldObj, newObj, '');
+  return changes;
+}
+
+/**
+ * Logs object changes with a custom title.
+ *
+ * @param title - The title to display before the changes
+ * @param oldObj - The original object
+ * @param newObj - The new object
+ * @param logModule - The log module to use
+ */
+export function logObjectChangesWithTitle(
+  title: string,
+  oldObj: unknown,
+  newObj: unknown,
+  logModule: { module: string } = LOG_MODULES.CONFIG_CHANGES
+): void {
+  const changes = getObjectChanges(oldObj, newObj);
 
   if (changes.length > 0) {
-    logger.info(`${changes.join('\n')}`, LOG_MODULES.CONFIG_CHANGES);
+    const message = `${title}\n${changes.join('\n')}`;
+    logger.info(message, logModule);
+  }
+}
+
+/**
+ * Logs the differences between two system configurations.
+ *
+ * This function performs a deep comparison of two configuration objects
+ * and logs all changes at the field level for audit purposes.
+ *
+ * @param oldConfig - The original configuration
+ * @param newConfig - The new configuration
+ */
+export function logConfigChanges(oldConfig: SystemConfig, newConfig: SystemConfig): void {
+  const changes = getObjectChanges(oldConfig, newConfig);
+
+  if (changes.length > 0) {
+    const message = `System Config Changes：\n${changes.join('\n')}`;
+    logger.info(message, LOG_MODULES.CONFIG_CHANGES);
   }
 }

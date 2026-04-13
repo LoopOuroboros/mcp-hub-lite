@@ -4,7 +4,7 @@
 
 ## 模块职责
 
-Backend Core 模块包含后端源代码，实现所有服务器端逻辑，包括 MCP 网关、服务器管理、工具搜索、会话管理等核心功能。
+Backend Core 模块包含后端源代码，实现所有服务器端逻辑，包括 MCP 网关、服务器管理、工具搜索等核心功能。
 
 ## 目录结构
 
@@ -71,7 +71,6 @@ mcp-hub-lite start --foreground
 - **系统工具**: `/web/hub-tools`
 - **客户端管理**: `/web/clients`
 - **资源**: `/web/resources`
-- **会话管理**: `/web/sessions`
 
 ### WebSocket 接口
 
@@ -130,8 +129,6 @@ interface SessionState {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
-  cwd?: string;
-  project?: string;
   createdAt: number;
   lastAccessedAt: number;
   metadata: Record<string, unknown>;
@@ -208,13 +205,13 @@ curl -X POST http://localhost:7788/web/servers \
 # 在 .mcp-hub.json 中添加 servers 配置
 ```
 
-### Q: 会话持久化如何工作？
+### Q: 会话管理如何工作？
 
-A: 会话状态自动保存到 `~/.mcp-hub-lite/sessions/` 目录：
+A: 会话状态完全在内存中管理：
 
-- 服务重启后自动恢复会话状态
-- 脏数据追踪，5秒批量刷新，减少 I/O
+- 基于 sessionId 的会话隔离
 - 可配置的会话超时（默认 30 分钟）
+- 服务重启后会话重置（无持久化）
 
 ### Q: 如何配置传输协议？
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -42,25 +43,26 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 describe('MCP Protocol Contract - initialize (with SDK)', () => {
   const serverName = 'test-sdk-server';
   let serverId: string;
+  let serverIndex: number;
 
   beforeEach(async () => {
-    // Add to hub manager
+    // Add to hub manager (v1.1 format)
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
+    serverIndex = instance.index ?? 0;
   });
 
   afterEach(async () => {
-    await mcpConnectionManager.disconnect(serverId);
+    await mcpConnectionManager.disconnect(serverName, serverIndex);
     hubManager.removeServer(serverName);
   });
 
@@ -71,19 +73,19 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
-    const status = mcpConnectionManager.getStatus(serverId);
+    const status = mcpConnectionManager.getStatus(serverName, serverIndex);
     expect(status?.connected).toBe(true);
     expect(status?.version).toBe('1.0.0');
   });
@@ -95,19 +97,19 @@ describe('MCP Protocol Contract - initialize (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
-    const tools = mcpConnectionManager.getTools(serverId);
+    const tools = mcpConnectionManager.getTools(serverName, serverIndex);
     expect(tools).toHaveLength(1);
     expect(tools[0].name).toBe('echo');
     expect(tools[0].description).toBe('Echo the input');

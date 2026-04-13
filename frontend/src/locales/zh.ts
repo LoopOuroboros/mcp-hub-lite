@@ -5,9 +5,11 @@ export default {
     stop: '停止',
     restart: '重启',
     delete: '删除',
+    deleteServer: '删除服务器',
     edit: '编辑',
     save: '保存',
     cancel: '取消',
+    confirm: '确认',
     configure: '配置',
     create: '创建服务器',
     view: '查看',
@@ -21,12 +23,36 @@ export default {
     logsCopied: '日志已复制到剪贴板',
     serverAdded: '服务器添加成功',
     configImported: '配置导入成功',
-    saveSuccess: '配置保存成功'
+    saveSuccess: '配置保存成功',
+    copiedToClipboard: '已复制到剪贴板',
+    copyFailed: '复制到剪贴板失败',
+    displayNameUpdated: '实例名称已更新',
+    instanceAdded: '实例添加成功',
+    instanceDeleted: '实例删除成功',
+    indexesReassigned: '索引重新分配成功',
+    startAll: '全部启动',
+    stopAll: '全部停止',
+    restartAll: '全部重启'
+  },
+  common: {
+    copy: '复制',
+    description: '描述',
+    name: '名称',
+    uri: 'URI',
+    mimeType: 'MIME 类型',
+    logs: '日志',
+    config: '配置',
+    tools: '工具',
+    resources: '资源',
+    instance: '实例',
+    template: '模板',
+    addTag: '添加标签',
+    editTag: '编辑标签',
+    deleteTag: '删除标签'
   },
   sidebar: {
     title: 'MCP 服务器管理器',
     dashboard: '仪表板',
-    sessions: '会话',
     servers: 'MCP 服务器',
     resources: 'MCP 资源网关',
     addServer: '添加新服务器',
@@ -42,10 +68,6 @@ export default {
     serverResources: '服务器资源',
     toolResources: '工具资源',
     dataResources: '数据资源',
-    name: '名称',
-    uri: 'URI',
-    mimeType: 'MIME 类型',
-    description: '描述',
     server: '服务器',
     contentPreview: '内容预览',
     preview: '预览',
@@ -53,20 +75,6 @@ export default {
     download: '下载',
     loadingContent: '加载内容中...',
     noDescription: '无描述信息'
-  },
-  sessions: {
-    title: '持久化会话',
-    refresh: '刷新',
-    sessionId: '会话 ID',
-    clientName: '客户端名称',
-    clientVersion: '客户端版本',
-    protocolVersion: '协议版本',
-    capabilities: '能力',
-    userAgent: '用户代理',
-    cwd: '工作目录',
-    project: '项目',
-    createdAt: '创建时间',
-    lastAccessedAt: '最后访问时间'
   },
   settings: {
     title: '系统设置',
@@ -89,7 +97,7 @@ export default {
     debugOptions: '调试选项',
     jsonPretty: '日志中JSON格式化',
     mcpCommDebug: '启用MCP通信调试',
-    sessionDebug: '启用会话调试',
+    apiDebug: '启用API调试',
     security: '安全设置',
     allowedNetworks: '允许的网络',
     allowedNetworksHint: '输入 IP CIDR (如 192.168.1.0/24)。按回车添加。',
@@ -97,8 +105,6 @@ export default {
     maxConnections: '最大连接数',
     connectionTimeout: '连接超时',
     idleConnectionTimeout: '空闲连接超时',
-    sessionTimeout: '会话超时',
-    sessionFlushInterval: '会话刷盘间隔',
     fetchError: '获取配置失败',
     saveSuccess: '配置保存成功',
     saveError: '保存配置失败',
@@ -107,7 +113,18 @@ export default {
       minutes: '分钟',
       hours: '小时',
       days: '天'
-    }
+    },
+    tagsTab: '标签',
+    tagDefinitions: '标签定义',
+    tagKey: '标签键',
+    tagDescription: '描述',
+    tagType: '类型',
+    tagValues: '可选值',
+    deleteTagConfirm: '确定要删除此标签定义吗？',
+    noTagsDefined: '尚未定义标签',
+    tagKeyPlaceholder: '输入标签键（如 environment, priority）',
+    tagDescriptionPlaceholder: '输入标签描述',
+    tagValuesPlaceholder: '输入可选值，按回车添加'
   },
   dashboard: {
     title: '仪表盘',
@@ -119,15 +136,22 @@ export default {
   serverDetail: {
     emptySelect: '请选择一个服务器以查看详情',
     noServerSelected: '未选择服务器',
+    noInstanceSelected: '请选择一个实例',
+    noSelection: '请选择模板或实例',
     deleteConfirm: '确定要删除此服务器吗？',
-    version: '版本',
+    deleteInstanceConfirm: '确定要删除此实例吗？',
     pid: '进程ID',
     uptime: '运行时间',
-    tabs: {
-      config: '配置',
-      logs: '日志',
-      tools: '工具',
-      resources: '资源'
+    selectInstanceForTool: '选择要调用工具的实例',
+    selectInstanceForResource: '选择要查看资源的实例',
+    selectInstancePlaceholder: '选择一个实例...',
+    confirm: '确认',
+    tabs: {},
+    configTabs: {
+      instances: '实例'
+    },
+    instanceTabs: {
+      configOverride: '实例配置'
     },
     config: {
       transport: '传输方式',
@@ -140,19 +164,41 @@ export default {
       env: '环境变量',
       timeout: '超时时间 (秒)',
       autoStart: '随系统启动',
+      instanceSelectionStrategy: '实例选择策略',
+      strategyRandom: '随机',
+      strategyRoundRobin: '轮询',
+      strategyTagMatchUnique: '标签匹配唯一',
       addArg: '添加参数',
       addEnv: '添加环境变量',
+      addHeader: '添加请求头',
+      headers: '请求头',
+      proxy: '代理',
+      addProxy: '添加代理',
+      removeProxy: '移除代理',
+      proxyPlaceholder: 'http://proxy.example.com:8080',
+      tags: '标签',
       save: '保存配置',
       editByJson: '通过 JSON 编辑',
-      description: '描述',
       descriptionPlaceholder: '请输入服务器描述'
+    },
+    instanceConfig: {
+      title: '实例配置',
+      template: '模版配置',
+      readOnly: '只读',
+      override: '实例配置覆盖',
+      editable: '可编辑',
+      fromTemplate: '来自模板',
+      noArgs: '无参数',
+      noEnv: '无环境变量',
+      noHeaders: '无请求头',
+      noTags: '无标签',
+      mergedPreview: '合并后的最终配置预览',
+      viewMerged: '查看合并配置'
     },
     logs: {
       autoScroll: '自动滚动',
       clear: '清空',
-      copy: '复制',
       copied: '日志已复制到剪贴板',
-      instance: '实例',
       selectInstance: '选择一个实例'
     },
     tools: {
@@ -166,9 +212,6 @@ export default {
       call: '调用'
     },
     resources: {
-      name: '名称',
-      uri: 'URI',
-      mimeType: 'MIME 类型',
       none: '暂无可用资源'
     },
     status: {
@@ -179,13 +222,22 @@ export default {
       stopping: '停止中',
       error: '错误',
       starting: '启动中'
+    },
+    editJsonTitle: '编辑 JSON 配置',
+    instances: {
+      title: '实例',
+      templateTag: '模板配置',
+      unnamed: '未命名',
+      add: '添加实例',
+      reassignIndexes: '重新分配索引',
+      editDisplayName: '编辑显示名称'
     }
   },
   addServer: {
     title: '添加新 MCP 服务器',
     transportType: '选择传输类型',
-    name: '服务器名称',
     namePlaceholder: '我的新服务器',
+    descriptionPlaceholder: '请输入服务器描述',
     executablePlaceholder: '/path/to/executable 或 npx',
     argPlaceholder: '参数',
     urlPlaceholder: 'http://localhost:3000/sse',
@@ -205,7 +257,6 @@ export default {
     invalidServerConfig: '服务器配置无效',
     addServerFailed: '添加服务器失败',
     invalidJsonConfig: '无效的 JSON 配置',
-    unknown: '发生未知错误',
     saveFailed: '保存配置失败'
   },
   tools: {
@@ -213,7 +264,7 @@ export default {
     searchPlaceholder: "搜索所有工具 (例如：'file', 'database', 'list')...",
     systemTools: '网关系统工具',
     aggregatedTools: '聚合服务器工具',
-    noToolsFound: '未找到工具。请连接一些服务器以开始使用。',
+    noToolsFound: '未聚合工具，请在服务器选中工具进行聚合。',
     call: '调用',
     noDescription: '未提供描述',
     systemTag: '系统',
@@ -235,7 +286,6 @@ export default {
     invalidJsonArguments: '无效的 JSON 参数',
     executionSuccessful: '工具执行成功',
     executionFailed: '工具执行失败',
-    instance: '实例',
     selectInstance: '选择一个实例'
   }
 };

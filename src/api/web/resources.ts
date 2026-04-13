@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { Resource } from '@shared-models/resource.model.js';
@@ -72,19 +71,21 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
           };
         }
 
-        // Find server ID
-        const serverId = mcpConnectionManager.getServerIdByName(name);
-        if (!serverId) {
-          // Try using name directly as ID (unlikely but for robustness)
-          if (mcpConnectionManager.getStatus(name)) {
-            const result = await mcpConnectionManager.readResource(name, uri);
-            return result;
+        // Use hubToolsService.readResource to handle Hub URI -> MCP URI conversion
+        // This properly maps hub://servers/{name}/{instanceIndex}/{mcpPath} to MCP native URI
+        try {
+          // hubToolsService.readResource already returns MCP format for forwarding case
+          return await hubToolsService.readResource(uri);
+        } catch (error: unknown) {
+          const errorObj = error as Error;
+          if (
+            errorObj.message.includes('not found') ||
+            errorObj.message.includes('not connected')
+          ) {
+            return reply.code(404).send({ error: errorObj.message });
           }
-          return reply.code(404).send({ error: 'Server not connected or not found' });
+          return reply.code(500).send({ error: errorObj.message });
         }
-
-        const result = await mcpConnectionManager.readResource(serverId, uri);
-        return result;
       } catch (error: unknown) {
         const errorObj = error as Error;
         return reply.code(500).send({ error: errorObj.message || 'Failed to read resource' });
@@ -94,23 +95,13 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
 
   fastify.get('/web/resources', async (_request, reply) => {
     try {
-      const allResources = mcpConnectionManager.getAllResources();
-
-      // Add Hub System resources
+      // Return only Hub System resources (dynamically generated hub:// format)
       const systemResources = await hubToolsService.listResources();
 
       const resources: Record<string, Resource[]> = {};
 
-      // 1. Add Hub System resources first if they exist
       if (systemResources && systemResources.length > 0) {
         resources[MCP_HUB_LITE_SERVER] = systemResources;
-      }
-
-      // 2. Add other server resources, filtering out empty ones
-      for (const [serverName, serverResources] of Object.entries(allResources)) {
-        if (serverResources && serverResources.length > 0) {
-          resources[serverName] = serverResources;
-        }
       }
 
       return { resources };

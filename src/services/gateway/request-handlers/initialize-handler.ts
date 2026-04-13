@@ -1,14 +1,13 @@
-/**
- * Initialize and ping request handlers for Gateway service.
- */
-
-import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { logger, LOG_MODULES } from '@utils/index.js';
-import { getSessionContext } from '@utils/request-context.js';
-import { sessionTrackerService } from '@services/session-tracker.service.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
+import { getAppVersion, getProtocolVersion } from '@utils/version.js';
+import {
+  InitializedNotificationSchema,
+  InitializeRequestSchema,
+  PingRequestSchema
+} from './initialize.constants.js';
 
 /**
  * Register initialize and ping handlers on the MCP server.
@@ -16,73 +15,27 @@ import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
  * @param server - MCP server instance to register handlers on
  */
 export function registerInitializeHandlers(server: McpServer): void {
-  // MCP standard initialize handler
-  const InitializeRequestSchema = z.object({
-    method: z.literal('initialize'),
-    params: z
-      .object({
-        clientInfo: z
-          .object({
-            name: z.string(),
-            version: z.string(),
-            mcpVersion: z.string().optional()
-          })
-          .optional(),
-        capabilities: z
-          .object({
-            tools: z
-              .object({
-                list: z.boolean().optional(),
-                execute: z.boolean().optional()
-              })
-              .optional(),
-            roots: z
-              .object({
-                list: z.boolean().optional()
-              })
-              .optional(),
-            experimental: z.record(z.string(), z.any()).optional()
-          })
-          .optional(),
-        protocolVersion: z.string().optional()
-      })
-      .optional(),
-    id: z.union([z.string(), z.number()]),
-    jsonrpc: z.literal('2.0')
-  });
-
   server.server.setRequestHandler(InitializeRequestSchema, async (request) => {
-    // Capture session info
-    const context = getSessionContext();
-    if (context && request.params?.clientInfo) {
+    if (request.params?.clientInfo) {
       const { name, version } = request.params.clientInfo;
+      const protocolVersion = request.params?.protocolVersion || getProtocolVersion();
       const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
 
-      logger.info(
-        `Initialized client: ${name} v${version} (ID: ${context.sessionId})`,
+      logger.debug(
+        `Initialized client: Name=${name}, Version=${version}, ProtocolVersion=${protocolVersion}`,
         LOG_MODULES.GATEWAY
       );
 
       if (clientCapabilities?.roots) {
         logger.debug(`Client ${name} supports roots capability`, LOG_MODULES.GATEWAY);
       }
-
-      // Update session info in tracker with capabilities
-      sessionTrackerService.updateSession({
-        ...context,
-        clientName: name,
-        clientVersion: version,
-        protocolVersion: request.params?.protocolVersion,
-        capabilities: clientCapabilities
-      });
     }
 
     return {
-      protocolVersion: '2024-11-05',
+      protocolVersion: getProtocolVersion(),
       serverInfo: {
         name: MCP_HUB_LITE_SERVER,
-        version: '1.0.0',
-        mcpVersion: '2024-11-05'
+        version: getAppVersion()
       },
       capabilities: {
         tools: {
@@ -98,47 +51,11 @@ export function registerInitializeHandlers(server: McpServer): void {
     };
   });
 
-  // MCP standard ping handler
-  const PingRequestSchema = z.object({
-    method: z.literal('ping'),
-    params: z.object({}).optional(),
-    id: z.union([z.string(), z.number()]),
-    jsonrpc: z.literal('2.0')
-  });
-
   server.server.setRequestHandler(PingRequestSchema, async () => {
-    return { pong: true }; // Response format compliant with MCP specification
-  });
-
-  // MCP initialized notification handler
-  const InitializedNotificationSchema = z.object({
-    method: z.literal('notifications/initialized'),
-    params: z.any().optional(),
-    jsonrpc: z.literal('2.0')
+    return { pong: true };
   });
 
   server.server.setNotificationHandler(InitializedNotificationSchema, async () => {
-    const context = getSessionContext();
-    if (!context) {
-      logger.warn(
-        'Received initialized notification but no session context available',
-        LOG_MODULES.GATEWAY
-      );
-      return;
-    }
-
-    const sessionInfo = sessionTrackerService.getSession(context.sessionId);
-    if (!sessionInfo) {
-      logger.warn(
-        `Received initialized notification but no session info for session ${context.sessionId}`,
-        LOG_MODULES.GATEWAY
-      );
-      return;
-    }
-
-    logger.debug(
-      `Received initialized notification from client ${sessionInfo.clientName || 'unknown'} (${context.sessionId})`,
-      LOG_MODULES.GATEWAY
-    );
+    logger.debug('Received initialized notification from client', LOG_MODULES.GATEWAY);
   });
 }

@@ -1,4 +1,4 @@
-import type { ServerConfig, ServerInstanceConfig } from '@config/config.schema.js';
+import type { ServerConfig } from '@config/config.schema.js';
 
 /**
  * Configuration options for server instance selection in multi-instance scenarios.
@@ -34,7 +34,7 @@ export interface RequestOptions {
 export type ServerInstanceInfo = {
   name: string;
   config: ServerConfig;
-  instance: ServerInstanceConfig & Record<string, unknown>;
+  instance: Record<string, unknown>;
 };
 
 /**

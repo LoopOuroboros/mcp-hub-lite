@@ -11,7 +11,6 @@ Stores 模块使用 Pinia 实现前端状态管理，是前端的数据中心。
 ```
 stores/
 ├── server.ts              # 服务器状态管理
-├── session.ts             # 会话状态管理
 ├── system.ts              # 系统状态管理
 ├── tool-calls.ts          # 工具调用状态管理
 └── websocket.ts           # WebSocket 状态管理
@@ -44,37 +43,28 @@ stores/
 - `fetchServers()` - 获取所有服务器
 - `addServer(serverData)` - 添加新服务器
 - `updateServer(id, serverData)` - 更新服务器
-- `startServer(id)` - 启动服务器
-- `stopServer(id)` - 停止服务器
+- `startServer(id)` - 启动服务器（支持服务器ID或实例ID）
+- `stopServer(id)` - 停止服务器（支持服务器ID或实例ID）
 - `deleteServer(id)` - 删除服务器
 - `selectServer(id)` - 选择服务器
 - `fetchTools(serverId)` - 获取服务器工具
 - `fetchResources(serverId)` - 获取服务器资源
 - `fetchLogs(serverId)` - 获取服务器日志
 - `clearLogs(serverId)` - 清除日志
+- `addServerInstance(serverName)` - 添加服务器实例
+- `updateServerInstance(serverName, index, updates)` - 更新服务器实例
+- `removeServerInstance(serverName, index)` - 删除服务器实例
 
-### Session Store (`session.ts`)
+**v1.1 聚合服务器模型**:
 
-**职责**: 管理会话状态和操作
-
-**State**:
-
-```typescript
-{
-  sessions: SessionState[]      // 会话列表
-  loading: boolean               // 加载状态
-  error: string | null          // 错误信息
-}
-```
-
-**Actions**:
-
-- `fetchSessions()` - 获取所有持久化会话
-- `deleteSession(sessionId)` - 删除指定会话
-
-**依赖**:
-
-- `@shared-types/session.types` - 会话类型定义
+- **架构变更**: 为每个服务器名称创建一个聚合的 Server 对象，包含所有实例
+- **instances 数组**: 每个 Server 对象包含 `instances[]` 数组，存储该服务器的所有实例及其状态
+- **聚合状态计算**:
+  - 任何实例在线 → 整体状态为 "online"
+  - 任何实例错误 → 整体状态为 "error"
+  - 否则为 "offline"
+- **聚合计数**: 跨所有实例聚合工具和资源总数
+- **向后兼容**: `instance` 字段保留为可选，用于单实例场景
 
 ### System Store (`system.ts`)
 
@@ -104,7 +94,7 @@ stores/
       rotationAge: string;
       jsonPretty: boolean;
       mcpCommDebug: boolean;
-      sessionDebug: boolean;
+      apiDebug: boolean;
     };
   };
   security: {
@@ -112,8 +102,6 @@ stores/
     maxConcurrentConnections: number;
     connectionTimeout: number;
     idleConnectionTimeout: number;
-    sessionTimeout: number;
-    sessionFlushInterval: number;
     maxConnections: number;
   };
 }
@@ -260,18 +248,21 @@ export interface LogEntry {
 export interface Server {
   id: string;
   name: string;
-  status: 'running' | 'stopped' | 'error';
+  status: 'online' | 'offline' | 'error' | 'starting';
   type: 'local' | 'remote';
-  config: ServerConfig;
+  config: ServerRuntimeConfig;
+  instance?: ServerInstanceConfig; // 单实例（向后兼容）
+  instances?: (ServerInstanceConfig & { status: ServerStatus })[]; // 多实例数组
   logs: LogEntry[];
   uptime?: string;
   startTime?: number;
   pid?: number;
-  tools?: any[];
-  resources?: any[];
+  tools?: Tool[];
+  resources?: Resource[];
   toolsCount?: number;
   resourcesCount?: number;
   version?: string;
+  rawV11Config?: ServerConfig;
 }
 ```
 
@@ -281,9 +272,6 @@ export interface Server {
 stores/
 ├── server.ts
 │   └── depends on: utils/http.ts
-├── session.ts
-│   ├── depends on: utils/http.ts
-│   └── depends on: @shared-types/session.types
 ├── system.ts
 │   └── depends on: utils/http.ts
 ├── tool-calls.ts
@@ -293,7 +281,6 @@ stores/
     ├── depends on: @stores/server
     ├── depends on: @stores/tool-calls
     ├── depends on: @stores/system
-    ├── depends on: @stores/session
     └── depends on: @shared-types/websocket.types
 ```
 
@@ -343,7 +330,6 @@ A: WebSocket Store 自动连接并处理事件，通过调用其他 Store 的方
 | 文件路径               | 描述               |
 | ---------------------- | ------------------ |
 | `stores/server.ts`     | 服务器状态管理     |
-| `stores/session.ts`    | 会话状态管理       |
 | `stores/system.ts`     | 系统状态管理       |
 | `stores/tool-calls.ts` | 工具调用状态管理   |
 | `stores/websocket.ts`  | WebSocket 状态管理 |

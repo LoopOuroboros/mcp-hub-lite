@@ -1,13 +1,16 @@
 /**
- * Configuration loading utilities.
+ * Configuration loading utilities (v1.1 only).
  * Handles loading and parsing configuration from files with validation.
+ * Supports automatic migration from v1.0 to v1.1.
  */
 
 import * as fs from 'fs';
 import { logger, LOG_MODULES } from '@utils/logger.js';
-import { SystemConfigSchema } from './config.schema.js';
+import { SystemConfigSchema, isLegacyV1Config } from './config.schema.js';
 import type { SystemConfig } from './config.schema.js';
+import { migrateConfig } from './config-migrator.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
+import { reassignServerInstanceIndexes } from './server-config-manager.js';
 
 /**
  * Loads configuration from the specified file path.
@@ -15,55 +18,113 @@ import { convertHttpToStreamableHttp } from './type-converter.js';
  * This function handles the complete configuration loading process:
  * - Checks if the config file exists at the specified path
  * - Reads and parses the JSON configuration
+ * - Detects legacy v1.0 configuration and auto-migrates to v1.1
  * - Performs type conversion for compatibility (e.g., 'http' to 'streamable-http')
  * - Validates the configuration using Zod schema
  * - Handles validation failures gracefully by falling back to default configuration
  *
- * If the config file doesn't exist or fails to load, a default configuration is returned.
- *
  * @param configPath - Path to the configuration file
- * @returns The loaded and validated system configuration
+ * @param autoMigrate - Whether to automatically migrate v1.0 to v1.1 (default: true)
+ * @returns The loaded and validated system configuration (v1.1 format)
  */
-export function loadConfig(configPath: string): SystemConfig {
+export function loadConfig(configPath: string, autoMigrate: boolean = true): SystemConfig {
   try {
     if (fs.existsSync(configPath)) {
       logger.info(`Loading configuration from: ${configPath}`, LOG_MODULES.CONFIG_MANAGER);
       const content = fs.readFileSync(configPath, 'utf-8');
       let config = JSON.parse(content);
 
+      // Check if automatic migration is enabled and config is legacy v1.0
+      if (autoMigrate && isLegacyV1Config(config)) {
+        logger.info(
+          'Detected legacy v1.0 configuration, starting automatic migration to v1.1',
+          LOG_MODULES.CONFIG_MANAGER
+        );
+        const migrationResult = migrateConfig(configPath, {
+          dryRun: false,
+          createBackup: true,
+          validateAfterMigration: true
+        });
+
+        if (migrationResult.success && migrationResult.migratedConfig) {
+          logger.info('Configuration successfully migrated to v1.1', LOG_MODULES.CONFIG_MANAGER);
+          if (migrationResult.backupPath) {
+            logger.info(
+              `Backup created at: ${migrationResult.backupPath}`,
+              LOG_MODULES.CONFIG_MANAGER
+            );
+          }
+          config = migrationResult.migratedConfig;
+        } else {
+          logger.warn(
+            `Migration failed, continuing with default config: ${migrationResult.error}`,
+            LOG_MODULES.CONFIG_MANAGER
+          );
+          return SystemConfigSchema.parse({});
+        }
+      }
+
       // Unified type conversion: convert http to streamable-http
       config = convertHttpToStreamableHttp(config) as SystemConfig;
 
-      // Ensure defaults without validation errors blocking
+      // Handle backward compatibility for instanceSelectionStrategy in root level
+      if (config.servers) {
+        for (const [serverName, serverConfig] of Object.entries(config.servers)) {
+          if (
+            serverConfig &&
+            typeof serverConfig === 'object' &&
+            'instanceSelectionStrategy' in serverConfig &&
+            serverConfig.instanceSelectionStrategy !== undefined
+          ) {
+            // Move instanceSelectionStrategy from root level to template
+            interface LegacyServerConfig {
+              instanceSelectionStrategy?: string;
+              template: {
+                instanceSelectionStrategy?: string;
+              };
+            }
+            const legacyConfig = serverConfig as LegacyServerConfig;
+            const strategy = legacyConfig.instanceSelectionStrategy;
+            if (typeof strategy === 'string') {
+              legacyConfig.template.instanceSelectionStrategy = strategy;
+            }
+            delete legacyConfig.instanceSelectionStrategy;
+            logger.debug(
+              `Migrated instanceSelectionStrategy for server ${serverName} to template`,
+              LOG_MODULES.CONFIG_LOADER
+            );
+          }
+        }
+      }
+
+      // Validate and return configuration
       try {
-        // Use safeParse to validate configuration
         const parsed = SystemConfigSchema.safeParse(config);
         if (parsed.success) {
-          // Ensure server configurations are sorted by name
           const configWithSortedServers = {
             ...parsed.data,
             servers: Object.fromEntries(
               Object.entries(parsed.data.servers).sort(([a], [b]) => a.localeCompare(b))
             )
           };
+          // Ensure all server instances have proper indexes
+          for (const serverName of Object.keys(configWithSortedServers.servers)) {
+            reassignServerInstanceIndexes(serverName, configWithSortedServers.servers);
+          }
           return configWithSortedServers;
         } else {
-          // On validation failure, log error and use default configuration
-          logger.error(`Config validation failed: ${parsed.error}`);
+          logger.error(`Config validation failed: ${parsed.error}`, LOG_MODULES.CONFIG_LOADER);
           return SystemConfigSchema.parse({});
         }
       } catch (e) {
-        logger.error(`Failed to parse config: ${e}`);
-        // On parsing failure, use default configuration
+        logger.error(`Failed to parse config: ${e}`, LOG_MODULES.CONFIG_LOADER);
         return SystemConfigSchema.parse({});
       }
     } else {
-      // When config file doesn't exist, create default config in memory only
       return SystemConfigSchema.parse({});
     }
   } catch (error) {
-    logger.error(`Failed to load config: ${error}`);
-    // On config file load failure, use default configuration
+    logger.error(`Failed to load config: ${error}`, LOG_MODULES.CONFIG_LOADER);
     return SystemConfigSchema.parse({});
   }
 }

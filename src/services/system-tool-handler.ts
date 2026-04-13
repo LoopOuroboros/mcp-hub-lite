@@ -8,11 +8,13 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
-  MCP_HUB_LITE_SERVER,
-  type ListToolsInServerParams,
-  type GetToolParams,
-  type CallToolParams,
-  type UpdateServerDescriptionParams
+  MCP_HUB_LITE_SERVER
+} from '@models/system-tools.constants.js';
+import type {
+  ListToolsInServerParams,
+  GetToolParams,
+  CallToolParams,
+  UpdateServerDescriptionParams
 } from '@models/system-tools.constants.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 

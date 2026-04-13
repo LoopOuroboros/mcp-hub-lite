@@ -49,11 +49,16 @@ describe('Server Store', () => {
   it('should fetch servers successfully', async () => {
     const store = useServerStore();
 
-    // Mock the HTTP responses
-    const mockServers = [{ name: 'test-server', config: { type: 'stdio' as const } }];
-    const mockInstances = {
-      'test-server': [{ id: 'instance-1', timestamp: 1234567890, hash: 'abc123' }]
-    };
+    // Mock the HTTP responses with v1.1 config format
+    const mockServers = [
+      {
+        name: 'test-server',
+        config: {
+          template: { type: 'stdio' as const },
+          instances: [{ id: 'instance-1', timestamp: 1234567890, hash: 'abc123' }]
+        }
+      }
+    ];
     const mockStatuses = [
       { id: 'instance-1', status: { connected: true, toolsCount: 2, resourcesCount: 1 } }
     ];
@@ -64,7 +69,6 @@ describe('Server Store', () => {
     // Mock the implementations
     vi.mocked(http.get).mockImplementation((url: string) => {
       if (url === '/web/servers') return Promise.resolve(mockServers);
-      if (url === '/web/server-instances') return Promise.resolve(mockInstances);
       if (url === '/web/mcp/status') return Promise.resolve(mockStatuses);
       return Promise.reject(new Error('Unknown URL'));
     });
@@ -74,8 +78,10 @@ describe('Server Store', () => {
     expect(store.loading).toBe(false);
     expect(store.error).toBeNull();
     expect(store.servers.length).toBe(1);
-    expect(store.servers[0].name).toBe('test-server');
-    expect(store.servers[0].status).toBe('online');
+    const firstServer = store.servers[0]!;
+    expect(firstServer.name).toBe('test-server');
+    expect(firstServer.status).toBe('online');
+    expect(firstServer.rawV11Config).toBeDefined();
   });
 
   it('should handle fetch servers error', async () => {
@@ -95,18 +101,25 @@ describe('Server Store', () => {
 
     const { http } = await import('@frontend/utils/http');
 
-    // Mock the HTTP responses
+    // Mock the HTTP responses with v1.1 config format
     vi.mocked(http.post).mockImplementation((url: string) => {
       if (url === '/web/servers') {
-        return Promise.resolve({ name: 'new-server', config: { type: 'stdio' as const } });
+        return Promise.resolve({
+          name: 'new-server',
+          config: { template: { type: 'stdio' as const }, instances: [] }
+        });
       }
       return Promise.reject(new Error('Unknown URL'));
     });
 
     vi.mocked(http.get).mockImplementation((url: string) => {
       if (url === '/web/servers')
-        return Promise.resolve([{ name: 'new-server', config: { type: 'stdio' as const } }]);
-      if (url === '/web/server-instances') return Promise.resolve({});
+        return Promise.resolve([
+          {
+            name: 'new-server',
+            config: { template: { type: 'stdio' as const }, instances: [] }
+          }
+        ]);
       if (url === '/web/mcp/status') return Promise.resolve([]);
       return Promise.reject(new Error('Unknown URL'));
     });
@@ -146,14 +159,14 @@ describe('Server Store', () => {
         status: 'offline',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'test-id', timestamp: 1234567890, hash: 'abc123' },
+        instance: { id: 'test-id', timestamp: 1234567890 },
         logs: []
       }
     ];
 
     store.updateServerStatus('test-id', 'online');
 
-    expect(store.servers[0].status).toBe('online');
+    expect(store.servers[0]!.status).toBe('online');
   });
 
   it('should compute stats correctly with mixed server statuses', () => {
@@ -166,7 +179,7 @@ describe('Server Store', () => {
         status: 'online',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-1', timestamp: 1234567890, hash: 'abc123' },
+        instance: { id: 'server-1', timestamp: 1234567890 },
         logs: []
       },
       {
@@ -175,7 +188,7 @@ describe('Server Store', () => {
         status: 'offline',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-2', timestamp: 1234567890, hash: 'def456' },
+        instance: { id: 'server-2', timestamp: 1234567890 },
         logs: []
       },
       {
@@ -184,7 +197,7 @@ describe('Server Store', () => {
         status: 'error',
         type: 'local',
         config: { type: 'stdio' },
-        instance: { id: 'server-3', timestamp: 1234567890, hash: 'ghi789' },
+        instance: { id: 'server-3', timestamp: 1234567890 },
         logs: []
       }
     ];

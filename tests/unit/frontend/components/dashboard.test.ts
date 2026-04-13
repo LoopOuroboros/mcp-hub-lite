@@ -2,9 +2,28 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import Dashboard from '@frontend/components/DashboardView.vue';
 import { createPinia, setActivePinia } from 'pinia';
+import type { Server } from '@shared-models/server.model';
 
-// Mock the stores
-const mockServerStore = {
+const createMockServer = (logs: Server['logs'] = []): Server => ({
+  id: '1',
+  name: 'test-server',
+  status: 'online',
+  type: 'local',
+  config: { type: 'stdio' },
+  instance: { id: '1', timestamp: 1234567890 },
+  logs
+});
+
+const mockServerStore: {
+  servers: Server[];
+  loading: boolean;
+  stats: {
+    total: number;
+    online: number;
+    errors: number;
+  };
+  fetchAllLogs: ReturnType<typeof vi.fn>;
+} = {
   servers: [],
   loading: false,
   stats: {
@@ -65,17 +84,7 @@ describe('Dashboard Component', () => {
 
   it('should show stats cards when not loading', () => {
     mockServerStore.loading = false;
-    mockServerStore.servers = [
-      {
-        id: '1',
-        name: 'test-server',
-        status: 'online',
-        type: 'local',
-        config: { type: 'stdio' },
-        instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
-        logs: []
-      }
-    ];
+    mockServerStore.servers = [createMockServer()];
     mockServerStore.stats = {
       total: 1,
       online: 1,
@@ -98,15 +107,7 @@ describe('Dashboard Component', () => {
   it('should show recent activity section', () => {
     mockServerStore.loading = false;
     mockServerStore.servers = [
-      {
-        id: '1',
-        name: 'test-server',
-        status: 'online',
-        type: 'local',
-        config: { type: 'stdio' },
-        instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
-        logs: [{ timestamp: 1234567890, level: 'info', message: 'Test log message' }]
-      }
+      createMockServer([{ timestamp: 1234567890, level: 'info', message: 'Test log message' }])
     ];
     mockServerStore.stats = {
       total: 1,
@@ -129,17 +130,7 @@ describe('Dashboard Component', () => {
 
   it('should show "No recent activity" when no logs', () => {
     mockServerStore.loading = false;
-    mockServerStore.servers = [
-      {
-        id: '1',
-        name: 'test-server',
-        status: 'online',
-        type: 'local',
-        config: { type: 'stdio' },
-        instance: { id: '1', timestamp: 1234567890, hash: 'abc123' },
-        logs: []
-      }
-    ];
+    mockServerStore.servers = [createMockServer()];
     mockServerStore.stats = {
       total: 1,
       online: 1,

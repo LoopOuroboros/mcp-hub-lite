@@ -5,9 +5,11 @@ export default {
     stop: 'Stop',
     restart: 'Restart',
     delete: 'Delete',
+    deleteServer: 'Delete Server',
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
+    confirm: 'Confirm',
     configure: 'Configure',
     create: 'Create Server',
     view: 'View',
@@ -21,7 +23,32 @@ export default {
     logsCopied: 'Logs copied to clipboard',
     serverAdded: 'Server added successfully',
     configImported: 'Configuration imported successfully',
-    saveSuccess: 'Configuration saved successfully'
+    saveSuccess: 'Configuration saved successfully',
+    copiedToClipboard: 'Copied to clipboard',
+    copyFailed: 'Failed to copy to clipboard',
+    displayNameUpdated: 'Display name updated',
+    instanceAdded: 'Instance added successfully',
+    instanceDeleted: 'Instance deleted successfully',
+    indexesReassigned: 'Indexes reassigned successfully',
+    startAll: 'Start All',
+    stopAll: 'Stop All',
+    restartAll: 'Restart All'
+  },
+  common: {
+    copy: 'Copy',
+    description: 'Description',
+    name: 'Name',
+    uri: 'URI',
+    mimeType: 'MIME Type',
+    logs: 'Logs',
+    config: 'Config',
+    tools: 'Tools',
+    resources: 'Resources',
+    instance: 'Instance',
+    template: 'Template',
+    addTag: 'Add Tag',
+    editTag: 'Edit Tag',
+    deleteTag: 'Delete Tag'
   },
   sidebar: {
     title: 'MCP Server Manager',
@@ -42,10 +69,6 @@ export default {
     serverResources: 'Server Resources',
     toolResources: 'Tool Resources',
     dataResources: 'Data Resources',
-    name: 'Name',
-    uri: 'URI',
-    mimeType: 'MIME Type',
-    description: 'Description',
     server: 'Server',
     contentPreview: 'Content Preview',
     preview: 'Preview',
@@ -63,8 +86,6 @@ export default {
     protocolVersion: 'Protocol Version',
     capabilities: 'Capabilities',
     userAgent: 'User Agent',
-    cwd: 'CWD',
-    project: 'Project',
     createdAt: 'Created At',
     lastAccessedAt: 'Last Accessed At'
   },
@@ -89,7 +110,7 @@ export default {
     debugOptions: 'Debug Options',
     jsonPretty: 'Pretty JSON in logs',
     mcpCommDebug: 'Enable MCP communication debug',
-    sessionDebug: 'Enable session debug',
+    apiDebug: 'Enable API debug',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',
     allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',
@@ -107,7 +128,18 @@ export default {
       minutes: 'Minutes',
       hours: 'Hours',
       days: 'Days'
-    }
+    },
+    tagsTab: 'Tags',
+    tagDefinitions: 'Tag Definitions',
+    tagKey: 'Tag Key',
+    tagDescription: 'Description',
+    tagType: 'Type',
+    tagValues: 'Allowed Values',
+    deleteTagConfirm: 'Are you sure you want to delete this tag definition?',
+    noTagsDefined: 'No tags defined yet',
+    tagKeyPlaceholder: 'Enter tag key (e.g., environment, priority)',
+    tagDescriptionPlaceholder: 'Enter tag description',
+    tagValuesPlaceholder: 'Enter allowed values, press Enter to add'
   },
   dashboard: {
     title: 'Dashboard',
@@ -119,15 +151,22 @@ export default {
   serverDetail: {
     emptySelect: 'Select a server to view details',
     noServerSelected: 'No server selected',
+    noInstanceSelected: 'Please select an instance',
+    noSelection: 'Please select template or instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
-    version: 'Version',
+    deleteInstanceConfirm: 'Are you sure you want to delete this instance?',
     pid: 'PID',
     uptime: 'Uptime',
-    tabs: {
-      config: 'Configuration',
-      logs: 'Logs',
-      tools: 'Tools',
-      resources: 'Resources'
+    selectInstanceForTool: 'Select instance to call tool',
+    selectInstanceForResource: 'Select instance to view resource',
+    selectInstancePlaceholder: 'Select an instance...',
+    confirm: 'Confirm',
+    tabs: {},
+    configTabs: {
+      instances: 'Instances'
+    },
+    instanceTabs: {
+      configOverride: 'Instance Config'
     },
     config: {
       transport: 'Transport',
@@ -140,19 +179,41 @@ export default {
       env: 'Environment Variables',
       timeout: 'Timeout (s)',
       autoStart: 'Auto-start',
+      instanceSelectionStrategy: 'Instance Selection Strategy',
+      strategyRandom: 'Random',
+      strategyRoundRobin: 'Round Robin',
+      strategyTagMatchUnique: 'Tag Match Unique',
       addArg: 'Add Argument',
       addEnv: 'Add Environment Variable',
+      addHeader: 'Add Header',
+      headers: 'Headers',
+      proxy: 'Proxy',
+      addProxy: 'Add Proxy',
+      removeProxy: 'Remove Proxy',
+      proxyPlaceholder: 'http://proxy.example.com:8080',
+      tags: 'Tags',
       save: 'Save Configuration',
       editByJson: 'Edit By Json',
-      description: 'Description',
       descriptionPlaceholder: 'Enter server description'
+    },
+    instanceConfig: {
+      title: 'Instance Configuration',
+      template: 'Template Config',
+      readOnly: 'Read-only',
+      override: 'Instance Override',
+      editable: 'Editable',
+      fromTemplate: 'From template',
+      noArgs: 'No arguments',
+      noEnv: 'No environment variables',
+      noHeaders: 'No headers',
+      noTags: 'No tags',
+      mergedPreview: 'Merged Final Config Preview',
+      viewMerged: 'View Merged Config'
     },
     logs: {
       autoScroll: 'Auto-scroll',
       clear: 'Clear',
-      copy: 'Copy',
       copied: 'Logs copied to clipboard',
-      instance: 'Instance',
       selectInstance: 'Select an instance'
     },
     tools: {
@@ -166,9 +227,6 @@ export default {
       call: 'Call'
     },
     resources: {
-      name: 'Name',
-      uri: 'URI',
-      mimeType: 'MIME Type',
       none: 'No resources available'
     },
     status: {
@@ -179,13 +237,22 @@ export default {
       stopping: 'Stopping',
       error: 'Error',
       starting: 'Starting'
+    },
+    editJsonTitle: 'Edit JSON Config',
+    instances: {
+      title: 'Instances',
+      templateTag: 'Template Config',
+      unnamed: 'Unnamed',
+      add: 'Add Instance',
+      reassignIndexes: 'Reassign Indexes',
+      editDisplayName: 'Edit display name'
     }
   },
   addServer: {
     title: 'Add New MCP Server',
     transportType: 'Select Transport Type',
-    name: 'Server Name',
     namePlaceholder: 'My New Server',
+    descriptionPlaceholder: 'Enter server description',
     executablePlaceholder: '/path/to/executable or npx',
     argPlaceholder: 'Argument',
     urlPlaceholder: 'http://localhost:3000/sse',
@@ -212,7 +279,7 @@ export default {
     searchPlaceholder: "Search all tools (e.g., 'file', 'database', 'list')...",
     systemTools: 'Gateway System Tools',
     aggregatedTools: 'Aggregated Server Tools',
-    noToolsFound: 'No tools found. Connect some servers to get started.',
+    noToolsFound: 'No aggregated tools. Select tools in servers to aggregate.',
     call: 'Call',
     noDescription: 'No description provided',
     systemTag: 'System',
@@ -234,7 +301,6 @@ export default {
     invalidJsonArguments: 'Invalid JSON arguments',
     executionSuccessful: 'Tool execution successful',
     executionFailed: 'Tool execution failed',
-    instance: 'Instance',
     selectInstance: 'Select an instance'
   }
 };

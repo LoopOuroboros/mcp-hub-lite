@@ -1,13 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK
+const mockListTools = vi.fn().mockResolvedValue({ tools: [] });
+
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return {
     Client: class {
       connect = vi.fn().mockResolvedValue(undefined);
       close = vi.fn().mockResolvedValue(undefined);
+      listTools = mockListTools;
       callTool = vi.fn().mockImplementation((toolCall) => {
         if (toolCall.name === 'calculator') {
           const { a, b, operation } = toolCall.arguments;
@@ -73,25 +77,26 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   const serverName = 'test-sdk-server';
   let serverId: string;
+  let serverIndex: number;
 
   beforeEach(async () => {
-    // Add to hub manager
+    // Add to hub manager (v1.1 format)
     await hubManager.addServer(serverName, {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
+    serverIndex = instance.index ?? 0;
   });
 
   afterEach(async () => {
-    await mcpConnectionManager.disconnect(serverId);
+    await mcpConnectionManager.disconnect(serverName, serverIndex);
     hubManager.removeServer(serverName);
   });
 
@@ -102,19 +107,19 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
-    const result = (await mcpConnectionManager.callTool(serverId, 'calculator', {
+    const result = (await mcpConnectionManager.callTool(serverName, serverIndex, 'calculator', {
       a: 5,
       b: 3,
       operation: 'add'
@@ -131,20 +136,20 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
     await expect(
-      mcpConnectionManager.callTool(serverId, 'calculator', {
+      mcpConnectionManager.callTool(serverName, serverIndex, 'calculator', {
         a: 'invalid',
         b: 3,
         operation: 'add'
@@ -159,19 +164,21 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
-    await expect(mcpConnectionManager.callTool(serverId, 'unknown_tool', {})).rejects.toThrow();
+    await expect(
+      mcpConnectionManager.callTool(serverName, serverIndex, 'unknown_tool', {})
+    ).rejects.toThrow();
   });
 
   it('should support multiple concurrent tool calls', async () => {
@@ -181,24 +188,28 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Server not found');
     }
 
-    await mcpConnectionManager.connect({
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverId);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    await mcpConnectionManager.connect(serverName, serverIndex, {
+      ...resolvedConfig,
       id: serverId,
-      command: serverInfo.config.command,
-      args: serverInfo.config.args,
-      enabled: serverInfo.config.enabled,
-      type: serverInfo.config.type,
-      timeout: serverInfo.config.timeout,
-      allowedTools: serverInfo.config.allowedTools,
-      timestamp: serverInfo.instance.timestamp,
-      hash: serverInfo.instance.hash
+      timestamp: Date.now()
     });
 
     const [result1, result2] = await Promise.all([
-      mcpConnectionManager.callTool(serverId, 'get_weather', { location: 'New York' }) as Promise<{
+      mcpConnectionManager.callTool(serverName, serverIndex, 'get_weather', {
+        location: 'New York'
+      }) as Promise<{
         temperature: number;
         condition: string;
       }>,
-      mcpConnectionManager.callTool(serverId, 'search_news', { query: 'technology' }) as Promise<{
+      mcpConnectionManager.callTool(serverName, serverIndex, 'search_news', {
+        query: 'technology'
+      }) as Promise<{
         articles: string[];
       }>
     ]);

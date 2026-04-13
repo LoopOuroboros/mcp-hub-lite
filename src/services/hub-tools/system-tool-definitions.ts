@@ -132,11 +132,17 @@ export function getSystemTools(): SystemToolDefinition[] {
       case CALL_TOOL_TOOL:
         systemTools.push({
           name: toolName,
-          description: 'Call a specific tool from a specific server',
+          description:
+            'Call a specific tool from an external MCP server. ' +
+            'System tools (list_servers, list_tools_in_server, get_tool, update_server_description) ' +
+            'must be called directly via tools/call, not through this tool.',
           inputSchema: {
             type: 'object',
             properties: {
-              serverName: { type: 'string', description: 'Name of the MCP server' },
+              serverName: {
+                type: 'string',
+                description: 'Name of the MCP server (must be an external server, not mcp-hub-lite)'
+              },
               toolName: { type: 'string', description: 'Name of the tool to call' },
               toolArgs: { type: 'object', description: 'Arguments to pass to the tool' },
               requestOptions: {

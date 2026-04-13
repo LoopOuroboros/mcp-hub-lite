@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK Client
 const mockConnect = vi.fn();
@@ -32,27 +33,33 @@ vi.mock('@utils/transports/transport-factory.js', () => {
   };
 });
 
-import type { ServerInstanceConfig } from '@shared-models/server.model.js';
-
 describe('Gateway Fault Tolerance', () => {
-  let mockServerInstance: ServerInstanceConfig;
+  let mockServerInstance: { id: string; index: number; timestamp: number };
 
   beforeEach(async () => {
     // Clear all mocks
     vi.clearAllMocks();
 
-    // Add test server
+    // Add test server (v1.1 format)
     await hubManager.addServer('test-server', {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
 
     // Add server instance
-    mockServerInstance = await hubManager.addServerInstance('test-server', {});
+    const instance = (await hubManager.addServerInstance('test-server', {})) as unknown as {
+      id: string;
+      index: number;
+      timestamp: number;
+    };
+    mockServerInstance = {
+      id: instance.id,
+      index: instance.index,
+      timestamp: instance.timestamp || Date.now()
+    };
   });
 
   it('should handle connection failure gracefully', async () => {
@@ -60,13 +67,24 @@ describe('Gateway Fault Tolerance', () => {
 
     // Directly use hubManager.getServerById to get complete server configuration
     const serverInfo = hubManager.getServerById(mockServerInstance.id);
-    const success = await mcpConnectionManager.connect({
-      ...serverInfo!.config,
-      ...serverInfo!.instance
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, mockServerInstance.id);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    const success = await mcpConnectionManager.connect(serverInfo.name, mockServerInstance.index, {
+      ...resolvedConfig,
+      id: mockServerInstance.id,
+      timestamp: Date.now()
     });
 
     expect(success).toBe(false);
-    const status = mcpConnectionManager.getStatus(mockServerInstance.id);
+    const status = mcpConnectionManager.getStatus(serverInfo.name, mockServerInstance.index);
     expect(status?.connected).toBe(false);
     expect(status?.error).toContain('Connection failed');
   });
@@ -77,53 +95,88 @@ describe('Gateway Fault Tolerance', () => {
 
     // Directly use hubManager.getServerById to get complete server configuration
     const serverInfo = hubManager.getServerById(mockServerInstance.id);
-    const success = await mcpConnectionManager.connect({
-      ...serverInfo!.config,
-      ...serverInfo!.instance
+    if (!serverInfo) {
+      throw new Error('Server not found');
+    }
+
+    // Resolve the complete configuration using v1.1 resolveInstanceConfig
+    const resolvedConfig = resolveInstanceConfig(serverInfo.config, mockServerInstance.id);
+    if (!resolvedConfig) {
+      throw new Error('Failed to resolve server configuration');
+    }
+
+    const success = await mcpConnectionManager.connect(serverInfo.name, mockServerInstance.index, {
+      ...resolvedConfig,
+      id: mockServerInstance.id,
+      timestamp: Date.now()
     });
 
     expect(success).toBe(false);
-    const status = mcpConnectionManager.getStatus(mockServerInstance.id);
+    const status = mcpConnectionManager.getStatus(serverInfo.name, mockServerInstance.index);
     expect(status?.connected).toBe(false);
     expect(status?.error).toContain('List tools failed');
   });
 
   it('should not affect other servers when one fails', async () => {
-    // Add second server
+    // Add second server (v1.1 format)
     await hubManager.addServer('working-server', {
       command: 'node',
       args: [],
-      enabled: true,
       type: 'stdio' as const,
       timeout: 60000,
-      allowedTools: []
+      aggregatedTools: []
     });
-    const workingInstance = await hubManager.addServerInstance('working-server', {});
+    const workingInstance = (await hubManager.addServerInstance(
+      'working-server',
+      {}
+    )) as unknown as {
+      id: string;
+      index: number;
+      timestamp: number;
+    };
 
     // Simulate first server failure, second server success
     mockConnect
       .mockImplementationOnce(() => Promise.reject(new Error('First server failed')))
       .mockImplementationOnce(() => Promise.resolve());
 
-    mockListTools.mockImplementationOnce(() => Promise.resolve({ tools: [] }));
+    mockListTools
+      .mockImplementationOnce(() => Promise.resolve({ tools: [] })) // First server
+      .mockImplementationOnce(() => Promise.resolve({ tools: [] })); // Second server
 
     // Connect first server (should fail)
     const serverInfo1 = hubManager.getServerById(mockServerInstance.id);
-    await mcpConnectionManager.connect({
-      ...serverInfo1!.config,
-      ...serverInfo1!.instance
+    if (!serverInfo1) {
+      throw new Error('Server 1 not found');
+    }
+    const resolvedConfig1 = resolveInstanceConfig(serverInfo1.config, mockServerInstance.id);
+    if (!resolvedConfig1) {
+      throw new Error('Failed to resolve server 1 configuration');
+    }
+    await mcpConnectionManager.connect(serverInfo1.name, mockServerInstance.index, {
+      ...resolvedConfig1,
+      id: mockServerInstance.id,
+      timestamp: Date.now()
     });
 
     // Connect second server (should succeed)
     const serverInfo2 = hubManager.getServerById(workingInstance.id);
-    const success2 = await mcpConnectionManager.connect({
-      ...serverInfo2!.config,
-      ...serverInfo2!.instance
+    if (!serverInfo2) {
+      throw new Error('Server 2 not found');
+    }
+    const resolvedConfig2 = resolveInstanceConfig(serverInfo2.config, workingInstance.id);
+    if (!resolvedConfig2) {
+      throw new Error('Failed to resolve server 2 configuration');
+    }
+    const success2 = await mcpConnectionManager.connect(serverInfo2.name, workingInstance.index, {
+      ...resolvedConfig2,
+      id: workingInstance.id,
+      timestamp: Date.now()
     });
 
     expect(success2).toBe(true);
-    const status1 = mcpConnectionManager.getStatus(mockServerInstance.id);
-    const status2 = mcpConnectionManager.getStatus(workingInstance.id);
+    const status1 = mcpConnectionManager.getStatus(serverInfo1.name, mockServerInstance.index);
+    const status2 = mcpConnectionManager.getStatus(serverInfo2.name, workingInstance.index);
 
     expect(status1?.connected).toBe(false);
     expect(status2?.connected).toBe(true);

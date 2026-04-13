@@ -1,6 +1,8 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger } from '@utils/logger.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 // Use EventSource from the 'eventsource' package for Node.js compatibility
 import { EventSource } from 'eventsource';
@@ -35,6 +37,8 @@ export class SseTransport implements Transport {
   private eventSource: EventSource | null = null;
   private reconnectAttempts = 0;
   private isClosing = false;
+  private _serverName?: string;
+  private _compositeKey?: string;
 
   public onmessage?: (message: JSONRPCMessage) => void;
   public onerror?: (error: Error) => void;
@@ -47,13 +51,38 @@ export class SseTransport implements Transport {
    * @param headers - Optional HTTP headers to include in the SSE connection request
    * @param reconnectInterval - Time interval (in milliseconds) between reconnection attempts (default: 3000ms)
    * @param maxReconnectAttempts - Maximum number of reconnection attempts before giving up (default: 5)
+   * @param proxy - Optional proxy configuration
+   * @param serverName - Optional server name for logging
+   * @param compositeKey - Optional composite key (serverName-serverIndex) for logging
    */
   constructor(
     private url: string,
     private headers: Record<string, string> = {},
     private reconnectInterval: number = 3000,
-    private maxReconnectAttempts: number = 5
-  ) {}
+    private maxReconnectAttempts: number = 5,
+    private proxy?: { url: string },
+    serverName?: string,
+    compositeKey?: string
+  ) {
+    this._serverName = serverName;
+    this._compositeKey = compositeKey;
+  }
+
+  /**
+   * Helper method to format log messages with server context.
+   *
+   * @param message - The base message
+   * @returns Formatted message with server context if available
+   */
+  private formatLogMessage(message: string): string {
+    if (this._compositeKey) {
+      return `${message} (compositeKey=${this._compositeKey}, url=${this.url})`;
+    } else if (this._serverName) {
+      return `${message} (server=${this._serverName}, url=${this.url})`;
+    } else {
+      return `${message} (url=${this.url})`;
+    }
+  }
 
   /**
    * Initializes and starts the SSE connection to the specified URL.
@@ -80,7 +109,36 @@ export class SseTransport implements Transport {
       if (Object.keys(this.headers).length > 0) {
         options.headers = this.headers;
       }
-      this.eventSource = new EventSource(this.url, options);
+
+      const proxyInfo = this.proxy?.url ? `, proxy=${this.proxy.url}` : '';
+      logger.info(
+        this.formatLogMessage(`Attempting to connect to SSE server${proxyInfo}`),
+        LOG_MODULES.SSE_TRANSPORT
+      );
+
+      // Add proxy support if configured
+      if (this.proxy?.url) {
+        const agent = new ProxyAgent(this.proxy.url);
+
+        // Create custom fetch function with proxy
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const customFetch = (input: any, init?: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const fetchOptions: any = {
+            ...init,
+            dispatcher: agent
+          };
+          return undiciFetch(input, fetchOptions) as unknown as Promise<Response>;
+        };
+
+        options.fetch = customFetch;
+        logger.info(
+          this.formatLogMessage(`SSE transport configured with proxy: ${this.proxy.url}`),
+          LOG_MODULES.SSE_TRANSPORT
+        );
+      }
+
+      this.eventSource = new EventSource(this.url, options as Record<string, unknown>);
 
       this.eventSource.onmessage = (event) => {
         try {
@@ -88,26 +146,40 @@ export class SseTransport implements Transport {
           this.onmessage?.(message);
           this.reconnectAttempts = 0; // Reset on successful message
         } catch (error) {
-          logger.error('Failed to parse SSE message:', error);
+          logger.error(
+            this.formatLogMessage('Failed to parse SSE message'),
+            error,
+            LOG_MODULES.SSE_TRANSPORT
+          );
           this.onerror?.(new Error(`Invalid JSON in SSE message: ${event.data}`));
         }
       };
 
       this.eventSource.onerror = () => {
         const error = new Error(`SSE connection error for ${this.url}`);
-        logger.error('SSE connection error:', error);
+        logger.error(
+          this.formatLogMessage('SSE connection error'),
+          error,
+          LOG_MODULES.SSE_TRANSPORT
+        );
 
         if (!this.isClosing) {
           this.reconnectAttempts++;
           if (this.reconnectAttempts <= this.maxReconnectAttempts) {
             logger.info(
-              `Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+              this.formatLogMessage(
+                `Attempting to reconnect SSE (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+              ),
+              LOG_MODULES.SSE_TRANSPORT
             );
             setTimeout(() => {
               this.restart();
             }, this.reconnectInterval);
           } else {
-            logger.error('Max reconnection attempts reached for SSE');
+            logger.error(
+              this.formatLogMessage('Max reconnection attempts reached for SSE'),
+              LOG_MODULES.SSE_TRANSPORT
+            );
             this.onerror?.(error);
             this.closeInternal();
           }
@@ -115,10 +187,14 @@ export class SseTransport implements Transport {
       };
 
       this.eventSource.onopen = () => {
-        logger.info(`SSE connection opened to ${this.url}`);
+        logger.info(this.formatLogMessage('SSE connection opened'), LOG_MODULES.SSE_TRANSPORT);
       };
     } catch (error) {
-      logger.error('Failed to create SSE connection:', error);
+      logger.error(
+        this.formatLogMessage('Failed to create SSE connection'),
+        error,
+        LOG_MODULES.SSE_TRANSPORT
+      );
       throw error;
     }
   }
@@ -196,10 +272,14 @@ export class SseTransport implements Transport {
     const messageId = 'id' in message ? String(message.id) : 'unknown';
     const method = 'method' in message ? String(message.method) : 'unknown';
 
-    logger.warn('Attempted to send message via SSE transport', {
-      messageId,
-      method
-    });
+    logger.warn(
+      this.formatLogMessage('Attempted to send message via SSE transport'),
+      {
+        messageId,
+        method
+      },
+      LOG_MODULES.SSE_TRANSPORT
+    );
 
     throw error;
   }

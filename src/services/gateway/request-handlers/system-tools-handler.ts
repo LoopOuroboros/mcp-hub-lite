@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
-import { getSessionCwd } from '@utils/request-context.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import {
   LIST_SERVERS_TOOL,
@@ -60,10 +60,10 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       return result;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        logger.error(`List tools in server error:`, error);
+        logger.error(`List tools in server error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
         throw new McpError(-32802, error.message);
       } else {
-        logger.error(`List tools in server error:`, error);
+        logger.error(`List tools in server error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
         throw new McpError(-32802, String(error));
       }
     }
@@ -102,7 +102,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
       return { tool };
     } catch (error: unknown) {
-      logger.error(`Get tool error:`, error);
+      logger.error(`Get tool error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
       if (error instanceof McpError) {
         throw error;
       } else if (error instanceof Error) {
@@ -138,13 +138,6 @@ export function registerSystemToolsHandlers(server: McpServer): void {
     try {
       const params = { ...request.params };
 
-      // Inject CWD if available and not present in args
-      const cwd = getSessionCwd();
-      if (cwd && !params.toolArgs.cwd) {
-        params.toolArgs.cwd = cwd;
-        logger.debug(`Injected CWD into direct tool call: ${cwd}`);
-      }
-
       const result = await hubToolsService.callTool(params);
       // Wrap the result in a valid CallToolResult structure
       if (typeof result === 'object' && result !== null) {
@@ -163,7 +156,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
         };
       }
     } catch (error: unknown) {
-      logger.error(`Call tool error:`, error);
+      logger.error(`Call tool error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
       if (error instanceof McpError) {
         throw error;
       } else if (error instanceof Error) {
@@ -203,7 +196,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       const result = await hubToolsService.updateServerDescription(request.params);
       return result;
     } catch (error: unknown) {
-      logger.error(`Update server description error:`, error);
+      logger.error(`Update server description error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
       if (error instanceof McpError) {
         throw error;
       } else if (error instanceof Error) {

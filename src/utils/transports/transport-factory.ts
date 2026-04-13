@@ -2,7 +2,7 @@ import { StdioTransport } from './stdio-transport.js';
 import { SseTransport } from './sse-transport.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
-import type { ServerConfig } from '@config/config.schema.js';
+import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { logStorage } from '@services/log-storage.service.js';
 
 /**
@@ -12,13 +12,13 @@ export class TransportFactory {
   /**
    * Create transport client
    * @param server Server configuration, including base configuration and instance configuration
-   * @param serverId Optional server ID for log storage integration
+   * @param compositeKey Optional composite key (serverName-serverIndex) for log storage integration
    * @returns Transport client instance
    * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
-    server: ServerConfig & { name: string },
-    serverId?: string
+    server: ServerRuntimeConfig & { name: string },
+    compositeKey?: string
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
@@ -40,8 +40,8 @@ export class TransportFactory {
           },
           server.name,
           {
-            serverId,
-            logStorage: serverId ? logStorage : undefined
+            compositeKey,
+            logStorage: compositeKey ? logStorage : undefined
           }
         );
 
@@ -53,7 +53,10 @@ export class TransportFactory {
           config.url,
           config.headers,
           config.reconnectInterval,
-          config.maxReconnectAttempts
+          config.maxReconnectAttempts,
+          config.proxy,
+          server.name,
+          compositeKey
         );
 
       case 'streamable-http':
@@ -61,7 +64,14 @@ export class TransportFactory {
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
-        return new StreamableHttpTransport(config.url, config.headers, config.timeout);
+        return new StreamableHttpTransport(
+          config.url,
+          config.headers,
+          config.timeout,
+          config.proxy,
+          server.name,
+          compositeKey
+        );
 
       default:
         throw new Error(
@@ -74,15 +84,37 @@ export class TransportFactory {
    * Build system environment variables
    * Add necessary system environment variables for stdio transport
    */
-  private static buildSystemEnv(): Record<string, string> {
-    return {};
+  private static buildSystemEnv(command?: string): Record<string, string> {
+    const env: Record<string, string> = {};
+
+    // For Python-related commands, set PYTHONUTF8=1 to ensure proper UTF-8 handling
+    if (command && this.isPythonCommand(command)) {
+      env.PYTHONUTF8 = '1';
+    }
+
+    return env;
+  }
+
+  /**
+   * Check if a command is related to Python execution
+   * Detects python, python3, py, uv, uvx, and similar commands
+   */
+  private static isPythonCommand(command: string): boolean {
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand) return false;
+
+    // Extract the basename (last part after / or \)
+    const parts = trimmedCommand.split(/[\\/]/);
+    const basename = parts[parts.length - 1].toLowerCase();
+
+    return basename.includes('python') || basename.startsWith('uv') || basename.startsWith('py');
   }
 
   /**
    * Validate and convert server configuration to transport configuration
    */
   private static validateAndConvertConfig(
-    server: ServerConfig & { name: string }
+    server: ServerRuntimeConfig & { name: string }
   ): ServerTransportConfig {
     const type = server.type || 'stdio';
 
@@ -92,7 +124,7 @@ export class TransportFactory {
         command: server.command || '',
         args: server.args,
         env: {
-          ...this.buildSystemEnv(), // System environment variables
+          ...this.buildSystemEnv(server.command), // System environment variables
           ...(server.env || {}) // User-defined environment variables (can override system defaults)
         },
         cwd: process.cwd(),
@@ -104,14 +136,16 @@ export class TransportFactory {
         url: server.url || '',
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
         reconnectInterval: 3000,
-        maxReconnectAttempts: 5
+        maxReconnectAttempts: 5,
+        proxy: server.proxy
       };
     } else if (type === 'streamable-http' || type === 'http') {
       return {
         type: 'streamable-http', // Unified conversion to streamable-http
         url: server.url || '',
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
-        timeout: server.timeout || 30000
+        timeout: server.timeout || 30000,
+        proxy: server.proxy
       };
     } else {
       // Default to stdio type to avoid returning never type

@@ -388,14 +388,88 @@ export function createLogMessage(level: LogLevel, message: string, context?: Log
  * @returns Formatted error string
  */
 export function formatError(error: unknown): string {
+  // Special case: handle arrays that might contain errors
+  if (Array.isArray(error)) {
+    if (error.length === 0) {
+      return '';
+    }
+
+    // If it's a single-element array, unwrap it and format the element
+    if (error.length === 1) {
+      const element = error[0];
+      // Skip empty objects that are likely log context
+      if (
+        typeof element === 'object' &&
+        element !== null &&
+        !Array.isArray(element) &&
+        ('module' in element || 'traceId' in element || 'spanId' in element)
+      ) {
+        return '';
+      }
+      // Otherwise format the single element
+      return formatError(element);
+    }
+
+    // For multi-element arrays, format each element
+    const formattedElements = error
+      .map((elem) => {
+        const formatted = formatError(elem);
+        return formatted || '[skipped]';
+      })
+      .filter((f) => f !== '[skipped]');
+
+    if (formattedElements.length === 0) {
+      return '';
+    }
+    if (formattedElements.length === 1) {
+      return formattedElements[0];
+    }
+    return `[ ${formattedElements.join(', ')} ]`;
+  }
+
   if (error instanceof Error) {
-    let result = error.message;
+    let result = '';
+
+    // Include error name if available
+    if (error.name) {
+      result += error.name;
+    }
+
+    // Include error message if available
+    if (error.message) {
+      result += result ? `: ${error.message}` : error.message;
+    }
+
+    // If no name and message, try string representation
+    if (!result) {
+      result = String(error);
+    }
+
+    // Include stack trace if available
     if (error.stack) {
       const stackLines = error.stack.split('\n').slice(1, 6);
       if (stackLines.length > 0) {
         result += '\n' + stackLines.join('\n');
       }
     }
+
+    // Check for non-enumerable properties using Object.getOwnPropertyNames
+    const ownProps = Object.getOwnPropertyNames(error);
+    const extraProps: string[] = [];
+    for (const prop of ownProps) {
+      if (prop !== 'name' && prop !== 'message' && prop !== 'stack') {
+        try {
+          const value = (error as unknown as Record<string, unknown>)[prop];
+          extraProps.push(`${prop}: ${stringifyForLogging(value)}`);
+        } catch {
+          extraProps.push(`${prop}: [could not serialize]`);
+        }
+      }
+    }
+    if (extraProps.length > 0) {
+      result += '\n  Additional properties: ' + extraProps.join(', ');
+    }
+
     return result;
   }
 
@@ -404,12 +478,26 @@ export function formatError(error: unknown): string {
       return '';
     }
 
-    if (Array.isArray(error) && error.length === 0) {
-      return '';
+    // Check for empty object (both enumerable and non-enumerable properties)
+    const enumKeys = Object.keys(error);
+    const allProps = Object.getOwnPropertyNames(error);
+
+    if (enumKeys.length === 0 && allProps.length === 0) {
+      return '[empty object]';
     }
 
-    if (Object.keys(error).length === 0) {
-      return '';
+    // If only non-enumerable properties, show them
+    if (enumKeys.length === 0 && allProps.length > 0) {
+      const props: string[] = [];
+      for (const prop of allProps) {
+        try {
+          const value = (error as Record<string, unknown>)[prop];
+          props.push(`${prop}: ${stringifyForLogging(value)}`);
+        } catch {
+          props.push(`${prop}: [could not serialize]`);
+        }
+      }
+      return `{ ${props.join(', ')} }`;
     }
 
     try {

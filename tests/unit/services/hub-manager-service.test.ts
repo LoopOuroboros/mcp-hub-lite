@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HubManagerService } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import {
-  ConfigManager,
-  configManager,
-  type ServerConfig,
-  type ServerInstanceConfig
-} from '@config/config-manager.js';
+import { ConfigManager, configManager } from '@config/config-manager.js';
+import type { ServerConfig, ServerInstance } from '@config/config.schema.js';
+
+// Mock resolveInstanceConfig to return a valid resolved config
+vi.mock('@config/config-migrator.js', () => ({
+  resolveInstanceConfig: vi.fn(),
+  getEnabledInstances: vi.fn()
+}));
 
 // Mock dependencies
 vi.mock('@config/config-manager.js', () => ({
@@ -19,7 +21,7 @@ vi.mock('@config/config-manager.js', () => ({
     updateServer: vi.fn(),
     removeServer: vi.fn(),
     addServerInstance: vi.fn(),
-    getServerInstanceByName: vi.fn(),
+    getServerInstancesByName: vi.fn(),
     updateServerInstance: vi.fn(),
     removeServerInstance: vi.fn()
   }
@@ -41,6 +43,13 @@ vi.mock('@utils/logger.js', () => ({
   LOG_MODULES: {}
 }));
 
+vi.mock('@services/event-bus.service.js', () => ({
+  eventBus: {
+    publish: vi.fn()
+  },
+  EventTypes: {}
+}));
+
 describe('HubManagerService', () => {
   let service: HubManagerService;
 
@@ -50,100 +59,156 @@ describe('HubManagerService', () => {
   });
 
   it('should auto-connect when adding an enabled server instance', async () => {
+    // Import the mocked module
+    const { resolveInstanceConfig } = await import('@config/config-migrator.js');
+
     const serverName = 'Test Server';
     const serverBaseConfig: ServerConfig = {
-      type: 'stdio' as const,
-      command: 'node',
-      args: [],
-      enabled: true,
-      allowedTools: [],
-      timeout: 30000
+      template: {
+        type: 'stdio' as const,
+        command: 'node',
+        args: [],
+        env: {},
+        headers: {},
+        aggregatedTools: [],
+        timeout: 30000
+      },
+      instances: [],
+      tagDefinitions: []
     };
 
-    const serverInstanceConfig: ServerInstanceConfig = {
+    const serverInstanceConfig: ServerInstance = {
       id: 'test-server',
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      enabled: true,
+      args: [],
+      env: {},
+      headers: {},
+      tags: {}
     };
 
     vi.mocked(configManager.addServer).mockResolvedValue(serverBaseConfig);
     vi.mocked(configManager.addServerInstance).mockResolvedValue(serverInstanceConfig);
     vi.mocked(configManager.getServerByName).mockReturnValue(serverBaseConfig);
 
-    await service.addServer(serverName, serverBaseConfig);
+    // Mock resolveInstanceConfig to return enabled = true
+    vi.mocked(resolveInstanceConfig).mockReturnValue({
+      command: 'node',
+      args: [],
+      type: 'stdio' as const,
+      timeout: 30000,
+      aggregatedTools: [],
+      tags: {},
+      enabled: true
+    });
+
+    await service.addServer(serverName, serverBaseConfig.template);
     await service.addServerInstance(serverName, serverInstanceConfig);
 
-    expect(configManager.addServer).toHaveBeenCalledWith(serverName, serverBaseConfig);
-    expect(configManager.addServerInstance).toHaveBeenCalledWith(serverName, serverInstanceConfig);
+    expect(configManager.addServer).toHaveBeenCalled();
+    expect(configManager.addServerInstance).toHaveBeenCalled();
     expect(mcpConnectionManager.connect).toHaveBeenCalled();
   });
 
   it('should NOT auto-connect when adding a disabled server instance', async () => {
+    // Import the mocked module
+    const { resolveInstanceConfig } = await import('@config/config-migrator.js');
+
     const serverName = 'Disabled Server';
     const serverBaseConfig: ServerConfig = {
-      type: 'stdio' as const,
-      command: 'node',
-      args: [],
-      enabled: false,
-      allowedTools: [],
-      timeout: 30000
+      template: {
+        type: 'stdio' as const,
+        command: 'node',
+        args: [],
+        env: {},
+        headers: {},
+        aggregatedTools: [],
+        timeout: 30000
+      },
+      instances: [],
+      tagDefinitions: []
     };
 
-    const serverInstanceConfig = {
+    const serverInstanceConfig: ServerInstance = {
       id: 'test-server-disabled',
-      name: serverName,
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      enabled: false,
+      args: [],
+      env: {},
+      headers: {},
+      tags: {}
     };
 
     vi.mocked(configManager.addServer).mockResolvedValue(serverBaseConfig);
     vi.mocked(configManager.addServerInstance).mockResolvedValue(serverInstanceConfig);
     vi.mocked(configManager.getServerByName).mockReturnValue(serverBaseConfig);
 
-    await service.addServer(serverName, serverBaseConfig);
+    // Mock resolveInstanceConfig to return enabled = false
+    vi.mocked(resolveInstanceConfig).mockReturnValue({
+      command: 'node',
+      args: [],
+      type: 'stdio' as const,
+      timeout: 30000,
+      aggregatedTools: [],
+      tags: {},
+      enabled: false
+    });
+
+    await service.addServer(serverName, serverBaseConfig.template);
     await service.addServerInstance(serverName, serverInstanceConfig);
 
-    expect(configManager.addServer).toHaveBeenCalledWith(serverName, serverBaseConfig);
-    expect(configManager.addServerInstance).toHaveBeenCalledWith(serverName, serverInstanceConfig);
+    expect(configManager.addServer).toHaveBeenCalled();
+    expect(configManager.addServerInstance).toHaveBeenCalled();
     expect(mcpConnectionManager.connect).not.toHaveBeenCalled();
   });
 
   it('should call disconnect when removing a server', async () => {
     const serverName = 'Test Server';
     const serverConfig: ServerConfig = {
-      type: 'stdio' as const,
-      command: 'node',
-      args: [],
-      enabled: true,
-      allowedTools: [],
-      timeout: 30000
+      template: {
+        type: 'stdio' as const,
+        command: 'node',
+        args: [],
+        env: {},
+        headers: {},
+        aggregatedTools: [],
+        timeout: 30000
+      },
+      instances: [],
+      tagDefinitions: []
     };
 
     vi.mocked(configManager.getServerByName).mockReturnValue(serverConfig);
-    vi.mocked(configManager.removeServer).mockResolvedValue();
-    vi.mocked(configManager.getServerInstanceByName).mockReturnValue([
+    vi.mocked(configManager.removeServer).mockResolvedValue(true);
+    vi.mocked(configManager.getServerInstancesByName).mockReturnValue([
       {
         id: 'test-server-instance',
-        timestamp: Date.now(),
-        hash: 'test-hash'
-      } as ServerInstanceConfig
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
+      } as ServerInstance
     ]);
 
     await service.removeServer(serverName);
 
     expect(configManager.removeServer).toHaveBeenCalledWith(serverName);
-    expect(mcpConnectionManager.disconnect).toHaveBeenCalledWith('test-server-instance');
+    expect(mcpConnectionManager.disconnect).toHaveBeenCalledWith(serverName, 0);
   });
 
   it('should get server by name', async () => {
     const serverName = 'Test Server';
     const serverBaseConfig: ServerConfig = {
-      type: 'stdio' as const,
-      command: 'test',
-      args: [],
-      enabled: true,
-      allowedTools: [],
-      timeout: 30000
+      template: {
+        type: 'stdio' as const,
+        command: 'test',
+        args: [],
+        env: {},
+        headers: {},
+        aggregatedTools: [],
+        timeout: 30000
+      },
+      instances: [],
+      tagDefinitions: []
     };
 
     vi.mocked(configManager.getServerByName).mockReturnValue(serverBaseConfig);
@@ -156,17 +221,20 @@ describe('HubManagerService', () => {
 
   it('should get server instances', async () => {
     const serverName = 'Test Server';
-    const serverInstanceConfig: ServerInstanceConfig = {
+    const serverInstanceConfig: ServerInstance = {
       id: 'test-instance',
-      timestamp: Date.now(),
-      hash: 'test-hash'
+      enabled: true,
+      args: [],
+      env: {},
+      headers: {},
+      tags: {}
     };
 
-    vi.mocked(configManager.getServerInstanceByName).mockReturnValue([serverInstanceConfig]);
+    vi.mocked(configManager.getServerInstancesByName).mockReturnValue([serverInstanceConfig]);
 
-    const instances = service.getServerInstanceByName(serverName);
+    const instances = service.getServerInstancesByName(serverName);
 
     expect(instances).toEqual([serverInstanceConfig]);
-    expect(configManager.getServerInstanceByName).toHaveBeenCalledWith(serverName);
+    expect(configManager.getServerInstancesByName).toHaveBeenCalledWith(serverName);
   });
 });

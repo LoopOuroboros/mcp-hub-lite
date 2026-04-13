@@ -8,10 +8,6 @@
         {{ $t('sidebar.servers') }}
       </h2>
       <div class="flex gap-2">
-        <el-button type="success" @click="handleSave">
-          <el-icon class="mr-2"><CircleCheckFilled /></el-icon>
-          {{ $t('action.save') }}
-        </el-button>
         <el-button type="primary" @click="openAddModal('form')">
           <el-icon class="mr-2"><Plus /></el-icon>
           {{ $t('sidebar.addServer') }}
@@ -66,50 +62,16 @@
           <!-- Card Header -->
           <div class="flex flex-col gap-2 mb-4">
             <div class="flex items-center justify-between">
-              <h3
-                class="font-bold text-gray-900 dark:text-white truncate text-lg mr-2"
-                :title="server.name"
-              >
-                {{ server.name }}
-              </h3>
-
-              <!-- Top-right action buttons -->
-              <div class="flex gap-1 shrink-0">
-                <el-button
-                  v-if="server.status === 'online'"
-                  type="danger"
-                  plain
-                  size="small"
-                  :icon="SwitchButton"
-                  @click.stop="stopServer(server)"
-                  class="!p-1 !h-8"
-                  :title="$t('action.stop')"
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <h3
+                  class="font-bold text-gray-900 dark:text-white truncate text-lg"
+                  :title="server.name"
                 >
-                  <span class="text-xs">{{ $t('action.stop') }}</span>
-                </el-button>
-                <el-button
-                  v-else-if="server.status === 'offline'"
-                  type="success"
-                  plain
-                  size="small"
-                  :icon="VideoPlay"
-                  @click.stop="startServer(server)"
-                  class="!p-1 !h-8"
-                  :title="$t('action.start')"
-                >
-                  <span class="text-xs">{{ $t('action.start') }}</span>
-                </el-button>
-                <el-button
-                  v-if="server.status === 'online'"
-                  plain
-                  size="small"
-                  :icon="Refresh"
-                  @click.stop="restartServer(server)"
-                  class="!p-1 !h-8"
-                  :title="$t('action.restart')"
-                >
-                  <span class="text-xs">{{ $t('action.restart') }}</span>
-                </el-button>
+                  {{ server.name }}
+                </h3>
+                <el-tag v-if="server.version" size="small" class="shrink-0">
+                  {{ server.version }}
+                </el-tag>
               </div>
             </div>
 
@@ -118,48 +80,81 @@
           </div>
 
           <!-- CardFooter - Action buttons -->
-          <div
-            class="grid grid-cols-2 xl:grid-cols-4 gap-2 pt-4 border-t border-gray-100 dark:border-gray-700/50 mt-auto"
-          >
-            <el-button
-              plain
-              size="small"
-              :icon="Setting"
-              @click.stop="navigateToTab(server.id, 'config')"
-              class="!w-full !ml-0"
-            >
-              {{ $t('action.configure') }}
-            </el-button>
+          <div class="mt-auto space-y-2">
+            <!-- Batch operation buttons - First row -->
+            <div class="flex gap-2">
+              <template v-if="getServerOfflineCount(server.name) > 0">
+                <el-button
+                  type="success"
+                  plain
+                  size="small"
+                  :icon="VideoPlay"
+                  @click.stop="startAllServerInstances(server.name)"
+                  class="flex-1 !ml-0"
+                  :title="$t('action.startAll')"
+                >
+                  {{ $t('action.startAll') }} ({{ getServerOfflineCount(server.name) }})
+                </el-button>
+              </template>
+              <template v-if="getServerOnlineCount(server.name) > 0">
+                <el-button
+                  plain
+                  size="small"
+                  :icon="Refresh"
+                  @click.stop="restartAllServerInstances(server.name)"
+                  class="flex-1 !ml-0"
+                  :title="$t('action.restartAll')"
+                >
+                  {{ $t('action.restartAll') }} ({{ getServerTotalCount(server.name) }})
+                </el-button>
+              </template>
+              <template v-if="getServerOnlineCount(server.name) > 0">
+                <el-button
+                  type="warning"
+                  plain
+                  size="small"
+                  :icon="VideoPause"
+                  @click.stop="stopAllServerInstances(server.name)"
+                  class="flex-1 !ml-0"
+                  :title="$t('action.stopAll')"
+                >
+                  {{ $t('action.stopAll') }} ({{ getServerOnlineCount(server.name) }})
+                </el-button>
+              </template>
+            </div>
 
-            <el-button
-              plain
-              size="small"
-              :icon="Memo"
-              @click.stop="navigateToTab(server.id, 'logs')"
-              class="!w-full !ml-0"
-            >
-              {{ $t('serverDetail.tabs.logs') }}
-            </el-button>
+            <!-- Navigation buttons - Second row -->
+            <div class="grid grid-cols-3 gap-2">
+              <el-button
+                plain
+                size="small"
+                :icon="Setting"
+                @click.stop="navigateToTab(server.id, 'config')"
+                class="!w-full !ml-0"
+              >
+                {{ $t('action.configure') }} ({{ server.rawV11Config?.instances?.length || 0 }})
+              </el-button>
 
-            <el-button
-              plain
-              size="small"
-              :icon="Tools"
-              @click.stop="navigateToTab(server.id, 'tools')"
-              class="!w-full !ml-0"
-            >
-              {{ $t('serverDetail.tabs.tools') }} ({{ server.toolsCount || 0 }})
-            </el-button>
+              <el-button
+                plain
+                size="small"
+                :icon="Tools"
+                @click.stop="navigateToTab(server.id, 'tools')"
+                class="!w-full !ml-0"
+              >
+                {{ $t('common.tools') }} ({{ server.toolsCount || 0 }})
+              </el-button>
 
-            <el-button
-              plain
-              size="small"
-              :icon="Files"
-              @click.stop="navigateToTab(server.id, 'resources')"
-              class="!w-full !ml-0"
-            >
-              {{ $t('serverDetail.tabs.resources') }} ({{ server.resourcesCount || 0 }})
-            </el-button>
+              <el-button
+                plain
+                size="small"
+                :icon="Files"
+                @click.stop="navigateToTab(server.id, 'resources')"
+                class="!w-full !ml-0"
+              >
+                {{ $t('common.resources') }} ({{ server.resourcesCount || 0 }})
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -189,18 +184,15 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useServerStore } from '@stores/server';
-import { useSystemStore } from '@stores/system';
 import { useI18n } from 'vue-i18n';
-import type { Server, ServerConfig } from '@shared-models/server.model';
+import type { Server } from '@shared-models/server.model';
 import {
   Plus,
   Platform,
   VideoPlay,
-  SwitchButton,
+  VideoPause,
   Refresh,
   Setting,
-  CircleCheckFilled,
-  Memo,
   Tools,
   Files
 } from '@element-plus/icons-vue';
@@ -209,50 +201,10 @@ import ServerStatusTags from '@components/ServerStatusTags.vue';
 import { ElMessage } from 'element-plus';
 
 const store = useServerStore();
-const systemStore = useSystemStore();
 const router = useRouter();
 const { t } = useI18n();
 const showAddModal = ref(false);
 const addModalMode = ref<'form' | 'json'>('form');
-
-/**
- * Handles saving the current server configuration to persistent storage.
- *
- * This function collects all server configurations from the store and sends them
- * to the backend API for persistence. It provides user feedback via success/error messages.
- *
- * @async
- * @throws {Error} If the save operation fails
- *
- * @example
- * ```typescript
- * await handleSave(); // Saves all server configurations
- * ```
- */
-async function handleSave() {
-  try {
-    // Get current server configuration
-    const serversConfig = store.servers.map((server) => ({
-      name: server.name,
-      config: server.config
-    }));
-
-    // Call save configuration API
-    await systemStore.updateConfig({
-      servers: serversConfig.reduce(
-        (acc, curr) => {
-          acc[curr.name] = curr.config;
-          return acc;
-        },
-        {} as Record<string, ServerConfig>
-      )
-    });
-
-    ElMessage.success(t('action.saveSuccess'));
-  } catch (err: unknown) {
-    ElMessage.error((err as Error).message || t('error.saveFailed'));
-  }
-}
 
 // Fetch servers when component is mounted
 onMounted(() => {
@@ -276,26 +228,36 @@ function openAddModal(mode: 'form' | 'json') {
 }
 
 /**
- * Navigates to the dashboard view with the specified server selected and tab active.
+ * Navigates to the server detail view with the specified server selected and tab active.
  *
  * @param {string} serverId - The ID of the server to select
- * @param {string} tabName - The name of the tab to activate ('logs', 'config', 'tools')
+ * @param {string} tabName - The name of the tab to activate ('config', 'tools', 'resources')
  *
  * @example
  * ```typescript
- * navigateToTab('server-123', 'logs'); // Navigate to logs tab for server-123
+ * navigateToTab('server-123', 'config'); // Navigate to config tab for server-123
  * ```
  */
 function navigateToTab(serverId: string, tabName: string) {
+  const server = store.servers.find((s) => s.id === serverId);
+  if (!server) return;
+
   store.selectServer(serverId);
-  // Navigate to dashboard where ServerDetail is shown with the specified tab
-  router.push({ name: 'dashboard', query: { tab: tabName } });
+
+  const routeName =
+    tabName === 'tools'
+      ? 'server-detail-tools'
+      : tabName === 'resources'
+        ? 'server-detail-resources'
+        : 'server-detail-config';
+
+  router.push({ name: routeName, params: { name: server.name } });
 }
 
 /**
  * Handles clicking on a server card to navigate to the appropriate detail view.
  *
- * For online servers, navigates to the logs tab. For offline servers, navigates to the config tab.
+ * For online servers, navigates to the config tab (which contains logs). For offline servers, navigates to the config tab.
  *
  * @param {Server} server - The server object that was clicked
  *
@@ -305,31 +267,61 @@ function navigateToTab(serverId: string, tabName: string) {
  * ```
  */
 function handleCardClick(server: Server) {
-  if (server.status === 'online') {
-    navigateToTab(server.id, 'logs');
-  } else {
-    navigateToTab(server.id, 'config');
-  }
+  navigateToTab(server.id, 'config');
 }
 
 /**
- * Starts the specified server instance.
+ * Gets the count of online instances for a specific server.
  *
- * This function calls the store's startServer method and provides user feedback
+ * @param {string} serverName - The name of the server
+ * @returns {number} Number of online instances
+ */
+function getServerOnlineCount(serverName: string) {
+  const server = store.servers.find((s) => s.name === serverName);
+  if (!server) return 0;
+  const instances = server.instances || [];
+  return instances.filter((inst) => inst.status === 'online').length;
+}
+
+/**
+ * Gets the count of offline instances for a specific server.
+ *
+ * @param {string} serverName - The name of the server
+ * @returns {number} Number of offline instances
+ */
+function getServerOfflineCount(serverName: string) {
+  return getServerTotalCount(serverName) - getServerOnlineCount(serverName);
+}
+
+/**
+ * Gets the total count of instances for a specific server.
+ *
+ * @param {string} serverName - The name of the server
+ * @returns {number} Total number of instances
+ */
+function getServerTotalCount(serverName: string) {
+  const server = store.servers.find((s) => s.name === serverName);
+  return server?.instances?.length || 0;
+}
+
+/**
+ * Starts all instances of a server.
+ *
+ * This function calls the store's startAllServerInstances method and provides user feedback
  * via success/error messages.
  *
- * @param {Server} server - The server to start
+ * @param {string} serverName - The name of the server to start all instances for
  * @async
- * @throws {Error} If the server fails to start
+ * @throws {Error} If the server instances fail to start
  *
  * @example
  * ```typescript
- * await startServer(selectedServer); // Start the selected server
+ * await startAllServerInstances('my-server'); // Start all instances of my-server
  * ```
  */
-async function startServer(server: Server) {
+async function startAllServerInstances(serverName: string) {
   try {
-    await store.startServer(server.id);
+    await store.startAllServerInstances(serverName);
     ElMessage.success(t('action.started'));
   } catch (err: unknown) {
     ElMessage.error((err as Error).message || t('error.connectionFailed'));
@@ -337,23 +329,23 @@ async function startServer(server: Server) {
 }
 
 /**
- * Stops the specified server instance.
+ * Stops all instances of a server.
  *
- * This function calls the store's stopServer method and provides user feedback
+ * This function calls the store's stopAllServerInstances method and provides user feedback
  * via success/error messages.
  *
- * @param {Server} server - The server to stop
+ * @param {string} serverName - The name of the server to stop all instances for
  * @async
- * @throws {Error} If the server fails to stop
+ * @throws {Error} If the server instances fail to stop
  *
  * @example
  * ```typescript
- * await stopServer(selectedServer); // Stop the selected server
+ * await stopAllServerInstances('my-server'); // Stop all instances of my-server
  * ```
  */
-async function stopServer(server: Server) {
+async function stopAllServerInstances(serverName: string) {
   try {
-    await store.stopServer(server.id);
+    await store.stopAllServerInstances(serverName);
     ElMessage.success(t('action.stopped'));
   } catch (err: unknown) {
     ElMessage.error((err as Error).message || t('error.connectionFailed'));
@@ -361,24 +353,23 @@ async function stopServer(server: Server) {
 }
 
 /**
- * Restarts the specified server instance.
+ * Restarts all instances of a server.
  *
- * This function first stops the server, then starts it again, providing user feedback
+ * This function calls the store's restartAllServerInstances method and provides user feedback
  * via success/error messages.
  *
- * @param {Server} server - The server to restart
+ * @param {string} serverName - The name of the server to restart all instances for
  * @async
- * @throws {Error} If the server fails to restart
+ * @throws {Error} If the server instances fail to restart
  *
  * @example
  * ```typescript
- * await restartServer(selectedServer); // Restart the selected server
+ * await restartAllServerInstances('my-server'); // Restart all instances of my-server
  * ```
  */
-async function restartServer(server: Server) {
+async function restartAllServerInstances(serverName: string) {
   try {
-    await store.stopServer(server.id);
-    await store.startServer(server.id);
+    await store.restartAllServerInstances(serverName);
     ElMessage.success(t('action.restarted'));
   } catch (err: unknown) {
     ElMessage.error((err as Error).message || t('error.connectionFailed'));

@@ -3,6 +3,8 @@
  * Handles backward compatibility type conversions.
  */
 
+import { TransportType } from './config.schema.js';
+
 /**
  * Unified type conversion method: convert type: 'http' to type: 'streamable-http'
  * Ensure compatibility across all scenarios (loading, adding, updating)
@@ -23,8 +25,8 @@ export function convertHttpToStreamableHttp(config: unknown): unknown {
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(config)) {
-      if (key === 'type' && value === 'http') {
-        result[key] = 'streamable-http';
+      if (key === 'type' && value === TransportType.HTTP) {
+        result[key] = TransportType.STREAMABLE_HTTP;
       } else if (typeof value === 'object' && value !== null) {
         result[key] = convertHttpToStreamableHttp(value);
       } else {

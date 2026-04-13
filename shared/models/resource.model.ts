@@ -4,5 +4,6 @@ export interface Resource {
   name: string;
   mimeType?: string;
   description?: string;
-  serverId?: string;
+  serverName?: string;
+  serverIndex?: number;
 }

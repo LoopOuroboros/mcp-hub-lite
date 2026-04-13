@@ -13,7 +13,7 @@ vi.mock('@services/hub-manager.service.js', () => ({
     updateServer: vi.fn(),
     removeServer: vi.fn(),
     addServerInstance: vi.fn().mockResolvedValue({}),
-    getServerInstanceByName: vi.fn()
+    getServerInstancesByName: vi.fn()
   }
 }));
 
@@ -36,12 +36,18 @@ describe('Server API Routes', () => {
       {
         name: 'test',
         config: {
-          type: 'stdio' as const,
-          command: 'test',
-          args: [],
-          enabled: true,
-          allowedTools: [],
-          timeout: 30000
+          template: {
+            type: 'stdio' as const,
+            command: 'test',
+            args: [],
+            env: {},
+            headers: {},
+            aggregatedTools: [],
+            timeout: 30000,
+            tags: {}
+          },
+          instances: [],
+          tagDefinitions: []
         }
       }
     ];
@@ -63,18 +69,23 @@ describe('Server API Routes', () => {
         command: 'node',
         args: [],
         env: {},
-        enabled: true,
-        allowedTools: []
+        headers: {},
+        aggregatedTools: []
       }
     };
     const createdServer = {
-      type: 'stdio' as const,
-      command: 'node',
-      args: [],
-      env: {},
-      enabled: true,
-      allowedTools: [],
-      timeout: 30000
+      template: {
+        type: 'stdio' as const,
+        command: 'node',
+        args: [],
+        env: {},
+        headers: {},
+        aggregatedTools: [],
+        timeout: 30000,
+        tags: {}
+      },
+      instances: [],
+      tagDefinitions: []
     };
 
     vi.mocked(hubManager.addServer).mockReturnValue(Promise.resolve(createdServer));

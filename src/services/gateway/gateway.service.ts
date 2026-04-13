@@ -20,14 +20,15 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import {
   registerInitializeHandlers,
-  registerToolsHandlers,
   registerResourcesHandlers,
   registerSystemToolsHandlers,
   registerCallToolHandler
 } from './request-handlers/index.js';
+import { getAppVersion } from '@utils/version.js';
 import { generateGatewayToolsList } from './tool-list-generator.js';
 import { formatToolArgs, formatToolResponse } from './log-formatter.js';
 import type { ToolMapEntry, GatewayTool } from './types.js';
@@ -35,23 +36,29 @@ import type { ToolMapEntry, GatewayTool } from './types.js';
 export class GatewayService {
   private server: McpServer;
   private transport: StdioServerTransport | null = null;
+  private readonly appVersion: string;
 
   constructor() {
-    this.server = new McpServer(
+    this.appVersion = getAppVersion();
+    this.server = this.createServerWithHandlers();
+  }
+
+  private createServerWithHandlers(): McpServer {
+    const server = new McpServer(
       {
         name: MCP_HUB_LITE_SERVER,
-        version: '1.0.0'
+        version: this.appVersion
       },
       {
         capabilities: {
           tools: {},
-          resources: {} // Add resource capability support
+          resources: {}
         }
       }
     );
 
-    // Call registerHandlers directly in constructor
-    this.registerHandlers(this.server);
+    this.registerHandlers(server);
+    return server;
   }
 
   private registerHandlers(server: McpServer): void {
@@ -59,7 +66,6 @@ export class GatewayService {
     const toolMap = new Map<string, ToolMapEntry>();
 
     registerInitializeHandlers(server);
-    registerToolsHandlers(server);
     registerResourcesHandlers(server);
     registerSystemToolsHandlers(server);
     registerCallToolHandler(server, toolMap);
@@ -101,22 +107,7 @@ export class GatewayService {
    * @returns {McpServer} New MCP server instance with all handlers registered
    */
   public createConnectionServer(): McpServer {
-    const server = new McpServer(
-      {
-        name: MCP_HUB_LITE_SERVER,
-        version: '1.0.0'
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {} // Add resource capability support
-        }
-      }
-    );
-
-    this.registerHandlers(server);
-
-    return server;
+    return this.createServerWithHandlers();
   }
 
   /**
@@ -127,7 +118,7 @@ export class GatewayService {
   public async start() {
     this.transport = new StdioServerTransport();
     await this.server.connect(this.transport);
-    logger.info('MCP Gateway started on stdio');
+    logger.info('MCP Gateway started on stdio', LOG_MODULES.GATEWAY_SERVICE);
   }
 }
 

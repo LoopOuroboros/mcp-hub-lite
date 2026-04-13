@@ -21,11 +21,14 @@ import { ref, computed } from 'vue';
 import { http } from '@utils/http';
 import { useWebSocketStore } from '@stores/websocket';
 import type {
-  ServerConfig,
+  ServerRuntimeConfig,
   ServerInstanceConfig,
   LogEntry,
   Server,
-  StatusInfo
+  StatusInfo,
+  ServerConfig,
+  ServerTemplate,
+  ServerInstance
 } from '@shared-models/server.model';
 import type { ServerStatus } from '@shared-types/common.types';
 import type { Tool } from '@shared-models/tool.model';
@@ -35,13 +38,55 @@ import type { Resource } from '@shared-models/resource.model';
 export type {
   Server,
   ServerStatus,
-  ServerConfig,
+  ServerRuntimeConfig,
   ServerInstanceConfig,
   LogEntry,
   Tool,
   Resource,
-  StatusInfo
+  StatusInfo,
+  ServerConfig
 };
+
+/**
+ * Server instance update payload interface
+ */
+export interface ServerInstanceUpdate {
+  displayName?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  tags?: Record<string, string>;
+  proxy?: { url: string };
+  enabled?: boolean;
+}
+
+/**
+ * Resolves the actual server configuration by merging template and instance
+ *
+ * @param template - The server template configuration
+ * @param instance - The server instance configuration
+ * @returns Merged server configuration
+ */
+function resolveInstanceConfig(
+  template: ServerTemplate,
+  instance: Partial<ServerInstance>
+): ServerRuntimeConfig {
+  return {
+    command: template.command,
+    args: template.args ?? [],
+    env: { ...template.env, ...instance.env },
+    headers: { ...template.headers, ...instance.headers },
+    type: (template.type as 'stdio' | 'sse' | 'streamable-http' | 'http') || 'stdio',
+    timeout: template.timeout ?? 60000,
+    url: template.url,
+    aggregatedTools: template.aggregatedTools ?? [],
+    description: template.description,
+    tags: instance.tags,
+    proxy: instance.proxy ?? template.proxy,
+    // v1.1 doesn't have enabled at template level, use instance level
+    enabled: instance.enabled !== false
+  };
+}
 
 /**
  * Creates and returns the server store instance
@@ -103,9 +148,8 @@ export const useServerStore = defineStore('server', () => {
     loading.value = true;
     error.value = null;
     try {
-      const [serverConfigs, serverInstances, statuses] = await Promise.all([
+      const [serverConfigs, statuses] = await Promise.all([
         http.get<Array<{ name: string; config: ServerConfig }>>('/web/servers'),
-        http.get<Record<string, ServerInstanceConfig[]>>('/web/server-instances'),
         http.get<StatusInfo[]>('/web/mcp/status')
       ]);
 
@@ -117,74 +161,138 @@ export const useServerStore = defineStore('server', () => {
       const combinedServers: Server[] = [];
 
       serverConfigs.forEach(({ name: serverName, config: serverConfig }) => {
-        // Get all instances corresponding to this server name
-        const instances = serverInstances[serverName] || [];
+        // Handle backward compatibility for instanceSelectionStrategy in root level
+        if (
+          serverConfig &&
+          typeof serverConfig === 'object' &&
+          'instanceSelectionStrategy' in serverConfig &&
+          serverConfig.instanceSelectionStrategy !== undefined
+        ) {
+          // Move instanceSelectionStrategy from root level to template
+          interface LegacyServerConfig {
+            instanceSelectionStrategy?: string;
+            template: {
+              instanceSelectionStrategy?: 'random' | 'round-robin' | 'tag-match-unique';
+            };
+          }
+          const legacyConfig = serverConfig as LegacyServerConfig;
+          const strategy = legacyConfig.instanceSelectionStrategy;
+          if (typeof strategy === 'string') {
+            serverConfig.template.instanceSelectionStrategy = strategy as
+              | 'random'
+              | 'round-robin'
+              | 'tag-match-unique';
+          }
+          delete legacyConfig.instanceSelectionStrategy;
+        }
+
+        const template = serverConfig.template;
+        const instances = serverConfig.instances || [];
 
         if (instances.length > 0) {
-          // Case with instances - keep original logic
-          instances.forEach((instanceConfig) => {
-            const serverId = instanceConfig.id; // Use instance ID as unique server ID
-            const statusInfo = statuses.find((s) => s.id === serverId)?.status;
+          // Case with instances - create ONE Server object aggregating all instances
+          const serverId = serverName;
 
-            // Determine status based on config.enabled and statusInfo
-            let status: ServerStatus;
-            if (statusInfo?.connected) {
-              status = 'online';
-            } else if (statusInfo?.error) {
-              status = 'error';
-            } else if (serverConfig.enabled) {
-              // If configured as enabled but not yet connected, show as starting
-              status = 'starting';
-            } else {
-              status = 'offline';
-            }
-
-            combinedServers.push({
-              id: serverId,
-              name: serverName,
-              status,
-              type:
-                serverConfig.type === 'sse' || serverConfig.type === 'streamable-http'
-                  ? 'remote'
-                  : 'local',
-              config: serverConfig,
-              instance: instanceConfig,
-              logs: existingLogs.get(serverId) || [],
-              tools: existingTools.get(serverId),
-              resources: existingResources.get(serverId),
-              uptime: statusInfo?.connected ? 'Active' : undefined,
-              startTime: statusInfo?.startTime,
-              pid: statusInfo?.pid,
-              toolsCount: statusInfo?.toolsCount,
-              resourcesCount: statusInfo?.resourcesCount,
-              version: statusInfo?.version
+          // Compute per-instance status and build instances array
+          const instanceConfigs: (ServerInstanceConfig & { status: ServerStatus })[] =
+            instances.map((inst) => {
+              const statusInfo = statuses.find((s) => s.id === inst.id)?.status;
+              let instStatus: ServerStatus;
+              if (statusInfo?.connected) {
+                instStatus = 'online';
+              } else if (statusInfo?.error) {
+                instStatus = 'error';
+              } else {
+                instStatus = 'offline';
+              }
+              return {
+                id: inst.id,
+                timestamp: inst.timestamp ?? Date.now(),
+                index: inst.index,
+                displayName: inst.displayName,
+                status: instStatus
+              };
             });
-          });
-        } else {
-          // Case without instances - create a virtual instance for display
-          const serverId = `config-${serverName}-${Date.now()}`;
 
-          // Determine display status based on configured enabled state
-          let status: ServerStatus;
-          if (serverConfig.enabled) {
-            status = 'starting'; // Configured as enabled but not started
-          } else {
-            status = 'offline'; // Configured as disabled
-          }
+          // Use first instance for resolved config and runtime info (guaranteed to exist since we're in the instances.length > 0 branch)
+          const firstInstance = instances[0]!;
+          const resolvedConfig = resolveInstanceConfig(template, firstInstance);
+
+          // Aggregate status: any instance online → online, any instance error → error, else offline
+          let anyOnline = false;
+          let anyError = false;
+          let totalToolsCount = 0;
+          let totalResourcesCount = 0;
+          let firstOnlineStartTime: number | undefined;
+          let firstOnlinePid: number | undefined;
+          let firstOnlineVersion: string | undefined;
+
+          instances.forEach((inst) => {
+            const statusInfo = statuses.find((s) => s.id === inst.id)?.status;
+            if (statusInfo?.connected) {
+              anyOnline = true;
+              if (!firstOnlineStartTime) {
+                firstOnlineStartTime = statusInfo.startTime;
+                firstOnlinePid = statusInfo.pid;
+                firstOnlineVersion = statusInfo.version;
+              }
+            } else if (statusInfo?.error) {
+              anyError = true;
+            }
+            totalToolsCount += statusInfo?.toolsCount ?? 0;
+            totalResourcesCount += statusInfo?.resourcesCount ?? 0;
+          });
+
+          const status: ServerStatus = anyOnline ? 'online' : anyError ? 'error' : 'offline';
 
           combinedServers.push({
             id: serverId,
             name: serverName,
             status,
             type:
-              serverConfig.type === 'sse' || serverConfig.type === 'streamable-http'
+              template.type === 'sse' ||
+              template.type === 'streamable-http' ||
+              template.type === 'http'
                 ? 'remote'
                 : 'local',
-            config: serverConfig,
+            config: resolvedConfig,
+            instances: instanceConfigs,
+            logs: existingLogs.get(serverId) || [],
+            tools: existingTools.get(serverId),
+            resources: existingResources.get(serverId),
+            uptime: anyOnline ? 'Active' : undefined,
+            startTime: firstOnlineStartTime ?? firstInstance.startTime,
+            pid: firstOnlinePid ?? firstInstance.pid,
+            toolsCount: totalToolsCount,
+            resourcesCount: totalResourcesCount,
+            version: firstOnlineVersion,
+            rawV11Config: serverConfig
+          });
+        } else {
+          // Case without instances - create a virtual instance for display
+          const serverId = `config-${serverName}-${Date.now()}`;
+
+          // Resolve base config from template
+          const resolvedConfig = resolveInstanceConfig(template, { id: serverId });
+
+          // Determine display status - v1.1 doesn't have template-level enabled,
+          // default to offline for config-only servers
+          const status: ServerStatus = 'offline';
+
+          combinedServers.push({
+            id: serverId,
+            name: serverName,
+            status,
+            type:
+              template.type === 'sse' ||
+              template.type === 'streamable-http' ||
+              template.type === 'http'
+                ? 'remote'
+                : 'local',
+            config: resolvedConfig,
             instance: {
               id: serverId,
-              timestamp: Date.now(),
-              hash: 'config-only'
+              timestamp: Date.now()
             },
             logs: existingLogs.get(serverId) || [],
             tools: existingTools.get(serverId),
@@ -194,7 +302,8 @@ export const useServerStore = defineStore('server', () => {
             pid: undefined,
             toolsCount: 0,
             resourcesCount: 0,
-            version: undefined
+            version: undefined,
+            rawV11Config: serverConfig
           });
         }
       });
@@ -232,7 +341,10 @@ export const useServerStore = defineStore('server', () => {
         config: serverData.config || {}
       };
 
-      await http.post<{ name: string; config: ServerConfig }>('/web/servers', serverBasePayload);
+      await http.post<{ name: string; config: ServerRuntimeConfig }>(
+        '/web/servers',
+        serverBasePayload
+      );
 
       // Step 2: Add server instance configuration (now automatically handled by backend)
 
@@ -289,21 +401,24 @@ export const useServerStore = defineStore('server', () => {
       }
 
       if (serverData.config) {
-        // Update server configuration
-        const payload: Partial<ServerConfig> = {};
+        // Update server configuration - use ServerTemplate type to include instanceSelectionStrategy
+        const payload: Partial<ServerTemplate> = {};
         if (serverData.config.command) payload.command = serverData.config.command;
         if (serverData.config.args) payload.args = serverData.config.args;
         if (serverData.config.env) payload.env = serverData.config.env;
         if (serverData.config.headers !== undefined) payload.headers = serverData.config.headers;
         if (serverData.config.url) payload.url = serverData.config.url;
         if (serverData.config.timeout !== undefined) payload.timeout = serverData.config.timeout;
-        if (serverData.config.enabled !== undefined) payload.enabled = serverData.config.enabled;
-        if (serverData.config.allowedTools !== undefined)
-          payload.allowedTools = serverData.config.allowedTools;
+        if (serverData.config.aggregatedTools !== undefined)
+          payload.aggregatedTools = serverData.config.aggregatedTools;
         if (serverData.config.type) payload.type = serverData.config.type;
-        if (serverData.config.tags) payload.tags = serverData.config.tags;
         if (serverData.config.description !== undefined)
           payload.description = serverData.config.description;
+        // Include instance selection strategy from template
+        if (server.rawV11Config?.template.instanceSelectionStrategy !== undefined) {
+          payload.instanceSelectionStrategy =
+            server.rawV11Config.template.instanceSelectionStrategy;
+        }
 
         await http.put(`/web/servers/${server.name}`, payload);
       }
@@ -329,43 +444,73 @@ export const useServerStore = defineStore('server', () => {
    * status updates.
    *
    * @async
-   * @param {string} id - Server ID to start
+   * @param {string} id - Server/instance ID to start
    * @returns {Promise<void>}
-   * @throws {Error} If server not found or start fails
+   * @throws {Error} If start fails
    */
+  /**
+   * Finds a server by instance ID in the instances array
+   *
+   * @param {string} instanceId - The instance ID to search for
+   * @returns {Server|undefined} The server containing the instance, or undefined
+   */
+  function findServerByInstanceId(instanceId: string) {
+    for (const server of servers.value) {
+      if (server.instances?.some((inst) => inst.id === instanceId)) {
+        return server;
+      }
+    }
+    return undefined;
+  }
+
   async function startServer(id: string) {
     try {
+      console.log('[startServer] Starting server/instance:', id);
       const server = servers.value.find((s) => s.id === id);
-      if (!server) {
-        throw new Error('Server not found');
-      }
-
-      // Immediately update status to starting for better user experience
-      updateServerStatus(id, 'starting');
-
       let actualServerId = id;
 
-      // If it's a config-only server (virtual ID), need to create an instance
-      if (id.startsWith('config-')) {
+      // If we found a server and it's a config-only server, need to create an instance
+      if (server && id.startsWith('config-')) {
+        // Immediately update status to starting for better user experience
+        updateServerStatus(id, 'starting');
+
         // Create server instance
         const response = await http.post<ServerInstanceConfig>(
           `/web/server-instances/${server.name}`,
           {}
         );
         actualServerId = response.id;
+      } else {
+        // Try to find the server by instance in instances array to update status
+        const serverByInstance = findServerByInstanceId(id);
+        if (serverByInstance) {
+          // Update the specific instance status
+          const instance = serverByInstance.instances?.find((inst) => inst.id === id);
+          if (instance) {
+            instance.status = 'starting';
+          }
+          // Also update the aggregated server status
+          updateServerStatus(serverByInstance.id, 'starting');
+          console.log('[startServer] Updated instance status to starting:', id);
+        }
       }
 
       // Connect server (using actual instance ID)
       await http.post(`/web/mcp/servers/${actualServerId}/connect`, {});
       await fetchServers();
     } catch (e: unknown) {
+      // Revert status on failure
+      try {
+        await fetchServers();
+      } catch (fetchErr) {
+        console.error('Failed to fetch servers after start error:', fetchErr);
+      }
+
       if (e instanceof Error) {
         error.value = e.message || 'Failed to start server';
       } else {
         error.value = String(e) || 'Failed to start server';
       }
-      // Update to error state on failure
-      updateServerStatus(id, 'error');
       throw e;
     }
   }
@@ -377,19 +522,17 @@ export const useServerStore = defineStore('server', () => {
    * and regular instances by calling the disconnect API endpoint.
    *
    * @async
-   * @param {string} id - Server ID to stop
+   * @param {string} id - Server/instance ID to stop
    * @returns {Promise<void>}
-   * @throws {Error} If server not found or stop fails
+   * @throws {Error} If stop fails
    */
   async function stopServer(id: string) {
     try {
+      console.log('[stopServer] Stopping server/instance:', id);
       const server = servers.value.find((s) => s.id === id);
-      if (!server) {
-        throw new Error('Server not found');
-      }
 
       // If it's a config-only server, no need to disconnect
-      if (id.startsWith('config-')) {
+      if (server && id.startsWith('config-')) {
         await fetchServers();
         return;
       }
@@ -460,6 +603,259 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
+   * Adds a new server instance for an existing server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to add an instance for
+   * @returns {Promise<void>}
+   * @throws {Error} If instance creation fails
+   */
+  async function addServerInstance(serverName: string) {
+    loading.value = true;
+    try {
+      await http.post<ServerInstanceConfig>(`/web/server-instances/${serverName}`, {});
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to add server instance';
+      } else {
+        error.value = String(e) || 'Failed to add server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Updates an existing server instance
+   *
+   * @async
+   * @param {string} serverName - Name of the server
+   * @param {number} index - Index of the instance to update
+   * @param {Partial<ServerInstanceUpdate>} updates - Updates to apply to the instance
+   * @returns {Promise<void>}
+   * @throws {Error} If instance not found or update fails
+   */
+  async function updateServerInstance(
+    serverName: string,
+    index: number,
+    updates: Partial<ServerInstanceUpdate>
+  ) {
+    loading.value = true;
+    try {
+      await http.put(`/web/server-instances/${serverName}/${index}`, updates);
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to update server instance';
+      } else {
+        error.value = String(e) || 'Failed to update server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Removes a specific server instance by index
+   *
+   * @async
+   * @param {string} serverName - Name of the server
+   * @param {number} index - Index of the instance to remove
+   * @returns {Promise<void>}
+   * @throws {Error} If instance not found or removal fails
+   */
+  async function removeServerInstance(serverName: string, index: number) {
+    loading.value = true;
+    try {
+      await http.delete(`/web/server-instances/${serverName}/${index}`);
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to remove server instance';
+      } else {
+        error.value = String(e) || 'Failed to remove server instance';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Reassigns indexes for all instances of a server
+   * Makes indexes contiguous starting from 0
+   *
+   * @async
+   * @param {string} serverName - Name of the server to reassign indexes for
+   * @returns {Promise<void>}
+   * @throws {Error} If reassignment fails
+   */
+  async function reassignInstanceIndexes(serverName: string) {
+    loading.value = true;
+    try {
+      await http.post(`/web/server-instances/${serverName}/reassign-indexes`, {});
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to reassign instance indexes';
+      } else {
+        error.value = String(e) || 'Failed to reassign instance indexes';
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Starts all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to start all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If starting fails
+   */
+  async function startAllServerInstances(serverName: string) {
+    try {
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all offline/error instances for this server
+      const instancesToStart = aggregatedServer.instances.filter(
+        (inst) => inst.status === 'offline' || inst.status === 'error'
+      );
+
+      // Update all instances to starting status for immediate UI feedback
+      instancesToStart.forEach((instance) => {
+        updateServerStatus(instance.id, 'starting');
+      });
+
+      // Start each instance
+      for (const instance of instancesToStart) {
+        if (!instance.id.startsWith('config-')) {
+          try {
+            console.log('[startAllServerInstances] Starting instance:', instance.id);
+            await http.post(`/web/mcp/servers/${instance.id}/connect`, {});
+          } catch (e) {
+            console.error(`Failed to start instance ${instance.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to start server instances';
+      } else {
+        error.value = String(e) || 'Failed to start server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Stops all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to stop all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If stopping fails
+   */
+  async function stopAllServerInstances(serverName: string) {
+    try {
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all online/starting instances for this server
+      const instancesToStop = aggregatedServer.instances.filter(
+        (inst) => inst.status === 'online' || inst.status === 'starting'
+      );
+
+      // Stop each instance
+      for (const instance of instancesToStop) {
+        if (!instance.id.startsWith('config-')) {
+          try {
+            console.log('[stopAllServerInstances] Stopping instance:', instance.id);
+            await http.post(`/web/mcp/servers/${instance.id}/disconnect`, {});
+          } catch (e) {
+            console.error(`Failed to stop instance ${instance.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to stop server instances';
+      } else {
+        error.value = String(e) || 'Failed to stop server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Restarts all instances of a server
+   *
+   * @async
+   * @param {string} serverName - Name of the server to restart all instances for
+   * @returns {Promise<void>}
+   * @throws {Error} If restarting fails
+   */
+  async function restartAllServerInstances(serverName: string) {
+    try {
+      // Find the aggregated server object
+      const aggregatedServer = servers.value.find((s) => s.name === serverName);
+      if (!aggregatedServer?.instances) {
+        return;
+      }
+
+      // Get all instances for this server
+      const allInstances = aggregatedServer.instances;
+
+      // Update all instances to starting status for immediate UI feedback
+      allInstances.forEach((instance) => {
+        updateServerStatus(instance.id, 'starting');
+      });
+
+      // Restart each instance
+      for (const instance of allInstances) {
+        if (!instance.id.startsWith('config-')) {
+          try {
+            console.log('[restartAllServerInstances] Restarting instance:', instance.id);
+            // Stop first if it's online
+            if (instance.status === 'online') {
+              await http.post(`/web/mcp/servers/${instance.id}/disconnect`, {});
+            }
+            // Then start
+            await http.post(`/web/mcp/servers/${instance.id}/connect`, {});
+          } catch (e) {
+            console.error(`Failed to restart instance ${instance.id}:`, e);
+          }
+        }
+      }
+
+      await fetchServers();
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error.value = e.message || 'Failed to restart server instances';
+      } else {
+        error.value = String(e) || 'Failed to restart server instances';
+      }
+      throw e;
+    }
+  }
+
+  /**
    * Imports multiple servers from JSON configuration
    *
    * Converts legacy JSON format to the new batch import format and
@@ -506,18 +902,65 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
-   * Updates the status of a specific server
+   * Updates the status of a specific server or instance
    *
    * Directly modifies the server status in the local state without API calls.
    * Used for immediate UI feedback during server operations.
    *
-   * @param {string} id - Server ID to update
+   * @param {string} id - Server ID or instance ID to update
    * @param {ServerStatus} status - New status value
    */
   function updateServerStatus(id: string, status: ServerStatus) {
+    // First try to find by server ID
     const server = servers.value.find((s) => s.id === id);
     if (server) {
       server.status = status;
+      return;
+    }
+
+    // If not found, try to find by instance ID
+    const serverByInstance = findServerByInstanceId(id);
+    if (serverByInstance) {
+      // Update the specific instance status
+      const instance = serverByInstance.instances?.find((inst) => inst.id === id);
+      if (instance) {
+        instance.status = status;
+      }
+
+      // Recompute the aggregated server status
+      let anyOnline = false;
+      let anyError = false;
+      let anyStarting = false;
+
+      for (const inst of serverByInstance.instances || []) {
+        if (inst.status === 'online') {
+          anyOnline = true;
+          break;
+        } else if (inst.status === 'error') {
+          anyError = true;
+        } else if (inst.status === 'starting') {
+          anyStarting = true;
+        }
+      }
+
+      if (anyOnline) {
+        serverByInstance.status = 'online';
+      } else if (anyError) {
+        serverByInstance.status = 'error';
+      } else if (anyStarting) {
+        serverByInstance.status = 'starting';
+      } else {
+        serverByInstance.status = 'offline';
+      }
+
+      console.log(
+        '[updateServerStatus] Updated instance status:',
+        id,
+        '->',
+        status,
+        'Aggregated:',
+        serverByInstance.status
+      );
     }
   }
 
@@ -528,13 +971,13 @@ export const useServerStore = defineStore('server', () => {
    * Includes error handling to prevent crashes on failed requests.
    *
    * @async
-   * @param {string} serverId - Server ID to fetch tools from
+   * @param {string} serverName - Server name to fetch tools from
    * @returns {Promise<Tool[]>} Array of available tools
    */
-  async function fetchTools(serverId: string) {
+  async function fetchTools(serverName: string) {
     try {
-      const tools = await http.get<Tool[]>(`/web/mcp/servers/${serverId}/tools`);
-      const server = servers.value.find((s) => s.id === serverId);
+      const tools = await http.get<Tool[]>(`/web/mcp/servers/${serverName}/tools`);
+      const server = servers.value.find((s) => s.name === serverName);
       if (server) {
         server.tools = tools;
       }
@@ -552,13 +995,13 @@ export const useServerStore = defineStore('server', () => {
    * Includes error handling to prevent crashes on failed requests.
    *
    * @async
-   * @param {string} serverId - Server ID to fetch resources from
+   * @param {string} serverName - Server name to fetch resources from
    * @returns {Promise<Resource[]>} Array of available resources
    */
-  async function fetchResources(serverId: string) {
+  async function fetchResources(serverName: string) {
     try {
-      const resources = await http.get<Resource[]>(`/web/mcp/servers/${serverId}/resources`);
-      const server = servers.value.find((s) => s.id === serverId);
+      const resources = await http.get<Resource[]>(`/web/mcp/servers/${serverName}/resources`);
+      const server = servers.value.find((s) => s.name === serverName);
       if (server) {
         server.resources = resources;
       }
@@ -573,10 +1016,10 @@ export const useServerStore = defineStore('server', () => {
    * Fetch server logs using WebSocket
    * No longer use HTTP requests, instead subscribe and fetch via WebSocket
    */
-  function fetchLogs(serverId: string) {
+  function fetchLogs(serverId: string, instanceIndex: number = 0) {
     // Get WebSocket store instance
     const wsStore = useWebSocketStore();
-    wsStore.fetchLogs(serverId, 100); // Fetch the latest 100 log entries
+    wsStore.fetchLogs(serverId, instanceIndex, 100); // Fetch the latest 100 log entries
   }
 
   /**
@@ -607,7 +1050,7 @@ export const useServerStore = defineStore('server', () => {
    * Iterates through all servers and fetches their logs via WebSocket.
    */
   function fetchAllLogs() {
-    servers.value.forEach((s) => fetchLogs(s.id));
+    servers.value.forEach((s) => fetchLogs(s.id, 0));
   }
 
   /**
@@ -676,6 +1119,14 @@ export const useServerStore = defineStore('server', () => {
     fetchAllLogs,
     clearLogs,
     readResource,
-    fetchAllResources
+    fetchAllResources,
+    addServerInstance,
+    updateServerInstance,
+    removeServerInstance,
+    reassignInstanceIndexes,
+    startAllServerInstances,
+    stopAllServerInstances,
+    restartAllServerInstances,
+    findServerByInstanceId
   };
 });

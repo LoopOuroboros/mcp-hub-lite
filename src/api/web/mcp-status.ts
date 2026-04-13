@@ -4,9 +4,10 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
+import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 /**
- * MCP Connection Status API Routes
+ * MCP Connection Status API Routes (v1.1 format)
  *
  * Provides real-time monitoring and management endpoints for MCP (Model Context Protocol) server connections.
  * This module enables administrators to check the health of connected servers, manage connection states,
@@ -36,7 +37,6 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
   fastify.get('/web/mcp/status', async (_request, reply) => {
     try {
       const servers = hubManager.getAllServers();
-      const serverInstances = hubManager.getServerInstances();
       const statusList: Array<{
         id: string;
         name: string;
@@ -45,14 +45,14 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
       }> = [];
 
       servers.forEach((server) => {
-        const instances = serverInstances[server.name] || [];
+        const instances = server.config.instances || [];
 
         // If no instances, add a default disconnected entry for this server
         if (instances.length === 0) {
           statusList.push({
             id: server.name,
             name: server.name,
-            type: server.config.type,
+            type: server.config.template.type,
             status: {
               connected: false,
               lastCheck: Date.now(),
@@ -64,11 +64,12 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         } else {
           // Add status for each instance
           instances.forEach((instance) => {
+            const resolvedConfig = resolveInstanceConfig(server.config, instance.id);
             statusList.push({
               id: instance.id || '',
               name: server.name,
-              type: server.config.type,
-              status: mcpConnectionManager.getStatus(instance.id || '') || {
+              type: resolvedConfig?.type || server.config.template.type,
+              status: mcpConnectionManager.getStatus(server.name, instance.index ?? 0) || {
                 connected: false,
                 lastCheck: Date.now(),
                 toolsCount: 0,
@@ -92,21 +93,42 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     '/web/mcp/servers/:id/connect',
     async (request, reply) => {
       try {
-        const server = hubManager.getServerById(request.params.id);
-        if (!server) {
+        const serverInfo = hubManager.getServerById(request.params.id);
+        if (!serverInfo) {
           return reply.code(404).send({ error: 'Server not found' });
         }
 
-        const success = await mcpConnectionManager.connect({
-          ...server.config,
-          ...server.instance
-        });
+        const resolvedConfig = resolveInstanceConfig(serverInfo.config, serverInfo.instance.id);
+        if (!resolvedConfig) {
+          return reply.code(404).send({ error: 'Server instance configuration not found' });
+        }
+
+        // Create a compatible config object with required instance fields
+        const connectConfig = {
+          ...resolvedConfig,
+          id: serverInfo.instance.id,
+          timestamp: Date.now(),
+          hash: '',
+          pid: undefined,
+          startTime: undefined,
+          index: serverInfo.instance.index,
+          displayName: serverInfo.instance.displayName
+        };
+
+        const instanceIndex = serverInfo.instance.index ?? 0;
+        const success = await mcpConnectionManager.connect(
+          serverInfo.name,
+          instanceIndex,
+          connectConfig
+        );
         if (!success) {
           return reply.code(500).send({ error: 'Failed to connect to server' });
         }
 
-        // Update enabled status in config - The enabled field now belongs to server configuration, not instance configuration
-        await hubManager.updateServer(server.name, { enabled: true });
+        // Note: Do NOT update the instance's enabled field here.
+        // The enabled field is a configuration parameter that should only be modified
+        // by the user explicitly via the configuration panel.
+        // Runtime connect/disconnect operations should not affect persistent configuration.
 
         return { success: true };
       } catch (error) {
@@ -121,14 +143,17 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     '/web/mcp/servers/:id/disconnect',
     async (request, reply) => {
       try {
-        await mcpConnectionManager.disconnect(request.params.id);
-
-        // Update enabled status in config to ensure it doesn't show as "starting"
-        // The enabled field now belongs to server configuration, not instance configuration
-        const server = hubManager.getServerById(request.params.id);
-        if (server) {
-          await hubManager.updateServer(server.name, { enabled: false });
+        const serverInfo = hubManager.getServerById(request.params.id);
+        if (!serverInfo) {
+          return reply.code(404).send({ error: 'Server not found' });
         }
+
+        await mcpConnectionManager.disconnect(serverInfo.name, serverInfo.instance.index ?? 0);
+
+        // Note: Do NOT update the instance's enabled field here.
+        // The enabled field is a configuration parameter that should only be modified
+        // by the user explicitly via the configuration panel.
+        // Runtime connect/disconnect operations should not affect persistent configuration.
 
         return { success: true };
       } catch (error) {
@@ -138,28 +163,35 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // GET /web/mcp/servers/:id/tools - Get tools for a specific server
-  fastify.get<{ Params: { id: string } }>('/web/mcp/servers/:id/tools', async (request, reply) => {
-    try {
-      logger.info(`API request tools for server: ${request.params.id}`, LOG_MODULES.MCP_STATUS);
-      const tools = mcpConnectionManager.getTools(request.params.id);
-      return tools;
-    } catch (error) {
-      logger.error('Failed to get MCP tools:', error, LOG_MODULES.MCP_STATUS);
-      return reply.code(500).send({ error: 'Internal Server Error' });
-    }
-  });
-
-  // GET /web/mcp/servers/:id/resources - Get resources for a specific server
-  fastify.get<{ Params: { id: string } }>(
-    '/web/mcp/servers/:id/resources',
+  // GET /web/mcp/servers/:name/tools - Get tools for a specific server
+  fastify.get<{ Params: { name: string } }>(
+    '/web/mcp/servers/:name/tools',
     async (request, reply) => {
       try {
-        logger.info(
-          `API request resources for server: ${request.params.id}`,
-          LOG_MODULES.MCP_STATUS
-        );
-        const resources = mcpConnectionManager.getResources(request.params.id);
+        const serverName = request.params.name;
+        logger.info(`API request tools for server: ${serverName}`, LOG_MODULES.MCP_STATUS);
+
+        // Use getToolsByServerName which queries serverNameToolCache
+        // This aggregates tools from all instances of the same server name
+        const tools = mcpConnectionManager.getToolsByServerName(serverName);
+        return tools;
+      } catch (error) {
+        logger.error('Failed to get MCP tools:', error, LOG_MODULES.MCP_STATUS);
+        return reply.code(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  // GET /web/mcp/servers/:name/resources - Get resources for a specific server
+  fastify.get<{ Params: { name: string } }>(
+    '/web/mcp/servers/:name/resources',
+    async (request, reply) => {
+      try {
+        const serverName = request.params.name;
+        logger.info(`API request resources for server: ${serverName}`, LOG_MODULES.MCP_STATUS);
+
+        // Use getResourcesByName which queries resourceCache by server name
+        const resources = mcpConnectionManager.getResourcesByName(serverName);
         return resources;
       } catch (error) {
         logger.error('Failed to get MCP resources:', error, LOG_MODULES.MCP_STATUS);

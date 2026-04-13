@@ -7,6 +7,7 @@ import {
   formatMcpMessageForLogging,
   logNotificationMessage
 } from '@utils/logger.js';
+import { getAppVersion } from '@utils/version.js';
 import { getMcpCommDebugSetting } from '@utils/json-utils.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
@@ -14,10 +15,12 @@ import { logStorage } from '@services/log-storage.service.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
-import type { ServerConfig } from '@config/config.schema.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
+import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
+import type { ServerConfig, ServerInstance } from '@config/config-manager.js';
 import type { ServerStatus } from './types.js';
 import { ToolCache } from './tool-cache.js';
+import { getCompositeKey } from '@utils/composite-key.js';
 
 /**
  * Manages MCP (Model Context Protocol) server connections and provides a unified interface
@@ -27,19 +30,19 @@ import { ToolCache } from './tool-cache.js';
  * - Establishing connections via various transport protocols (stdio, SSE, HTTP)
  * - Managing client instances and transport layers
  * - Caching tools and resources for performance optimization
- * - Providing both server ID-based and server name-based access patterns
+ * - Providing both composite key-based and server name-based access patterns
  * - Handling connection events and error recovery
  * - Supporting bidirectional communication for tool execution
  *
- * The manager uses ToolCache for both server ID-level and server name-level
+ * The manager uses ToolCache for both composite key-level and server name-level
  * operations to optimize different access patterns while ensuring data consistency.
  *
  * @example
  * ```typescript
  * const manager = new McpConnectionManager();
- * await manager.connect(serverConfig);
- * const tools = await manager.getTools(serverId);
- * const result = await manager.callTool(serverId, 'tool-name', { param: 'value' });
+ * await manager.connect('my-server', 0, serverConfig);
+ * const tools = await manager.getTools('my-server', 0);
+ * const result = await manager.callTool('my-server', 0, 'tool-name', { param: 'value' });
  * ```
  */
 export class McpConnectionManager {
@@ -48,22 +51,27 @@ export class McpConnectionManager {
   private serverStatus: Map<string, ServerStatus> = new Map();
   private _toolCache: ToolCache = new ToolCache();
   private resourceCache: Map<string, Resource[]> = new Map();
+  // Track composite keys by server name
+  private serverNameToCompositeKeys: Map<string, Set<string>> = new Map();
 
   constructor() {
     // Listen for server deletion events and automatically disconnect
     eventBus.subscribe(EventTypes.SERVER_DELETED, (data: unknown) => {
       const serverName = data as string;
       // Find all instances by server name and disconnect them
-      const serverInstances = hubManager.getServerInstanceByName(serverName);
-      serverInstances.forEach((instance) => {
-        this.disconnect(instance.id!).catch((err) => {
-          logger.warn(
-            `Failed to disconnect deleted server instance ${instance.id}:`,
-            err,
-            LOG_MODULES.CONNECTION_MANAGER
-          );
-        });
-      });
+      const compositeKeys = this.serverNameToCompositeKeys.get(serverName);
+      if (compositeKeys) {
+        for (const compositeKey of compositeKeys) {
+          const { serverIndex } = parseCompositeKey(compositeKey)!;
+          this.disconnect(serverName, serverIndex).catch((err) => {
+            logger.warn(
+              `Failed to disconnect deleted server instance ${compositeKey}:`,
+              err,
+              LOG_MODULES.CONNECTION_MANAGER
+            );
+          });
+        }
+      }
     });
   }
 
@@ -83,7 +91,9 @@ export class McpConnectionManager {
    * successful connection, and SERVER_STATUS_CHANGE events with error details
    * on failure.
    *
-   * @param {ServerConfig & ServerInstanceConfig} server - Server configuration containing
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
+   * @param {ServerRuntimeConfig & Partial<ServerInstanceConfig>} server - Server configuration containing
    * connection details, transport type, and instance-specific parameters
    * @returns {Promise<boolean>} True if connection succeeds, false if it fails
    * @throws {Error} If server ID is missing or required configuration is invalid
@@ -96,29 +106,35 @@ export class McpConnectionManager {
    *   command: 'npx my-mcp-server',
    *   name: 'My MCP Server'
    * };
-   * const success = await manager.connect(serverConfig);
+   * const success = await manager.connect('My MCP Server', 0, serverConfig);
    * if (success) {
    *   console.log('Connected successfully');
    * }
    * ```
    */
-  public async connect(server: ServerConfig & ServerInstanceConfig): Promise<boolean> {
-    let serverInfo:
-      | { name: string; config: ServerConfig; instance: ServerInstanceConfig }
-      | undefined;
-    try {
-      logger.info(
-        `Connecting to server [${server.id || 'unknown'}]...`,
-        LOG_MODULES.CONNECTION_MANAGER
-      );
+  public async connect(
+    serverName: string,
+    serverIndex: number,
+    server: ServerRuntimeConfig & Partial<ServerInstanceConfig>
+  ): Promise<boolean> {
+    let serverInfo: { name: string; config: ServerConfig; instance: ServerInstance } | undefined;
+    // Extract serverId at the very beginning for consistent usage in both try and catch blocks
+    const serverId = server.id || 'unknown';
+    const compositeKey = getCompositeKey(serverName, serverIndex);
 
+    try {
       // Validate server configuration
       if (!server.id) {
         throw new Error('Server ID is required');
       }
 
+      logger.info(
+        `Connecting to server [${compositeKey}] (${serverId})...`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+
       // First set starting state (connected: false, no error)
-      this.serverStatus.set(server.id, {
+      this.serverStatus.set(compositeKey, {
         connected: false,
         lastCheck: Date.now(),
         toolsCount: 0,
@@ -126,9 +142,9 @@ export class McpConnectionManager {
       });
 
       // Get server name from server instance ID (via hubManager.getServerById)
-      serverInfo = hubManager.getServerById(server.id);
+      serverInfo = hubManager.getServerById(serverId);
       if (!serverInfo) {
-        throw new Error(`Server not found for instance: ${server.id}`);
+        throw new Error(`Server not found for instance: ${serverId}`);
       }
 
       if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
@@ -144,13 +160,12 @@ export class McpConnectionManager {
       }
 
       // Create transport based on server type
-      const serverName = serverInfo.name;
       const transport = TransportFactory.createTransport(
         {
           ...server,
           name: serverName
         },
-        server.id
+        compositeKey
       );
 
       // Always set up message handler for notifications/message
@@ -162,7 +177,7 @@ export class McpConnectionManager {
         }
 
         // Log notifications/message to application logs (always enabled)
-        logNotificationMessage(message, serverName, server.id);
+        logNotificationMessage(message, serverName, compositeKey);
       };
 
       // Wrap send method for debug logging (if enabled)
@@ -187,16 +202,28 @@ export class McpConnectionManager {
       // Handle transport close events
       if ('onclose' in transport) {
         transport.onclose = () => {
-          logger.info(`Transport closed for server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
-          const currentStatus = this.serverStatus.get(server.id!);
+          logger.info(
+            `Transport closed for server [${compositeKey}]`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
+          const currentStatus = this.serverStatus.get(compositeKey);
           // Only update status if it was previously connected or starting
           if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-            this.serverStatus.set(server.id!, {
+            this.serverStatus.set(compositeKey, {
               connected: false,
               lastCheck: Date.now(),
               toolsCount: 0,
               resourcesCount: 0,
               error: 'Connection closed unexpectedly'
+            });
+
+            // Publish server status change event
+            eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+              serverName,
+              serverIndex,
+              status: 'error',
+              error: 'Connection closed unexpectedly',
+              timestamp: Date.now()
             });
           }
         };
@@ -223,25 +250,23 @@ export class McpConnectionManager {
               }
             }
             if (!isJsonRpc) {
-              // Use server ID and name for log storage
-              const serverId = server?.id ?? 'unknown';
-              logStorage.append(serverId, 'info', `[${serverName}] [STDOUT] ${data}`);
+              // Use composite key for log storage
+              logStorage.append(compositeKey, 'info', `[${serverName}] [STDOUT] ${data}`);
             }
           }
         };
       }
       if ('onstderr' in transport) {
         transport.onstderr = (data: string) => {
-          // Use server ID and name for log storage
-          const serverId = server?.id ?? 'unknown';
-          logStorage.append(serverId, 'error', `[${serverName}] [STDERR] ${data}`);
+          // Use composite key for log storage
+          logStorage.append(compositeKey, 'error', `[${serverName}] [STDERR] ${data}`);
         };
       }
 
       const client = new Client(
         {
           name: MCP_HUB_LITE_SERVER,
-          version: '1.0.0'
+          version: getAppVersion()
         },
         {
           capabilities: {}
@@ -250,9 +275,15 @@ export class McpConnectionManager {
 
       await client.connect(transport);
 
-      this.clients.set(server.id, client);
-      this.transports.set(server.id, transport);
-      this._toolCache.setNameMapping(serverInfo.name, server.id);
+      this.clients.set(compositeKey, client);
+      this.transports.set(compositeKey, transport);
+      this._toolCache.setNameMapping(serverName, compositeKey);
+
+      // Register composite key for this server name
+      if (!this.serverNameToCompositeKeys.has(serverName)) {
+        this.serverNameToCompositeKeys.set(serverName, new Set());
+      }
+      this.serverNameToCompositeKeys.get(serverName)!.add(compositeKey);
 
       // Get PID if available (only for stdio transport)
       let pid: number | undefined;
@@ -264,56 +295,49 @@ export class McpConnectionManager {
       const clientServerInfo = client.getServerVersion();
       const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
 
-      // Update server instance info (merge pid and startTime)
-      const instances = hubManager.getServerInstanceByName(serverName);
-      const instanceIndex = instances.findIndex((inst) => inst.id === server.id);
-      if (instanceIndex !== -1) {
-        hubManager.updateServerInstance(serverName, instanceIndex, {
-          pid: pid,
-          startTime: Date.now() // Startup time is the same as timestamp
-        });
-      }
-
-      this.serverStatus.set(server.id, {
+      this.serverStatus.set(compositeKey, {
         connected: true,
         lastCheck: Date.now(),
         toolsCount: 0,
         resourcesCount: 0,
         pid: pid,
         startTime: Date.now(),
-        version: serverVersion,
-        hash: server.hash
+        version: serverVersion
       });
 
-      logger.info(`Connected to server [${server.id}]`, LOG_MODULES.CONNECTION_MANAGER);
+      logger.info(`Connected to server [${compositeKey}]`, LOG_MODULES.CONNECTION_MANAGER);
 
       // Publish server connected event
       eventBus.publish(EventTypes.SERVER_CONNECTED, {
-        serverId: server.id,
+        serverName,
+        serverIndex,
         status: 'online',
         timestamp: Date.now()
       });
 
       // Publish server status change event
       eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId: server.id,
+        serverName,
+        serverIndex,
         status: 'online',
         timestamp: Date.now()
       });
 
       // Fetch tools and resources immediately (only for bidirectional transports)
       if (server.type !== 'sse') {
-        const tools = await this.refreshTools(server.id);
-        const resources = await this.refreshResources(server.id);
+        const tools = await this.refreshTools(serverName, serverIndex);
+        const resources = await this.refreshResources(serverName, serverIndex);
 
         // Publish tools and resources updated event
         eventBus.publish(EventTypes.TOOLS_UPDATED, {
-          serverId: server.id,
+          serverName,
+          serverIndex,
           tools
         });
 
         eventBus.publish(EventTypes.RESOURCES_UPDATED, {
-          serverId: server.id,
+          serverName,
+          serverIndex,
           resources
         });
       } else {
@@ -326,12 +350,11 @@ export class McpConnectionManager {
       return true;
     } catch (error) {
       logger.error(
-        `Failed to connect to server ${serverInfo?.name || server.id || 'unknown'}:`,
+        `Failed to connect to server ${compositeKey}:`,
         error,
         LOG_MODULES.CONNECTION_MANAGER
       );
-      const serverId = server.id || 'unknown';
-      this.serverStatus.set(serverId, {
+      this.serverStatus.set(compositeKey, {
         connected: false,
         error: error instanceof Error ? error.message : String(error),
         lastCheck: Date.now(),
@@ -341,7 +364,8 @@ export class McpConnectionManager {
 
       // Publish server status change event (error state)
       eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId,
+        serverName,
+        serverIndex,
         status: 'error',
         error: error instanceof Error ? error.message : String(error),
         timestamp: Date.now()
@@ -363,27 +387,33 @@ export class McpConnectionManager {
    * upon completion and handles any errors during the disconnection process
    * without throwing exceptions.
    *
-   * @param {string} serverId - Unique identifier of the server instance to disconnect
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {Promise<void>} Resolves when disconnection is complete
    *
    * @example
    * ```typescript
-   * await manager.disconnect('my-server-1');
+   * await manager.disconnect('my-server', 0);
    * console.log('Server disconnected');
    * ```
    */
-  public async disconnect(serverId: string): Promise<void> {
-    logger.info(`Disconnecting from server [${serverId}]...`, LOG_MODULES.CONNECTION_MANAGER);
+  public async disconnect(serverName: string, serverIndex: number): Promise<void> {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    logger.info(`Disconnecting from server [${compositeKey}]...`, LOG_MODULES.CONNECTION_MANAGER);
 
-    const client = this.clients.get(serverId);
-    const transport = this.transports.get(serverId);
+    const client = this.clients.get(compositeKey);
+    const transport = this.transports.get(compositeKey);
 
     try {
       if (client) {
         try {
           await client.close();
         } catch (e) {
-          logger.warn(`Error closing client for [${serverId}]:`, e, LOG_MODULES.CONNECTION_MANAGER);
+          logger.warn(
+            `Error closing client for [${compositeKey}]:`,
+            e,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
         }
       }
 
@@ -392,18 +422,27 @@ export class McpConnectionManager {
       }
     } catch (error) {
       logger.error(
-        `Error disconnecting server [${serverId}]:`,
+        `Error disconnecting server [${compositeKey}]:`,
         error,
         LOG_MODULES.CONNECTION_MANAGER
       );
     } finally {
-      this.clients.delete(serverId);
-      this.transports.delete(serverId);
-      this._toolCache.clearTools(serverId);
-      this.resourceCache.delete(serverId);
-      this._toolCache.removeNameMappingById(serverId);
+      this.clients.delete(compositeKey);
+      this.transports.delete(compositeKey);
+      this._toolCache.clearTools(serverName, serverIndex);
+      this.resourceCache.delete(compositeKey);
+      this._toolCache.removeNameMappingById(compositeKey);
 
-      this.serverStatus.set(serverId, {
+      // Remove from serverNameToCompositeKeys
+      const keys = this.serverNameToCompositeKeys.get(serverName);
+      if (keys) {
+        keys.delete(compositeKey);
+        if (keys.size === 0) {
+          this.serverNameToCompositeKeys.delete(serverName);
+        }
+      }
+
+      this.serverStatus.set(compositeKey, {
         connected: false,
         lastCheck: Date.now(),
         toolsCount: 0,
@@ -412,19 +451,21 @@ export class McpConnectionManager {
 
       // Publish server disconnected event
       eventBus.publish(EventTypes.SERVER_DISCONNECTED, {
-        serverId,
+        serverName,
+        serverIndex,
         status: 'offline',
         timestamp: Date.now()
       });
 
       // Publish server status change event
       eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverId,
+        serverName,
+        serverIndex,
         status: 'offline',
         timestamp: Date.now()
       });
 
-      logger.info(`Disconnected from server [${serverId}]`, LOG_MODULES.CONNECTION_MANAGER);
+      logger.info(`Disconnected from server [${compositeKey}]`, LOG_MODULES.CONNECTION_MANAGER);
     }
   }
 
@@ -446,16 +487,27 @@ export class McpConnectionManager {
    */
   public async disconnectAll(): Promise<void> {
     logger.info('Disconnecting all servers...', LOG_MODULES.CONNECTION_MANAGER);
-    const serverIds = Array.from(this.clients.keys());
-    logger.info(`Found ${serverIds.length} connected server(s)`, LOG_MODULES.CONNECTION_MANAGER);
+    const compositeKeys = Array.from(this.clients.keys());
+    logger.info(
+      `Found ${compositeKeys.length} connected server(s)`,
+      LOG_MODULES.CONNECTION_MANAGER
+    );
 
-    const disconnectPromises = serverIds.map(async (id) => {
-      logger.info(`Disconnecting server [${id}]...`, LOG_MODULES.CONNECTION_MANAGER);
+    const disconnectPromises = compositeKeys.map(async (compositeKey) => {
+      const { serverName, serverIndex } = parseCompositeKey(compositeKey)!;
+      logger.info(`Disconnecting server [${compositeKey}]...`, LOG_MODULES.CONNECTION_MANAGER);
       try {
-        await this.disconnect(id);
-        logger.info(`Successfully disconnected server [${id}]`, LOG_MODULES.CONNECTION_MANAGER);
+        await this.disconnect(serverName, serverIndex);
+        logger.info(
+          `Successfully disconnected server [${compositeKey}]`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
       } catch (error) {
-        logger.error(`Failed to disconnect server [${id}]:`, error, LOG_MODULES.CONNECTION_MANAGER);
+        logger.error(
+          `Failed to disconnect server [${compositeKey}]:`,
+          error,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
       }
     });
 
@@ -467,29 +519,30 @@ export class McpConnectionManager {
    * Refreshes the tool cache for a specific server by fetching the latest tool list.
    *
    * This method queries the connected MCP server for its current set of available tools,
-   * updates both the server ID-level and server name-level caches, and maintains
+   * updates both the composite key-level and server name-level caches, and maintains
    * accurate tool counts in the server status. It handles server name resolution
    * to ensure proper caching across multiple instances of the same server.
    *
-   * @param {string} serverId - Unique identifier of the server instance to refresh
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {Promise<Tool[]>} Array of updated tools with server context
    * @throws {Error} If the server is not connected or tool listing fails
    *
    * @example
    * ```typescript
-   * const tools = await manager.refreshTools('my-server-1');
+   * const tools = await manager.refreshTools('my-server', 0);
    * console.log(`Found ${tools.length} tools`);
    * ```
    */
-  public async refreshTools(serverId: string): Promise<Tool[]> {
-    const client = this.clients.get(serverId);
+  public async refreshTools(serverName: string, serverIndex: number): Promise<Tool[]> {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const client = this.clients.get(compositeKey);
     if (!client) {
-      throw new Error(`Server ${serverId} not connected`);
+      throw new Error(`Server ${compositeKey} not connected`);
     }
 
     try {
       const result = await client.listTools();
-      const serverName = this._toolCache.getServerNameById(serverId);
       const tools: Tool[] = result.tools.map((t) => ({
         name: t.name,
         description: t.description,
@@ -497,23 +550,23 @@ export class McpConnectionManager {
         serverName: serverName
       }));
 
-      this._toolCache.setTools(serverId, tools, serverName !== 'unknown' ? serverName : undefined);
+      this._toolCache.setTools(serverName, serverIndex, tools);
 
       // Update status
-      const status = this.serverStatus.get(serverId);
+      const status = this.serverStatus.get(compositeKey);
       if (status) {
         status.toolsCount = tools.length;
         status.lastCheck = Date.now();
       }
 
       logger.info(
-        `Refreshed tools for server [${serverId}]: ${tools.length} tools found`,
+        `Refreshed tools for server [${compositeKey}]: ${tools.length} tools found`,
         LOG_MODULES.CONNECTION_MANAGER
       );
       return tools;
     } catch (error) {
       logger.error(
-        `Failed to list tools for server [${serverId}]:`,
+        `Failed to list tools for server [${compositeKey}]:`,
         error,
         LOG_MODULES.CONNECTION_MANAGER
       );
@@ -533,20 +586,22 @@ export class McpConnectionManager {
    * which indicate that the server doesn't implement the resources protocol, treating
    * this as a normal case rather than an error.
    *
-   * @param {string} serverId - Unique identifier of the server instance to refresh
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {Promise<Resource[]>} Array of available resources, empty if unsupported
    * @throws {Error} If the server is not connected or resource listing fails unexpectedly
    *
    * @example
    * ```typescript
-   * const resources = await manager.refreshResources('my-server-1');
+   * const resources = await manager.refreshResources('my-server', 0);
    * console.log(`Found ${resources.length} resources`);
    * ```
    */
-  public async refreshResources(serverId: string): Promise<Resource[]> {
-    const client = this.clients.get(serverId);
+  public async refreshResources(serverName: string, serverIndex: number): Promise<Resource[]> {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const client = this.clients.get(compositeKey);
     if (!client) {
-      throw new Error(`Server ${serverId} not connected`);
+      throw new Error(`Server ${compositeKey} not connected`);
     }
 
     try {
@@ -554,7 +609,7 @@ export class McpConnectionManager {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof (client as any).listResources !== 'function') {
         logger.warn(
-          `Server [${serverId}] does not support resources listing`,
+          `Server [${compositeKey}] does not support resources listing`,
           LOG_MODULES.CONNECTION_MANAGER
         );
         return [];
@@ -567,20 +622,22 @@ export class McpConnectionManager {
         name: r.name,
         uri: r.uri,
         mimeType: r.mimeType,
-        description: r.description
+        description: r.description,
+        serverName: serverName,
+        serverIndex: serverIndex
       }));
 
-      this.resourceCache.set(serverId, resources);
+      this.resourceCache.set(compositeKey, resources);
 
       // Update status
-      const status = this.serverStatus.get(serverId);
+      const status = this.serverStatus.get(compositeKey);
       if (status) {
         status.resourcesCount = resources.length;
         status.lastCheck = Date.now();
       }
 
       logger.info(
-        `Refreshed resources for server [${serverId}]: ${resources.length} resources found`,
+        `Refreshed resources for server [${compositeKey}]: ${resources.length} resources found`,
         LOG_MODULES.CONNECTION_MANAGER
       );
       return resources;
@@ -589,7 +646,7 @@ export class McpConnectionManager {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (error && typeof error === 'object' && 'code' in error && (error as any).code === -32601) {
         logger.info(
-          `Server [${serverId}] does not support resources functionality`,
+          `Server [${compositeKey}] does not support resources functionality`,
           LOG_MODULES.CONNECTION_MANAGER
         );
       } else if (
@@ -602,22 +659,22 @@ export class McpConnectionManager {
         (error as any).message.includes('Method not found')
       ) {
         logger.info(
-          `Server [${serverId}] does not support resources functionality`,
+          `Server [${compositeKey}] does not support resources functionality`,
           LOG_MODULES.CONNECTION_MANAGER
         );
       } else {
         logger.warn(
-          `Failed to list resources for server [${serverId}]:`,
+          `Failed to list resources for server [${compositeKey}]:`,
           error,
           LOG_MODULES.CONNECTION_MANAGER
         );
       }
 
       // Even if server doesn't support resources, store empty array in cache to ensure subsequent calls hit cache
-      this.resourceCache.set(serverId, []);
+      this.resourceCache.set(compositeKey, []);
 
       // Update server status
-      const status = this.serverStatus.get(serverId);
+      const status = this.serverStatus.get(compositeKey);
       if (status) {
         status.resourcesCount = 0;
         status.lastCheck = Date.now();
@@ -633,19 +690,21 @@ export class McpConnectionManager {
    * This method provides access to the server's operational state including connection
    * status, error information, tool/resource counts, and process details.
    *
-   * @param {string} serverId - Unique identifier of the server instance
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {ServerStatus | undefined} Current status object or undefined if not found
    *
    * @example
    * ```typescript
-   * const status = manager.getStatus('my-server-1');
+   * const status = manager.getStatus('my-server', 0);
    * if (status?.connected) {
    *   console.log('Server is connected');
    * }
    * ```
    */
-  public getStatus(serverId: string): ServerStatus | undefined {
-    return this.serverStatus.get(serverId);
+  public getStatus(serverName: string, serverIndex: number): ServerStatus | undefined {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    return this.serverStatus.get(compositeKey);
   }
 
   /**
@@ -655,17 +714,18 @@ export class McpConnectionManager {
    * which may be empty if tools haven't been refreshed yet or if the server
    * doesn't provide any tools. The method includes logging for debugging purposes.
    *
-   * @param {string} serverId - Unique identifier of the server instance
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {Tool[]} Array of cached tools, empty if none available
    *
    * @example
    * ```typescript
-   * const tools = manager.getTools('my-server-1');
+   * const tools = manager.getTools('my-server', 0);
    * console.log(`Server has ${tools.length} tools`);
    * ```
    */
-  public getTools(serverId: string): Tool[] {
-    return this._toolCache.getTools(serverId);
+  public getTools(serverName: string, serverIndex: number): Tool[] {
+    return this._toolCache.getTools(serverName, serverIndex);
   }
 
   /**
@@ -676,20 +736,22 @@ export class McpConnectionManager {
    * support resources, or if the server doesn't provide any resources. The method
    * includes logging for debugging purposes.
    *
-   * @param {string} serverId - Unique identifier of the server instance
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @returns {Resource[]} Array of cached resources, empty if none available
    *
    * @example
    * ```typescript
-   * const resources = manager.getResources('my-server-1');
+   * const resources = manager.getResources('my-server', 0);
    * console.log(`Server has ${resources.length} resources`);
    * ```
    */
-  public getResources(serverId: string): Resource[] {
-    const resources = this.resourceCache.get(serverId) || [];
-    const fromCache = this.resourceCache.has(serverId);
+  public getResources(serverName: string, serverIndex: number): Resource[] {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const resources = this.resourceCache.get(compositeKey) || [];
+    const fromCache = this.resourceCache.has(compositeKey);
     logger.debug(
-      `getResources for [${serverId}]: returned ${resources.length} resources (${fromCache ? 'from cache' : 'no cache'})`,
+      `getResources for [${compositeKey}]: returned ${resources.length} resources (${fromCache ? 'from cache' : 'no cache'})`,
       LOG_MODULES.CONNECTION_MANAGER
     );
     return resources;
@@ -701,21 +763,27 @@ export class McpConnectionManager {
    * This method delegates the resource reading operation to the underlying MCP client,
    * providing direct access to server-provided resources through their URIs.
    *
-   * @param {string} serverId - Unique identifier of the connected server instance
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @param {string} uri - Resource URI to read (e.g., "file:///path/to/file")
    * @returns {Promise<unknown>} Resource content as returned by the server
    * @throws {Error} If the server is not connected or resource reading fails
    *
    * @example
    * ```typescript
-   * const content = await manager.readResource('my-server-1', 'hub://config/settings.json');
+   * const content = await manager.readResource('my-server', 0, 'hub://config/settings.json');
    * console.log('Resource content:', content);
    * ```
    */
-  public async readResource(serverId: string, uri: string): Promise<unknown> {
-    const client = this.clients.get(serverId);
+  public async readResource(
+    serverName: string,
+    serverIndex: number,
+    uri: string
+  ): Promise<unknown> {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const client = this.clients.get(compositeKey);
     if (!client) {
-      throw new Error(`Server ${serverId} not connected`);
+      throw new Error(`Server ${compositeKey} not connected`);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (client as any).readResource({ uri });
@@ -724,7 +792,7 @@ export class McpConnectionManager {
   /**
    * Retrieves all cached tools from all connected server instances.
    *
-   * This method aggregates tools from all server ID-level caches into a single array,
+   * This method aggregates tools from all composite key-level caches into a single array,
    * providing a unified view of all available tools across all connected servers.
    * The returned tools include server context information for proper identification.
    *
@@ -741,18 +809,18 @@ export class McpConnectionManager {
   }
 
   /**
-   * Retrieves all tool cache entries as server ID to tools mapping.
+   * Retrieves all tool cache entries as composite key to tools mapping.
    *
-   * This method returns the raw tool cache structure as an array of [serverId, tools] tuples,
+   * This method returns the raw tool cache structure as an array of [compositeKey, tools] tuples,
    * providing direct access to the internal caching mechanism for debugging or advanced use cases.
    *
-   * @returns {[string, Tool[]][]} Array of [serverId, tools] tuples representing the cache
+   * @returns {[string, Tool[]][]} Array of [compositeKey, tools] tuples representing the cache
    *
    * @example
    * ```typescript
    * const cacheEntries = manager.getToolCacheEntries();
-   * cacheEntries.forEach(([serverId, tools]) => {
-   *   console.log(`Server ${serverId} has ${tools.length} tools`);
+   * cacheEntries.forEach(([compositeKey, tools]) => {
+   *   console.log(`Server ${compositeKey} has ${tools.length} tools`);
    * });
    * ```
    */
@@ -761,121 +829,109 @@ export class McpConnectionManager {
   }
 
   /**
-   * Resolves a server name to its corresponding server instance ID.
+   * Resolves a server name to its corresponding composite key for a specific instance index.
    *
-   * This method provides reverse lookup from server names (as defined in configuration)
-   * to the unique server instance IDs used internally for connection management.
-   * It's useful when you have a server name but need the instance ID for operations.
+   * This method provides lookup from server names (as defined in configuration)
+   * to composite keys used internally for connection management.
    *
    * @param {string} name - Server name as defined in the configuration
-   * @returns {string | undefined} Corresponding server instance ID or undefined if not found
+   * @param {number} index - Instance index
+   * @returns {string | undefined} Corresponding composite key or undefined if not found
    *
    * @example
    * ```typescript
-   * const serverId = manager.getServerIdByName('my-mcp-server');
-   * if (serverId) {
-   *   const status = manager.getStatus(serverId);
+   * const compositeKey = manager.getCompositeKeyByName('my-mcp-server', 0);
+   * if (compositeKey) {
+   *   const status = manager.getStatus(compositeKey);
    * }
    * ```
    */
-  public getServerIdByName(name: string): string | undefined {
-    return this._toolCache.getServerIdByName(name);
+  public getCompositeKeyByName(name: string, index: number): string | undefined {
+    const compositeKey = getCompositeKey(name, index);
+    if (this.clients.has(compositeKey)) {
+      return compositeKey;
+    }
+    return undefined;
   }
 
   /**
-   * Retrieves the MCP client instance for a server by its name.
+   * Retrieves the MCP client instance for a server by its name and index.
    *
-   * This method resolves a server name to its instance ID and returns the corresponding
+   * This method resolves a composite key and returns the corresponding
    * MCP client instance, providing direct access to the underlying SDK client for
    * advanced operations that aren't covered by the manager's high-level methods.
    *
    * @param {string} name - Server name as defined in the configuration
+   * @param {number} index - Instance index
    * @returns {Client | undefined} MCP client instance or undefined if not connected
    *
    * @example
    * ```typescript
-   * const client = manager.getClientByName('my-mcp-server');
+   * const client = manager.getClient('my-mcp-server', 0);
    * if (client) {
    *   // Use direct client methods for advanced operations
    *   const result = await client.listPrompts();
    * }
    * ```
    */
-  public getClientByName(name: string): Client | undefined {
-    const serverId = this._toolCache.getServerIdByName(name);
-    if (!serverId) {
-      return undefined;
-    }
-    return this.clients.get(serverId);
+  public getClient(name: string, index: number): Client | undefined {
+    const compositeKey = getCompositeKey(name, index);
+    return this.clients.get(compositeKey);
   }
 
   /**
-   * Calls a tool on a connected server using the server name instead of instance ID.
-   *
-   * This method provides a convenient way to execute tools when you have a server name
-   * rather than an instance ID. It resolves the server name to its instance ID and
-   * delegates to the callTool method for actual execution.
+   * Calls a tool on a connected server using the server name and index.
    *
    * The method is wrapped in OpenTelemetry tracing for observability and includes
    * comprehensive error handling with proper logging.
    *
-   * @param {string} name - Server name as defined in the configuration
+   * @param {string} serverName - Server name
+   * @param {number} serverIndex - Instance index
    * @param {string} toolName - Name of the tool to execute
    * @param {Record<string, unknown>} args - Arguments to pass to the tool
    * @returns {Promise<unknown>} Tool execution result as returned by the server
-   * @throws {Error} If server is not connected, not found, or tool execution fails
+   * @throws {Error} If server is not connected or tool execution fails
    *
    * @example
    * ```typescript
-   * const result = await manager.callToolByName('my-mcp-server', 'list-files', {
+   * const result = await manager.callTool('my-server', 0, 'list-files', {
    *   directory: '/home/user'
    * });
    * console.log('Tool result:', result);
    * ```
    */
-  public async callToolByName(
-    name: string,
+  public async callTool(
+    serverName: string,
+    serverIndex: number,
     toolName: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
-    const serverId = this._toolCache.getServerIdByName(name);
-    if (!serverId) {
-      throw new Error(`Server ${name} not connected or not found`);
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const client = this.clients.get(compositeKey);
+    if (!client) {
+      throw new Error(`Server ${compositeKey} not connected`);
     }
 
-    return this.callTool(serverId, toolName, args);
-  }
-
-  /**
-   * Retrieves the connection status for a server using its name instead of instance ID.
-   *
-   * This method resolves a server name to its instance ID and returns the corresponding
-   * server status, providing a convenient way to check server health when working with
-   * server names rather than instance IDs.
-   *
-   * @param {string} name - Server name as defined in the configuration
-   * @returns {ServerStatus | undefined} Current status object or undefined if not found/connected
-   *
-   * @example
-   * ```typescript
-   * const status = manager.getStatusByName('my-mcp-server');
-   * if (status?.connected) {
-   *   console.log('Server is online');
-   * }
-   * ```
-   */
-  public getStatusByName(name: string): ServerStatus | undefined {
-    const serverId = this._toolCache.getServerIdByName(name);
-    if (!serverId) {
-      return undefined;
+    try {
+      const result = await client.callTool({
+        name: toolName,
+        arguments: args
+      });
+      return result;
+    } catch (error) {
+      logger.error(
+        `Failed to call tool ${toolName} on server [${compositeKey}]:`,
+        error,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      throw error;
     }
-    return this.serverStatus.get(serverId);
   }
 
   /**
    * Retrieves cached tools for a server using its name instead of instance ID.
    *
-   * This method resolves a server name to its instance ID and returns the corresponding
+   * This method resolves a server name to its composite key and returns the corresponding
    * cached tool list, providing a convenient way to access tools when working with
    * server names rather than instance IDs.
    *
@@ -889,17 +945,13 @@ export class McpConnectionManager {
    * ```
    */
   public getToolsByName(name: string): Tool[] {
-    const serverId = this._toolCache.getServerIdByName(name);
-    if (!serverId) {
-      return [];
-    }
-    return this._toolCache.getTools(serverId);
+    return this._toolCache.getToolsByServerName(name);
   }
 
   /**
    * Retrieves cached resources for a server using its name instead of instance ID.
    *
-   * This method resolves a server name to its instance ID and returns the corresponding
+   * This method resolves a server name to its composite key and returns the corresponding
    * cached resource list, providing a convenient way to access resources when working with
    * server names rather than instance IDs.
    *
@@ -913,11 +965,17 @@ export class McpConnectionManager {
    * ```
    */
   public getResourcesByName(name: string): Resource[] {
-    const serverId = this._toolCache.getServerIdByName(name);
-    if (!serverId) {
+    // Aggregate resources from all instances of this server name
+    const compositeKeys = this.serverNameToCompositeKeys.get(name);
+    if (!compositeKeys) {
       return [];
     }
-    return this.resourceCache.get(serverId) || [];
+    const allResources: Resource[] = [];
+    for (const compositeKey of compositeKeys) {
+      const resources = this.resourceCache.get(compositeKey) || [];
+      allResources.push(...resources);
+    }
+    return allResources;
   }
 
   /**
@@ -962,10 +1020,8 @@ export class McpConnectionManager {
   public getAllResources(): Record<string, Resource[]> {
     const result: Record<string, Resource[]> = {};
 
-    // Group resources by server name
-    for (const [serverId, resources] of this.resourceCache.entries()) {
-      // Find server name for this ID
-      const serverName = this._toolCache.getServerNameById(serverId);
+    for (const [compositeKey, resources] of this.resourceCache.entries()) {
+      const { serverName } = parseCompositeKey(compositeKey)!;
 
       if (!result[serverName]) {
         result[serverName] = [];
@@ -974,54 +1030,6 @@ export class McpConnectionManager {
     }
 
     return result;
-  }
-
-  /**
-   * Executes a tool on a connected MCP server using its instance ID.
-   *
-   * This is the primary method for executing tools on connected servers. It delegates
-   * the actual execution to the underlying MCP client and includes comprehensive
-   * error handling with proper logging. The method is wrapped in OpenTelemetry tracing
-   * for observability and monitoring.
-   *
-   * @param {string} serverId - Unique identifier of the connected server instance
-   * @param {string} toolName - Name of the tool to execute
-   * @param {Record<string, unknown>} args - Arguments to pass to the tool
-   * @returns {Promise<unknown>} Tool execution result as returned by the server
-   * @throws {Error} If server is not connected or tool execution fails
-   *
-   * @example
-   * ```typescript
-   * const result = await manager.callTool('my-server-1', 'list-files', {
-   *   directory: '/home/user'
-   * });
-   * console.log('Tool result:', result);
-   * ```
-   */
-  public async callTool(
-    serverId: string,
-    toolName: string,
-    args: Record<string, unknown>
-  ): Promise<unknown> {
-    const client = this.clients.get(serverId);
-    if (!client) {
-      throw new Error(`Server ${serverId} not connected`);
-    }
-
-    try {
-      const result = await client.callTool({
-        name: toolName,
-        arguments: args
-      });
-      return result;
-    } catch (error) {
-      logger.error(
-        `Failed to call tool ${toolName} on server [${serverId}]:`,
-        error,
-        LOG_MODULES.CONNECTION_MANAGER
-      );
-      throw error;
-    }
   }
 
   /**
@@ -1042,6 +1050,50 @@ export class McpConnectionManager {
    */
   public getToolsByServerName(serverName: string): Tool[] {
     return this._toolCache.getToolsByServerName(serverName);
+  }
+
+  /**
+   * Gets the status of the first connected instance for a server name.
+   * This is a backward compatibility method for code that expects getStatusByName.
+   *
+   * @param name - Server name
+   * @returns ServerStatus or undefined if not connected
+   */
+  public getStatusByName(name: string): ServerStatus | undefined {
+    const compositeKeys = this.serverNameToCompositeKeys.get(name);
+    if (!compositeKeys || compositeKeys.size === 0) {
+      return undefined;
+    }
+    // Return status of the first connected instance
+    for (const compositeKey of compositeKeys) {
+      const status = this.serverStatus.get(compositeKey);
+      if (status?.connected) {
+        return status;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Gets the composite key of the first connected instance for a server name.
+   * This is a backward compatibility method for code that expects getServerIdByName.
+   *
+   * @param name - Server name
+   * @returns Composite key or undefined if no instance is connected
+   */
+  public getServerIdByName(name: string): string | undefined {
+    const compositeKeys = this.serverNameToCompositeKeys.get(name);
+    if (!compositeKeys || compositeKeys.size === 0) {
+      return undefined;
+    }
+    // Return the composite key of the first connected instance
+    for (const compositeKey of compositeKeys) {
+      const status = this.serverStatus.get(compositeKey);
+      if (status?.connected) {
+        return compositeKey;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -1073,6 +1125,23 @@ export class McpConnectionManager {
   get toolCache(): Map<string, Tool[]> {
     return this._toolCache.internalToolCache;
   }
+}
+
+/**
+ * Parses a composite key back into serverName and serverIndex
+ */
+function parseCompositeKey(key: string): { serverName: string; serverIndex: number } | null {
+  const lastDashIndex = key.lastIndexOf('-');
+  if (lastDashIndex === -1) {
+    return null;
+  }
+  const serverName = key.slice(0, lastDashIndex);
+  const serverIndexPart = key.slice(lastDashIndex + 1);
+  const serverIndex = parseInt(serverIndexPart, 10);
+  if (isNaN(serverIndex)) {
+    return null;
+  }
+  return { serverName, serverIndex };
 }
 
 export const mcpConnectionManager = new McpConnectionManager();

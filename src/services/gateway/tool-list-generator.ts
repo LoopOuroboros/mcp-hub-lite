@@ -3,9 +3,11 @@
  */
 
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
+import { parseCompositeKey } from '@utils/composite-key.js';
 import type { ToolMapEntry, GatewayTool } from './types.js';
 
 /**
@@ -45,15 +47,23 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
 
   // First pass: Count tool name frequencies to determine uniqueness
   const toolNameCounts = new Map<string, number>();
-  // Iterate through toolCache to get all tools and their server IDs
-  for (const [serverId, tools] of mcpConnectionManager.getToolCacheEntries()) {
+  // Iterate through toolCache to get all tools - entries are keyed by compositeKey (serverName-serverIndex)
+  for (const [compositeKey, tools] of mcpConnectionManager.getToolCacheEntries()) {
     for (const tool of tools) {
-      const serverConfig = hubManager.getServerById(serverId);
+      // Parse composite key to get serverName
+      const parsed = parseCompositeKey(compositeKey);
+      const serverName = parsed ? parsed.serverName : compositeKey;
+      const serverConfig = hubManager.getServerByName(serverName);
       if (serverConfig) {
-        if (
-          serverConfig.config.allowedTools &&
-          !serverConfig.config.allowedTools.includes(tool.name)
-        ) {
+        // Only include tools if server has aggregatedTools configured AND tool is in aggregatedTools
+        const aggregatedTools = serverConfig.template?.aggregatedTools;
+        const hasAggregatedTools = aggregatedTools && aggregatedTools.length > 0;
+
+        if (!hasAggregatedTools) {
+          continue;
+        }
+
+        if (!aggregatedTools.includes(tool.name)) {
           continue;
         }
       }
@@ -62,24 +72,37 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
   }
 
   // Second pass: Generate gateway tools with proper naming
-  for (const [serverId, tools] of mcpConnectionManager.getToolCacheEntries()) {
-    const serverConfig = hubManager.getServerById(serverId);
+  for (const [compositeKey, tools] of mcpConnectionManager.getToolCacheEntries()) {
+    // Parse composite key to get serverName
+    const parsed = parseCompositeKey(compositeKey);
+    const serverName = parsed ? parsed.serverName : compositeKey;
+    const serverIndex = parsed ? parsed.serverIndex : 0;
+    const serverConfig = hubManager.getServerByName(serverName);
 
     // Skip if server configuration not found
     if (!serverConfig) {
-      logger.warn(`Server configuration not found for serverId: ${serverId}, skipping tools`);
+      logger.warn(
+        `Server configuration not found for serverName: ${serverName}, skipping tools`,
+        LOG_MODULES.TOOL_LIST_GENERATOR
+      );
       continue;
     }
 
+    // Only include tools if server has aggregatedTools configured
+    const aggregatedTools = serverConfig.template?.aggregatedTools;
+    const hasAggregatedTools = aggregatedTools && aggregatedTools.length > 0;
+
+    if (!hasAggregatedTools) {
+      continue;
+    }
+
+    // Get the instance ID for hash suffix (use compositeKey which contains serverName-serverIndex format)
+    const hashSuffix = compositeKey;
+
     for (const tool of tools) {
-      if (
-        serverConfig.config.allowedTools &&
-        !serverConfig.config.allowedTools.includes(tool.name)
-      ) {
+      if (!aggregatedTools.includes(tool.name)) {
         continue;
       }
-
-      const serverName = serverConfig.name;
 
       let gatewayToolName = tool.name;
       const isUnique = toolNameCounts.get(tool.name) === 1;
@@ -87,15 +110,15 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
 
       // If tool name is not unique or conflicts with system tool, append server hash
       if (!isUnique || isSystemConflict) {
-        // Get instance hash from serverConfig, use first 4 characters of serverId as default
-        const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+        // Use hash suffix from compositeKey for uniqueness
+        const hash = hashSuffix.substring(0, 4);
         gatewayToolName = `${tool.name}_${hash}`;
       }
 
       // Ensure name doesn't exceed 60 chars
       if (gatewayToolName.length > 60) {
-        // Use first 4 characters of serverId as default hash
-        const hash = serverConfig.instance?.hash || serverId.substring(0, 4);
+        // Use hash suffix from compositeKey
+        const hash = hashSuffix.substring(0, 4);
         // Reserve space for hash and separator
         const maxToolNameLen = 60 - hash.length - 1;
         const truncatedToolName = tool.name.substring(0, maxToolNameLen);
@@ -120,7 +143,8 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
       usedNames.add(gatewayToolName);
 
       toolMap.set(gatewayToolName, {
-        serverId: serverId,
+        serverName,
+        serverIndex,
         realToolName: tool.name
       });
 

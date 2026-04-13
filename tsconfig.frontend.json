@@ -4,10 +4,11 @@
     "frontend/src/**/*",
     "frontend/src/**/*.vue",
     "shared/**/*",
+    "tests/unit/frontend/**/*",
     "frontend/src/auto-imports.d.ts",
     "frontend/src/components.d.ts"
   ],
-  "exclude": ["src/**", "tests/**", "node_modules"],
+  "exclude": ["src/**", "node_modules"],
   "compilerOptions": {
     "composite": true,
     "rootDir": ".",
@@ -19,11 +20,12 @@
     "baseUrl": ".",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "vitest/globals"],
     "paths": {
       "@/*": ["./frontend/src/*"],
       "@composables/*": ["./frontend/src/composables/*"],
       "@components/*": ["./frontend/src/components/*"],
+      "@frontend/*": ["./frontend/src/*"],
       "@i18n/*": ["./frontend/src/i18n/*"],
       "@locales/*": ["./frontend/src/locales/*"],
       "@router/*": ["./frontend/src/router/*"],

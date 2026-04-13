@@ -90,6 +90,7 @@ process-logs/
 .specify/
 
 # Analysis Docs
+.full-review
 docs/kaizen/
 docs/img/
 docs/plans/

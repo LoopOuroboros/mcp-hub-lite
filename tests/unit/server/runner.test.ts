@@ -10,6 +10,20 @@ import { checkPort } from '@utils/port-checker.js';
 import type { FastifyInstance } from 'fastify';
 import type { SystemConfig, ServerConfig } from '@config/config.schema.js';
 
+// Mock resolveInstanceConfig to return a valid resolved config
+vi.mock('@config/config-migrator.js', () => ({
+  resolveInstanceConfig: vi.fn(() => ({
+    command: 'test-command',
+    args: [],
+    type: 'stdio' as const,
+    timeout: 30000,
+    aggregatedTools: [],
+    tags: {},
+    enabled: true
+  })),
+  getEnabledInstances: vi.fn()
+}));
+
 // Mock all dependencies
 vi.mock('@src/app.js', () => ({
   buildApp: vi.fn()
@@ -19,7 +33,7 @@ vi.mock('@config/config-manager.js', () => ({
   configManager: {
     getConfig: vi.fn(),
     getServers: vi.fn(),
-    getServerInstanceByName: vi.fn(),
+    getServerInstancesByName: vi.fn(),
     addServerInstance: vi.fn()
   }
 }));
@@ -85,7 +99,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -96,7 +110,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -104,11 +118,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -130,7 +143,7 @@ describe('Server Runner', () => {
     it('should start server in stdio mode successfully', async () => {
       // Setup mocks
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -141,7 +154,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -149,11 +162,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -178,7 +190,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -189,7 +201,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -197,11 +209,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -223,7 +234,12 @@ describe('Server Runner', () => {
 
       // Verify
       expect(logger.error).toHaveBeenCalledWith(
-        'MCP Hub Lite is already running on port 3000 (PID: 1234)'
+        'MCP Hub Lite is already running on port 3000 (PID: 1234)',
+        expect.any(Object)
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        "Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.",
+        expect.any(Object)
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
 
@@ -237,7 +253,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -248,7 +264,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -256,11 +272,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -284,10 +299,18 @@ describe('Server Runner', () => {
 
       // Verify
       expect(logger.error).toHaveBeenCalledWith(
-        'Port 3000 is already in use by another application:'
+        'Port 3000 is already in use by another application:',
+        expect.any(Object)
       );
-      expect(logger.error).toHaveBeenCalledWith('  Process: other-app (PID: 5678)');
-      expect(logger.error).toHaveBeenCalledWith('  Command: node other-app.js');
+      expect(logger.error).toHaveBeenCalledWith(
+        '  Process: other-app (PID: 5678)',
+        expect.any(Object)
+      );
+      expect(logger.error).toHaveBeenCalledWith('  Command: node other-app.js', expect.any(Object));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Please stop the conflicting application or use a different port.',
+        expect.any(Object)
+      );
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       // Restore
@@ -303,7 +326,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -314,7 +337,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -322,11 +345,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(checkPort).mockResolvedValue({ inUse: false });
@@ -335,35 +357,52 @@ describe('Server Runner', () => {
         {
           name: 'enabled-server',
           config: {
-            enabled: true,
-            command: 'test-command',
-            type: 'stdio' as const,
-            args: [],
-            allowedTools: [],
-            timeout: 30000
+            template: {
+              command: 'test-command',
+              type: 'stdio' as const,
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000
+            },
+            instances: [
+              { id: 'instance-1', enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
           }
         },
         {
           name: 'disabled-server',
           config: {
-            enabled: false,
-            command: 'test-command',
-            type: 'stdio' as const,
-            args: [],
-            allowedTools: [],
-            timeout: 30000
+            template: {
+              command: 'test-command',
+              type: 'stdio' as const,
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000
+            },
+            instances: [
+              { id: 'instance-2', enabled: false, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
           }
         }
       ];
       vi.mocked(configManager.getServers).mockReturnValue(mockServers);
-      vi.mocked(configManager.getServerInstanceByName).mockImplementation((name: string) => {
+      vi.mocked(configManager.getServerInstancesByName).mockImplementation((name: string) => {
         if (name === 'enabled-server') return [];
-        return [{ id: 'instance-1', timestamp: Date.now(), hash: 'test-hash' }];
+        return [{ id: 'instance-1', enabled: false, args: [], env: {}, headers: {}, tags: {} }];
       });
       vi.mocked(configManager.addServerInstance).mockResolvedValue({
         id: 'new-instance',
-        timestamp: Date.now(),
-        hash: 'test-hash'
+        enabled: true,
+        args: [],
+        env: {},
+        headers: {},
+        tags: {}
       });
 
       // Execute
@@ -374,6 +413,8 @@ describe('Server Runner', () => {
       expect(mcpConnectionManager.connect).toHaveBeenCalledTimes(1);
       // Call for enabled server with new instance
       expect(mcpConnectionManager.connect).toHaveBeenCalledWith(
+        'enabled-server',
+        0,
         expect.objectContaining({
           enabled: true,
           command: 'test-command',
@@ -391,7 +432,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -402,7 +443,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -410,11 +451,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -454,7 +494,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockResolvedValue(mockApp);
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -465,7 +505,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -473,11 +513,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
       vi.mocked(configManager.getServers).mockReturnValue([]);
@@ -513,7 +552,7 @@ describe('Server Runner', () => {
       vi.mocked(buildApp).mockRejectedValue(new Error('Startup failed'));
 
       const mockConfig: SystemConfig = {
-        version: '1.0.0',
+        version: '1.1.0',
         system: {
           host: 'localhost',
           port: 3000,
@@ -524,7 +563,7 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            sessionDebug: false
+            apiDebug: false
           }
         },
         security: {
@@ -532,11 +571,10 @@ describe('Server Runner', () => {
           maxConcurrentConnections: 50,
           connectionTimeout: 30000,
           idleConnectionTimeout: 300000,
-          sessionTimeout: 30 * 60 * 1000,
-          sessionFlushInterval: 15 * 60 * 1000,
           maxConnections: 50
         },
-        servers: {}
+        servers: {},
+        tagDefinitions: []
       };
       vi.mocked(configManager.getConfig).mockReturnValue(mockConfig);
 

@@ -116,7 +116,8 @@ export class WebSocketHandler {
    * Handle fetch historical logs request
    */
   private handleFetchLogs(message: FetchLogsMessage): void {
-    const logs = logStorage.getLogs(message.serverId, {
+    const compositeKey = `${message.serverName}-${message.serverIndex}`;
+    const logs = logStorage.getLogs(compositeKey, {
       limit: message.limit || 100,
       since: message.since
     });
@@ -124,7 +125,8 @@ export class WebSocketHandler {
     this.send({
       type: 'log',
       data: {
-        serverId: message.serverId,
+        serverName: message.serverName,
+        serverIndex: message.serverIndex,
         logs: logs
       }
     } as ServerMessage);

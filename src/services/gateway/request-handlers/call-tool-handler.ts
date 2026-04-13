@@ -8,9 +8,9 @@ import {
   McpError
 } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
-import { getSessionCwd } from '@utils/request-context.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { SystemToolHandler } from '@services/system-tool-handler.js';
 import { ErrorHandler } from '@utils/error-handler.js';
@@ -23,6 +23,84 @@ import {
 import { formatToolArgs, formatToolResponse } from '../log-formatter.js';
 import { generateGatewayToolsList } from '../tool-list-generator.js';
 import type { ToolMapEntry } from '../types.js';
+
+/**
+ * Type guard to check if a result is a valid CallToolResult.
+ *
+ * @param result - The result to check
+ * @returns True if result has the expected CallToolResult structure
+ */
+function isCallToolResult(result: unknown): result is CallToolResult {
+  return (
+    !!result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)
+  );
+}
+
+/**
+ * Executes a system tool call via the SystemToolHandler.
+ *
+ * @param toolName - Name of the system tool to call
+ * @param toolArgs - Arguments to pass to the tool
+ * @returns CallToolResult with the tool execution result
+ */
+async function executeSystemToolCall(
+  toolName: string,
+  toolArgs: Record<string, unknown>
+): Promise<CallToolResult> {
+  try {
+    const result = await SystemToolHandler.handleSystemToolCall(toolName, toolArgs);
+
+    if (isCallToolResult(result)) {
+      return result;
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: stringifyForLogging(result)
+        }
+      ]
+    };
+  } catch (error) {
+    ErrorHandler.handleSystemToolError(toolName, error);
+  }
+}
+
+/**
+ * Parses a tool name to check if it refers to a system tool.
+ * Handles both direct system tool names (e.g., "list_servers") and
+ * prefixed names (e.g., "mcp__mcp-hub-lite__list_servers").
+ *
+ * @param toolName - The tool name to parse
+ * @returns The system tool name if it's a system tool, null otherwise
+ */
+function getSystemToolName(toolName: string): string | null {
+  const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
+  if (parsedTool) {
+    logger.debug(
+      `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
+      LOG_MODULES.GATEWAY
+    );
+
+    if (
+      parsedTool.serverName === MCP_HUB_LITE_SERVER &&
+      SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)
+    ) {
+      logger.info(
+        `System tool called via prefixed name: ${parsedTool.toolName}`,
+        LOG_MODULES.GATEWAY
+      );
+      return parsedTool.toolName;
+    }
+  }
+
+  if (SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
+    return toolName;
+  }
+
+  return null;
+}
 
 /**
  * Register call tool handler on the MCP server.
@@ -47,54 +125,7 @@ export function registerCallToolHandler(
   server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const toolName = request.params.name;
     const toolArgs: Record<string, unknown> = request.params.arguments || {};
-
-    // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
-    // This handles Claude Code style tool names with server prefix
-    const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
-    if (parsedTool) {
-      logger.debug(
-        `Parsed prefixed tool name: "${toolName}" → server="${parsedTool.serverName}", tool="${parsedTool.toolName}"`,
-        LOG_MODULES.GATEWAY
-      );
-
-      // Check if it's a system tool call
-      if (
-        parsedTool.serverName === MCP_HUB_LITE_SERVER &&
-        SYSTEM_TOOL_NAMES.includes(parsedTool.toolName as SystemToolName)
-      ) {
-        logger.info(
-          `System tool called via prefixed name: ${parsedTool.toolName}`,
-          LOG_MODULES.GATEWAY
-        );
-
-        try {
-          const result = await SystemToolHandler.handleSystemToolCall(
-            parsedTool.toolName,
-            toolArgs
-          );
-
-          if (
-            result &&
-            typeof result === 'object' &&
-            'content' in result &&
-            Array.isArray(result.content)
-          ) {
-            return result;
-          }
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: stringifyForLogging(result)
-              }
-            ]
-          };
-        } catch (error) {
-          ErrorHandler.handleSystemToolError(parsedTool.toolName, error);
-        }
-      }
-    }
+    const systemToolName = getSystemToolName(toolName);
 
     // Log incoming tool request with full context
     logger.info(
@@ -107,41 +138,18 @@ export function registerCallToolHandler(
     );
 
     // Handle system tools
-    if (typeof toolName === 'string' && SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)) {
+    if (systemToolName) {
       logger.debug(
-        `System tool called: ${toolName}, args=${formatToolArgs(toolArgs)}`,
+        `System tool called: ${systemToolName}, args=${formatToolArgs(toolArgs)}`,
         LOG_MODULES.GATEWAY
       );
-
-      try {
-        const result = await SystemToolHandler.handleSystemToolCall(toolName, toolArgs);
-
-        if (
-          result &&
-          typeof result === 'object' &&
-          'content' in result &&
-          Array.isArray(result.content)
-        ) {
-          return result;
-        }
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: stringifyForLogging(result)
-            }
-          ]
-        };
-      } catch (error) {
-        ErrorHandler.handleSystemToolError(toolName, error);
-      }
+      return await executeSystemToolCall(systemToolName, toolArgs);
     }
 
     const target = toolMap.get(toolName);
 
     logger.debug(
-      `Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`,
+      `Tool lookup SUCCESS: toolName=${toolName} -> serverName=${target?.serverName}, serverIndex=${target?.serverIndex}, realToolName=${target?.realToolName}`,
       LOG_MODULES.GATEWAY
     );
 
@@ -155,29 +163,21 @@ export function registerCallToolHandler(
 
     const startTime = Date.now();
     try {
-      // Inject CWD if available and not present in args
-      const cwd = getSessionCwd();
-      if (cwd && !toolArgs.cwd) {
-        toolArgs.cwd = cwd;
-        logger.debug(
-          `Injected CWD into tool call ${toolName}: ${cwd}`,
-          LOG_MODULES.dynamic(toolName)
-        );
-      }
       logger.debug(
-        `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
+        `Tool call EXECUTING: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
         LOG_MODULES.GATEWAY
       );
 
       const result = await mcpConnectionManager.callTool(
-        target.serverId,
+        target.serverName,
+        target.serverIndex,
         target.realToolName,
         toolArgs
       );
 
       const duration = Date.now() - startTime;
       logger.info(
-        `Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
+        `Tool call SUCCESS: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
         LOG_MODULES.GATEWAY
       );
 
@@ -198,7 +198,11 @@ export function registerCallToolHandler(
         };
       }
     } catch (error: unknown) {
-      ErrorHandler.handleToolCallError(target.serverId, target.realToolName, error);
+      ErrorHandler.handleToolCallError(
+        `${target.serverName}-${target.serverIndex}`,
+        target.realToolName,
+        error
+      );
     }
   });
 }

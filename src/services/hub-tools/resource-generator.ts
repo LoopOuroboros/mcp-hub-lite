@@ -8,6 +8,130 @@ import type { ServerStatus } from '@shared-types/common.types.js';
 import { hasValidId, selectBestInstance, getServerDescription } from './server-selector.js';
 
 /**
+ * Maps Hub URI to original MCP URI for resource forwarding.
+ * Key: Hub URI (e.g., "hub://servers/exa-ai/0/tools/list")
+ * Value: Original MCP URI (e.g., "exa://tools/list")
+ */
+const hubToMcpUriMap = new Map<string, string>();
+
+/**
+ * Clears the Hub to MCP URI mapping.
+ * Should be called before regenerating resources.
+ */
+export function clearHubToMcpUriMap(): void {
+  hubToMcpUriMap.clear();
+}
+
+/**
+ * Maps an MCP native URI to hub format.
+ * Example: "exa://tools/list" -> "hub://servers/exa-ai/0/tools/list"
+ * Also registers the mapping in hubToMcpUriMap for reverse lookup.
+ *
+ * @param serverName - The server name
+ * @param instanceIndex - The instance index
+ * @param mcpUri - The native MCP URI (e.g., "exa://tools/list")
+ * @returns The hub-formatted URI
+ */
+function getMcpPathFromUri(mcpUri: string): string {
+  return mcpUri.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:(\/\/)?/, '');
+}
+
+function mapMcpUriToHub(serverName: string, instanceIndex: number, mcpUri: string): string {
+  // Remove the scheme prefix (e.g., "exa://" or "exa:")
+  const mcpPath = getMcpPathFromUri(mcpUri);
+  const hubUri = `hub://servers/${serverName}/${instanceIndex}/${mcpPath}`;
+  // Register mapping for reverse lookup in readResource
+  hubToMcpUriMap.set(hubUri, mcpUri);
+  return hubUri;
+}
+
+/**
+ * Restores a missing Hub -> MCP URI mapping by scanning the current instance resources.
+ */
+function restoreMcpUriMapping(
+  serverName: string,
+  instanceIndex: number,
+  _instanceId: string,
+  mcpPath: string
+): string | null {
+  const instanceResources = mcpConnectionManager.getResources(serverName, instanceIndex);
+
+  for (const resource of instanceResources) {
+    const originalUri = resource.uri;
+    if (typeof originalUri !== 'string') {
+      continue;
+    }
+
+    if (getMcpPathFromUri(originalUri) !== mcpPath) {
+      continue;
+    }
+
+    const hubUri = `hub://servers/${serverName}/${instanceIndex}/${mcpPath}`;
+    hubToMcpUriMap.set(hubUri, originalUri);
+    return originalUri;
+  }
+
+  return null;
+}
+
+/**
+ * Parses a hub URI and extracts components.
+ * Supports:
+ * - hub://servers/{name} - Server metadata
+ * - hub://servers/{name}/tools - Tools list
+ * - hub://servers/{name}/resources - Resources list
+ * - hub://servers/{name}/{instanceIndex}/{mcpPath} - MCP native resource forwarding
+ *
+ * @param uri - The hub URI to parse
+ * @returns Parsed components, 'unknown' if format is valid but resource type is unknown, or null if format is invalid
+ */
+function parseHubUri(uri: string):
+  | {
+      serverName: string;
+      instanceIndex?: number;
+      mcpPath?: string;
+      listType?: 'tools' | 'resources';
+    }
+  | 'unknown'
+  | null {
+  if (!uri.startsWith('hub://')) {
+    return null;
+  }
+
+  const parts = uri.replace('hub://', '').split('/');
+  if (parts.length < 2 || parts[0] !== 'servers') {
+    return null;
+  }
+
+  const serverName = parts[1];
+
+  // hub://servers/{name} - no instance index
+  if (parts.length === 2) {
+    return { serverName };
+  }
+
+  // hub://servers/{name}/tools or hub://servers/{name}/resources
+  // These are list requests, not MCP forwarding
+  if (parts.length === 3) {
+    const resourceType = parts[2];
+    if (resourceType === 'tools' || resourceType === 'resources') {
+      return { serverName, listType: resourceType };
+    }
+    // Unknown resource type but valid URI format
+    return 'unknown';
+  }
+
+  // hub://servers/{name}/{instanceIndex}/{mcpPath}
+  const instanceIndex = parseInt(parts[2], 10);
+  if (isNaN(instanceIndex) || parts.length < 4) {
+    return null;
+  }
+
+  const mcpPath = parts.slice(3).join('/');
+  return { serverName, instanceIndex, mcpPath };
+}
+
+/**
  * Path to the use guide Markdown file.
  */
 const __filename = fileURLToPath(import.meta.url);
@@ -92,40 +216,65 @@ export interface ServerMetadata {
  */
 export function generateDynamicResources(): Resource[] {
   const resources: Resource[] = [];
+  clearHubToMcpUriMap();
 
   // Add use-guide resource first - it's always available
   resources.push({
     uri: USE_GUIDE_URI,
     name: USE_GUIDE_NAME,
     description: USE_GUIDE_DESCRIPTION,
-    mimeType: USE_GUIDE_MIME_TYPE,
-    // System resources don't have a serverId
-    serverId: undefined
+    mimeType: USE_GUIDE_MIME_TYPE
+    // System resources don't have serverName/serverIndex
   });
 
   // Use the same access pattern as tools - directly access manager cache
   const servers = hubManager.getAllServers();
 
   for (const server of servers) {
-    if (!hasValidId(server) || !server.config.enabled) {
+    if (!hasValidId(server)) {
+      continue;
+    }
+    // Check if any instance is enabled
+    const hasEnabledInstance = server.config.instances.some((i) => i.enabled !== false);
+    if (!hasEnabledInstance) {
       continue;
     }
 
-    const bestInstance = selectBestInstance(server.name);
-    if (!bestInstance || !bestInstance.instance.id) {
-      continue;
+    // Iterate over all instances to expose each instance's resources
+    for (const instance of server.config.instances) {
+      if (instance.enabled === false) {
+        continue;
+      }
+
+      const instanceIndex = instance.index;
+
+      // Server metadata resource (one per server, not per instance)
+      if (instanceIndex === 0) {
+        resources.push({
+          uri: `hub://servers/${server.name}`,
+          name: `Server: ${server.name}`,
+          description: getServerDescription(server.config, server.name),
+          mimeType: 'application/json',
+          serverName: server.name,
+          serverIndex: instanceIndex
+        });
+      }
+
+      // Get MCP native resources and map to hub format
+      const instanceIdx = instanceIndex ?? 0;
+      const mcpResources = mcpConnectionManager.getResources(server.name, instanceIdx);
+      for (const res of mcpResources) {
+        // Format: Resource: {ServerName} - {Index}: {Native Name}
+        const displayName = `Resource：${server.name} - ${instanceIdx}：${res.name}`;
+        resources.push({
+          uri: mapMcpUriToHub(server.name, instanceIdx, res.uri),
+          name: displayName,
+          description: res.description,
+          mimeType: res.mimeType
+          // No serverId - instanceIndex is embedded in the URI
+        });
+      }
     }
-
-    const instanceId = bestInstance.instance.id;
-
-    // Server metadata resource
-    resources.push({
-      uri: `hub://servers/${server.name}`,
-      name: `Server: ${server.name}`,
-      description: getServerDescription(server.config, server.name),
-      mimeType: 'application/json',
-      serverId: instanceId
-    });
   }
 
   return resources;
@@ -157,7 +306,9 @@ export function generateDynamicResources(): Resource[] {
  * const tools = await readResource('hub://servers/my-mcp-server/tools');
  * ```
  */
-export async function readResource(uri: string): Promise<ServerMetadata | Resource[] | string> {
+export async function readResource(
+  uri: string
+): Promise<ServerMetadata | Resource[] | string | unknown> {
   // Validate URI format
   if (!uri.startsWith('hub://')) {
     throw new Error(`Invalid Hub resource URI: ${uri}. Must start with 'hub://'`);
@@ -169,33 +320,58 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
   }
 
   // Parse URI
-  const uriParts = uri.replace('hub://', '').split('/');
-  if (uriParts.length < 2 || uriParts[0] !== 'servers') {
+  const parsed = parseHubUri(uri);
+  if (!parsed) {
     throw new Error(`Invalid Hub resource URI format: ${uri}`);
   }
 
-  const serverName = uriParts[1];
-  const resourceType = uriParts[2]; // 'tools', 'resources', or undefined for server metadata
-
-  // Check if server exists and is connected
-  const serverInfo = selectBestInstance(serverName);
-  if (!serverInfo) {
-    throw new Error(`Server not found or not connected: ${serverName}`);
+  // Handle unknown resource type
+  if (parsed === 'unknown') {
+    const parts = uri.replace('hub://', '').split('/');
+    const resourceType = parts[2];
+    throw new Error(`Unknown resource type: ${resourceType}`);
   }
 
-  const instanceId = serverInfo.instance.id;
+  const { serverName, instanceIndex, mcpPath, listType } = parsed;
 
-  // Return appropriate content based on resource type
-  if (!resourceType) {
-    // Server metadata
-    const serverConfig = hubManager.getServerByName(serverName);
-    const tools = mcpConnectionManager.getTools(instanceId);
-    const resources = mcpConnectionManager.getResources(instanceId);
+  // Find server config
+  const serverConfig = hubManager.getServerByName(serverName);
+  if (!serverConfig) {
+    throw new Error(`Server not found: ${serverName}`);
+  }
+
+  // If no instanceIndex, check if this is a list request or metadata request
+  if (instanceIndex === undefined) {
+    // Handle list requests first
+    if (listType) {
+      // Use selectBestInstance to get an instance for the list
+      const serverInfo = selectBestInstance(serverName);
+      if (!serverInfo) {
+        throw new Error(`Server not found or not connected: ${serverName}`);
+      }
+      const instanceIndex = serverInfo.instance.index as number;
+
+      if (listType === 'tools') {
+        return mcpConnectionManager.getTools(serverName, instanceIndex) as unknown as Resource[];
+      } else {
+        return mcpConnectionManager.getResources(serverName, instanceIndex);
+      }
+    }
+
+    // Server metadata request - use selectBestInstance to get runtime properties
+    const serverInfo = selectBestInstance(serverName);
+    if (!serverInfo) {
+      throw new Error(`Server not found or not connected: ${serverName}`);
+    }
+
+    const instanceIndex = serverInfo.instance.index as number;
+    const tools = mcpConnectionManager.getTools(serverName, instanceIndex);
+    const resources = mcpConnectionManager.getResources(serverName, instanceIndex);
 
     // Build tool name to description map
     const toolsMap: Record<string, string> = {};
     for (const tool of tools) {
-      toolsMap[tool.name] = tool.description || '';
+      toolsMap[tool.name as string] = (tool.description as string) || '';
     }
 
     return {
@@ -204,18 +380,37 @@ export async function readResource(uri: string): Promise<ServerMetadata | Resour
       toolsCount: tools.length,
       tools: toolsMap,
       resourcesCount: resources.length,
-      tags: serverConfig?.tags || {},
+      tags: serverInfo.instance.tags || {},
       lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
       uptime: serverInfo.instance.uptime as number,
       description: getServerDescription(serverConfig, serverName)
     };
-  } else if (resourceType === 'tools') {
-    // Tools list
-    return mcpConnectionManager.getTools(instanceId) as unknown as Resource[];
-  } else if (resourceType === 'resources') {
-    // Resources list
-    return mcpConnectionManager.getResources(instanceId);
-  } else {
-    throw new Error(`Unknown resource type: ${resourceType}`);
   }
+
+  // MCP native resource forwarding: hub://servers/{name}/{instanceIndex}/{mcpPath}
+  // Find the specific instance by index
+  const targetInstance = serverConfig.instances.find(
+    (i) => i.index === instanceIndex && i.enabled !== false
+  );
+  if (!targetInstance) {
+    throw new Error(`Instance ${instanceIndex} not found or not enabled for server: ${serverName}`);
+  }
+
+  const instanceId = targetInstance.id as string;
+
+  // If mcpPath is empty, return instance-level info
+  if (!mcpPath) {
+    return mcpConnectionManager.getResources(serverName, instanceIndex);
+  }
+
+  // Forward to MCP server for actual resource read
+  // Use the mapping to get the original MCP URI (hub://servers/exa-ai/0/tools/list -> exa://tools/list)
+  let originalMcpUri: string | null | undefined = hubToMcpUriMap.get(uri);
+  if (!originalMcpUri) {
+    originalMcpUri = restoreMcpUriMapping(serverName, instanceIndex, instanceId, mcpPath);
+  }
+  if (!originalMcpUri) {
+    throw new Error(`MCP URI not found in mapping for: ${uri}`);
+  }
+  return mcpConnectionManager.readResource(serverName, instanceIndex, originalMcpUri);
 }

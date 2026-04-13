@@ -9,6 +9,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
+import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 
@@ -24,10 +25,10 @@ export function registerResourcesHandlers(server: McpServer): void {
       return { resources };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        logger.error(`List resources error:`, error);
+        logger.error(`List resources error:`, error, LOG_MODULES.RESOURCES_HANDLER);
         throw new McpError(-32802, error.message);
       } else {
-        logger.error(`List resources error:`, error);
+        logger.error(`List resources error:`, error, LOG_MODULES.RESOURCES_HANDLER);
         throw new McpError(-32802, String(error));
       }
     }
@@ -49,10 +50,10 @@ export function registerResourcesHandlers(server: McpServer): void {
       };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        logger.error(`Read resource error:`, error);
+        logger.error(`Read resource error:`, error, LOG_MODULES.RESOURCES_HANDLER);
         throw new McpError(-32802, error.message);
       } else {
-        logger.error(`Read resource error:`, error);
+        logger.error(`Read resource error:`, error, LOG_MODULES.RESOURCES_HANDLER);
         throw new McpError(-32802, String(error));
       }
     }

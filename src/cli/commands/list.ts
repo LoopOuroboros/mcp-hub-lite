@@ -86,8 +86,8 @@ export const listCommand = new Command('list')
             Name: server.name,
             // Now need to display server instance information
             Instances: server.instances?.length || 0,
-            Type: server.config.type,
-            Enabled: server.config.enabled
+            Type: server.config.template.type,
+            Enabled: server.config.instances.some((i) => i.enabled !== false)
           }))
         );
       }

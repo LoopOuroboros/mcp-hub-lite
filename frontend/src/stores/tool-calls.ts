@@ -13,8 +13,8 @@ import type {
 
 export interface ToolCall {
   requestId: string;
-  serverId: string;
   serverName: string;
+  serverIndex: number;
   toolName: string;
   startTime: number;
   endTime?: number;
@@ -57,8 +57,8 @@ export const useToolCallsStore = defineStore('toolCalls', () => {
   function handleToolCallStarted(data: ToolCallStartedEvent['data']) {
     updateCall({
       requestId: data.requestId,
-      serverId: data.serverId,
       serverName: data.serverName,
+      serverIndex: data.serverIndex,
       toolName: data.toolName,
       startTime: data.timestamp,
       status: 'running',
