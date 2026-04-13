@@ -413,6 +413,8 @@ describe('Server Runner', () => {
       expect(mcpConnectionManager.connect).toHaveBeenCalledTimes(1);
       // Call for enabled server with new instance
       expect(mcpConnectionManager.connect).toHaveBeenCalledWith(
+        'enabled-server',
+        0,
         expect.objectContaining({
           enabled: true,
           command: 'test-command',

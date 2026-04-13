@@ -1016,10 +1016,10 @@ export const useServerStore = defineStore('server', () => {
    * Fetch server logs using WebSocket
    * No longer use HTTP requests, instead subscribe and fetch via WebSocket
    */
-  function fetchLogs(serverId: string) {
+  function fetchLogs(serverId: string, instanceIndex: number = 0) {
     // Get WebSocket store instance
     const wsStore = useWebSocketStore();
-    wsStore.fetchLogs(serverId, 100); // Fetch the latest 100 log entries
+    wsStore.fetchLogs(serverId, instanceIndex, 100); // Fetch the latest 100 log entries
   }
 
   /**
@@ -1050,7 +1050,7 @@ export const useServerStore = defineStore('server', () => {
    * Iterates through all servers and fetches their logs via WebSocket.
    */
   function fetchAllLogs() {
-    servers.value.forEach((s) => fetchLogs(s.id));
+    servers.value.forEach((s) => fetchLogs(s.id, 0));
   }
 
   /**

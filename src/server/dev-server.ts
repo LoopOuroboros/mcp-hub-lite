@@ -87,9 +87,18 @@ async function startDevServer() {
           // Connect the new instance
           const resolvedConfig = resolveInstanceConfig(serverConfig, newInstance.id);
           if (resolvedConfig && resolvedConfig.enabled !== false) {
-            mcpConnectionManager.connect({ ...resolvedConfig, id: newInstance.id }).catch((err) => {
-              logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
-            });
+            mcpConnectionManager
+              .connect(serverName, newInstance.index ?? 0, {
+                ...resolvedConfig,
+                id: newInstance.id
+              })
+              .catch((err) => {
+                logger.error(
+                  `Failed to auto-connect to ${serverName}:`,
+                  err,
+                  LOG_MODULES.DEV_SERVER
+                );
+              });
           }
         } catch (err) {
           logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
@@ -100,13 +109,15 @@ async function startDevServer() {
           if (instance.enabled !== false) {
             const resolvedConfig = resolveInstanceConfig(serverConfig, instance.id);
             if (resolvedConfig) {
-              mcpConnectionManager.connect({ ...resolvedConfig, id: instance.id }).catch((err) => {
-                logger.error(
-                  `Failed to auto-connect to ${serverName}:`,
-                  err,
-                  LOG_MODULES.DEV_SERVER
-                );
-              });
+              mcpConnectionManager
+                .connect(serverName, instance.index ?? 0, { ...resolvedConfig, id: instance.id })
+                .catch((err) => {
+                  logger.error(
+                    `Failed to auto-connect to ${serverName}:`,
+                    err,
+                    LOG_MODULES.DEV_SERVER
+                  );
+                });
             }
           }
         });

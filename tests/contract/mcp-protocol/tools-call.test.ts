@@ -77,6 +77,7 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 describe('MCP Protocol Contract - tools/call (with SDK)', () => {
   const serverName = 'test-sdk-server';
   let serverId: string;
+  let serverIndex: number;
 
   beforeEach(async () => {
     // Add to hub manager (v1.1 format)
@@ -91,10 +92,11 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
     // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
+    serverIndex = instance.index ?? 0;
   });
 
   afterEach(async () => {
-    await mcpConnectionManager.disconnect(serverId);
+    await mcpConnectionManager.disconnect(serverName, serverIndex);
     hubManager.removeServer(serverName);
   });
 
@@ -111,13 +113,13 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
-    const result = (await mcpConnectionManager.callTool(serverId, 'calculator', {
+    const result = (await mcpConnectionManager.callTool(serverName, serverIndex, 'calculator', {
       a: 5,
       b: 3,
       operation: 'add'
@@ -140,14 +142,14 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
     await expect(
-      mcpConnectionManager.callTool(serverId, 'calculator', {
+      mcpConnectionManager.callTool(serverName, serverIndex, 'calculator', {
         a: 'invalid',
         b: 3,
         operation: 'add'
@@ -168,13 +170,15 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
-    await expect(mcpConnectionManager.callTool(serverId, 'unknown_tool', {})).rejects.toThrow();
+    await expect(
+      mcpConnectionManager.callTool(serverName, serverIndex, 'unknown_tool', {})
+    ).rejects.toThrow();
   });
 
   it('should support multiple concurrent tool calls', async () => {
@@ -190,18 +194,22 @@ describe('MCP Protocol Contract - tools/call (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
     const [result1, result2] = await Promise.all([
-      mcpConnectionManager.callTool(serverId, 'get_weather', { location: 'New York' }) as Promise<{
+      mcpConnectionManager.callTool(serverName, serverIndex, 'get_weather', {
+        location: 'New York'
+      }) as Promise<{
         temperature: number;
         condition: string;
       }>,
-      mcpConnectionManager.callTool(serverId, 'search_news', { query: 'technology' }) as Promise<{
+      mcpConnectionManager.callTool(serverName, serverIndex, 'search_news', {
+        query: 'technology'
+      }) as Promise<{
         articles: string[];
       }>
     ]);

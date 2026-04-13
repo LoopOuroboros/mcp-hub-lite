@@ -34,6 +34,7 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 describe('MCP Protocol Contract - tools/list (with SDK)', () => {
   const serverName = 'test-sdk-server';
   let serverId: string;
+  let serverIndex: number;
 
   beforeEach(async () => {
     // Add to hub manager (v1.1 format)
@@ -48,10 +49,11 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
     // Add server instance
     const instance = await hubManager.addServerInstance(serverName, {});
     serverId = instance.id;
+    serverIndex = instance.index ?? 0;
   });
 
   afterEach(async () => {
-    await mcpConnectionManager.disconnect(serverId);
+    await mcpConnectionManager.disconnect(serverName, serverIndex);
     hubManager.removeServer(serverName);
   });
 
@@ -98,13 +100,13 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
-    const tools = mcpConnectionManager.getTools(serverId);
+    const tools = mcpConnectionManager.getTools(serverName, serverIndex);
 
     expect(tools).toHaveLength(2);
 
@@ -135,14 +137,14 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
-    const tools1 = mcpConnectionManager.getTools(serverId);
-    const tools2 = mcpConnectionManager.getTools(serverId);
+    const tools1 = mcpConnectionManager.getTools(serverName, serverIndex);
+    const tools2 = mcpConnectionManager.getTools(serverName, serverIndex);
 
     expect(tools1).toEqual(tools2);
     expect(tools1[0]).toBe(tools2[0]); // Reference equality
@@ -164,13 +166,13 @@ describe('MCP Protocol Contract - tools/list (with SDK)', () => {
       throw new Error('Failed to resolve server configuration');
     }
 
-    await mcpConnectionManager.connect({
+    await mcpConnectionManager.connect(serverName, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
-    const tools = mcpConnectionManager.getTools(serverId);
+    const tools = mcpConnectionManager.getTools(serverName, serverIndex);
     expect(tools).toHaveLength(0);
   });
 });

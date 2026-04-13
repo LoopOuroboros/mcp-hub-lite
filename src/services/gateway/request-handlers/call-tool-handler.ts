@@ -149,7 +149,7 @@ export function registerCallToolHandler(
     const target = toolMap.get(toolName);
 
     logger.debug(
-      `Tool lookup SUCCESS: toolName=${toolName} -> serverId=${target?.serverId}, realToolName=${target?.realToolName}`,
+      `Tool lookup SUCCESS: toolName=${toolName} -> serverName=${target?.serverName}, serverIndex=${target?.serverIndex}, realToolName=${target?.realToolName}`,
       LOG_MODULES.GATEWAY
     );
 
@@ -164,19 +164,20 @@ export function registerCallToolHandler(
     const startTime = Date.now();
     try {
       logger.debug(
-        `Tool call EXECUTING: serverId=${target.serverId}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
+        `Tool call EXECUTING: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
         LOG_MODULES.GATEWAY
       );
 
       const result = await mcpConnectionManager.callTool(
-        target.serverId,
+        target.serverName,
+        target.serverIndex,
         target.realToolName,
         toolArgs
       );
 
       const duration = Date.now() - startTime;
       logger.info(
-        `Tool call SUCCESS: serverId=${target.serverId}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
+        `Tool call SUCCESS: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
         LOG_MODULES.GATEWAY
       );
 
@@ -197,7 +198,11 @@ export function registerCallToolHandler(
         };
       }
     } catch (error: unknown) {
-      ErrorHandler.handleToolCallError(target.serverId, target.realToolName, error);
+      ErrorHandler.handleToolCallError(
+        `${target.serverName}-${target.serverIndex}`,
+        target.realToolName,
+        error
+      );
     }
   });
 }

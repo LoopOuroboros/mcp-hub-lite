@@ -51,10 +51,10 @@ function mapMcpUriToHub(serverName: string, instanceIndex: number, mcpUri: strin
 function restoreMcpUriMapping(
   serverName: string,
   instanceIndex: number,
-  instanceId: string,
+  _instanceId: string,
   mcpPath: string
 ): string | null {
-  const instanceResources = mcpConnectionManager.getResources(instanceId);
+  const instanceResources = mcpConnectionManager.getResources(serverName, instanceIndex);
 
   for (const resource of instanceResources) {
     const originalUri = resource.uri;
@@ -223,9 +223,8 @@ export function generateDynamicResources(): Resource[] {
     uri: USE_GUIDE_URI,
     name: USE_GUIDE_NAME,
     description: USE_GUIDE_DESCRIPTION,
-    mimeType: USE_GUIDE_MIME_TYPE,
-    // System resources don't have a serverId
-    serverId: undefined
+    mimeType: USE_GUIDE_MIME_TYPE
+    // System resources don't have serverName/serverIndex
   });
 
   // Use the same access pattern as tools - directly access manager cache
@@ -247,7 +246,6 @@ export function generateDynamicResources(): Resource[] {
         continue;
       }
 
-      const instanceId = instance.id as string;
       const instanceIndex = instance.index;
 
       // Server metadata resource (one per server, not per instance)
@@ -257,13 +255,14 @@ export function generateDynamicResources(): Resource[] {
           name: `Server: ${server.name}`,
           description: getServerDescription(server.config, server.name),
           mimeType: 'application/json',
-          serverId: instanceId
+          serverName: server.name,
+          serverIndex: instanceIndex
         });
       }
 
       // Get MCP native resources and map to hub format
       const instanceIdx = instanceIndex ?? 0;
-      const mcpResources = mcpConnectionManager.getResources(instanceId);
+      const mcpResources = mcpConnectionManager.getResources(server.name, instanceIdx);
       for (const res of mcpResources) {
         // Format: Resource: {ServerName} - {Index}: {Native Name}
         const displayName = `Resource：${server.name} - ${instanceIdx}：${res.name}`;
@@ -350,12 +349,12 @@ export async function readResource(
       if (!serverInfo) {
         throw new Error(`Server not found or not connected: ${serverName}`);
       }
-      const instanceId = serverInfo.instance.id as string;
+      const instanceIndex = serverInfo.instance.index as number;
 
       if (listType === 'tools') {
-        return mcpConnectionManager.getTools(instanceId) as unknown as Resource[];
+        return mcpConnectionManager.getTools(serverName, instanceIndex) as unknown as Resource[];
       } else {
-        return mcpConnectionManager.getResources(instanceId);
+        return mcpConnectionManager.getResources(serverName, instanceIndex);
       }
     }
 
@@ -365,9 +364,9 @@ export async function readResource(
       throw new Error(`Server not found or not connected: ${serverName}`);
     }
 
-    const instanceId = serverInfo.instance.id as string;
-    const tools = mcpConnectionManager.getTools(instanceId);
-    const resources = mcpConnectionManager.getResources(instanceId);
+    const instanceIndex = serverInfo.instance.index as number;
+    const tools = mcpConnectionManager.getTools(serverName, instanceIndex);
+    const resources = mcpConnectionManager.getResources(serverName, instanceIndex);
 
     // Build tool name to description map
     const toolsMap: Record<string, string> = {};
@@ -401,7 +400,7 @@ export async function readResource(
 
   // If mcpPath is empty, return instance-level info
   if (!mcpPath) {
-    return mcpConnectionManager.getResources(instanceId);
+    return mcpConnectionManager.getResources(serverName, instanceIndex);
   }
 
   // Forward to MCP server for actual resource read
@@ -413,5 +412,5 @@ export async function readResource(
   if (!originalMcpUri) {
     throw new Error(`MCP URI not found in mapping for: ${uri}`);
   }
-  return mcpConnectionManager.readResource(instanceId, originalMcpUri);
+  return mcpConnectionManager.readResource(serverName, instanceIndex, originalMcpUri);
 }

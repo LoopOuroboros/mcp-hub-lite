@@ -41,18 +41,12 @@ Response includes:
 **Response Example:**
 
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"filesystem\":\"File system operations\",\"time\":\"Time and timezone utilities\"}"
-      }
-    ]
+[
+  {
+    "type": "text",
+    "text": "{\"filesystem\":\"File system operations\",\"time\":\"Time and timezone utilities\"}"
   }
-}
+]
 ```
 
 ### Step 3: Read Server Metadata
@@ -141,10 +135,13 @@ Read a server's metadata resource to preview available tools:
 
 ### Resource URI Reference
 
-| URI Pattern                  | Description                | MIME Type          |
-| ---------------------------- | -------------------------- | ------------------ |
-| `hub://use-guide`            | This use guide             | `text/markdown`    |
-| `hub://servers/{serverName}` | Server metadata and status | `application/json` |
+| URI Pattern                                 | Description                    | MIME Type          | Discovery Method   |
+| ------------------------------------------- | ------------------------------ | ------------------ | ------------------ |
+| `hub://use-guide`                           | This use guide                 | `text/markdown`    | `resources/list`   |
+| `hub://servers/{serverName}`                | Server metadata and status     | `application/json` | `resources/list`   |
+| `hub://servers/{serverName}/tools`          | List all tools from server     | `application/json` | Direct access only |
+| `hub://servers/{serverName}/resources`      | List all resources from server | `application/json` | Direct access only |
+| `hub://servers/{serverName}/{index}/{path}` | MCP native resource forwarding | Varies by resource | `resources/list`   |
 
 ## Best Practices
 

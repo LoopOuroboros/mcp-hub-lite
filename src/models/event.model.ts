@@ -40,19 +40,22 @@ export interface ServerInstanceDeletedEventData {
 
 // Connection status event data
 export interface ServerConnectedEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   status: 'online';
   timestamp: number;
 }
 
 export interface ServerDisconnectedEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   status: 'offline';
   timestamp: number;
 }
 
 export interface ServerStatusChangeEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   status: 'online' | 'offline' | 'error';
   error?: string;
   timestamp: number;
@@ -60,14 +63,15 @@ export interface ServerStatusChangeEventData {
 
 // Tool-related event data
 export interface ToolsUpdatedEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   tools: Tool[];
 }
 
 export interface ToolCallStartedEventData {
   requestId: string;
-  serverId: string;
   serverName: string;
+  serverIndex: number;
   toolName: string;
   timestamp: number;
   args: Record<string, unknown>;
@@ -75,8 +79,8 @@ export interface ToolCallStartedEventData {
 
 export interface ToolCallCompletedEventData {
   requestId: string;
-  serverId: string;
   serverName: string;
+  serverIndex: number;
   toolName: string;
   timestamp: number;
   result: unknown;
@@ -84,8 +88,8 @@ export interface ToolCallCompletedEventData {
 
 export interface ToolCallErrorEventData {
   requestId: string;
-  serverId: string;
   serverName: string;
+  serverIndex: number;
   toolName: string;
   timestamp: number;
   error: string;
@@ -94,13 +98,15 @@ export interface ToolCallErrorEventData {
 
 // Resource-related event data
 export interface ResourcesUpdatedEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   resources: Resource[];
 }
 
 // Log-related event data
 export interface LogEntryEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   logs: Array<{
     level: LogLevel;
     message: string;
@@ -109,7 +115,8 @@ export interface LogEntryEventData {
 }
 
 export interface LogsClearedEventData {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
 }
 
 // System-related event data

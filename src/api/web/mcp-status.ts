@@ -69,7 +69,7 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
               id: instance.id || '',
               name: server.name,
               type: resolvedConfig?.type || server.config.template.type,
-              status: mcpConnectionManager.getStatus(instance.id || '') || {
+              status: mcpConnectionManager.getStatus(server.name, instance.index ?? 0) || {
                 connected: false,
                 lastCheck: Date.now(),
                 toolsCount: 0,
@@ -115,7 +115,12 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
           displayName: serverInfo.instance.displayName
         };
 
-        const success = await mcpConnectionManager.connect(connectConfig);
+        const instanceIndex = serverInfo.instance.index ?? 0;
+        const success = await mcpConnectionManager.connect(
+          serverInfo.name,
+          instanceIndex,
+          connectConfig
+        );
         if (!success) {
           return reply.code(500).send({ error: 'Failed to connect to server' });
         }
@@ -138,7 +143,12 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
     '/web/mcp/servers/:id/disconnect',
     async (request, reply) => {
       try {
-        await mcpConnectionManager.disconnect(request.params.id);
+        const serverInfo = hubManager.getServerById(request.params.id);
+        if (!serverInfo) {
+          return reply.code(404).send({ error: 'Server not found' });
+        }
+
+        await mcpConnectionManager.disconnect(serverInfo.name, serverInfo.instance.index ?? 0);
 
         // Note: Do NOT update the instance's enabled field here.
         // The enabled field is a configuration parameter that should only be modified

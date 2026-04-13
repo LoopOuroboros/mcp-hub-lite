@@ -36,6 +36,7 @@ vi.mock('@utils/transports/transport-factory.js', () => {
 describe('MCP Connection Integration', () => {
   const serverName = 'test-mcp-server';
   let serverId: string;
+  let serverIndex: number;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -51,12 +52,16 @@ describe('MCP Connection Integration', () => {
     });
 
     // Add server instance
-    const instance = await hubManager.addServerInstance(serverName, {});
+    const instance = (await hubManager.addServerInstance(serverName, {})) as unknown as {
+      id: string;
+      index: number;
+    };
     serverId = instance.id;
+    serverIndex = instance.index;
   });
 
   afterEach(async () => {
-    await mcpConnectionManager.disconnect(serverId);
+    await mcpConnectionManager.disconnect(serverName, serverIndex);
     hubManager.removeServer(serverName);
   });
 
@@ -72,14 +77,14 @@ describe('MCP Connection Integration', () => {
     if (!resolvedConfig) {
       throw new Error('Failed to resolve server configuration');
     }
-    const success = await mcpConnectionManager.connect({
+    const success = await mcpConnectionManager.connect(serverInfo.name, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
     expect(success).toBe(true);
-    const status = mcpConnectionManager.getStatus(serverId);
+    const status = mcpConnectionManager.getStatus(serverInfo.name, serverIndex);
     expect(status?.connected).toBe(true);
   });
 
@@ -94,14 +99,14 @@ describe('MCP Connection Integration', () => {
     if (!resolvedConfig) {
       throw new Error('Failed to resolve server configuration');
     }
-    const success = await mcpConnectionManager.connect({
+    const success = await mcpConnectionManager.connect(serverInfo.name, serverIndex, {
       ...resolvedConfig,
       id: serverId,
       timestamp: Date.now()
     });
 
     expect(success).toBe(false);
-    const status = mcpConnectionManager.getStatus(serverId);
+    const status = mcpConnectionManager.getStatus(serverInfo.name, serverIndex);
     expect(status?.connected).toBe(false);
     expect(status?.error).toContain('Connection refused');
   });
@@ -116,7 +121,10 @@ describe('MCP Connection Integration', () => {
       timeout: 60000,
       aggregatedTools: []
     });
-    const instance2 = await hubManager.addServerInstance(server2Name, {});
+    const instance2 = (await hubManager.addServerInstance(server2Name, {})) as unknown as {
+      id: string;
+      index: number;
+    };
 
     mockConnect.mockResolvedValue(undefined);
     mockListTools.mockResolvedValue({ tools: [] });
@@ -133,12 +141,12 @@ describe('MCP Connection Integration', () => {
     }
 
     const [success1, success2] = await Promise.all([
-      mcpConnectionManager.connect({
+      mcpConnectionManager.connect(serverInfo1.name, serverIndex, {
         ...resolvedConfig1,
         id: serverId,
         timestamp: Date.now()
       }),
-      mcpConnectionManager.connect({
+      mcpConnectionManager.connect(serverInfo2.name, instance2.index, {
         ...resolvedConfig2,
         id: instance2.id,
         timestamp: Date.now()
@@ -148,14 +156,14 @@ describe('MCP Connection Integration', () => {
     expect(success1).toBe(true);
     expect(success2).toBe(true);
 
-    const status1 = mcpConnectionManager.getStatus(serverId);
-    const status2 = mcpConnectionManager.getStatus(instance2.id);
+    const status1 = mcpConnectionManager.getStatus(serverInfo1.name, serverIndex);
+    const status2 = mcpConnectionManager.getStatus(serverInfo2.name, instance2.index);
 
     expect(status1?.connected).toBe(true);
     expect(status2?.connected).toBe(true);
 
     // Clean up
-    await mcpConnectionManager.disconnect(instance2.id);
+    await mcpConnectionManager.disconnect(serverInfo2.name, instance2.index);
     await hubManager.removeServer(server2Name);
   });
 });

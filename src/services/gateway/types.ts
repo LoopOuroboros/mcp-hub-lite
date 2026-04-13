@@ -8,7 +8,8 @@ import type { JsonSchema } from '@shared-models/tool.model.js';
  * Tool map entry for routing gateway tool calls to actual servers.
  */
 export interface ToolMapEntry {
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   realToolName: string;
 }
 

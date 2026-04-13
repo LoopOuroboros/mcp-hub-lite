@@ -1,70 +1,71 @@
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { Tool } from '@shared-models/tool.model.js';
+import { getCompositeKey } from '@utils/composite-key.js';
 
 /**
- * Manages tool caching for MCP connections at both server ID and server name levels.
+ * Manages tool caching for MCP connections at both composite key and server name levels.
  *
- * This class encapsulates all tool cache operations, providing both server ID-level
+ * This class encapsulates all tool cache operations, providing both composite key-level
  * and server name-level caching for efficient tool lookup while maintaining data
  * consistency across multiple instances of the same server.
  */
 export class ToolCache {
   private toolCache: Map<string, Tool[]> = new Map();
   private serverNameToolCache: Map<string, Tool[]> = new Map();
-  private nameToIdMap: Map<string, string> = new Map();
+  private nameToCompositeKeyMap: Map<string, string> = new Map();
 
   /**
-   * Sets the name-to-ID mapping for server name resolution.
+   * Sets the name-to-composite-key mapping for server name resolution.
    *
    * @param serverName - The server name
-   * @param serverId - The corresponding server instance ID
+   * @param compositeKey - The corresponding composite key
    */
-  setNameMapping(serverName: string, serverId: string): void {
-    this.nameToIdMap.set(serverName, serverId);
+  setNameMapping(serverName: string, compositeKey: string): void {
+    this.nameToCompositeKeyMap.set(serverName, compositeKey);
   }
 
   /**
-   * Removes the name-to-ID mapping for a server.
+   * Removes the name-to-composite-key mapping for a server.
    *
    * @param serverName - The server name to remove
    */
   removeNameMapping(serverName: string): void {
-    this.nameToIdMap.delete(serverName);
+    this.nameToCompositeKeyMap.delete(serverName);
   }
 
   /**
-   * Removes name mapping by server ID.
+   * Removes name mapping by composite key.
    *
-   * @param serverId - The server ID to remove
+   * @param compositeKey - The composite key to remove
    */
-  removeNameMappingById(serverId: string): void {
-    for (const [name, id] of this.nameToIdMap.entries()) {
-      if (id === serverId) {
-        this.nameToIdMap.delete(name);
+  removeNameMappingById(compositeKey: string): void {
+    for (const [name, key] of this.nameToCompositeKeyMap.entries()) {
+      if (key === compositeKey) {
+        this.nameToCompositeKeyMap.delete(name);
         break;
       }
     }
   }
 
   /**
-   * Gets the server ID for a given server name.
+   * Gets the composite key for a given server name.
    *
    * @param name - The server name
-   * @returns The server ID or undefined if not found
+   * @returns The composite key or undefined if not found
    */
-  getServerIdByName(name: string): string | undefined {
-    return this.nameToIdMap.get(name);
+  getCompositeKeyByName(name: string): string | undefined {
+    return this.nameToCompositeKeyMap.get(name);
   }
 
   /**
-   * Gets the server name for a given server ID.
+   * Gets the server name for a given composite key.
    *
-   * @param serverId - The server ID
+   * @param compositeKey - The composite key
    * @returns The server name or 'unknown' if not found
    */
-  getServerNameById(serverId: string): string {
-    for (const [name, id] of this.nameToIdMap.entries()) {
-      if (id === serverId) {
+  getServerNameById(compositeKey: string): string {
+    for (const [name, key] of this.nameToCompositeKeyMap.entries()) {
+      if (key === compositeKey) {
         return name;
       }
     }
@@ -74,24 +75,17 @@ export class ToolCache {
   /**
    * Sets tools for a specific server instance and updates both caches.
    *
-   * @param serverId - The server instance ID
+   * @param serverName - The server name
+   * @param serverIndex - The instance index
    * @param tools - The tools to cache
-   * @param serverName - Optional server name for name-level cache update
    */
-  setTools(serverId: string, tools: Tool[], serverName?: string): void {
-    this.toolCache.set(serverId, tools);
-
-    if (serverName) {
-      this.updateServerNameCache(serverName);
-    } else {
-      const resolvedName = this.getServerNameById(serverId);
-      if (resolvedName !== 'unknown') {
-        this.updateServerNameCache(resolvedName);
-      }
-    }
+  setTools(serverName: string, serverIndex: number, tools: Tool[]): void {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    this.toolCache.set(compositeKey, tools);
+    this.updateServerNameCache(serverName);
 
     logger.debug(
-      `ToolCache: Set ${tools.length} tools for server [${serverId}]`,
+      `ToolCache: Set ${tools.length} tools for server [${compositeKey}]`,
       LOG_MODULES.CONNECTION_MANAGER
     );
   }
@@ -99,14 +93,16 @@ export class ToolCache {
   /**
    * Gets tools for a specific server instance.
    *
-   * @param serverId - The server instance ID
+   * @param serverName - The server name
+   * @param serverIndex - The instance index
    * @returns Array of tools, empty if none
    */
-  getTools(serverId: string): Tool[] {
-    const tools = this.toolCache.get(serverId) || [];
-    const fromCache = this.toolCache.has(serverId);
+  getTools(serverName: string, serverIndex: number): Tool[] {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const tools = this.toolCache.get(compositeKey) || [];
+    const fromCache = this.toolCache.has(compositeKey);
     logger.debug(
-      `ToolCache: getTools for [${serverId}]: returned ${tools.length} tools (${fromCache ? 'from cache' : 'no cache'})`,
+      `ToolCache: getTools for [${compositeKey}]: returned ${tools.length} tools (${fromCache ? 'from cache' : 'no cache'})`,
       LOG_MODULES.CONNECTION_MANAGER
     );
     return tools;
@@ -163,7 +159,7 @@ export class ToolCache {
   /**
    * Gets all tool cache entries.
    *
-   * @returns Array of [serverId, tools] tuples
+   * @returns Array of [compositeKey, tools] tuples
    */
   getToolCacheEntries(): [string, Tool[]][] {
     return Array.from(this.toolCache.entries());
@@ -173,7 +169,7 @@ export class ToolCache {
    * Returns an iterator over the tool cache entries for backward compatibility.
    * This mimics the Map.entries() method signature.
    *
-   * @returns Iterator of [serverId, tools] tuples
+   * @returns Iterator of [compositeKey, tools] tuples
    * @deprecated Use getToolCacheEntries() instead
    */
   entries(): IterableIterator<[string, Tool[]]> {
@@ -183,18 +179,16 @@ export class ToolCache {
   /**
    * Clears tools for a specific server and updates both caches.
    *
-   * @param serverId - The server instance ID
+   * @param serverName - The server name
+   * @param serverIndex - The instance index
    */
-  clearTools(serverId: string): void {
-    const serverName = this.getServerNameById(serverId);
-    this.toolCache.delete(serverId);
-
-    if (serverName !== 'unknown') {
-      this.updateServerNameCache(serverName);
-    }
+  clearTools(serverName: string, serverIndex: number): void {
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    this.toolCache.delete(compositeKey);
+    this.updateServerNameCache(serverName);
 
     logger.debug(
-      `ToolCache: Cleared tools for server [${serverId}]`,
+      `ToolCache: Cleared tools for server [${compositeKey}]`,
       LOG_MODULES.CONNECTION_MANAGER
     );
   }
@@ -208,8 +202,8 @@ export class ToolCache {
   private updateServerNameCache(serverName: string): void {
     const allToolsForServer: Tool[] = [];
 
-    for (const [id, cachedTools] of this.toolCache.entries()) {
-      const instanceServerName = this.getServerNameById(id);
+    for (const [compositeKey, cachedTools] of this.toolCache.entries()) {
+      const instanceServerName = this.getServerNameById(compositeKey);
       if (instanceServerName === serverName) {
         allToolsForServer.push(...cachedTools);
       }

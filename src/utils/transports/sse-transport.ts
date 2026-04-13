@@ -38,7 +38,7 @@ export class SseTransport implements Transport {
   private reconnectAttempts = 0;
   private isClosing = false;
   private _serverName?: string;
-  private _serverId?: string;
+  private _compositeKey?: string;
 
   public onmessage?: (message: JSONRPCMessage) => void;
   public onerror?: (error: Error) => void;
@@ -53,7 +53,7 @@ export class SseTransport implements Transport {
    * @param maxReconnectAttempts - Maximum number of reconnection attempts before giving up (default: 5)
    * @param proxy - Optional proxy configuration
    * @param serverName - Optional server name for logging
-   * @param serverId - Optional server ID for logging
+   * @param compositeKey - Optional composite key (serverName-serverIndex) for logging
    */
   constructor(
     private url: string,
@@ -62,10 +62,10 @@ export class SseTransport implements Transport {
     private maxReconnectAttempts: number = 5,
     private proxy?: { url: string },
     serverName?: string,
-    serverId?: string
+    compositeKey?: string
   ) {
     this._serverName = serverName;
-    this._serverId = serverId;
+    this._compositeKey = compositeKey;
   }
 
   /**
@@ -75,8 +75,8 @@ export class SseTransport implements Transport {
    * @returns Formatted message with server context if available
    */
   private formatLogMessage(message: string): string {
-    if (this._serverId) {
-      return `${message} (serverId=${this._serverId}, url=${this.url})`;
+    if (this._compositeKey) {
+      return `${message} (compositeKey=${this._compositeKey}, url=${this.url})`;
     } else if (this._serverName) {
       return `${message} (server=${this._serverName}, url=${this.url})`;
     } else {

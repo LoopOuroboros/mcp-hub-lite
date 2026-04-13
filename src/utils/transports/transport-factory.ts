@@ -12,13 +12,13 @@ export class TransportFactory {
   /**
    * Create transport client
    * @param server Server configuration, including base configuration and instance configuration
-   * @param serverId Optional server ID for log storage integration
+   * @param compositeKey Optional composite key (serverName-serverIndex) for log storage integration
    * @returns Transport client instance
    * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
     server: ServerRuntimeConfig & { name: string },
-    serverId?: string
+    compositeKey?: string
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
@@ -40,8 +40,8 @@ export class TransportFactory {
           },
           server.name,
           {
-            serverId,
-            logStorage: serverId ? logStorage : undefined
+            compositeKey,
+            logStorage: compositeKey ? logStorage : undefined
           }
         );
 
@@ -56,7 +56,7 @@ export class TransportFactory {
           config.maxReconnectAttempts,
           config.proxy,
           server.name,
-          serverId
+          compositeKey
         );
 
       case 'streamable-http':
@@ -70,7 +70,7 @@ export class TransportFactory {
           config.timeout,
           config.proxy,
           server.name,
-          serverId
+          compositeKey
         );
 
       default:

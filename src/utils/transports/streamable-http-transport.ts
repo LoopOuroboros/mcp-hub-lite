@@ -51,10 +51,10 @@ export class StreamableHttpTransport implements Transport {
   private _serverName?: string;
 
   /**
-   * Server ID for logging context
+   * Composite key (serverName-serverIndex) for logging context
    * @private
    */
-  private _serverId?: string;
+  private _compositeKey?: string;
 
   /**
    * Event handler called when a JSON-RPC message is received from the server
@@ -84,7 +84,7 @@ export class StreamableHttpTransport implements Transport {
    *                  Controls how long to wait for HTTP responses before timing out
    * @param proxy - Optional proxy configuration
    * @param serverName - Optional server name for logging
-   * @param serverId - Optional server ID for logging
+   * @param compositeKey - Optional composite key (serverName-serverIndex) for logging
    */
   constructor(
     private url: string,
@@ -92,10 +92,10 @@ export class StreamableHttpTransport implements Transport {
     private timeout: number = 30000,
     private proxy?: { url: string },
     serverName?: string,
-    serverId?: string
+    compositeKey?: string
   ) {
     this._serverName = serverName;
-    this._serverId = serverId;
+    this._compositeKey = compositeKey;
   }
 
   /**
@@ -105,8 +105,8 @@ export class StreamableHttpTransport implements Transport {
    * @returns Formatted message with server context if available
    */
   private formatLogMessage(message: string): string {
-    if (this._serverId) {
-      return `${message} (serverId=${this._serverId}, url=${this.url})`;
+    if (this._compositeKey) {
+      return `${message} (compositeKey=${this._compositeKey}, url=${this.url})`;
     } else if (this._serverName) {
       return `${message} (server=${this._serverName}, url=${this.url})`;
     } else {

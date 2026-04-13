@@ -38,11 +38,17 @@ export const useWebSocketStore = defineStore('websocket', () => {
   /**
    * Fetch historical logs from the server
    */
-  function fetchLogs(serverId: string, limit: number = 100, since?: number): void {
+  function fetchLogs(
+    serverName: string,
+    serverIndex: number,
+    limit: number = 100,
+    since?: number
+  ): void {
     if (wsClient.value) {
       wsClient.value.send({
         type: 'fetch-logs',
-        serverId,
+        serverName,
+        serverIndex,
         limit,
         since
       });
@@ -182,17 +188,17 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleServerStatusChange(message: ServerStatusEvent): void {
-    const { serverId, status, error } = message.data;
-    serverStore.updateServerStatus(serverId, mapStatus(status));
+    const { serverName, status, error } = message.data;
+    serverStore.updateServerStatus(serverName, mapStatus(status));
 
     if (error) {
-      console.error(`Server ${serverId} error:`, error);
+      console.error(`Server ${serverName} error:`, error);
     }
   }
 
   function handleLogEntry(message: LogEvent): void {
-    const { serverId, logs } = message.data;
-    const server = serverStore.servers.find((s) => s.id === serverId);
+    const { serverName, logs } = message.data;
+    const server = serverStore.servers.find((s) => s.id === serverName);
     if (server && logs && logs.length > 0) {
       // If it's a complete log (more than 1 entry), replace existing logs
       if (logs.length > 1) {
@@ -218,8 +224,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleToolsUpdated(message: ToolsEvent): void {
-    const { serverId, tools } = message.data;
-    const server = serverStore.servers.find((s) => s.id === serverId);
+    const { serverName, tools } = message.data;
+    const server = serverStore.servers.find((s) => s.id === serverName);
     if (server) {
       server.tools = tools;
       server.toolsCount = tools.length;
@@ -227,8 +233,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleResourcesUpdated(message: ResourcesEvent): void {
-    const { serverId, resources } = message.data;
-    const server = serverStore.servers.find((s) => s.id === serverId);
+    const { serverName, resources } = message.data;
+    const server = serverStore.servers.find((s) => s.id === serverName);
     if (server) {
       server.resources = resources;
       server.resourcesCount = resources.length;
@@ -253,13 +259,13 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleServerConnected(message: ServerConnectedEvent): void {
-    const { serverId } = message.data;
-    serverStore.updateServerStatus(serverId, 'online');
+    const { serverName } = message.data;
+    serverStore.updateServerStatus(serverName, 'online');
   }
 
   function handleServerDisconnected(message: ServerDisconnectedEvent): void {
-    const { serverId } = message.data;
-    serverStore.updateServerStatus(serverId, 'offline');
+    const { serverName } = message.data;
+    serverStore.updateServerStatus(serverName, 'offline');
   }
 
   function mapStatus(status: string): ServerStatus {

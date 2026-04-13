@@ -54,7 +54,8 @@ export interface PingMessage {
 
 export interface FetchLogsMessage {
   type: 'fetch-logs';
-  serverId: string;
+  serverName: string;
+  serverIndex: number;
   limit?: number; // Optional: return the latest N log entries
   since?: number; // Optional: return logs after the specified timestamp
 }
@@ -68,7 +69,8 @@ export type ClientMessage = SubscribeMessage | UnsubscribeMessage | PingMessage 
 export interface ServerStatusEvent {
   type: 'server-status';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     status: 'online' | 'offline' | 'error';
     error?: string;
     timestamp: number;
@@ -78,7 +80,8 @@ export interface ServerStatusEvent {
 export interface LogEvent {
   type: 'log';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     logs: Array<{
       level: LogLevel;
       message: string;
@@ -90,7 +93,8 @@ export interface LogEvent {
 export interface ToolsEvent {
   type: 'tools';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     tools: Tool[];
   };
 }
@@ -98,7 +102,8 @@ export interface ToolsEvent {
 export interface ResourcesEvent {
   type: 'resources';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     resources: Resource[];
   };
 }
@@ -121,7 +126,8 @@ export interface ServerDeletedEvent {
 export interface ServerConnectedEvent {
   type: 'server-connected';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     status: 'online';
     timestamp: number;
   };
@@ -130,7 +136,8 @@ export interface ServerConnectedEvent {
 export interface ServerDisconnectedEvent {
   type: 'server-disconnected';
   data: {
-    serverId: string;
+    serverName: string;
+    serverIndex: number;
     status: 'offline';
     timestamp: number;
   };
@@ -145,8 +152,8 @@ export interface ToolCallStartedEvent {
   type: 'tool-call-started';
   data: {
     requestId: string;
-    serverId: string;
     serverName: string;
+    serverIndex: number;
     toolName: string;
     timestamp: number;
     args: Record<string, unknown>;
@@ -157,8 +164,8 @@ export interface ToolCallCompletedEvent {
   type: 'tool-call-completed';
   data: {
     requestId: string;
-    serverId: string;
     serverName: string;
+    serverIndex: number;
     toolName: string;
     timestamp: number;
     result: unknown;
@@ -169,8 +176,8 @@ export interface ToolCallErrorEvent {
   type: 'tool-call-error';
   data: {
     requestId: string;
-    serverId: string;
     serverName: string;
+    serverIndex: number;
     toolName: string;
     timestamp: number;
     error: string;

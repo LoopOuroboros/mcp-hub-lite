@@ -68,7 +68,10 @@ export class HubManagerService {
             const resolvedConfig = this.getResolvedServerConfig(name, instance.id);
             if (resolvedConfig) {
               try {
-                await mcpConnectionManager.connect({ ...resolvedConfig, id: instance.id });
+                await mcpConnectionManager.connect(name, instance.index ?? 0, {
+                  ...resolvedConfig,
+                  id: instance.id
+                });
               } catch (error) {
                 logger.error(
                   `Failed to connect server instance for ${name}:`,
@@ -172,7 +175,10 @@ export class HubManagerService {
     const resolvedConfig = this.getResolvedServerConfig(name, newInstance.id);
     if (resolvedConfig && resolvedConfig.enabled !== false) {
       try {
-        await mcpConnectionManager.connect({ ...resolvedConfig, id: newInstance.id });
+        await mcpConnectionManager.connect(name, newInstance.index ?? 0, {
+          ...resolvedConfig,
+          id: newInstance.id
+        });
       } catch (error) {
         logger.error(
           `Failed to auto-connect server instance for ${name}:`,
@@ -234,7 +240,7 @@ export class HubManagerService {
 
     const instances = this.getServerInstancesByName(name);
     for (const instance of instances) {
-      await mcpConnectionManager.disconnect(instance.id!).catch(() => {});
+      await mcpConnectionManager.disconnect(name, instance.index ?? 0).catch(() => {});
     }
 
     await this.configManager.removeServer(name);
@@ -250,7 +256,7 @@ export class HubManagerService {
     const instances = this.getServerInstancesByName(name);
     const instance = instances.find((inst) => inst.index === index);
     if (instance) {
-      await mcpConnectionManager.disconnect(instance.id!).catch(() => {});
+      await mcpConnectionManager.disconnect(name, instance.index ?? 0).catch(() => {});
     }
 
     await this.configManager.removeServerInstance(name, index);

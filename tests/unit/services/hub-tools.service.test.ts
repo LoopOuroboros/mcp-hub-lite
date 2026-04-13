@@ -530,12 +530,14 @@ describe('HubToolsService', () => {
       // Arrange
       const serverName = 'Test Server';
       const serverId = '1';
+      const serverIndex = 0;
       const toolName = 'readFile';
       const toolArgs = { path: '/test/file.txt' };
       const expectedResult = { content: 'Test file content' };
 
       const mockInstance = {
         id: serverId,
+        index: serverIndex,
         enabled: true,
         args: [],
         env: {},
@@ -563,7 +565,12 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(result).toEqual(expectedResult);
-      expect(mcpConnectionManager.callTool).toHaveBeenCalledWith(serverId, toolName, toolArgs);
+      expect(mcpConnectionManager.callTool).toHaveBeenCalledWith(
+        serverName,
+        serverIndex,
+        toolName,
+        toolArgs
+      );
     });
 
     it('should throw error if server not found when calling tool', async () => {
@@ -975,7 +982,8 @@ describe('HubToolsService', () => {
       // Assert
       expect(result).toEqual(forwardedResponse);
       expect(mcpConnectionManager.readResource).toHaveBeenCalledWith(
-        'exa-instance-0',
+        'exa-ai',
+        0,
         'exa://tools/list'
       );
     });

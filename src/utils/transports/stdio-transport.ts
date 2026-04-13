@@ -9,7 +9,7 @@ import type { LogStorageService } from '@services/log-storage.service.js';
 import { PassThrough } from 'stream';
 
 export interface StdioTransportOptions {
-  serverId?: string;
+  compositeKey?: string;
   logStorage?: LogStorageService;
 }
 
@@ -33,7 +33,7 @@ export interface StdioTransportOptions {
 export class StdioTransport implements Transport {
   private _transport: StdioClientTransport;
   private _serverName?: string;
-  private _serverId?: string;
+  private _compositeKey?: string;
   private _logStorage?: LogStorageService;
   private _stderrStream: PassThrough | null = null;
 
@@ -62,7 +62,7 @@ export class StdioTransport implements Transport {
 
     this._transport = new StdioClientTransport(sdkParams);
     this._serverName = serverName;
-    this._serverId = options?.serverId;
+    this._compositeKey = options?.compositeKey;
     this._logStorage = options?.logStorage;
     this._stderrStream = new PassThrough();
   }
@@ -106,11 +106,11 @@ export class StdioTransport implements Transport {
         this.onstderr?.(dataStr);
 
         // Log stderr output (per MCP spec, stderr is not necessarily errors)
-        const serverIdentifier = this._serverId || this._serverName || 'Unknown Server';
+        const serverIdentifier = this._compositeKey || this._serverName || 'Unknown Server';
         logger.serverLog('info', serverIdentifier, dataStr, { pid: this.pid });
 
-        if (this._logStorage && this._serverId) {
-          this._logStorage.append(this._serverId, 'info', dataStr);
+        if (this._logStorage && this._compositeKey) {
+          this._logStorage.append(this._compositeKey, 'info', dataStr);
         }
 
         // Also write to our PassThrough stream for compatibility

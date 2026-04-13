@@ -192,7 +192,7 @@ describe('HubManagerService', () => {
     await service.removeServer(serverName);
 
     expect(configManager.removeServer).toHaveBeenCalledWith(serverName);
-    expect(mcpConnectionManager.disconnect).toHaveBeenCalledWith('test-server-instance');
+    expect(mcpConnectionManager.disconnect).toHaveBeenCalledWith(serverName, 0);
   });
 
   it('should get server by name', async () => {
