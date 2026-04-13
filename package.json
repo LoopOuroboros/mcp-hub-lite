@@ -1,6 +1,6 @@
 {
   "name": "@loop_ouroboros/mcp-hub-lite",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A lightweight MCP management platform designed for independent developers",
   "license": "MIT",
   "author": "loop_ouroboros",
@@ -41,6 +41,7 @@
     "status": "node dist/server/src/cli/index.js status",
     "list": "node dist/server/src/cli/index.js list",
     "ui": "node dist/server/src/cli/index.js ui",
+    "server": "node dist/server/src/cli/index.js server",
     "dev": "run-p dev:client dev:server",
     "dev:client": "vite",
     "dev:server": "tsx src/server/dev-server.ts",
@@ -73,6 +74,7 @@
     "fastify": "^5.6.2",
     "open": "^11.0.0",
     "pinia": "^3.0.4",
+    "undici": "^8.1.0",
     "vue": "^3.5.26",
     "vue-i18n": "^11.2.7",
     "vue-router": "^4.6.4",

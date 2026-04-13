@@ -288,12 +288,12 @@ export function wrapReplyForDebug(reply: FastifyReply, sessionId: string): void 
 
         if (headers) {
           logger.debug(
-            `MCP Gateway error response: ${statusCode} ${statusMessage || ''} Headers: ${stringifyForLogging(headers)}`,
+            `Full error response context - statusCode: ${statusCode}, statusMessage: ${statusMessage || 'none'}, headers: ${stringifyForLogging(headers)}`,
             LOG_MODULES.COMMUNICATION
           );
         } else {
           logger.debug(
-            `MCP Gateway error response: ${statusCode} ${statusMessage || ''}`,
+            `Full error response context - statusCode: ${statusCode}, statusMessage: ${statusMessage || 'none'}`,
             LOG_MODULES.COMMUNICATION
           );
         }
