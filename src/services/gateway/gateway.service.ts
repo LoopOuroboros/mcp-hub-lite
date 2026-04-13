@@ -24,7 +24,6 @@ import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import {
   registerInitializeHandlers,
-  registerToolsHandlers,
   registerResourcesHandlers,
   registerSystemToolsHandlers,
   registerCallToolHandler
@@ -67,7 +66,6 @@ export class GatewayService {
     const toolMap = new Map<string, ToolMapEntry>();
 
     registerInitializeHandlers(server);
-    registerToolsHandlers(server);
     registerResourcesHandlers(server);
     registerSystemToolsHandlers(server);
     registerCallToolHandler(server, toolMap);

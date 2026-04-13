@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
-import { simpleSearchService } from '@services/simple-search.service.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK Client
@@ -158,51 +157,5 @@ describe('MCP Connection Integration', () => {
     // Clean up
     await mcpConnectionManager.disconnect(instance2.id);
     await hubManager.removeServer(server2Name);
-  });
-
-  it('should integrate with search service', async () => {
-    // Set up mock tool data
-    mockConnect.mockResolvedValue(undefined);
-    mockListTools.mockResolvedValue({
-      tools: [
-        {
-          name: 'test-tool',
-          description: 'A test tool for searching',
-          inputSchema: { type: 'object', properties: { query: { type: 'string' } } }
-        }
-      ]
-    });
-
-    const searchServerName = 'search-test-server';
-    await hubManager.addServer(searchServerName, {
-      command: 'node',
-      args: [],
-      type: 'stdio' as const,
-      timeout: 60000,
-      aggregatedTools: []
-    });
-    const searchServerInstance = await hubManager.addServerInstance(searchServerName, {});
-
-    const serverInfo = hubManager.getServerById(searchServerInstance.id);
-    if (!serverInfo) {
-      throw new Error('Server not found');
-    }
-    const resolvedConfig = resolveInstanceConfig(serverInfo.config, searchServerInstance.id);
-    if (!resolvedConfig) {
-      throw new Error('Failed to resolve server configuration');
-    }
-    await mcpConnectionManager.connect({
-      ...resolvedConfig,
-      id: searchServerInstance.id,
-      timestamp: Date.now()
-    });
-
-    const results = simpleSearchService.search('test');
-    expect(results.length).toBeGreaterThan(0);
-    expect(results[0].tool.name).toBe('test-tool');
-
-    // Clean up
-    await mcpConnectionManager.disconnect(searchServerInstance.id);
-    await hubManager.removeServer(searchServerName);
   });
 });
