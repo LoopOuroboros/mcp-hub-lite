@@ -18,6 +18,40 @@ import { restartCommand } from '@cli/commands/restart.js';
 import { toolUseCommand } from '@cli/commands/tool-use.js';
 
 /**
+ * Check if the CLI is being executed directly (vs imported as module)
+ * Handles Windows/npm symlink path resolution issues by comparing package paths
+ */
+function isCliEntry(): boolean {
+  if (!argv[1]) {
+    return false;
+  }
+  const currentUrl = import.meta.url;
+  const argvUrl = pathToFileURL(argv[1]).href;
+
+  // Extract pathname and normalize for comparison
+  const normalizePath = (url: string): string => {
+    // Convert file:// URL to pathname and normalize separators
+    const urlObj = new URL(url);
+    return urlObj.pathname.replace(/\//g, '/');
+  };
+
+  const currentPath = normalizePath(currentUrl);
+  const argvPath = normalizePath(argvUrl);
+
+  // Extract package path suffix for comparison
+  // Both paths contain mcp-hub-lite/dist, extract that common suffix
+  const getPackagePath = (path: string): string | null => {
+    const match = path.match(/mcp-hub-lite[\/\\]dist/);
+    return match ? match[0] : null;
+  };
+
+  const currentPackagePath = getPackagePath(currentPath);
+  const argvPackagePath = getPackagePath(argvPath);
+
+  return currentPackagePath !== null && currentPackagePath === argvPackagePath;
+}
+
+/**
  * Creates and configures the CLI application using Commander.js
  *
  * This function initializes the main CLI program with its name, description, and version,
@@ -94,7 +128,7 @@ export function createCli(): Command {
 }
 
 // Execute the CLI if this file is run directly
-if (argv[1] && pathToFileURL(argv[1]).href === import.meta.url) {
+if (isCliEntry()) {
   const cli = createCli();
   cli.parse();
 }
