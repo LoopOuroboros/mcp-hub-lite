@@ -34,7 +34,7 @@ utils/
 ├── mcp-error-handler.ts     # MCP 错误处理
 ├── error-handler.ts         # 错误处理
 ├── tool-args-parser.ts      # 工具参数解析器
-├── name-converter.ts        # 名称规范化工具（工具名称格式转换）
+├── name-converter.ts        # 名称规范化工具（工具名称格式转换，支持跨格式工具名称匹配）
 ```
 
 ## 核心工具
@@ -258,6 +258,28 @@ type ConfigGetter = () => {
 - `toMCPError(error)` - 将内部错误转换为 MCP 标准错误
 - `mapErrorCode(code)` - 映射错误码到 MCP 标准格式
 
+### NameConverter (`name-converter.ts`)
+
+**职责**: 工具名称规范化，支持跨格式工具名称匹配
+
+**主要方法**:
+
+- `normalizeToolName(toolName)` - 将各种命名约定（snake_case、kebab-case、camelCase、空格分隔或大写）转换为标准化的小写下划线格式，用于一致的匹配
+
+**功能特性**:
+
+- 处理 snake_case → snake_case（保持不变）
+- 处理 kebab-case → snake_case（连字符转下划线）
+- 处理 camelCase → snake_case（插入下划线）
+- 处理大写格式 → snake_case（转小写并处理分隔符）
+- 处理空格分隔 → snake_case（空格转下划线）
+
+**使用场景**:
+
+- 系统工具调用时的工具名称匹配
+- 跨不同MCP服务器的工具名称标准化
+- 用户输入的工具名称与实际工具名称的模糊匹配
+
 ## 传输协议
 
 ### Transport Interface (`transports/transport.interface.ts`)
@@ -435,7 +457,7 @@ A: 在配置文件中设置 `logging.rotation` 相关参数，或使用环境变
 | `utils/error-handler.ts`                        | 错误处理                      |
 | `utils/request-context.ts`                      | 请求上下文                    |
 | `utils/tool-args-parser.ts`                     | 工具参数解析                  |
-| `utils/name-converter.ts`                      | 名称规范化工具                |
+| `utils/name-converter.ts`                       | 名称规范化工具                |
 | `utils/transports/stdio-transport.ts`           | Stdio 传输（含 LineBuffer）   |
 | `utils/transports/transport.interface.ts`       | 传输接口                      |
 | `utils/transports/transport-factory.ts`         | 传输工厂（支持 serverId）     |

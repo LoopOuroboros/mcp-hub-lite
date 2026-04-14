@@ -160,13 +160,11 @@ api/
 
 **支持的系统工具**：
 
-- `list-servers` - 列出所有连接的服务器
-- `find-servers` - 查找匹配模式的服务器
-- `list-all-tools-in-server` - 列出特定服务器的所有工具
-- `find-tools-in-server` - 在特定服务器中查找匹配模式的工具
-- `get-tool` - 获取特定工具的完整 schema
-- `call-tool` - 调用特定服务器上的工具
-- `find-tools` - 在所有服务器中查找匹配模式的工具
+- `list_servers` - 列出所有连接的服务器
+- `list_tools` - 列出特定服务器的所有工具
+- `get_tool` - 获取特定工具的完整 schema
+- `call_tool` - 调用特定服务器上的工具（不能用于系统工具）
+- `update_server_description` - 更新特定MCP服务器的描述
 
 ### 资源 API (`api/web/resources.ts`)
 
