@@ -2,15 +2,14 @@
 
 ## 2026-04-14
 
+- **Lint 修复**: 移除 CLI 入口检测中不必要的转义字符
+- **文档**: 格式化 README 文件
+- **版本**: 更新版本至 1.2.1
 - **CLI 修复**: 修复 Windows/npm symlink 环境下的 CLI 入口检测
 - **CLI 重构**: 修复命令计数并将 mcpToolUseCommand 重命名为 toolUseCommand
 - **配置 重构**: 将配置加载日志从 info 级别改为 debug 级别
-- **文档**: 完成所有子模块的 CLAUDE.md 文档
-- **测试**: 为 normalizeToolName 函数添加单元测试
-- **系统工具 重构**: 将 list_tools_in_server 重命名为 list_tools
 - **核心 功能**: 添加 normalizeToolName 支持跨格式工具名称匹配
 - **CLI 功能**: 添加 tool-use 命令用于 MCP 服务器工具操作
-- **版本**: 更新版本至 1.1.1
 - **网关 功能**: 实现 per-request transport 模式以修复连接错误
 
 ## 2026-04-13

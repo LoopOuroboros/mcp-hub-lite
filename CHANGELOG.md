@@ -2,15 +2,14 @@
 
 ## 2026-04-14
 
+- **Lint Fix**: Remove unnecessary escape character in CLI entry detection
+- **Docs**: Format README files for release
+- **Version**: Bump version to 1.2.1
 - **CLI Fix**: Fix CLI entry detection for Windows/npm symlink environments
 - **CLI Refactor**: Fix command count and rename mcpToolUseCommand to toolUseCommand
 - **Config Refactor**: Change config loading logs from info to debug level
-- **Docs**: Complete CLAUDE.md documentation for all submodules
-- **Test**: Add unit tests for normalizeToolName function
-- **System Tools Refactor**: Rename list_tools_in_server to list_tools
 - **Core Feature**: Add normalizeToolName for cross-format tool name matching
 - **CLI Feature**: Add tool-use command for MCP server tool operations
-- **Version**: Bump version to 1.1.1
 - **Gateway Feature**: Implement per-request transport mode to fix connection errors
 
 ## 2026-04-13
