@@ -218,6 +218,7 @@ npm run ui
 | `mcp-hub-lite status`             | 查看服务状态         |
 | `mcp-hub-lite ui`                 | 打开Web UI           |
 | `mcp-hub-lite list`               | 列出所有MCP服务器    |
+| `mcp-hub-lite tool-use`           | MCP工具操作命令      |
 
 ### 服务器配置
 

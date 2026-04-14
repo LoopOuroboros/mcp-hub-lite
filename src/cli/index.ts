@@ -2,7 +2,7 @@
 
 /**
  * MCP Hub Lite CLI Entry Point
- * Implements 6 core commands: start, stop, status, ui, list, restart
+ * Implements 7 core commands: start, stop, status, ui, list, restart, tool-use
  */
 
 import { Command } from 'commander';
@@ -15,7 +15,7 @@ import { statusCommand } from '@cli/commands/status.js';
 import { uiCommand } from '@cli/commands/ui.js';
 import { listCommand } from '@cli/commands/list.js';
 import { restartCommand } from '@cli/commands/restart.js';
-import { mcpToolUseCommand } from '@cli/commands/tool-use.js';
+import { toolUseCommand } from '@cli/commands/tool-use.js';
 
 /**
  * Creates and configures the CLI application using Commander.js
@@ -24,13 +24,14 @@ import { mcpToolUseCommand } from '@cli/commands/tool-use.js';
  * then registers all available commands to provide a complete command-line interface
  * for managing the MCP Hub Lite service.
  *
- * The CLI provides six core commands:
+ * The CLI provides seven core commands:
  * - start: Launches the MCP Hub Lite service in daemon or foreground mode
  * - stop: Gracefully terminates the running service instance
  * - status: Displays current service status including PID, port, host, and server count
  * - ui: Opens the web-based user interface in the default browser
  * - list: Shows all configured MCP servers in a tabular format
  * - restart: Stops and restarts the service with the same configuration
+ * - tool-use: Manage MCP server tools via API (list-servers, list-tools, get-tool, call-tool)
  *
  * Usage examples:
  * ```bash
@@ -70,6 +71,7 @@ import { mcpToolUseCommand } from '@cli/commands/tool-use.js';
  * @see {@link uiCommand} - Implementation of the ui command
  * @see {@link listCommand} - Implementation of the list command
  * @see {@link restartCommand} - Implementation of the restart command
+ * @see {@link toolUseCommand} - Implementation of the tool-use command
  */
 export function createCli(): Command {
   const program = new Command();
@@ -86,7 +88,7 @@ export function createCli(): Command {
   program.addCommand(uiCommand);
   program.addCommand(listCommand);
   program.addCommand(restartCommand);
-  program.addCommand(mcpToolUseCommand);
+  program.addCommand(toolUseCommand);
 
   return program;
 }

@@ -11,7 +11,7 @@ import { getServerStatus } from '@cli/server.js';
  * ## Command Format
  *
  * ```
- * mcp-tool-use <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
+ * mcp-hub-lite tool-use <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
  * ```
  *
  * Or via npm:
@@ -28,7 +28,7 @@ import { getServerStatus } from '@cli/server.js';
  *
  * ## Options
  *
- * - `--server <serverName>` - Server name to target (omit or empty for system tools)
+ * - `--server <serverName>` - Server name to target (use "mcp-hub-lite" for system tools)
  * - `--tool <toolName>` - Tool name (required for get-tool and call-tool actions)
  * - `--args <json>` - JSON string of tool arguments, or combined JSON with server/tool/args fields
  * - `--tags <json>` - JSON object of instance selection tags (call-tool only, for multi-instance servers)
@@ -49,35 +49,38 @@ import { getServerStatus } from '@cli/server.js';
  *
  * ```bash
  * # List all connected servers
- * npm run tool-use -- list-servers
+ * mcp-hub-lite tool-use list-servers
  *
- * # List system tools (empty server)
- * npm run tool-use -- list-tools --server ""
+ * # List system tools
+ * mcp-hub-lite tool-use list-tools --server mcp-hub-lite
  *
  * # List third-party server tools
- * npm run tool-use -- list-tools --server baidu-search
+ * mcp-hub-lite tool-use list-tools --server baidu-search
  *
  * # Get system tool schema
- * npm run tool-use -- get-tool --tool list_tools --server ""
+ * mcp-hub-lite tool-use get-tool --tool list_tools --server mcp-hub-lite
  *
  * # Call system tool
- * npm run tool-use -- call-tool --tool list_tools --server "" --args '{}'
+ * mcp-hub-lite tool-use call-tool --tool list_tools --server mcp-hub-lite --args '{}'
  *
  * # Call third-party server tool
- * npm run tool-use -- call-tool --tool search --server baidu-search --args '{"query":"天气"}'
+ * mcp-hub-lite tool-use call-tool --tool search --server baidu-search --args '{"query":"天气"}'
  *
  * # Multi-instance server with tags
- * npm run tool-use -- call-tool --tool search --server baidu-search --args '{"query":"test"}' --tags '{"env":"prod"}'
+ * mcp-hub-lite tool-use call-tool --tool search --server baidu-search --args '{"query":"test"}' --tags '{"env":"prod"}'
  * ```
  *
  * ### JSON 合并形式 (JSON Merge):
  *
  * ```bash
  * # All parameters in one JSON
- * npm run tool-use -- call-tool --args '{"server":"baidu-search","tool":"search","query":"天气"}'
+ * mcp-hub-lite tool-use call-tool --args '{"server":"baidu-search","tool":"search","query":"天气"}'
+ *
+ * # System tool example
+ * mcp-hub-lite tool-use call-tool --args '{"server":"mcp-hub-lite","tool":"list_tools"}'
  *
  * # Equivalent to
- * npm run tool-use -- call-tool --server baidu-search --tool search --args '{"query":"天气"}'
+ * mcp-hub-lite tool-use call-tool --server baidu-search --tool search --args '{"query":"天气"}'
  * ```
  *
  * ## Error Handling
@@ -90,7 +93,7 @@ import { getServerStatus } from '@cli/server.js';
  *
  * @returns {Command} The configured mcp-tool-use command instance for registration with Commander.js
  */
-export const mcpToolUseCommand = new Command('tool-use')
+export const toolUseCommand = new Command('tool-use')
   .description('Manage MCP server tools via API (list-servers, list-tools, get-tool, call-tool)')
   .argument('<action>', 'Action: list-servers, list-tools, get-tool, call-tool')
   .option('--server <serverName>', 'Server name to target (omit or empty for system tools)')
@@ -102,6 +105,30 @@ export const mcpToolUseCommand = new Command('tool-use')
   .option(
     '--tags <json>',
     'JSON object of instance selection tags (call-tool only, for multi-instance servers)'
+  )
+  .addHelpText(
+    'after',
+    `
+
+Examples:
+  # List all connected servers
+  mcp-hub-lite tool-use list-servers
+
+  # List mcp-hub-lite system tools (default)
+  mcp-hub-lite tool-use list-tools
+
+  # List third-party server tools
+  mcp-hub-lite tool-use list-tools --server baidu-search
+
+  # Get system tool schema
+  mcp-hub-lite tool-use get-tool --tool list_tools
+
+  # Call third-party server tool
+  mcp-hub-lite tool-use call-tool --tool search --server baidu-search --args '{"query":"天气"}'
+
+  # JSON merge form (all params in one JSON)
+  mcp-hub-lite tool-use call-tool --args '{"server":"baidu-search","tool":"search","query":"天气"}'
+`
   )
   .action(async (action, options) => {
     try {
@@ -116,7 +143,9 @@ export const mcpToolUseCommand = new Command('tool-use')
 
       // Parse JSON merge logic: extract server, tool, and args from --args if present
       let toolArgs: Record<string, unknown> = {};
-      let effectiveServer = options.server ?? '';
+      // When --server is not provided, default to mcp-hub-lite (system tools)
+      const defaultServer = 'mcp-hub-lite';
+      let effectiveServer = options.server || defaultServer;
       let effectiveTool = options.tool ?? '';
 
       if (options.args) {
