@@ -30,7 +30,7 @@ import { reassignServerInstanceIndexes } from './server-config-manager.js';
 export function loadConfig(configPath: string, autoMigrate: boolean = true): SystemConfig {
   try {
     if (fs.existsSync(configPath)) {
-      logger.info(`Loading configuration from: ${configPath}`, LOG_MODULES.CONFIG_MANAGER);
+      logger.debug(`Loading configuration from: ${configPath}`, LOG_MODULES.CONFIG_MANAGER);
       const content = fs.readFileSync(configPath, 'utf-8');
       let config = JSON.parse(content);
 
