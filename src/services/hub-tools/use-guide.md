@@ -90,7 +90,7 @@ Read a server's metadata resource to preview available tools:
 | ----- | ------------------------------------------ | ------------------------------------ |
 | 1     | `resources/list`                           | Discover available resources         |
 | 2     | `resources/read` on `hub://servers/{name}` | Preview server tools                 |
-| 3     | `list_tools_in_server`                     | Get full tool list                   |
+| 3     | `list_tools`                               | Get full tool list                   |
 | 4     | `get_tool`                                 | Get detailed schema with inputSchema |
 | 5     | `call_tool`                                | Execute the tool                     |
 
@@ -119,19 +119,19 @@ Read a server's metadata resource to preview available tools:
 
 ### Available System Tools
 
-| Tool Name              | Description                             | Parameters                                             |
-| ---------------------- | --------------------------------------- | ------------------------------------------------------ |
-| `list_servers`         | List all connected MCP servers          | None                                                   |
-| `list_tools_in_server` | List all tools from a specific server   | `serverName`, `requestOptions`                         |
-| `get_tool`             | Get detailed schema for a specific tool | `serverName`, `toolName`, `requestOptions`             |
-| `call_tool`            | Call a tool on a specific server        | `serverName`, `toolName`, `toolArgs`, `requestOptions` |
+| Tool Name      | Description                             | Parameters                                             |
+| -------------- | --------------------------------------- | ------------------------------------------------------ |
+| `list_servers` | List all connected MCP servers          | None                                                   |
+| `list_tools`   | List all tools from a specific server   | `serverName`, `requestOptions`                         |
+| `get_tool`     | Get detailed schema for a specific tool | `serverName`, `toolName`, `requestOptions`             |
+| `call_tool`    | Call a tool on a specific server        | `serverName`, `toolName`, `toolArgs`, `requestOptions` |
 
 ### Tool Return Data
 
-| Tool                   | Return Type     | Includes inputSchema      |
-| ---------------------- | --------------- | ------------------------- |
-| `list_tools_in_server` | `ToolSummary[]` | No - quick browse only    |
-| `get_tool`             | `Tool`          | Yes - for tool invocation |
+| Tool         | Return Type     | Includes inputSchema      |
+| ------------ | --------------- | ------------------------- |
+| `list_tools` | `ToolSummary[]` | No - quick browse only    |
+| `get_tool`   | `Tool`          | Yes - for tool invocation |
 
 ### Resource URI Reference
 

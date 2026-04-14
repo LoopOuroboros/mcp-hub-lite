@@ -685,7 +685,7 @@ describe('HubToolsService', () => {
       // Assert system tools - should have 5 tools now
       const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
-      expect(systemToolNames).toContain('list_tools_in_server');
+      expect(systemToolNames).toContain('list_tools');
       expect(systemToolNames).toContain('get_tool');
       expect(systemToolNames).toContain('call_tool');
       expect(systemToolNames).toContain('update_server_description');

@@ -49,7 +49,7 @@ export type SystemToolArgs =
 
 // Individual system tool name constants
 export const LIST_SERVERS_TOOL = 'list_servers';
-export const LIST_TOOLS_IN_SERVER_TOOL = 'list_tools_in_server';
+export const LIST_TOOLS_TOOL = 'list_tools';
 export const GET_TOOL_TOOL = 'get_tool';
 export const CALL_TOOL_TOOL = 'call_tool';
 export const UPDATE_SERVER_DESCRIPTION_TOOL = 'update_server_description';
@@ -60,7 +60,7 @@ export const UPDATE_SERVER_DESCRIPTION_TOOL = 'update_server_description';
  */
 export const SYSTEM_TOOL_NAMES = [
   LIST_SERVERS_TOOL,
-  LIST_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL

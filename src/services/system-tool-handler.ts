@@ -4,7 +4,7 @@ import { logger, LOG_MODULES } from '@utils/logger.js';
 import {
   SystemToolName,
   LIST_SERVERS_TOOL,
-  LIST_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
@@ -41,7 +41,7 @@ export class SystemToolHandler {
         case LIST_SERVERS_TOOL:
           result = await hubToolsService.listServers();
           break;
-        case LIST_TOOLS_IN_SERVER_TOOL: {
+        case LIST_TOOLS_TOOL: {
           const listToolsArgs = toolArgs as unknown as ListToolsInServerParams;
           result = await hubToolsService.listToolsInServer(listToolsArgs);
           break;

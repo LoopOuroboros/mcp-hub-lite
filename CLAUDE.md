@@ -357,7 +357,7 @@ npm run list
 服务重启后，由 ClaudeCode 逐个调用测试以下 MCP 网关系统工具：
 
 - `list_servers` - 验证服务器列表返回正确
-- `list_tools_in_server` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
+- `list_tools` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
 - `get_tool` - 验证工具详情获取功能（**必须测试 `serverName = mcp-hub-lite` 的系统工具**）
 - `call_tool` - 验证工具调用功能（如适用）
 - `update_server_description` - 验证服务器描述更新功能（**必须测试 `serverName = mcp-hub-lite`**，预期返回 "Server not found"，因为网关自身不是可配置的服务器）
