@@ -1,14 +1,14 @@
 # MCP-HUB-LITE
 
-[![License](https://img.shields.io/badge/license-MIT-080f12?style=flat\&colorA=080f12\&colorB=1fa669)](./LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-22.x-080f12?style=flat\&logo=nodedotjs\&logoColor=white\&colorA=080f12\&colorB=339933)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-080f12?style=flat\&logo=typescript\&logoColor=white\&colorA=080f12\&colorB=3178C6)](https://www.typescriptlang.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-Testing-080f12?style=flat\&logo=vitest\&logoColor=white\&colorA=080f12\&colorB=6E9F18)](https://vitest.dev/)
-[![Fastify](https://img.shields.io/badge/Fastify-Web-080f12?style=flat\&logo=fastify\&logoColor=white\&colorA=080f12\&colorB=000000)](https://fastify.io/)
-[![Vue.js](https://img.shields.io/badge/Vue.js-3-080f12?style=flat\&logo=vuedotjs\&logoColor=white\&colorA=080f12\&colorB=4FC08D)](https://vuejs.org/)
-[![Claude Code](https://img.shields.io/badge/Claude-Code-1fa669?style=flat\&colorA=080f12\&colorB=1fa669)](https://claude.ai/code)
+[![License](https://img.shields.io/badge/license-MIT-080f12?style=flat&colorA=080f12&colorB=1fa669)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-22.x-080f12?style=flat&logo=nodedotjs&logoColor=white&colorA=080f12&colorB=339933)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-080f12?style=flat&logo=typescript&logoColor=white&colorA=080f12&colorB=3178C6)](https://www.typescriptlang.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-Testing-080f12?style=flat&logo=vitest&logoColor=white&colorA=080f12&colorB=6E9F18)](https://vitest.dev/)
+[![Fastify](https://img.shields.io/badge/Fastify-Web-080f12?style=flat&logo=fastify&logoColor=white&colorA=080f12&colorB=000000)](https://fastify.io/)
+[![Vue.js](https://img.shields.io/badge/Vue.js-3-080f12?style=flat&logo=vuedotjs&logoColor=white&colorA=080f12&colorB=4FC08D)](https://vuejs.org/)
+[![Claude Code](https://img.shields.io/badge/Claude-Code-1fa669?style=flat&colorA=080f12&colorB=1fa669)](https://claude.ai/code)
 
-***
+---
 
 [中文文档](./README_zh.md)
 

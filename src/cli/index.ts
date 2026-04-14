@@ -41,7 +41,7 @@ function isCliEntry(): boolean {
   // Extract package path suffix for comparison
   // Both paths contain mcp-hub-lite/dist, extract that common suffix
   const getPackagePath = (path: string): string | null => {
-    const match = path.match(/mcp-hub-lite[\/\\]dist/);
+    const match = path.match(/mcp-hub-lite[/\\]dist/);
     return match ? match[0] : null;
   };
 
