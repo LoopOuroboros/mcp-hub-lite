@@ -15,6 +15,7 @@ import { statusCommand } from '@cli/commands/status.js';
 import { uiCommand } from '@cli/commands/ui.js';
 import { listCommand } from '@cli/commands/list.js';
 import { restartCommand } from '@cli/commands/restart.js';
+import { mcpToolUseCommand } from '@cli/commands/tool-use.js';
 
 /**
  * Creates and configures the CLI application using Commander.js
@@ -85,6 +86,7 @@ export function createCli(): Command {
   program.addCommand(uiCommand);
   program.addCommand(listCommand);
   program.addCommand(restartCommand);
+  program.addCommand(mcpToolUseCommand);
 
   return program;
 }
