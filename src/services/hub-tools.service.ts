@@ -6,11 +6,12 @@ import { eventBus, EventTypes } from './event-bus.service.js';
 import { gateway } from './gateway.service.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
+import { normalizeToolName } from '@utils/name-converter.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   MCP_HUB_LITE_SERVER,
   LIST_SERVERS_TOOL,
-  LIST_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
@@ -58,6 +59,7 @@ import {
  * - `list-tools-in-server`: List all tools from a specific server
  * - `get-tool`: Retrieve complete schema for a specific tool
  * - `call-tool`: Execute a tool on a specific server
+ * - `update-server-description`: Update the description of a specific MCP server
  *
  * ## Architecture Integration
  *
@@ -233,7 +235,9 @@ export class HubToolsService {
     // Handle MCP Hub Lite server (return system tool)
     if (typeof args.serverName === 'string' && args.serverName === MCP_HUB_LITE_SERVER) {
       const systemTools = getSystemTools();
-      const found = systemTools.find((tool) => tool.name === args.toolName);
+      const found = systemTools.find(
+        (tool) => normalizeToolName(tool.name) === normalizeToolName(args.toolName)
+      );
       if (found) {
         return {
           ...found,
@@ -249,7 +253,7 @@ export class HubToolsService {
     if (tools.length === 0) {
       throw new Error(`Server not found: ${args.serverName}`);
     }
-    return tools.find((t) => t.name === args.toolName);
+    return tools.find((t) => normalizeToolName(t.name) === normalizeToolName(args.toolName));
   }
 
   /**
@@ -310,7 +314,7 @@ export class HubToolsService {
     toolName: T,
     toolArgs: T extends typeof LIST_SERVERS_TOOL
       ? ListServersParams
-      : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+      : T extends typeof LIST_TOOLS_TOOL
         ? ListToolsInServerParams
         : T extends typeof GET_TOOL_TOOL
           ? GetToolParams
@@ -322,7 +326,7 @@ export class HubToolsService {
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
       ? Record<string, string>
-      : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+      : T extends typeof LIST_TOOLS_TOOL
         ? { serverName: string; tools: ToolSummary[] }
         : T extends typeof GET_TOOL_TOOL
           ? Tool | undefined
@@ -343,7 +347,7 @@ export class HubToolsService {
         case LIST_SERVERS_TOOL:
           result = await this.listServers();
           break;
-        case LIST_TOOLS_IN_SERVER_TOOL: {
+        case LIST_TOOLS_TOOL: {
           result = await this.listToolsInServer(toolArgs as ListToolsInServerParams);
           break;
         }
@@ -375,7 +379,7 @@ export class HubToolsService {
       // Type assertion based on toolName to match the expected return type
       return result as T extends typeof LIST_SERVERS_TOOL
         ? Record<string, string>
-        : T extends typeof LIST_TOOLS_IN_SERVER_TOOL
+        : T extends typeof LIST_TOOLS_TOOL
           ? { serverName: string; tools: ToolSummary[] }
           : T extends typeof GET_TOOL_TOOL
             ? Tool | undefined
@@ -461,7 +465,7 @@ export class HubToolsService {
         if (serverInfo && (serverInfo.instance.id as string)) {
           const instanceIndex = serverInfo.instance.index as number;
           const tools = mcpConnectionManager.getTools(server.name, instanceIndex);
-          if (tools.some((tool) => tool.name === toolName)) {
+          if (tools.some((tool) => normalizeToolName(tool.name) === normalizeToolName(toolName))) {
             matchingServers.push(server.name);
           }
         }
@@ -491,15 +495,20 @@ export class HubToolsService {
     // Validate tool exists before doing strict instance selection
     // Use strictMode=false to get serverInfo without triggering tag-match-unique errors
     const validationServerInfo = selectBestInstance(serverName, requestOptions, false);
+    let actualToolName: string | undefined;
     if (validationServerInfo && validationServerInfo.instance.id) {
       const instanceIndex = validationServerInfo.instance.index as number;
       const tools = mcpConnectionManager.getTools(serverName, instanceIndex);
-      if (!tools.some((tool) => tool.name === toolName)) {
+      const matchedTool = tools.find(
+        (tool) => normalizeToolName(tool.name) === normalizeToolName(toolName)
+      );
+      if (!matchedTool) {
         throw new Error(
           `Tool '${toolName}' not found in server '${serverName}'. ` +
-            `Use list_tools_in_server(serverName: "${serverName}") to see available tools.`
+            `Use list_tools(serverName: "${serverName}") to see available tools.`
         );
       }
+      actualToolName = matchedTool.name;
     }
 
     const serverInfo = selectBestInstance(serverName, requestOptions, true);
@@ -521,12 +530,29 @@ export class HubToolsService {
 
       const instanceIndex = fallbackServerInfo.instance.index as number;
 
+      // If actualToolName not set yet, find it now
+      if (!actualToolName) {
+        const fallbackTools = mcpConnectionManager.getTools(serverName, instanceIndex);
+        const matchedTool = fallbackTools.find(
+          (tool) => normalizeToolName(tool.name) === normalizeToolName(toolName)
+        );
+        if (!matchedTool) {
+          throw new Error(
+            `Tool '${toolName}' not found in server '${serverName}'. ` +
+              `Use list_tools(serverName: "${serverName}") to see available tools.`
+          );
+        }
+        actualToolName = matchedTool.name;
+      }
+
+      const toolNameToUse = actualToolName || toolName;
+
       // Publish tool call started event with the resolved serverIndex
       eventBus.publish(EventTypes.TOOL_CALL_STARTED, {
         requestId,
         serverName,
         serverIndex: instanceIndex,
-        toolName,
+        toolName: toolNameToUse,
         timestamp: Date.now(),
         args: toolArgs
       });
@@ -535,7 +561,7 @@ export class HubToolsService {
         const result = await mcpConnectionManager.callTool(
           serverName,
           instanceIndex,
-          toolName,
+          toolNameToUse,
           toolArgs
         );
 
@@ -544,13 +570,13 @@ export class HubToolsService {
           requestId,
           serverName,
           serverIndex: instanceIndex,
-          toolName,
+          toolName: toolNameToUse,
           timestamp: Date.now(),
           result
         });
 
         logger.debug(
-          `Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`,
+          `Tool call SUCCESS: serverName=${serverName}, toolName=${toolNameToUse}`,
           LOG_MODULES.HUB_TOOLS
         );
         return result;
@@ -560,14 +586,14 @@ export class HubToolsService {
           requestId,
           serverName,
           serverIndex: instanceIndex,
-          toolName,
+          toolName: toolNameToUse,
           timestamp: Date.now(),
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined
         });
 
         logger.error(
-          `Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+          `Tool call FAILED: serverName=${serverName}, toolName=${toolNameToUse}, error=${error instanceof Error ? error.message : String(error)}`,
           error,
           LOG_MODULES.HUB_TOOLS
         );
@@ -576,13 +602,14 @@ export class HubToolsService {
     }
 
     const instanceIndex = serverInfo.instance.index as number;
+    const toolNameToUse = actualToolName || toolName;
 
     // Publish tool call started event
     eventBus.publish(EventTypes.TOOL_CALL_STARTED, {
       requestId,
       serverName,
       serverIndex: instanceIndex,
-      toolName,
+      toolName: toolNameToUse,
       timestamp: Date.now(),
       args: toolArgs
     });
@@ -591,7 +618,7 @@ export class HubToolsService {
       const result = await mcpConnectionManager.callTool(
         serverName,
         instanceIndex,
-        toolName,
+        toolNameToUse,
         toolArgs
       );
 
@@ -600,13 +627,13 @@ export class HubToolsService {
         requestId,
         serverName,
         serverIndex: instanceIndex,
-        toolName,
+        toolName: toolNameToUse,
         timestamp: Date.now(),
         result
       });
 
       logger.debug(
-        `Tool call SUCCESS: serverName=${serverName}, toolName=${toolName}`,
+        `Tool call SUCCESS: serverName=${serverName}, toolName=${toolNameToUse}`,
         LOG_MODULES.HUB_TOOLS
       );
       return result;
@@ -616,14 +643,14 @@ export class HubToolsService {
         requestId,
         serverName,
         serverIndex: instanceIndex,
-        toolName,
+        toolName: toolNameToUse,
         timestamp: Date.now(),
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
 
       logger.error(
-        `Tool call FAILED: serverName=${serverName}, toolName=${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
+        `Tool call FAILED: serverName=${serverName}, toolName=${toolNameToUse}, error=${error instanceof Error ? error.message : String(error)}`,
         error,
         LOG_MODULES.HUB_TOOLS
       );

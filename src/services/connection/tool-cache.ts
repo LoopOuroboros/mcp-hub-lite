@@ -1,6 +1,7 @@
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import { getCompositeKey } from '@utils/composite-key.js';
+import { normalizeToolName } from '@utils/name-converter.js';
 
 /**
  * Manages tool caching for MCP connections at both composite key and server name levels.
@@ -127,7 +128,8 @@ export class ToolCache {
    */
   getTool(serverName: string, toolName: string): Tool | undefined {
     const tools = this.serverNameToolCache.get(serverName);
-    return tools?.find((t) => t.name === toolName);
+    const normalized = normalizeToolName(toolName);
+    return tools?.find((t) => normalizeToolName(t.name) === normalized);
   }
 
   /**

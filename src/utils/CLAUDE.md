@@ -33,7 +33,8 @@ utils/
 ├── port-checker.ts          # 端口检查
 ├── mcp-error-handler.ts     # MCP 错误处理
 ├── error-handler.ts         # 错误处理
-└── tool-args-parser.ts      # 工具参数解析器
+├── tool-args-parser.ts      # 工具参数解析器
+├── name-converter.ts        # 名称规范化工具（工具名称格式转换）
 ```
 
 ## 核心工具
@@ -380,6 +381,7 @@ utils/
 ├── error-handler.ts       # 无依赖
 ├── request-context.ts     # 无依赖
 ├── tool-args-parser.ts    # 无依赖
+├── name-converter.ts       # 无依赖
 └── transports/
     ├── transport.interface.ts      # 无依赖
     ├── transport-factory.ts      # 依赖其他 transport
@@ -433,6 +435,7 @@ A: 在配置文件中设置 `logging.rotation` 相关参数，或使用环境变
 | `utils/error-handler.ts`                        | 错误处理                      |
 | `utils/request-context.ts`                      | 请求上下文                    |
 | `utils/tool-args-parser.ts`                     | 工具参数解析                  |
+| `utils/name-converter.ts`                      | 名称规范化工具                |
 | `utils/transports/stdio-transport.ts`           | Stdio 传输（含 LineBuffer）   |
 | `utils/transports/transport.interface.ts`       | 传输接口                      |
 | `utils/transports/transport-factory.ts`         | 传输工厂（支持 serverId）     |
