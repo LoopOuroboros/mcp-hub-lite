@@ -2,7 +2,7 @@ import type { JsonSchema } from '@shared-models/tool.model.js';
 import {
   SYSTEM_TOOL_NAMES,
   LIST_SERVERS_TOOL,
-  LIST_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL
@@ -41,6 +41,7 @@ export interface SystemToolDefinition {
  * - list-tools-in-server: List tools from a specific server
  * - get-tool: Get complete tool schema
  * - call-tool: Call a specific tool from a specific server
+ * - update-server-description: Update the description of a specific MCP server
  *
  * @returns {Array<{ name: string; description: string; inputSchema: JsonSchema; annotations?: ToolAnnotations }>}
  * Array of system tool configurations
@@ -74,7 +75,7 @@ export function getSystemTools(): SystemToolDefinition[] {
           }
         });
         break;
-      case LIST_TOOLS_IN_SERVER_TOOL:
+      case LIST_TOOLS_TOOL:
         systemTools.push({
           name: toolName,
           description: 'List all tools from a specific server',
@@ -134,7 +135,7 @@ export function getSystemTools(): SystemToolDefinition[] {
           name: toolName,
           description:
             'Call a specific tool from an external MCP server. ' +
-            'System tools (list_servers, list_tools_in_server, get_tool, update_server_description) ' +
+            'System tools (list_servers, list_tools, get_tool, update_server_description) ' +
             'must be called directly via tools/call, not through this tool.',
           inputSchema: {
             type: 'object',

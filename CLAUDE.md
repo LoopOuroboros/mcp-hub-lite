@@ -47,6 +47,13 @@ graph TD
     B --> B7["pid/"];
     B --> B8["server/"];
 
+    B2 --> B2a["gateway/"];
+    B2 --> B2b["connection/"];
+    B2 --> B2c["hub-tools/"];
+
+    B5 --> B5a["logger/"];
+    B5 --> B5b["transports/"];
+
     C --> C1["src/components/"];
     C --> C2["src/views/"];
     C --> C3["src/stores/"];
@@ -71,6 +78,13 @@ graph TD
     click B6 "./src/cli/CLAUDE.md" "查看 CLI 模块文档"
     click B7 "./src/pid/CLAUDE.md" "查看 PID 模块文档"
     click B8 "./src/server/CLAUDE.md" "查看 Server 模块文档"
+
+    click B2a "./src/services/gateway/CLAUDE.md" "查看 Gateway 子模块文档"
+    click B2b "./src/services/connection/CLAUDE.md" "查看 Connection 子模块文档"
+    click B2c "./src/services/hub-tools/CLAUDE.md" "查看 Hub Tools 子模块文档"
+
+    click B5a "./src/utils/logger/CLAUDE.md" "查看 Logger 子模块文档"
+    click B5b "./src/utils/transports/CLAUDE.md" "查看 Transports 子模块文档"
 
     click C1 "./frontend/src/components/CLAUDE.md" "查看 Components 模块文档"
     click C2 "./frontend/src/views/CLAUDE.md" "查看 Views 模块文档"
@@ -204,6 +218,7 @@ npm run ui
 | `mcp-hub-lite status`             | 查看服务状态         |
 | `mcp-hub-lite ui`                 | 打开Web UI           |
 | `mcp-hub-lite list`               | 列出所有MCP服务器    |
+| `mcp-hub-lite tool-use`           | MCP工具操作命令      |
 
 ### 服务器配置
 
@@ -357,7 +372,7 @@ npm run list
 服务重启后，由 ClaudeCode 逐个调用测试以下 MCP 网关系统工具：
 
 - `list_servers` - 验证服务器列表返回正确
-- `list_tools_in_server` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
+- `list_tools` - 验证工具列表功能正常（**必须测试 `serverName = mcp-hub-lite`**）
 - `get_tool` - 验证工具详情获取功能（**必须测试 `serverName = mcp-hub-lite` 的系统工具**）
 - `call_tool` - 验证工具调用功能（如适用）
 - `update_server_description` - 验证服务器描述更新功能（**必须测试 `serverName = mcp-hub-lite`**，预期返回 "Server not found"，因为网关自身不是可配置的服务器）

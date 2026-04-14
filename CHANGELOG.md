@@ -1,5 +1,146 @@
 # Changelog
 
+## 2026-04-14
+
+- **CLI Fix**: Fix CLI entry detection for Windows/npm symlink environments
+- **CLI Refactor**: Fix command count and rename mcpToolUseCommand to toolUseCommand
+- **Config Refactor**: Change config loading logs from info to debug level
+- **Docs**: Complete CLAUDE.md documentation for all submodules
+- **Test**: Add unit tests for normalizeToolName function
+- **System Tools Refactor**: Rename list_tools_in_server to list_tools
+- **Core Feature**: Add normalizeToolName for cross-format tool name matching
+- **CLI Feature**: Add tool-use command for MCP server tool operations
+- **Version**: Bump version to 1.1.1
+- **Gateway Feature**: Implement per-request transport mode to fix connection errors
+
+## 2026-04-13
+
+- **Deps**: Add undici dependency for HTTP transport
+- **Frontend Fix**: Prevent runtime error when tool is undefined in groupedTools
+- **Version**: Bump version to 1.1.0
+- **Core Refactor**: Use composite key serverName-serverIndex instead of serverId
+- **Resource Feature**: Implement MCP native resource forwarding
+- **Docs**: Update search functionality description in CLAUDE.md
+- **Hub Tools Refactor**: Add non-strict mode to selectBestInstance
+- **Search Refactor**: Remove complex search module, simplify to string matching
+- **Test Refactor**: Remove evaluation tests not compliant with MCP spec
+
+## 2026-04-12
+
+- **Config Refactor**: Move instance selection strategy to template
+- **Frontend Refactor**: Improve type declarations and test type safety
+- **Frontend Refactor**: Compute instance counts from server.instances directly
+- **Gateway Feature**: Restrict call_tool from invoking system tools
+- **Docs**: Compress use-guide from 13 to 7 sections
+- **Gateway Fix**: Return 400 for missing Accept header
+
+## 2026-04-10
+
+- **Transport Refactor**: Use official SDK StdioClientTransport
+- **Stdio Transport Refactor**: Log non-JSON-RPC stdout and unify stderr log level
+- **Frontend Fix**: Fix tools and resources not displaying in server detail
+- **Frontend Fix**: Add description field to ConfigTemplateForm
+- **Tools Fix**: Handle nested toolArgs in updateServerDescription
+
+## 2026-04-09
+
+- **Security Feature**: Mask sensitive values in config change logs
+- **Frontend Fix**: Improve instance status reactivity and management
+- **i18n Fix**: Improve noToolsFound message to reflect tool aggregation
+- **Frontend Fix**: Add bottom padding to prevent save button cutoff on scroll
+- **Gateway Refactor**: Extract version and protocol version to shared utility
+- **Config Refactor**: Unify instance ID generation with content hash
+
+## 2026-04-08
+
+- **MCP Status Fix**: Prevent automatic enabled field updates on connect/disconnect
+- **Chore**: Update .gitignore to ignore .full-review directory
+
+## 2026-04-07
+
+- **Frontend Fix**: Fix TypeScript type errors in component event handlers
+
+## 2026-04-04
+
+- **Test Refactor**: Simplify ServerStatusTags tests with mocks
+- **Config Feature**: Sort env and headers keys on config save
+- **Proxy Feature**: Add proxy configuration support for SSE and Streamable HTTP transports
+
+## 2026-04-03
+
+- **Config Feature**: Sort env and headers keys on config save
+- **Config Refactor**: Optimize updateServerInstance logging
+- **Connection Refactor**: Improve serverId handling and protocol version support
+
+## 2026-04-02
+
+- **Docs**: Update CLAUDE.md documentation for logging and composables
+- **Logging Refactor**: Enhance transport logging with serverId context
+- **Transports Feature**: Add LineBuffer for proper stderr line buffering
+- **Logging Refactor**: Enhance logging module and configuration change tracking
+- **Docs**: Update CLAUDE.md documentation for v1.1 config refactor
+
+## 2026-04-01
+
+- **Config Refactor**: Complete v1.1 multi-instance configuration refactoring
+- **Docs**: Update CLAUDE.md files to reflect session removal
+- **Session Refactor**: Remove session persistence mechanism and use SDK native stateless mode
+- **Session Refactor**: Remove session persistence mechanism
+
+## 2026-03-31
+
+- **UI Fix**: Ensure log viewer area fills available container height
+- **Frontend Feature**: Add instance tab routing synchronization
+
+## 2026-03-29
+
+- **i18n Fix**: Correct missing translation key in InstanceConfig component
+
+## 2026-03-28
+
+- **Hub Tools Feature**: Implement instance selection strategies
+
+## 2026-03-27
+
+- **Docs**: Update CLAUDE.md files across project modules
+- **Session Feature**: Remove cwd and project fields from session management
+- **UI Fix**: Optimize instance list display in English and hide redundant Running tag
+- **Config Fix**: Ensure server instance indexes from config load and migration
+
+## 2026-03-26
+
+- **Config Feature**: Implement v1.1 instance configuration system
+
+## 2026-03-25
+
+- **Config Fix**: Support string index type for server instance operations
+- **Docs**: Update CLAUDE.md files to reflect recent v1.1 config changes
+- **Config Feature**: Enhance instance management with display name and route selection
+
+## 2026-03-24
+
+- **Config Refactor**: Activate v1.1 config format with instance support
+- **Gateway Fix**: Only include tools from servers with allowedTools configured
+- **Hub Tools Fix**: Support both toolArgs and arguments for backward compatibility
+
+## 2026-03-23
+
+- **Config Refactor**: Activate v1.1 config format, remove v1.0 compatibility code
+- **Config Feature**: Add empty value cleaning when saving config
+
+## 2026-03-20
+
+- **UI Fix**: Correct dark mode background color and refine instance UI
+- **UI Feature**: Add server instance management UI components
+- **Config Feature**: Add index and displayName to ServerInstanceConfig with reassignment API
+- **UI Feature**: Add tag management UI with TagManager component
+- **Config Feature**: Add v1.1 config schema with auto-migration support
+
+## 2026-03-19
+
+- **i18n Fix**: Fix headers label and add button text in server config
+- **UI Feature**: Add description field support in AddServerModal
+
 ## 2026-03-17
 
 - **UI Enhancement**: Update resource detail and list views with hub tools integration

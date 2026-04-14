@@ -10,7 +10,7 @@ import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import {
   LIST_SERVERS_TOOL,
-  LIST_TOOLS_IN_SERVER_TOOL,
+  LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL
@@ -37,7 +37,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   // List all tools in a specific server
   const ListToolsInServerRequestSchema = z.object({
-    method: z.literal(LIST_TOOLS_IN_SERVER_TOOL),
+    method: z.literal(LIST_TOOLS_TOOL),
     params: z.object({
       serverName: z.string(),
       requestOptions: z

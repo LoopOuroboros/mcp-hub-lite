@@ -2,7 +2,7 @@
 
 /**
  * MCP Hub Lite CLI Entry Point
- * Implements 6 core commands: start, stop, status, ui, list, restart
+ * Implements 7 core commands: start, stop, status, ui, list, restart, tool-use
  */
 
 import { Command } from 'commander';
@@ -15,6 +15,41 @@ import { statusCommand } from '@cli/commands/status.js';
 import { uiCommand } from '@cli/commands/ui.js';
 import { listCommand } from '@cli/commands/list.js';
 import { restartCommand } from '@cli/commands/restart.js';
+import { toolUseCommand } from '@cli/commands/tool-use.js';
+
+/**
+ * Check if the CLI is being executed directly (vs imported as module)
+ * Handles Windows/npm symlink path resolution issues by comparing package paths
+ */
+function isCliEntry(): boolean {
+  if (!argv[1]) {
+    return false;
+  }
+  const currentUrl = import.meta.url;
+  const argvUrl = pathToFileURL(argv[1]).href;
+
+  // Extract pathname and normalize for comparison
+  const normalizePath = (url: string): string => {
+    // Convert file:// URL to pathname and normalize separators
+    const urlObj = new URL(url);
+    return urlObj.pathname.replace(/\//g, '/');
+  };
+
+  const currentPath = normalizePath(currentUrl);
+  const argvPath = normalizePath(argvUrl);
+
+  // Extract package path suffix for comparison
+  // Both paths contain mcp-hub-lite/dist, extract that common suffix
+  const getPackagePath = (path: string): string | null => {
+    const match = path.match(/mcp-hub-lite[\/\\]dist/);
+    return match ? match[0] : null;
+  };
+
+  const currentPackagePath = getPackagePath(currentPath);
+  const argvPackagePath = getPackagePath(argvPath);
+
+  return currentPackagePath !== null && currentPackagePath === argvPackagePath;
+}
 
 /**
  * Creates and configures the CLI application using Commander.js
@@ -23,13 +58,14 @@ import { restartCommand } from '@cli/commands/restart.js';
  * then registers all available commands to provide a complete command-line interface
  * for managing the MCP Hub Lite service.
  *
- * The CLI provides six core commands:
+ * The CLI provides seven core commands:
  * - start: Launches the MCP Hub Lite service in daemon or foreground mode
  * - stop: Gracefully terminates the running service instance
  * - status: Displays current service status including PID, port, host, and server count
  * - ui: Opens the web-based user interface in the default browser
  * - list: Shows all configured MCP servers in a tabular format
  * - restart: Stops and restarts the service with the same configuration
+ * - tool-use: Manage MCP server tools via API (list-servers, list-tools, get-tool, call-tool)
  *
  * Usage examples:
  * ```bash
@@ -69,6 +105,7 @@ import { restartCommand } from '@cli/commands/restart.js';
  * @see {@link uiCommand} - Implementation of the ui command
  * @see {@link listCommand} - Implementation of the list command
  * @see {@link restartCommand} - Implementation of the restart command
+ * @see {@link toolUseCommand} - Implementation of the tool-use command
  */
 export function createCli(): Command {
   const program = new Command();
@@ -85,12 +122,13 @@ export function createCli(): Command {
   program.addCommand(uiCommand);
   program.addCommand(listCommand);
   program.addCommand(restartCommand);
+  program.addCommand(toolUseCommand);
 
   return program;
 }
 
 // Execute the CLI if this file is run directly
-if (argv[1] && pathToFileURL(argv[1]).href === import.meta.url) {
+if (isCliEntry()) {
   const cli = createCli();
   cli.parse();
 }
