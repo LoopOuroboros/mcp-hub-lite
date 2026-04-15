@@ -1070,6 +1070,9 @@ export const useServerStore = defineStore('server', () => {
       const response = await http.get<{
         contents: { uri: string; mimeType: string; text?: string; blob?: string }[];
       }>(url);
+      if (!response.contents || response.contents.length === 0) {
+        throw new Error('Resource content is empty');
+      }
       return response.contents[0];
     } catch (e: unknown) {
       console.error('Failed to read resource:', e);
