@@ -324,4 +324,8 @@ MIT
 
 Pull Requests and Issues are welcome!
 
+## Community
+
+Thanks to the LinuxDo (linux.do) community for the discussions, sharing, and feedback.
+
 <!-- Badges -->
