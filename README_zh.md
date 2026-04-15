@@ -324,4 +324,8 @@ MIT
 
 欢迎提交 Pull Request 和 Issue！
 
+## 社区
+
+感谢 LinuxDo (linux.do) 社区的讨论、分享和反馈。
+
 <!-- Badges -->
