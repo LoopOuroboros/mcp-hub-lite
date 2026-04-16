@@ -1,38 +1,31 @@
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
-import { resolveInstanceConfig } from '@config/config-migrator.js';
 import { logger } from '@utils/logger.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import { gateway } from '@services/gateway.service.js';
 import { PidManager } from '@pid/manager.js';
-import { checkPort } from '@utils/port-checker.js';
+import { checkPortWithExit } from '@utils/port-checker.js';
+import { collectConnectTasks, executeConnectTasks } from './startup.js';
 
 /**
- * Starts the MCP Hub Lite server in either HTTP mode or stdio MCP gateway mode.
+ * Starts the MCP Hub Lite server.
  *
  * This function is the main entry point for running the MCP Hub Lite server in production.
- * It handles two distinct operational modes:
- *
- * 1. **HTTP Server Mode** (default): Runs a full Fastify HTTP server with REST API,
- *    WebSocket support, and web interface on the specified host and port.
- *
- * 2. **Stdio MCP Gateway Mode**: Runs as an MCP (Model Context Protocol) gateway
- *    that communicates via stdin/stdout streams, suitable for integration with
- *    MCP-compatible clients like IDEs or AI assistants.
+ * It handles the HTTP server mode with REST API, WebSocket support, and web interface
+ * on the specified host and port.
  *
  * The function performs the following key operations:
- * - Validates and checks port availability (HTTP mode only)
- * - Automatically connects to all enabled MCP servers from configuration
+ * - Validates and checks port availability
+ * - Starts the Fastify HTTP server
+ * - Triggers connection to all enabled MCP servers from configuration
  * - Sets up graceful shutdown handlers for SIGTERM and SIGINT signals
  * - Manages PID file creation and cleanup for process tracking
  * - Handles both successful startup and error scenarios with appropriate logging
  *
  * @param options - Configuration options for server startup
- * @param options.stdio - When true, runs in stdio MCP gateway mode instead of HTTP server mode
- * @param options.port - Override the configured port number (HTTP mode only)
- * @param options.host - Override the configured host address (HTTP mode only)
+ * @param options.port - Override the configured port number
+ * @param options.host - Override the configured host address
  *
  * @returns Promise that resolves when the server is successfully started,
  *          or rejects with an error if startup fails
@@ -41,130 +34,42 @@ import { checkPort } from '@utils/port-checker.js';
  *                 or other critical issues. The process will exit with code 1 in such cases.
  *
  * @example
- * // Start in default HTTP mode
+ * // Start with default config
  * await runServer();
  *
  * @example
- * // Start in stdio MCP gateway mode
- * await runServer({ stdio: true });
- *
- * @example
- * // Start HTTP server on custom port and host
+ * // Start on custom port and host
  * await runServer({ port: 8080, host: '0.0.0.0' });
  *
  * @remarks
- * - In HTTP mode, the function will check if the specified port is already in use
- *   and provide detailed error messages for port conflicts
- * - In stdio mode, port checking is skipped as no network ports are used
+ * - The function will check if the specified port is already in use and provide
+ *   detailed error messages for port conflicts
  * - The function automatically connects to all enabled servers configured in .mcp-hub.json
  * - Graceful shutdown ensures proper cleanup of connections and PID files when receiving termination signals
  * - This function is typically called from the CLI entry point (`src/index.ts`)
  */
-export async function runServer(options: { stdio?: boolean; port?: number; host?: string } = {}) {
+export async function runServer(options: { port?: number; host?: string } = {}) {
   try {
-    const isStdio = options.stdio || false;
-
-    if (isStdio) {
-      logger.setUseStderr(true);
-      logger.info('Starting in MCP Gateway mode (stdio)...', LOG_MODULES.SERVER);
-    }
-
     const config = configManager.getConfig();
 
     // Set config getter for json-utils to use config from configManager
     setJsonPrettyConfigGetter(() => configManager.getConfig());
 
-    const app = isStdio ? null : await buildApp();
+    const app = await buildApp();
 
     // Override config with options if provided
     const host = options.host || config.system.host;
     const port = options.port || config.system.port;
 
-    // Check if port is already in use (only for HTTP mode)
-    if (!isStdio) {
-      const portCheck = await checkPort(port);
-      if (portCheck.inUse) {
-        if (portCheck.isSelfProject) {
-          // This project is already running
-          logger.error(
-            `MCP Hub Lite is already running on port ${port} (PID: ${portCheck.pid})`,
-            LOG_MODULES.SERVER
-          );
-          logger.error(
-            `Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.`,
-            LOG_MODULES.SERVER
-          );
-          process.exit(1);
-        } else {
-          // Port is occupied by another application
-          logger.error(
-            `Port ${port} is already in use by another application:`,
-            LOG_MODULES.SERVER
-          );
-          logger.error(
-            `  Process: ${portCheck.processName} (PID: ${portCheck.pid})`,
-            LOG_MODULES.SERVER
-          );
-          if (portCheck.commandLine) {
-            logger.error(`  Command: ${portCheck.commandLine}`, LOG_MODULES.SERVER);
-          }
-          logger.error(
-            `Please stop the conflicting application or use a different port.`,
-            LOG_MODULES.SERVER
-          );
-          process.exit(1);
-        }
-      }
-    }
-
-    // Auto-connect to enabled servers
-    logger.info('Initializing server connections...', LOG_MODULES.SERVER);
-    const serverConfigs = configManager.getServers();
-    for (const { name: serverName, config: serverConfig } of serverConfigs) {
-      // Check if there are existing instances
-      const existingInstances = configManager.getServerInstancesByName(serverName);
-      if (existingInstances.length === 0) {
-        // Auto-create instance for enabled servers
-        try {
-          const newInstance = await configManager.addServerInstance(serverName, {});
-          // Connect the new instance
-          const resolvedConfig = resolveInstanceConfig(serverConfig, newInstance.id);
-          if (resolvedConfig && resolvedConfig.enabled !== false) {
-            mcpConnectionManager
-              .connect(serverName, newInstance.index ?? 0, {
-                ...resolvedConfig,
-                id: newInstance.id
-              })
-              .catch((err) => {
-                logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.SERVER);
-              });
-          }
-        } catch (err) {
-          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.SERVER);
-        }
-      } else {
-        // Connect existing instances
-        existingInstances.forEach((instance) => {
-          if (instance.enabled !== false) {
-            const resolvedConfig = resolveInstanceConfig(serverConfig, instance.id);
-            if (resolvedConfig) {
-              mcpConnectionManager
-                .connect(serverName, instance.index ?? 0, { ...resolvedConfig, id: instance.id })
-                .catch((err) => {
-                  logger.error(`Failed to auto-connect to ${serverName}:`, err, LOG_MODULES.SERVER);
-                });
-            }
-          }
-        });
-      }
-    }
+    // Check if port is already in use
+    await checkPortWithExit(port);
 
     // Setup signal handlers for graceful shutdown
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`, LOG_MODULES.SERVER);
       try {
         await mcpConnectionManager.disconnectAll();
-        if (!isStdio && app) {
+        if (app) {
           await app.close();
         }
         PidManager.removePid();
@@ -179,16 +84,29 @@ export async function runServer(options: { stdio?: boolean; port?: number; host?
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
 
-    if (isStdio) {
-      await gateway.start();
-      // Write PID after gateway starts successfully
-      PidManager.writePid();
-    } else {
-      await app!.listen({ port, host });
-      logger.info(`MCP Hub Lite Server running at http://${host}:${port}`, LOG_MODULES.SERVER);
-      // Write PID after server starts successfully
-      PidManager.writePid();
+    // Start listening FIRST, then trigger connection tasks
+    await app.listen({ port, host });
+    logger.info(`MCP Hub Lite Server running at http://${host}:${port}`, LOG_MODULES.SERVER);
+    // Write PID after server starts successfully
+    PidManager.writePid();
+
+    // Auto-create instances for enabled servers without existing instances
+    const serverConfigs = configManager.getServers();
+    for (const { name: serverName } of serverConfigs) {
+      const existingInstances = configManager.getServerInstancesByName(serverName);
+      if (existingInstances.length === 0) {
+        try {
+          await configManager.addServerInstance(serverName, {});
+        } catch (err) {
+          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.SERVER);
+        }
+      }
     }
+
+    // Trigger connection tasks (fire-and-forget, with sequential delay)
+    const tasks = collectConnectTasks();
+    const baseDelay = config.system.startup?.startupDelay ?? 3000;
+    executeConnectTasks(tasks, baseDelay, LOG_MODULES.SERVER);
   } catch (err) {
     logger.error('Failed to start server:', err, LOG_MODULES.SERVER);
     // Clean up PID file if it exists

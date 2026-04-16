@@ -1,10 +1,10 @@
 import { buildApp } from '@src/app.js';
 import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
-import { resolveInstanceConfig } from '@config/config-migrator.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
+import { collectConnectTasks, executeConnectTasks } from './startup.js';
 
 // Set log level to debug for development server
 logger.setLevel('debug');
@@ -22,7 +22,6 @@ let app: FastifyInstance | null = null;
  * - Debug-level logging enabled for detailed development insights
  * - Development log file output for persistent debugging information
  * - Automatic connection to all enabled MCP servers configured in the system
- * - OpenTelemetry tracing initialization for observability
  * - PID file management for process tracking
  * - Graceful shutdown handling for SIGTERM and SIGINT signals
  *
@@ -60,7 +59,6 @@ let app: FastifyInstance | null = null;
  * @see {@link buildApp} - Creates the Fastify application instance
  * @see {@link configManager} - Manages server configuration and MCP server instances
  * @see {@link mcpConnectionManager} - Handles MCP server connections and communication
- * @see {@link telemetryManager} - Manages OpenTelemetry tracing and observability
  * @see {@link PidManager} - Handles PID file creation and cleanup
  */
 async function startDevServer() {
@@ -74,57 +72,7 @@ async function startDevServer() {
     app = await buildApp();
     const config = configManager.getConfig();
 
-    // Auto-connect to enabled servers
-    logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
-    const serverConfigs = configManager.getServers();
-    for (const { name: serverName, config: serverConfig } of serverConfigs) {
-      // Check if there are existing instances
-      const existingInstances = configManager.getServerInstancesByName(serverName);
-      if (existingInstances.length === 0) {
-        // Auto-create instance for enabled servers
-        try {
-          const newInstance = await configManager.addServerInstance(serverName, {});
-          // Connect the new instance
-          const resolvedConfig = resolveInstanceConfig(serverConfig, newInstance.id);
-          if (resolvedConfig && resolvedConfig.enabled !== false) {
-            mcpConnectionManager
-              .connect(serverName, newInstance.index ?? 0, {
-                ...resolvedConfig,
-                id: newInstance.id
-              })
-              .catch((err) => {
-                logger.error(
-                  `Failed to auto-connect to ${serverName}:`,
-                  err,
-                  LOG_MODULES.DEV_SERVER
-                );
-              });
-          }
-        } catch (err) {
-          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
-        }
-      } else {
-        // Connect existing instances
-        existingInstances.forEach((instance) => {
-          if (instance.enabled !== false) {
-            const resolvedConfig = resolveInstanceConfig(serverConfig, instance.id);
-            if (resolvedConfig) {
-              mcpConnectionManager
-                .connect(serverName, instance.index ?? 0, { ...resolvedConfig, id: instance.id })
-                .catch((err) => {
-                  logger.error(
-                    `Failed to auto-connect to ${serverName}:`,
-                    err,
-                    LOG_MODULES.DEV_SERVER
-                  );
-                });
-            }
-          }
-        });
-      }
-    }
-
-    // Listen on configured port
+    // Start listening FIRST, then trigger connection tasks
     await app.listen({
       port: config.system.port,
       host: config.system.host
@@ -136,6 +84,25 @@ async function startDevServer() {
 
     // Write PID file after server starts successfully
     PidManager.writePid();
+
+    // Auto-create instances for enabled servers without existing instances
+    const serverConfigs = configManager.getServers();
+    for (const { name: serverName } of serverConfigs) {
+      const existingInstances = configManager.getServerInstancesByName(serverName);
+      if (existingInstances.length === 0) {
+        try {
+          await configManager.addServerInstance(serverName, {});
+        } catch (err) {
+          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
+        }
+      }
+    }
+
+    // Trigger connection tasks (fire-and-forget, with sequential delay)
+    logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
+    const tasks = collectConnectTasks();
+    const baseDelay = config.system.startup?.startupDelay ?? 3000;
+    executeConnectTasks(tasks, baseDelay, LOG_MODULES.DEV_SERVER);
   } catch (err) {
     logger.error('Failed to start dev server:', err, LOG_MODULES.DEV_SERVER);
     // Clean up PID file if it exists
@@ -150,7 +117,6 @@ async function startDevServer() {
  * This function performs a clean shutdown sequence to ensure:
  * - All MCP server connections are properly disconnected
  * - The Fastify HTTP server is closed gracefully
- * - OpenTelemetry tracing resources are properly shut down
  * - PID file is removed to prevent stale process detection
  * - All resources are cleaned up before process exit
  *

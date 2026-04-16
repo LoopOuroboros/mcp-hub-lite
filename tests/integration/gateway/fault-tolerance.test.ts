@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
+import { configManager } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
 
 // Mock MCP SDK Client
@@ -37,8 +38,18 @@ describe('Gateway Fault Tolerance', () => {
   let mockServerInstance: { id: string; index: number; timestamp: number };
 
   beforeEach(async () => {
-    // Clear all mocks
+    // Clear mock call history
     vi.clearAllMocks();
+
+    // Mock config to reduce retry delay in tests (maxRetries: 1, delay: 10ms)
+    vi.spyOn(configManager, 'getConfig').mockReturnValue({
+      system: {
+        startup: {
+          maxConnectRetries: 1,
+          connectRetryDelay: 10
+        }
+      }
+    } as ReturnType<typeof configManager.getConfig>);
 
     // Add test server (v1.1 format)
     await hubManager.addServer('test-server', {
@@ -63,7 +74,8 @@ describe('Gateway Fault Tolerance', () => {
   });
 
   it('should handle connection failure gracefully', async () => {
-    mockConnect.mockRejectedValueOnce(new Error('Connection failed'));
+    // Use mockRejectedValue instead of mockRejectedValueOnce to avoid retry delay
+    mockConnect.mockRejectedValue(new Error('Connection failed'));
 
     // Directly use hubManager.getServerById to get complete server configuration
     const serverInfo = hubManager.getServerById(mockServerInstance.id);

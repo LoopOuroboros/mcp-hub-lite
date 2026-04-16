@@ -13,12 +13,17 @@ export class TransportFactory {
    * Create transport client
    * @param server Server configuration, including base configuration and instance configuration
    * @param compositeKey Optional composite key (serverName-serverIndex) for log storage integration
+   * @param options Optional transport options including readyPatterns and readyTimeout
    * @returns Transport client instance
    * @throws Error if server type is not supported or configuration is invalid
    */
   static createTransport(
     server: ServerRuntimeConfig & { name: string },
-    compositeKey?: string
+    compositeKey?: string,
+    options?: {
+      readyPatterns?: string[];
+      readyTimeout?: number;
+    }
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
 
@@ -41,7 +46,9 @@ export class TransportFactory {
           server.name,
           {
             compositeKey,
-            logStorage: compositeKey ? logStorage : undefined
+            logStorage: compositeKey ? logStorage : undefined,
+            readyPatterns: options?.readyPatterns,
+            readyTimeout: options?.readyTimeout ?? 120000
           }
         );
 

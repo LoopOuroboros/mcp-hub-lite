@@ -48,10 +48,7 @@ export class HubManagerService {
    */
   async addServerInstancesWithoutConnect(serverNames: string[]): Promise<void> {
     for (const name of serverNames) {
-      await this.configManager.addServerInstance(name, {});
-      const instances = this.getServerInstancesByName(name);
-      const lastInstance = instances[instances.length - 1];
-      eventBus.publish(EventTypes.SERVER_INSTANCE_ADDED, { name, instance: lastInstance });
+      await this.addServerInstance(name, {});
     }
   }
 
@@ -164,6 +161,8 @@ export class HubManagerService {
 
   /**
    * Adds a new instance to an existing server.
+   * Note: This method only creates the instance without auto-connect.
+   * Use connectServerInstances() explicitly to connect after adding instances.
    */
   async addServerInstance(
     name: string,
@@ -171,22 +170,6 @@ export class HubManagerService {
   ): Promise<ServerInstance> {
     const newInstance = await this.configManager.addServerInstance(name, instance);
     logger.info(`Server instance added for server: [${name}]`, LOG_MODULES.HUB_MANAGER);
-
-    const resolvedConfig = this.getResolvedServerConfig(name, newInstance.id);
-    if (resolvedConfig && resolvedConfig.enabled !== false) {
-      try {
-        await mcpConnectionManager.connect(name, newInstance.index ?? 0, {
-          ...resolvedConfig,
-          id: newInstance.id
-        });
-      } catch (error) {
-        logger.error(
-          `Failed to auto-connect server instance for ${name}:`,
-          error,
-          LOG_MODULES.HUB_MANAGER
-        );
-      }
-    }
 
     eventBus.publish(EventTypes.SERVER_INSTANCE_ADDED, { name, instance: newInstance });
     return newInstance;

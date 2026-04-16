@@ -18,6 +18,7 @@ import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import type { ServerInstanceConfig } from '@config/config.schema.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import type { ServerConfig, ServerInstance } from '@config/config-manager.js';
+import { configManager } from '@config/config-manager.js';
 import type { ServerStatus } from './types.js';
 import { ToolCache } from './tool-cache.js';
 import { getCompositeKey } from '@utils/composite-key.js';
@@ -122,257 +123,293 @@ export class McpConnectionManager {
     const serverId = server.id || 'unknown';
     const compositeKey = getCompositeKey(serverName, serverIndex);
 
-    try {
-      // Validate server configuration
-      if (!server.id) {
-        throw new Error('Server ID is required');
-      }
+    // Read retry configuration from startup settings
+    const maxRetries = configManager.getConfig().system.startup?.maxConnectRetries ?? 3;
+    const baseRetryDelay = configManager.getConfig().system.startup?.connectRetryDelay ?? 5000;
 
-      logger.info(
-        `Connecting to server [${compositeKey}] (${serverId})...`,
-        LOG_MODULES.CONNECTION_MANAGER
-      );
+    let lastError: Error | undefined;
 
-      // First set starting state (connected: false, no error)
-      this.serverStatus.set(compositeKey, {
-        connected: false,
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0
-      });
-
-      // Get server name from server instance ID (via hubManager.getServerById)
-      serverInfo = hubManager.getServerById(serverId);
-      if (!serverInfo) {
-        throw new Error(`Server not found for instance: ${serverId}`);
-      }
-
-      if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
-        throw new Error('STDIO server requires a valid command');
-      }
-
-      if (
-        (server.type === 'sse' || server.type === 'streamable-http' || server.type === 'http') &&
-        (!server.url || server.url.trim() === '')
-      ) {
-        const displayType = server.type === 'http' ? 'streamable-http' : server.type;
-        throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
-      }
-
-      // Create transport based on server type
-      const transport = TransportFactory.createTransport(
-        {
-          ...server,
-          name: serverName
-        },
-        compositeKey
-      );
-
-      // Always set up message handler for notifications/message
-      transport.onmessage = (message) => {
-        // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
-        if (getMcpCommDebugSetting()) {
-          const logMessage = formatMcpMessageForLogging(message);
-          logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+    // Retry loop for connection attempts
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Validate server configuration
+        if (!server.id) {
+          throw new Error('Server ID is required');
         }
 
-        // Log notifications/message to application logs (always enabled)
-        logNotificationMessage(message, serverName, compositeKey);
-      };
-
-      // Wrap send method for debug logging (if enabled)
-      if (getMcpCommDebugSetting()) {
-        const originalSend = transport.send;
-        transport.send = async (message, options) => {
-          try {
-            const logMessage = formatMcpMessageForLogging(message);
-            logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
-          } catch {
-            logger.debug(
-              `MCP message sent: [Error formatting response]`,
-              LOG_MODULES.CONNECTION_MANAGER
-            );
-          }
-
-          // Call original send method
-          return await originalSend.call(transport, message, options);
-        };
-      }
-
-      // Handle transport close events
-      if ('onclose' in transport) {
-        transport.onclose = () => {
-          logger.info(
-            `Transport closed for server [${compositeKey}]`,
-            LOG_MODULES.CONNECTION_MANAGER
-          );
-          const currentStatus = this.serverStatus.get(compositeKey);
-          // Only update status if it was previously connected or starting
-          if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
-            this.serverStatus.set(compositeKey, {
-              connected: false,
-              lastCheck: Date.now(),
-              toolsCount: 0,
-              resourcesCount: 0,
-              error: 'Connection closed unexpectedly'
-            });
-
-            // Publish server status change event
-            eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-              serverName,
-              serverIndex,
-              status: 'error',
-              error: 'Connection closed unexpectedly',
-              timestamp: Date.now()
-            });
-          }
-        };
-      }
-
-      // Add log listeners
-      if ('onstdout' in transport) {
-        transport.onstdout = (data: string) => {
-          // Skip JSON-RPC communication to avoid log noise
-          const trimmedData = data.trim();
-          if (trimmedData) {
-            // Check if it's a valid JSON-RPC message
-            let isJsonRpc = false;
-            if (trimmedData.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(trimmedData) as Record<string, unknown>;
-                // Only consider it JSON-RPC if it has valid jsonrpc field
-                isJsonRpc =
-                  typeof parsed.jsonrpc === 'string' &&
-                  (parsed.jsonrpc === '2.0' || parsed.jsonrpc === '1.0');
-              } catch {
-                // Not valid JSON, treat as log output
-                isJsonRpc = false;
-              }
-            }
-            if (!isJsonRpc) {
-              // Use composite key for log storage
-              logStorage.append(compositeKey, 'info', `[${serverName}] [STDOUT] ${data}`);
-            }
-          }
-        };
-      }
-      if ('onstderr' in transport) {
-        transport.onstderr = (data: string) => {
-          // Use composite key for log storage
-          logStorage.append(compositeKey, 'error', `[${serverName}] [STDERR] ${data}`);
-        };
-      }
-
-      const client = new Client(
-        {
-          name: MCP_HUB_LITE_SERVER,
-          version: getAppVersion()
-        },
-        {
-          capabilities: {}
-        }
-      );
-
-      await client.connect(transport);
-
-      this.clients.set(compositeKey, client);
-      this.transports.set(compositeKey, transport);
-      this._toolCache.setNameMapping(serverName, compositeKey);
-
-      // Register composite key for this server name
-      if (!this.serverNameToCompositeKeys.has(serverName)) {
-        this.serverNameToCompositeKeys.set(serverName, new Set());
-      }
-      this.serverNameToCompositeKeys.get(serverName)!.add(compositeKey);
-
-      // Get PID if available (only for stdio transport)
-      let pid: number | undefined;
-      if ('pid' in transport && typeof transport.pid === 'number') {
-        pid = transport.pid;
-      }
-
-      // Get server version
-      const clientServerInfo = client.getServerVersion();
-      const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
-
-      this.serverStatus.set(compositeKey, {
-        connected: true,
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0,
-        pid: pid,
-        startTime: Date.now(),
-        version: serverVersion
-      });
-
-      logger.info(`Connected to server [${compositeKey}]`, LOG_MODULES.CONNECTION_MANAGER);
-
-      // Publish server connected event
-      eventBus.publish(EventTypes.SERVER_CONNECTED, {
-        serverName,
-        serverIndex,
-        status: 'online',
-        timestamp: Date.now()
-      });
-
-      // Publish server status change event
-      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverName,
-        serverIndex,
-        status: 'online',
-        timestamp: Date.now()
-      });
-
-      // Fetch tools and resources immediately (only for bidirectional transports)
-      if (server.type !== 'sse') {
-        const tools = await this.refreshTools(serverName, serverIndex);
-        const resources = await this.refreshResources(serverName, serverIndex);
-
-        // Publish tools and resources updated event
-        eventBus.publish(EventTypes.TOOLS_UPDATED, {
-          serverName,
-          serverIndex,
-          tools
-        });
-
-        eventBus.publish(EventTypes.RESOURCES_UPDATED, {
-          serverName,
-          serverIndex,
-          resources
-        });
-      } else {
         logger.info(
-          'SSE transport is unidirectional, skipping tool/resource refresh',
+          `Connecting to server [${compositeKey}] (attempt ${attempt}/${maxRetries})...`,
           LOG_MODULES.CONNECTION_MANAGER
         );
+
+        // First set starting state (connected: false, no error)
+        this.serverStatus.set(compositeKey, {
+          connected: false,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0
+        });
+
+        // Get server name from server instance ID (via hubManager.getServerById)
+        serverInfo = hubManager.getServerById(serverId);
+        if (!serverInfo) {
+          throw new Error(`Server not found for instance: ${serverId}`);
+        }
+
+        if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
+          throw new Error('STDIO server requires a valid command');
+        }
+
+        if (
+          (server.type === 'sse' || server.type === 'streamable-http' || server.type === 'http') &&
+          (!server.url || server.url.trim() === '')
+        ) {
+          const displayType = server.type === 'http' ? 'streamable-http' : server.type;
+          throw new Error(`${displayType.toUpperCase()} server requires a valid URL`);
+        }
+
+        // Create transport based on server type
+        // Extract ready patterns from server template config (only for stdio type)
+        const readyPatterns =
+          server.type === 'stdio' ? (serverInfo.config.template.readyPatterns ?? []) : undefined;
+        const readyTimeout = configManager.getConfig().system.startup?.readyTimeout ?? 120000;
+
+        const transport = TransportFactory.createTransport(
+          {
+            ...server,
+            name: serverName
+          },
+          compositeKey,
+          {
+            readyPatterns,
+            readyTimeout
+          }
+        );
+
+        // Always set up message handler for notifications/message
+        transport.onmessage = (message) => {
+          // Communication debug logs: controlled by MCP_COMM_DEBUG environment variable
+          if (getMcpCommDebugSetting()) {
+            const logMessage = formatMcpMessageForLogging(message);
+            logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+          }
+
+          // Log notifications/message to application logs (always enabled)
+          logNotificationMessage(message, serverName, compositeKey);
+        };
+
+        // Wrap send method for debug logging (if enabled)
+        if (getMcpCommDebugSetting()) {
+          const originalSend = transport.send;
+          transport.send = async (message, options) => {
+            try {
+              const logMessage = formatMcpMessageForLogging(message);
+              logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+            } catch {
+              logger.debug(
+                `MCP message sent: [Error formatting response]`,
+                LOG_MODULES.CONNECTION_MANAGER
+              );
+            }
+
+            // Call original send method
+            return await originalSend.call(transport, message, options);
+          };
+        }
+
+        // Handle transport close events
+        if ('onclose' in transport) {
+          transport.onclose = () => {
+            logger.info(
+              `Transport closed for server [${compositeKey}]`,
+              LOG_MODULES.CONNECTION_MANAGER
+            );
+            const currentStatus = this.serverStatus.get(compositeKey);
+            // Only update status if it was previously connected or starting
+            if (currentStatus && (currentStatus.connected || !currentStatus.error)) {
+              this.serverStatus.set(compositeKey, {
+                connected: false,
+                lastCheck: Date.now(),
+                toolsCount: 0,
+                resourcesCount: 0,
+                error: 'Connection closed unexpectedly'
+              });
+
+              // Publish server status change event
+              eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+                serverName,
+                serverIndex,
+                status: 'error',
+                error: 'Connection closed unexpectedly',
+                timestamp: Date.now()
+              });
+            }
+          };
+        }
+
+        // Add log listeners
+        if ('onstdout' in transport) {
+          transport.onstdout = (data: string) => {
+            // Skip JSON-RPC communication to avoid log noise
+            const trimmedData = data.trim();
+            if (trimmedData) {
+              // Check if it's a valid JSON-RPC message
+              let isJsonRpc = false;
+              if (trimmedData.startsWith('{')) {
+                try {
+                  const parsed = JSON.parse(trimmedData) as Record<string, unknown>;
+                  // Only consider it JSON-RPC if it has valid jsonrpc field
+                  isJsonRpc =
+                    typeof parsed.jsonrpc === 'string' &&
+                    (parsed.jsonrpc === '2.0' || parsed.jsonrpc === '1.0');
+                } catch {
+                  // Not valid JSON, treat as log output
+                  isJsonRpc = false;
+                }
+              }
+              if (!isJsonRpc) {
+                // Use composite key for log storage
+                logStorage.append(compositeKey, 'info', `[${serverName}] [STDOUT] ${data}`);
+              }
+            }
+          };
+        }
+        if ('onstderr' in transport) {
+          transport.onstderr = (data: string) => {
+            // Use composite key for log storage
+            logStorage.append(compositeKey, 'error', `[${serverName}] [STDERR] ${data}`);
+          };
+        }
+
+        const client = new Client(
+          {
+            name: MCP_HUB_LITE_SERVER,
+            version: getAppVersion()
+          },
+          {
+            capabilities: {}
+          }
+        );
+
+        await client.connect(transport);
+
+        this.clients.set(compositeKey, client);
+        this.transports.set(compositeKey, transport);
+        this._toolCache.setNameMapping(serverName, compositeKey);
+
+        // Register composite key for this server name
+        if (!this.serverNameToCompositeKeys.has(serverName)) {
+          this.serverNameToCompositeKeys.set(serverName, new Set());
+        }
+        this.serverNameToCompositeKeys.get(serverName)!.add(compositeKey);
+
+        // Get PID if available (only for stdio transport)
+        let pid: number | undefined;
+        if ('pid' in transport && typeof transport.pid === 'number') {
+          pid = transport.pid;
+        }
+
+        // Get server version
+        const clientServerInfo = client.getServerVersion();
+        const serverVersion = clientServerInfo?.version || clientServerInfo?.name;
+
+        this.serverStatus.set(compositeKey, {
+          connected: true,
+          lastCheck: Date.now(),
+          toolsCount: 0,
+          resourcesCount: 0,
+          pid: pid,
+          startTime: Date.now(),
+          version: serverVersion
+        });
+
+        logger.info(`Connected to server [${compositeKey}]`, LOG_MODULES.CONNECTION_MANAGER);
+
+        // Publish server connected event
+        eventBus.publish(EventTypes.SERVER_CONNECTED, {
+          serverName,
+          serverIndex,
+          status: 'online',
+          timestamp: Date.now()
+        });
+
+        // Publish server status change event
+        eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+          serverName,
+          serverIndex,
+          status: 'online',
+          timestamp: Date.now()
+        });
+
+        // Fetch tools and resources immediately (only for bidirectional transports)
+        if (server.type !== 'sse') {
+          const tools = await this.refreshTools(serverName, serverIndex);
+          const resources = await this.refreshResources(serverName, serverIndex);
+
+          // Publish tools and resources updated event
+          eventBus.publish(EventTypes.TOOLS_UPDATED, {
+            serverName,
+            serverIndex,
+            tools
+          });
+
+          eventBus.publish(EventTypes.RESOURCES_UPDATED, {
+            serverName,
+            serverIndex,
+            resources
+          });
+        } else {
+          logger.info(
+            'SSE transport is unidirectional, skipping tool/resource refresh',
+            LOG_MODULES.CONNECTION_MANAGER
+          );
+        }
+
+        return true;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        logger.warn(
+          `Connection attempt ${attempt}/${maxRetries} failed for ${compositeKey}: ${lastError.message}`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
+
+        if (attempt < maxRetries) {
+          // Exponential backoff: delay doubles with each retry
+          const retryDelay = baseRetryDelay * Math.pow(2, attempt - 1);
+          logger.info(
+            `Retrying connection to ${compositeKey} in ${retryDelay}ms...`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
       }
-
-      return true;
-    } catch (error) {
-      logger.error(
-        `Failed to connect to server ${compositeKey}:`,
-        error,
-        LOG_MODULES.CONNECTION_MANAGER
-      );
-      this.serverStatus.set(compositeKey, {
-        connected: false,
-        error: error instanceof Error ? error.message : String(error),
-        lastCheck: Date.now(),
-        toolsCount: 0,
-        resourcesCount: 0
-      });
-
-      // Publish server status change event (error state)
-      eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
-        serverName,
-        serverIndex,
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: Date.now()
-      });
-
-      return false;
     }
+
+    // All retries failed - final error handling
+    logger.error(
+      `Failed to connect to server ${compositeKey} after ${maxRetries} attempts:`,
+      lastError,
+      LOG_MODULES.CONNECTION_MANAGER
+    );
+    this.serverStatus.set(compositeKey, {
+      connected: false,
+      error: lastError?.message || 'Connection failed after all retries',
+      lastCheck: Date.now(),
+      toolsCount: 0,
+      resourcesCount: 0
+    });
+
+    // Publish server status change event (error state)
+    eventBus.publish(EventTypes.SERVER_STATUS_CHANGE, {
+      serverName,
+      serverIndex,
+      status: 'error',
+      error: lastError?.message || 'Connection failed after all retries',
+      timestamp: Date.now()
+    });
+
+    return false;
   }
 
   /**
