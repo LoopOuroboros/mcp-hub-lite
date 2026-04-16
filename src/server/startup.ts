@@ -22,6 +22,29 @@ export interface ConnectTask {
 }
 
 /**
+ * Ensures all configured servers have at least one instance.
+ * Creates a default instance for any server that doesn't have one yet.
+ *
+ * This should be called before collectConnectTasks() to ensure all
+ * servers have at least one instance to connect to.
+ *
+ * @param logModule - The log module to use for error logging
+ */
+export async function ensureServerInstances(logModule: LogModule): Promise<void> {
+  const serverConfigs = configManager.getServers();
+  for (const { name: serverName } of serverConfigs) {
+    const existingInstances = configManager.getServerInstancesByName(serverName);
+    if (existingInstances.length === 0) {
+      try {
+        await configManager.addServerInstance(serverName, {});
+      } catch (err) {
+        logger.error(`Failed to create instance for ${serverName}:`, err, logModule);
+      }
+    }
+  }
+}
+
+/**
  * Collects all server connection tasks from config
  * - Collects existing instances that are enabled
  *

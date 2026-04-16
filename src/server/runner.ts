@@ -6,7 +6,7 @@ import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPortWithExit } from '@utils/port-checker.js';
-import { collectConnectTasks, executeConnectTasks } from './startup.js';
+import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';
 
 /**
  * Starts the MCP Hub Lite server.
@@ -91,17 +91,7 @@ export async function runServer(options: { port?: number; host?: string } = {}) 
     PidManager.writePid();
 
     // Auto-create instances for enabled servers without existing instances
-    const serverConfigs = configManager.getServers();
-    for (const { name: serverName } of serverConfigs) {
-      const existingInstances = configManager.getServerInstancesByName(serverName);
-      if (existingInstances.length === 0) {
-        try {
-          await configManager.addServerInstance(serverName, {});
-        } catch (err) {
-          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.SERVER);
-        }
-      }
-    }
+    await ensureServerInstances(LOG_MODULES.SERVER);
 
     // Trigger connection tasks (fire-and-forget, with sequential delay)
     const tasks = collectConnectTasks();

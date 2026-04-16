@@ -4,7 +4,7 @@ import { configManager } from '@config/config-manager.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { PidManager } from '@pid/manager.js';
-import { collectConnectTasks, executeConnectTasks } from './startup.js';
+import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';
 
 // Set log level to debug for development server
 logger.setLevel('debug');
@@ -86,17 +86,7 @@ async function startDevServer() {
     PidManager.writePid();
 
     // Auto-create instances for enabled servers without existing instances
-    const serverConfigs = configManager.getServers();
-    for (const { name: serverName } of serverConfigs) {
-      const existingInstances = configManager.getServerInstancesByName(serverName);
-      if (existingInstances.length === 0) {
-        try {
-          await configManager.addServerInstance(serverName, {});
-        } catch (err) {
-          logger.error(`Failed to create instance for ${serverName}:`, err, LOG_MODULES.DEV_SERVER);
-        }
-      }
-    }
+    await ensureServerInstances(LOG_MODULES.DEV_SERVER);
 
     // Trigger connection tasks (fire-and-forget, with sequential delay)
     logger.info('Initializing server connections...', LOG_MODULES.DEV_SERVER);
