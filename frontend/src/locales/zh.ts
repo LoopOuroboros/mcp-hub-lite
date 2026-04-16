@@ -124,7 +124,17 @@ export default {
     noTagsDefined: '尚未定义标签',
     tagKeyPlaceholder: '输入标签键（如 environment, priority）',
     tagDescriptionPlaceholder: '输入标签描述',
-    tagValuesPlaceholder: '输入可选值，按回车添加'
+    tagValuesPlaceholder: '输入可选值，按回车添加',
+    startupTab: '启动配置',
+    startupSettings: '服务器启动设置',
+    startupDelay: '启动延迟',
+    startupDelayHint: '多实例服务器启动时，实例之间的延迟（毫秒）',
+    readyTimeout: '就绪超时',
+    readyTimeoutHint: '等待服务器就绪输出的超时时间（毫秒）',
+    maxConnectRetries: '最大重试次数',
+    maxConnectRetriesHint: '连接失败时的最大重试次数',
+    connectRetryDelay: '重试延迟',
+    connectRetryDelayHint: '指数退避重试的初始延迟（毫秒）'
   },
   dashboard: {
     title: '仪表盘',
