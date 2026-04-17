@@ -57,7 +57,8 @@ describe('Config Migrator', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        apiDebug: false
+        apiDebug: false,
+        gatewayDebug: false
       }
     },
     security: {
@@ -127,7 +128,8 @@ describe('Config Migrator', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {

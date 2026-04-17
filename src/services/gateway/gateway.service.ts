@@ -21,6 +21,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { logger } from '@utils/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
+import { getGatewayDebugSetting } from '@utils/json-utils.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import {
   registerInitializeHandlers,
@@ -44,7 +45,9 @@ export class GatewayService {
   }
 
   private createServerWithHandlers(): McpServer {
-    logger.debug('Creating new MCP server with handlers', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('Creating new MCP server with handlers', LOG_MODULES.GATEWAY_SERVICE);
+    }
     const server = new McpServer(
       {
         name: MCP_HUB_LITE_SERVER,
@@ -57,22 +60,32 @@ export class GatewayService {
         }
       }
     );
-    logger.debug('MCP server created successfully', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('MCP server created successfully', LOG_MODULES.GATEWAY_SERVICE);
+    }
 
     this.registerHandlers(server);
-    logger.debug('Handlers registered successfully on MCP server', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('Handlers registered successfully on MCP server', LOG_MODULES.GATEWAY_SERVICE);
+    }
     return server;
   }
 
   private registerHandlers(server: McpServer): void {
-    logger.debug('Registering handlers on MCP server', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('Registering handlers on MCP server', LOG_MODULES.GATEWAY_SERVICE);
+    }
     // Local toolMap for this connection
     const toolMap = new Map<string, ToolMapEntry>();
-    logger.debug('Created local toolMap for connection', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('Created local toolMap for connection', LOG_MODULES.GATEWAY_SERVICE);
+    }
 
     try {
       registerInitializeHandlers(server);
-      logger.debug('Initialize handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      if (getGatewayDebugSetting()) {
+        logger.debug('Initialize handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      }
     } catch (error) {
       logger.error('Failed to register initialize handlers:', error, LOG_MODULES.GATEWAY_SERVICE);
       throw error;
@@ -80,7 +93,9 @@ export class GatewayService {
 
     try {
       registerResourcesHandlers(server);
-      logger.debug('Resources handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      if (getGatewayDebugSetting()) {
+        logger.debug('Resources handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      }
     } catch (error) {
       logger.error('Failed to register resources handlers:', error, LOG_MODULES.GATEWAY_SERVICE);
       throw error;
@@ -88,7 +103,9 @@ export class GatewayService {
 
     try {
       registerSystemToolsHandlers(server);
-      logger.debug('System tools handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      if (getGatewayDebugSetting()) {
+        logger.debug('System tools handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      }
     } catch (error) {
       logger.error('Failed to register system tools handlers:', error, LOG_MODULES.GATEWAY_SERVICE);
       throw error;
@@ -96,13 +113,17 @@ export class GatewayService {
 
     try {
       registerCallToolHandler(server, toolMap);
-      logger.debug('Call tool handler registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      if (getGatewayDebugSetting()) {
+        logger.debug('Call tool handler registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+      }
     } catch (error) {
       logger.error('Failed to register call tool handler:', error, LOG_MODULES.GATEWAY_SERVICE);
       throw error;
     }
 
-    logger.debug('All handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+    if (getGatewayDebugSetting()) {
+      logger.debug('All handlers registered successfully', LOG_MODULES.GATEWAY_SERVICE);
+    }
   }
 
   /**

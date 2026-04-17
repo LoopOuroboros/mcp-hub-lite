@@ -108,7 +108,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -155,7 +156,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -219,7 +221,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -285,7 +288,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -413,7 +417,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -475,7 +480,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -533,7 +539,8 @@ describe('Server Runner', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {

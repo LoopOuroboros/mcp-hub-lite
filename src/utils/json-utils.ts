@@ -100,6 +100,7 @@ type ConfigGetter = () => {
       jsonPretty: boolean;
       mcpCommDebug: boolean;
       apiDebug: boolean;
+      gatewayDebug: boolean;
     };
   };
 };
@@ -199,6 +200,23 @@ export function getApiDebugSetting(): boolean {
     try {
       const config = _configGetter();
       return config.system.logging.apiDebug;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return getDefaultForDevMode(false);
+}
+
+/**
+ * Get Gateway debug setting from config getter.
+ *
+ * @returns boolean indicating whether to enable Gateway debug logging
+ */
+export function getGatewayDebugSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.gatewayDebug;
     } catch {
       // Fall through to default if config getter fails
     }

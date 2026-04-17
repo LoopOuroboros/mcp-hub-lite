@@ -221,14 +221,16 @@ export const LoggingConfigSchema = z
     rotationAge: z.string().default('7d'),
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
-    apiDebug: z.boolean().default(false)
+    apiDebug: z.boolean().default(false),
+    gatewayDebug: z.boolean().default(false)
   })
   .default({
     level: 'info',
     rotationAge: '7d',
     jsonPretty: true,
     mcpCommDebug: false,
-    apiDebug: false
+    apiDebug: false,
+    gatewayDebug: false
   });
 
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
@@ -311,7 +313,8 @@ export const SystemConfigSchema = z.object({
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        apiDebug: false
+        apiDebug: false,
+        gatewayDebug: false
       },
       startup: {
         startupDelay: 3000,

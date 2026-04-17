@@ -124,6 +124,10 @@
                   <el-form-item :label="$t('settings.apiDebug')">
                     <el-switch v-model="config.system.logging.apiDebug" />
                   </el-form-item>
+
+                  <el-form-item :label="$t('settings.gatewayDebug')">
+                    <el-switch v-model="config.system.logging.gatewayDebug" />
+                  </el-form-item>
                 </template>
               </el-form>
             </div>
@@ -204,7 +208,6 @@
                       <el-input-number
                         v-model="connectionTimeoutValue"
                         :min="1"
-                        :step="1"
                         style="width: 128px; flex-shrink: 0"
                       />
                       <el-select
@@ -228,7 +231,6 @@
                       <el-input-number
                         v-model="idleConnectionTimeoutValue"
                         :min="1"
-                        :step="1"
                         style="width: 128px; flex-shrink: 0"
                       />
                       <el-select
@@ -271,9 +273,6 @@
                   <div class="flex items-center gap-2">
                     <el-input-number
                       v-model="startupDelayValue"
-                      :min="0"
-                      :max="60"
-                      :step="1"
                       style="width: 128px; flex-shrink: 0"
                     />
                     <el-select v-model="startupDelayUnit" style="width: 128px; flex-shrink: 0">
@@ -291,9 +290,6 @@
                   <div class="flex items-center gap-2">
                     <el-input-number
                       v-model="readyTimeoutValue"
-                      :min="10"
-                      :max="300"
-                      :step="10"
                       style="width: 128px; flex-shrink: 0"
                     />
                     <el-select v-model="readyTimeoutUnit" style="width: 128px; flex-shrink: 0">
@@ -324,9 +320,6 @@
                   <div class="flex items-center gap-2">
                     <el-input-number
                       v-model="connectRetryDelayValue"
-                      :min="1"
-                      :max="30"
-                      :step="1"
                       style="width: 128px; flex-shrink: 0"
                     />
                     <el-select v-model="connectRetryDelayUnit" style="width: 128px; flex-shrink: 0">
@@ -359,7 +352,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
   Check,
@@ -376,41 +369,14 @@ import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
 import TagManager from '@components/TagManager.vue';
+import { type TimeUnit, unitFactors, getOptimalUnit } from '@frontend-types/time';
+import { useUnitConversionWatcher } from '@composables/use-unit-conversion';
 
 const { t } = useI18n();
 const systemStore = useSystemStore();
 const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
 const activeTab = ref('system');
-
-// Unit conversion factors
-type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
-const unitFactors: Record<TimeUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600,
-  days: 86400
-};
-
-// Unit priority (from largest to smallest)
-const unitPriority: TimeUnit[] = ['days', 'hours', 'minutes', 'seconds'];
-
-// Automatically select the most appropriate unit based on seconds
-const getOptimalUnit = (seconds: number): TimeUnit => {
-  for (const unit of unitPriority) {
-    const factor = unitFactors[unit];
-    // Correct unit selection logic:
-    // - Use the unit for values greater than or equal to its complete value
-    // - For example: >= 86400 seconds → days
-    // -             >= 3600 seconds → hours
-    // -             >= 60 seconds → minutes
-    // -             < 60 seconds → seconds
-    if (seconds >= factor) {
-      return unit;
-    }
-  }
-  return 'seconds';
-};
 
 const maxAgeDays = computed({
   get: () => {
@@ -489,7 +455,10 @@ const startupDelayValue = computed({
       };
     }
     if (val !== undefined && val !== null) {
-      config.value.system.startup.startupDelay = val * unitFactors[startupDelayUnit.value] * 1000;
+      const ms = val * unitFactors[startupDelayUnit.value] * 1000;
+      // Clamp to valid range: 0-60000ms
+      const clampedMs = Math.max(0, Math.min(60000, ms));
+      config.value.system.startup.startupDelay = clampedMs;
     }
   }
 });
@@ -507,7 +476,10 @@ const readyTimeoutValue = computed({
       return;
     }
     if (val !== undefined && val !== null) {
-      config.value.system.startup.readyTimeout = val * unitFactors[readyTimeoutUnit.value] * 1000;
+      const ms = val * unitFactors[readyTimeoutUnit.value] * 1000;
+      // Clamp to valid range: 10000-300000ms
+      const clampedMs = Math.max(10000, Math.min(300000, ms));
+      config.value.system.startup.readyTimeout = clampedMs;
     }
   }
 });
@@ -536,52 +508,20 @@ const connectRetryDelayValue = computed({
       return;
     }
     if (val !== undefined && val !== null) {
-      config.value.system.startup.connectRetryDelay =
-        val * unitFactors[connectRetryDelayUnit.value] * 1000;
+      const ms = val * unitFactors[connectRetryDelayUnit.value] * 1000;
+      // Clamp to valid range: 1000-30000ms
+      const clampedMs = Math.max(1000, Math.min(30000, ms));
+      config.value.system.startup.connectRetryDelay = clampedMs;
     }
   }
 });
 
 // Automatically convert values when unit changes
-watch(connectionTimeoutUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = connectionTimeoutValue.value;
-    connectionTimeoutValue.value = Math.round(currentValue / factor);
-  }
-});
-
-watch(idleConnectionTimeoutUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = idleConnectionTimeoutValue.value;
-    idleConnectionTimeoutValue.value = Math.round(currentValue / factor);
-  }
-});
-
-watch(startupDelayUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = startupDelayValue.value;
-    startupDelayValue.value = Math.round(currentValue / factor);
-  }
-});
-
-watch(readyTimeoutUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = readyTimeoutValue.value;
-    readyTimeoutValue.value = Math.round(currentValue / factor);
-  }
-});
-
-watch(connectRetryDelayUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = connectRetryDelayValue.value;
-    connectRetryDelayValue.value = Math.round(currentValue / factor);
-  }
-});
+useUnitConversionWatcher(connectionTimeoutUnit, connectionTimeoutValue);
+useUnitConversionWatcher(idleConnectionTimeoutUnit, idleConnectionTimeoutValue);
+useUnitConversionWatcher(startupDelayUnit, startupDelayValue);
+useUnitConversionWatcher(readyTimeoutUnit, readyTimeoutValue);
+useUnitConversionWatcher(connectRetryDelayUnit, connectRetryDelayValue);
 
 onMounted(async () => {
   // Config is already fetched by App.vue usually

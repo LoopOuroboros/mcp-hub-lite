@@ -49,6 +49,7 @@ export interface SystemConfig {
       jsonPretty: boolean;
       mcpCommDebug: boolean;
       apiDebug: boolean;
+      gatewayDebug: boolean;
     };
     startup?: {
       startupDelay: number;
@@ -81,7 +82,8 @@ export const useSystemStore = defineStore('system', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        apiDebug: false
+        apiDebug: false,
+        gatewayDebug: false
       },
       startup: {
         startupDelay: 3000,
