@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-04-17
+
+- **Version**: Bump version to 1.2.2
+- **Config Fix**: Correct servers sorting in config-loader
+- **Logger Refactor**: Add STDERR log module for stdio transport
+- **Gateway Feature**: Add gatewayDebug logging control
+- **Frontend Feature**: Add time unit types and conversion utilities
+
+## 2026-04-16
+
+- **Frontend Feature**: Add Startup configuration tab to Settings page
+- **Startup Fix**: Extract ensureServerInstances() to eliminate DRY violation
+- **Connection Refactor**: Split connect() into SRP-compliant private methods
+- **Startup Refactor**: Extract startup orchestration logic into dedicated module
+
+## 2026-04-15
+
+- **Resource Fix**: Ensure consistent { contents: [...] } format in resource read API
+- **Docs**: Add community acknowledgment for LinuxDo
+
 ## 2026-04-14
 
 - **Lint Fix**: Remove unnecessary escape character in CLI entry detection
