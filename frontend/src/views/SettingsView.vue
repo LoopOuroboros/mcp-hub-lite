@@ -124,6 +124,10 @@
                   <el-form-item :label="$t('settings.apiDebug')">
                     <el-switch v-model="config.system.logging.apiDebug" />
                   </el-form-item>
+
+                  <el-form-item :label="$t('settings.gatewayDebug')">
+                    <el-switch v-model="config.system.logging.gatewayDebug" />
+                  </el-form-item>
                 </template>
               </el-form>
             </div>
@@ -204,7 +208,6 @@
                       <el-input-number
                         v-model="connectionTimeoutValue"
                         :min="1"
-                        :step="1"
                         style="width: 128px; flex-shrink: 0"
                       />
                       <el-select
@@ -228,7 +231,6 @@
                       <el-input-number
                         v-model="idleConnectionTimeoutValue"
                         :min="1"
-                        :step="1"
                         style="width: 128px; flex-shrink: 0"
                       />
                       <el-select
@@ -241,6 +243,89 @@
                         <el-option :label="$t('settings.timeUnits.days')" value="days" />
                       </el-select>
                     </div>
+                  </div>
+                </div>
+              </el-form>
+            </div>
+          </el-tab-pane>
+
+          <!-- Startup Settings -->
+          <el-tab-pane name="startup">
+            <template #label>
+              <span class="flex items-center gap-2">
+                <el-icon><Promotion /></el-icon>
+                <span>{{ $t('settings.startupTab') }}</span>
+              </span>
+            </template>
+
+            <div class="pt-4">
+              <el-form
+                :model="config.system"
+                label-position="left"
+                label-width="260px"
+                v-if="config.system"
+              >
+                <!-- Startup Delay -->
+                <div class="flex items-center gap-4">
+                  <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    $t('settings.startupDelay')
+                  }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number
+                      v-model="startupDelayValue"
+                      style="width: 128px; flex-shrink: 0"
+                    />
+                    <el-select v-model="startupDelayUnit" style="width: 128px; flex-shrink: 0">
+                      <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                      <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                    </el-select>
+                  </div>
+                </div>
+
+                <!-- Ready Timeout -->
+                <div class="flex items-center gap-4 mt-4">
+                  <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    $t('settings.readyTimeout')
+                  }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number
+                      v-model="readyTimeoutValue"
+                      style="width: 128px; flex-shrink: 0"
+                    />
+                    <el-select v-model="readyTimeoutUnit" style="width: 128px; flex-shrink: 0">
+                      <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                      <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                    </el-select>
+                  </div>
+                </div>
+
+                <!-- Max Connect Retries -->
+                <div class="flex items-center gap-4 mt-4">
+                  <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    $t('settings.maxConnectRetries')
+                  }}</span>
+                  <el-input-number
+                    v-model="maxConnectRetries"
+                    :min="0"
+                    :max="10"
+                    style="width: 128px; flex-shrink: 0"
+                  />
+                </div>
+
+                <!-- Connect Retry Delay -->
+                <div class="flex items-center gap-4 mt-4">
+                  <span class="w-[260px] text-sm font-medium text-gray-700 dark:text-gray-300">{{
+                    $t('settings.connectRetryDelay')
+                  }}</span>
+                  <div class="flex items-center gap-2">
+                    <el-input-number
+                      v-model="connectRetryDelayValue"
+                      style="width: 128px; flex-shrink: 0"
+                    />
+                    <el-select v-model="connectRetryDelayUnit" style="width: 128px; flex-shrink: 0">
+                      <el-option :label="$t('settings.timeUnits.seconds')" value="seconds" />
+                      <el-option :label="$t('settings.timeUnits.minutes')" value="minutes" />
+                    </el-select>
                   </div>
                 </div>
               </el-form>
@@ -267,7 +352,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
   Check,
@@ -277,47 +362,21 @@ import {
   Sunny,
   Moon,
   Monitor,
-  PriceTag
+  PriceTag,
+  Promotion
 } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@stores/system';
 import { storeToRefs } from 'pinia';
 import TagManager from '@components/TagManager.vue';
+import { type TimeUnit, unitFactors, getOptimalUnit } from '@frontend-types/time';
+import { useUnitConversionWatcher } from '@composables/use-unit-conversion';
 
 const { t } = useI18n();
 const systemStore = useSystemStore();
 const { config, loading } = storeToRefs(systemStore);
 const saving = ref(false);
 const activeTab = ref('system');
-
-// Unit conversion factors
-type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days';
-const unitFactors: Record<TimeUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600,
-  days: 86400
-};
-
-// Unit priority (from largest to smallest)
-const unitPriority: TimeUnit[] = ['days', 'hours', 'minutes', 'seconds'];
-
-// Automatically select the most appropriate unit based on seconds
-const getOptimalUnit = (seconds: number): TimeUnit => {
-  for (const unit of unitPriority) {
-    const factor = unitFactors[unit];
-    // Correct unit selection logic:
-    // - Use the unit for values greater than or equal to its complete value
-    // - For example: >= 86400 seconds → days
-    // -             >= 3600 seconds → hours
-    // -             >= 60 seconds → minutes
-    // -             < 60 seconds → seconds
-    if (seconds >= factor) {
-      return unit;
-    }
-  }
-  return 'seconds';
-};
 
 const maxAgeDays = computed({
   get: () => {
@@ -374,22 +433,95 @@ const idleConnectionTimeoutValue = computed({
   }
 });
 
-// Automatically convert values when unit changes
-watch(connectionTimeoutUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = connectionTimeoutValue.value;
-    connectionTimeoutValue.value = Math.round(currentValue / factor);
+// Startup configuration computed properties
+// Startup delay (0-60000ms, display as seconds or minutes)
+const startupDelayUnit = ref<TimeUnit>('seconds');
+const startupDelayValue = computed({
+  get: () => {
+    const ms = config.value?.system?.startup?.startupDelay ?? 3000;
+    const seconds = ms / 1000;
+    return Math.round(seconds / unitFactors[startupDelayUnit.value]);
+  },
+  set: (val: number | undefined | null) => {
+    if (!config.value.system) {
+      return;
+    }
+    if (!config.value.system.startup) {
+      config.value.system.startup = {
+        startupDelay: 3000,
+        readyTimeout: 120000,
+        maxConnectRetries: 3,
+        connectRetryDelay: 5000
+      };
+    }
+    if (val !== undefined && val !== null) {
+      const ms = val * unitFactors[startupDelayUnit.value] * 1000;
+      // Clamp to valid range: 0-60000ms
+      const clampedMs = Math.max(0, Math.min(60000, ms));
+      config.value.system.startup.startupDelay = clampedMs;
+    }
   }
 });
 
-watch(idleConnectionTimeoutUnit, (newUnit, oldUnit) => {
-  if (oldUnit && newUnit !== oldUnit) {
-    const factor = unitFactors[newUnit] / unitFactors[oldUnit];
-    const currentValue = idleConnectionTimeoutValue.value;
-    idleConnectionTimeoutValue.value = Math.round(currentValue / factor);
+// Ready timeout (10000-300000ms, display as seconds or minutes)
+const readyTimeoutUnit = ref<TimeUnit>('seconds');
+const readyTimeoutValue = computed({
+  get: () => {
+    const ms = config.value?.system?.startup?.readyTimeout ?? 120000;
+    const seconds = ms / 1000;
+    return Math.round(seconds / unitFactors[readyTimeoutUnit.value]);
+  },
+  set: (val: number | undefined | null) => {
+    if (!config.value.system?.startup) {
+      return;
+    }
+    if (val !== undefined && val !== null) {
+      const ms = val * unitFactors[readyTimeoutUnit.value] * 1000;
+      // Clamp to valid range: 10000-300000ms
+      const clampedMs = Math.max(10000, Math.min(300000, ms));
+      config.value.system.startup.readyTimeout = clampedMs;
+    }
   }
 });
+
+// Max connect retries (just a number)
+const maxConnectRetries = computed({
+  get: () => config.value?.system?.startup?.maxConnectRetries ?? 3,
+  set: (val: number) => {
+    if (!config.value.system?.startup) {
+      return;
+    }
+    config.value.system.startup.maxConnectRetries = val;
+  }
+});
+
+// Connect retry delay (1000-30000ms, display as seconds or minutes)
+const connectRetryDelayUnit = ref<TimeUnit>('seconds');
+const connectRetryDelayValue = computed({
+  get: () => {
+    const ms = config.value?.system?.startup?.connectRetryDelay ?? 5000;
+    const seconds = ms / 1000;
+    return Math.round(seconds / unitFactors[connectRetryDelayUnit.value]);
+  },
+  set: (val: number | undefined | null) => {
+    if (!config.value.system?.startup) {
+      return;
+    }
+    if (val !== undefined && val !== null) {
+      const ms = val * unitFactors[connectRetryDelayUnit.value] * 1000;
+      // Clamp to valid range: 1000-30000ms
+      const clampedMs = Math.max(1000, Math.min(30000, ms));
+      config.value.system.startup.connectRetryDelay = clampedMs;
+    }
+  }
+});
+
+// Automatically convert values when unit changes
+useUnitConversionWatcher(connectionTimeoutUnit, connectionTimeoutValue);
+useUnitConversionWatcher(idleConnectionTimeoutUnit, idleConnectionTimeoutValue);
+useUnitConversionWatcher(startupDelayUnit, startupDelayValue);
+useUnitConversionWatcher(readyTimeoutUnit, readyTimeoutValue);
+useUnitConversionWatcher(connectRetryDelayUnit, connectRetryDelayValue);
 
 onMounted(async () => {
   // Config is already fetched by App.vue usually
@@ -404,6 +536,19 @@ onMounted(async () => {
     );
     idleConnectionTimeoutUnit.value = getOptimalUnit(
       (config.value.security.idleConnectionTimeout || 300000) / 1000
+    );
+  }
+
+  // Initialize startup time units
+  if (config.value?.system?.startup) {
+    startupDelayUnit.value = getOptimalUnit(
+      (config.value.system.startup.startupDelay || 3000) / 1000
+    );
+    readyTimeoutUnit.value = getOptimalUnit(
+      (config.value.system.startup.readyTimeout || 120000) / 1000
+    );
+    connectRetryDelayUnit.value = getOptimalUnit(
+      (config.value.system.startup.connectRetryDelay || 5000) / 1000
     );
   }
 });

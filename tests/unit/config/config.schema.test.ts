@@ -261,7 +261,8 @@ describe('Config Schema (v1.1)', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {

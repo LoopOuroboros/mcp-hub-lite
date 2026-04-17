@@ -115,6 +115,7 @@ function convertToServerTemplate(v1Config: LegacyServerConfigV1): ServerTemplate
     url: v1Config.url,
     aggregatedTools: v1Config.allowedTools || [],
     description: v1Config.description
+    // readyPatterns is optional and will default to undefined
   };
 }
 

@@ -5,7 +5,11 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
-import { stringifyForLogging, getMcpCommDebugSetting } from '@utils/json-utils.js';
+import {
+  stringifyForLogging,
+  getMcpCommDebugSetting,
+  getGatewayDebugSetting
+} from '@utils/json-utils.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
 import { createSessionTransport } from '@services/gateway/global-transport.js';
 
@@ -58,26 +62,34 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     reply.hijack();
 
     try {
-      logger.debug(`About to create session transport for MCP request`, LOG_MODULES.GATEWAY);
+      if (getGatewayDebugSetting()) {
+        logger.debug(`About to create session transport for MCP request`, LOG_MODULES.GATEWAY);
+      }
       const { transport, server } = await createSessionTransport();
-      logger.debug(
-        `Created session transport successfully, handling MCP request`,
-        LOG_MODULES.GATEWAY
-      );
+      if (getGatewayDebugSetting()) {
+        logger.debug(
+          `Created session transport successfully, handling MCP request`,
+          LOG_MODULES.GATEWAY
+        );
+      }
 
       try {
         await transport.handleRequest(request.raw, reply.raw, request.body);
-        logger.debug(
-          `Successfully handled MCP request with server: ${server.constructor.name}`,
-          LOG_MODULES.GATEWAY
-        );
+        if (getGatewayDebugSetting()) {
+          logger.debug(
+            `Successfully handled MCP request with server: ${server.constructor.name}`,
+            LOG_MODULES.GATEWAY
+          );
+        }
       } finally {
         // Resources will be automatically cleaned up by garbage collection
         // since transport and server are local to this request scope
-        logger.debug(
-          `Session transport request completed, resources will be GC'd`,
-          LOG_MODULES.GATEWAY
-        );
+        if (getGatewayDebugSetting()) {
+          logger.debug(
+            `Session transport request completed, resources will be GC'd`,
+            LOG_MODULES.GATEWAY
+          );
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

@@ -25,6 +25,7 @@
       "@/*": ["./frontend/src/*"],
       "@composables/*": ["./frontend/src/composables/*"],
       "@components/*": ["./frontend/src/components/*"],
+      "@frontend-types/*": ["./frontend/src/types/*"],
       "@frontend/*": ["./frontend/src/*"],
       "@i18n/*": ["./frontend/src/i18n/*"],
       "@locales/*": ["./frontend/src/locales/*"],

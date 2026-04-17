@@ -4,13 +4,17 @@ import {
 } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { logger } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 import type { LogStorageService } from '@services/log-storage.service.js';
 import { PassThrough } from 'stream';
 
 export interface StdioTransportOptions {
   compositeKey?: string;
   logStorage?: LogStorageService;
+  // Ready patterns for startup detection (stdout/stderr containing any pattern = server ready)
+  readyPatterns?: string[];
+  // Ready detection timeout in ms
+  readyTimeout: number;
 }
 
 /**
@@ -36,6 +40,8 @@ export class StdioTransport implements Transport {
   private _compositeKey?: string;
   private _logStorage?: LogStorageService;
   private _stderrStream: PassThrough | null = null;
+  private _readyPatterns?: string[];
+  private _readyTimeout: number = 120000;
 
   public onclose?: () => void;
   public onerror?: (error: Error) => void;
@@ -64,6 +70,8 @@ export class StdioTransport implements Transport {
     this._serverName = serverName;
     this._compositeKey = options?.compositeKey;
     this._logStorage = options?.logStorage;
+    this._readyPatterns = options?.readyPatterns;
+    this._readyTimeout = options?.readyTimeout ?? 120000;
     this._stderrStream = new PassThrough();
   }
 
@@ -96,6 +104,19 @@ export class StdioTransport implements Transport {
     // Start the underlying transport
     await this._transport.start();
 
+    // Ready detection: wait for server to output ready pattern
+    if (this._readyPatterns && this._readyPatterns.length > 0) {
+      logger.info(
+        `Waiting for server ready patterns: ${JSON.stringify(this._readyPatterns)}`,
+        LOG_MODULES.STDIO_TRANSPORT
+      );
+      await this.waitForReady(this._readyPatterns, this._readyTimeout);
+      logger.info(
+        `Server ready pattern detected, proceeding with MCP handshake`,
+        LOG_MODULES.STDIO_TRANSPORT
+      );
+    }
+
     // Handle stderr data by listening to the transport's stderr stream
     if (this._transport.stderr) {
       this._transport.stderr.on('data', (chunk: Buffer | string) => {
@@ -107,7 +128,10 @@ export class StdioTransport implements Transport {
 
         // Log stderr output (per MCP spec, stderr is not necessarily errors)
         const serverIdentifier = this._compositeKey || this._serverName || 'Unknown Server';
-        logger.serverLog('info', serverIdentifier, dataStr, { pid: this.pid });
+        logger.serverLog('info', serverIdentifier, dataStr, {
+          pid: this.pid,
+          module: LOG_MODULES.STDERR.module
+        });
 
         if (this._logStorage && this._compositeKey) {
           this._logStorage.append(this._compositeKey, 'info', dataStr);
@@ -120,6 +144,45 @@ export class StdioTransport implements Transport {
         }
       });
     }
+  }
+
+  /**
+   * Waits for the server to emit a ready pattern in stderr.
+   *
+   * @param patterns - Array of string patterns to match (any match = ready)
+   * @param timeout - Timeout in milliseconds
+   * @returns Promise that resolves when a pattern is matched, or rejects on timeout
+   */
+  private waitForReady(patterns: string[], timeout: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Server did not emit any ready pattern within ${timeout}ms`));
+      }, timeout);
+
+      // Hook into stderr before it's set up in start()
+      // The ready detection needs to intercept stderr BEFORE the normal stderr handler
+      const readyStderrHandler = (chunk: Buffer | string) => {
+        const dataStr = chunk.toString('utf8').trim();
+        if (!dataStr) return;
+
+        // Check if any pattern matches
+        for (const pattern of patterns) {
+          if (dataStr.includes(pattern)) {
+            clearTimeout(timeoutId);
+            // Remove this listener - normal stderr handling will be set up in start()
+            this._transport.stderr?.off('data', readyStderrHandler);
+            logger.info(`Server ready pattern matched: "${pattern}"`, LOG_MODULES.STDIO_TRANSPORT);
+            resolve();
+            return;
+          }
+        }
+      };
+
+      // Add the ready detection listener to stderr
+      if (this._transport.stderr) {
+        this._transport.stderr.on('data', readyStderrHandler);
+      }
+    });
   }
 
   /**

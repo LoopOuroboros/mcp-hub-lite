@@ -6,6 +6,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { PidManager } from '@pid/manager.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -274,4 +275,53 @@ async function isSelfProjectProcess(pid: number, commandLine: string): Promise<b
   ];
 
   return projectSignatures.some((signature) => commandLine.includes(signature));
+}
+
+/**
+ * Checks port availability and exits process if port is in use.
+ *
+ * This function checks if the specified port is already occupied and handles
+ * conflict scenarios with detailed error messages.
+ *
+ * @param port - The port number to check
+ * @returns Promise that resolves when port is available, never rejects
+ *
+ * @example
+ * ```typescript
+ * await checkPortWithExit(7788);
+ * // If port is available, continues execution
+ * // If port is in use by this project, shows error and exits with code 1
+ * // If port is in use by another application, shows error and exits with code 1
+ * ```
+ */
+export async function checkPortWithExit(port: number): Promise<void> {
+  const portCheck = await checkPort(port);
+  if (portCheck.inUse) {
+    if (portCheck.isSelfProject) {
+      logger.error(
+        `MCP Hub Lite is already running on port ${port} (PID: ${portCheck.pid})`,
+        LOG_MODULES.SERVER
+      );
+      logger.error(
+        `Use 'npm run stop' or 'mcp-hub-lite stop' to stop the running instance.`,
+        LOG_MODULES.SERVER
+      );
+    } else {
+      logger.error(`Port ${port} is already in use by another application:`, LOG_MODULES.SERVER);
+      if (portCheck.processName) {
+        logger.error(
+          `  Process: ${portCheck.processName} (PID: ${portCheck.pid})`,
+          LOG_MODULES.SERVER
+        );
+      }
+      if (portCheck.commandLine) {
+        logger.error(`  Command: ${portCheck.commandLine}`, LOG_MODULES.SERVER);
+      }
+      logger.error(
+        `Please stop the conflicting application or use a different port.`,
+        LOG_MODULES.SERVER
+      );
+    }
+    process.exit(1);
+  }
 }

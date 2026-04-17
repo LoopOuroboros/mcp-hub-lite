@@ -24,7 +24,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -49,7 +50,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -70,7 +72,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -92,7 +95,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -126,7 +130,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: false,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -222,7 +227,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: false,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -233,7 +239,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));
@@ -255,7 +262,8 @@ describe('json-utils', () => {
             logging: {
               jsonPretty: false, // Config says false, but env should override
               mcpCommDebug: false,
-              apiDebug: false
+              apiDebug: false,
+              gatewayDebug: false
             }
           }
         }));
@@ -274,7 +282,8 @@ describe('json-utils', () => {
             logging: {
               jsonPretty: false, // Config says false, but env should override
               mcpCommDebug: false,
-              apiDebug: false
+              apiDebug: false,
+              gatewayDebug: false
             }
           }
         }));
@@ -293,7 +302,8 @@ describe('json-utils', () => {
             logging: {
               jsonPretty: true, // Config says true, but env should override
               mcpCommDebug: false,
-              apiDebug: false
+              apiDebug: false,
+              gatewayDebug: false
             }
           }
         }));
@@ -312,7 +322,8 @@ describe('json-utils', () => {
             logging: {
               jsonPretty: true, // Config says true, but env should override
               mcpCommDebug: false,
-              apiDebug: false
+              apiDebug: false,
+              gatewayDebug: false
             }
           }
         }));
@@ -331,7 +342,8 @@ describe('json-utils', () => {
             logging: {
               jsonPretty: false,
               mcpCommDebug: false,
-              apiDebug: false
+              apiDebug: false,
+              gatewayDebug: false
             }
           }
         }));
@@ -355,7 +367,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: false,
             mcpCommDebug: true,
-            apiDebug: true
+            apiDebug: true,
+            gatewayDebug: false
           }
         }
       }));
@@ -416,7 +429,8 @@ describe('json-utils', () => {
           logging: {
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       }));

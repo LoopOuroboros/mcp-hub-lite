@@ -74,8 +74,35 @@ export async function webResourceRoutes(fastify: FastifyInstance) {
         // Use hubToolsService.readResource to handle Hub URI -> MCP URI conversion
         // This properly maps hub://servers/{name}/{instanceIndex}/{mcpPath} to MCP native URI
         try {
-          // hubToolsService.readResource already returns MCP format for forwarding case
-          return await hubToolsService.readResource(uri);
+          const result = await hubToolsService.readResource(uri);
+
+          // Check if result is already in MCP ReadResourceResult format { contents: [...] }
+          if (result && typeof result === 'object' && 'contents' in result) {
+            return result;
+          }
+
+          // Wrap non-MCP format results into { contents: [...] } format
+          // This handles: ServerMetadata, Tool[], Resource[], string (use-guide), etc.
+          let mimeType = 'application/json';
+          let text: string;
+
+          if (typeof result === 'string') {
+            mimeType = 'text/markdown';
+            text = result;
+          } else {
+            mimeType = 'application/json';
+            text = JSON.stringify(result, null, 2);
+          }
+
+          return {
+            contents: [
+              {
+                uri,
+                mimeType,
+                text
+              }
+            ]
+          };
         } catch (error: unknown) {
           const errorObj = error as Error;
           if (

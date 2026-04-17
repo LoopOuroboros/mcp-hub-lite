@@ -96,7 +96,8 @@ describe('ConfigManager', () => {
             rotationAge: '30d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -173,7 +174,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       });
@@ -225,7 +227,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       });
@@ -273,7 +276,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       };
@@ -488,7 +492,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {
@@ -549,7 +554,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         }
       });
@@ -567,7 +573,8 @@ describe('ConfigManager', () => {
             rotationAge: '7d',
             jsonPretty: true,
             mcpCommDebug: false,
-            apiDebug: false
+            apiDebug: false,
+            gatewayDebug: false
           }
         },
         security: {

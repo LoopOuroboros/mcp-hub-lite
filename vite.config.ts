@@ -116,6 +116,7 @@ export default defineConfig({
       '@i18n': fileURLToPath(new URL('./frontend/src/i18n', import.meta.url)),
       '@locales': fileURLToPath(new URL('./frontend/src/locales', import.meta.url)),
       '@composables': fileURLToPath(new URL('./frontend/src/composables', import.meta.url)),
+      '@frontend-types': fileURLToPath(new URL('./frontend/src/types', import.meta.url)),
       '@utils': fileURLToPath(new URL('./frontend/src/utils', import.meta.url)),
 
       // Shared code aliases

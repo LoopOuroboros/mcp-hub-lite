@@ -104,7 +104,7 @@ export function loadConfig(configPath: string, autoMigrate: boolean = true): Sys
           const configWithSortedServers = {
             ...parsed.data,
             servers: Object.fromEntries(
-              Object.entries(parsed.data.servers).sort(([a], [b]) => a.localeCompare(b))
+              Object.entries(parsed.data.servers).sort(([a], [b]) => a[0].localeCompare(b[0]))
             )
           };
           // Ensure all server instances have proper indexes

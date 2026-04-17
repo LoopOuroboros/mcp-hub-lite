@@ -111,6 +111,7 @@ export default {
     jsonPretty: 'Pretty JSON in logs',
     mcpCommDebug: 'Enable MCP communication debug',
     apiDebug: 'Enable API debug',
+    gatewayDebug: 'Enable Gateway debug',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',
     allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',
@@ -139,7 +140,17 @@ export default {
     noTagsDefined: 'No tags defined yet',
     tagKeyPlaceholder: 'Enter tag key (e.g., environment, priority)',
     tagDescriptionPlaceholder: 'Enter tag description',
-    tagValuesPlaceholder: 'Enter allowed values, press Enter to add'
+    tagValuesPlaceholder: 'Enter allowed values, press Enter to add',
+    startupTab: 'Startup',
+    startupSettings: 'Server Startup Settings',
+    startupDelay: 'Startup Delay',
+    startupDelayHint: 'Delay between multi-instance server startups (ms)',
+    readyTimeout: 'Ready Timeout',
+    readyTimeoutHint: 'Timeout for waiting for server ready output (ms)',
+    maxConnectRetries: 'Max Retries',
+    maxConnectRetriesHint: 'Maximum connection retry attempts on failure',
+    connectRetryDelay: 'Retry Delay',
+    connectRetryDelayHint: 'Initial delay for exponential backoff retry (ms)'
   },
   dashboard: {
     title: 'Dashboard',

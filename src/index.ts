@@ -28,9 +28,6 @@
  * # Start server in foreground for debugging
  * mcp-hub-lite start --foreground
  *
- * # Start in STDIO mode for MCP protocol
- * mcp-hub-lite start --stdio
- *
  * # Stop the running server
  * mcp-hub-lite stop
  *
@@ -68,13 +65,12 @@ program.name('mcp-hub-lite').description('MCP Hub Lite CLI').version('0.0.1');
 program
   .command('start')
   .description('Start the MCP Hub Lite server')
-  .option('--stdio', 'Run in stdio mode for MCP protocol')
   .option('-p, --port <number>', 'Port to run on')
   .option('-h, --host <string>', 'Host to bind to')
   .option('-f, --foreground', 'Run in foreground (blocking)')
   .action(async (options) => {
-    // Daemon mode by default unless --foreground or --stdio is specified
-    if (!options.foreground && !options.stdio) {
+    // Daemon mode by default unless --foreground is specified
+    if (!options.foreground) {
       const args = [process.argv[1], 'start', '--foreground'];
       if (options.port) args.push('--port', options.port);
       if (options.host) args.push('--host', options.host);
@@ -165,7 +161,6 @@ program
     }
 
     await runServer({
-      stdio: options.stdio,
       port: options.port ? parseInt(options.port) : undefined,
       host: options.host
     });

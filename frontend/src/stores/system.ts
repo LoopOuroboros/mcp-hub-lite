@@ -49,6 +49,13 @@ export interface SystemConfig {
       jsonPretty: boolean;
       mcpCommDebug: boolean;
       apiDebug: boolean;
+      gatewayDebug: boolean;
+    };
+    startup?: {
+      startupDelay: number;
+      readyTimeout: number;
+      maxConnectRetries: number;
+      connectRetryDelay: number;
     };
   };
   security: {
@@ -75,7 +82,14 @@ export const useSystemStore = defineStore('system', () => {
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        apiDebug: false
+        apiDebug: false,
+        gatewayDebug: false
+      },
+      startup: {
+        startupDelay: 3000,
+        readyTimeout: 120000,
+        maxConnectRetries: 3,
+        connectRetryDelay: 5000
       }
     },
     security: {

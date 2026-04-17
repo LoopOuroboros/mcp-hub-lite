@@ -188,7 +188,10 @@ export const ServerTemplateSchema = ServerEnvConfigSchema.extend({
       InstanceSelectionStrategy.ROUND_ROBIN,
       InstanceSelectionStrategy.TAG_MATCH_UNIQUE
     ])
-    .optional()
+    .optional(),
+  // Ready patterns for startup detection (stdout/stderr output containing any pattern = server ready)
+  // Using .optional() without .default() - code should use readyPatterns ?? [] for default value
+  readyPatterns: z.array(z.string()).optional()
 });
 
 export type ServerTemplate = z.infer<typeof ServerTemplateSchema>;
@@ -218,14 +221,16 @@ export const LoggingConfigSchema = z
     rotationAge: z.string().default('7d'),
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
-    apiDebug: z.boolean().default(false)
+    apiDebug: z.boolean().default(false),
+    gatewayDebug: z.boolean().default(false)
   })
   .default({
     level: 'info',
     rotationAge: '7d',
     jsonPretty: true,
     mcpCommDebug: false,
-    apiDebug: false
+    apiDebug: false,
+    gatewayDebug: false
   });
 
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
@@ -255,6 +260,32 @@ export const SecurityConfigSchema = z
 
 export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;
 
+// ====== Startup Configuration Schema ======
+
+/**
+ * Startup Configuration Schema
+ * Unified configuration for server startup behavior
+ */
+export const StartupConfigSchema = z
+  .object({
+    // Sequential startup delay between instances (ms)
+    startupDelay: z.number().min(0).max(60000).default(3000),
+    // Ready pattern detection timeout (ms)
+    readyTimeout: z.number().min(10000).max(300000).default(120000),
+    // Maximum connection retry attempts
+    maxConnectRetries: z.number().min(0).max(10).default(3),
+    // Base delay for exponential backoff retry (ms)
+    connectRetryDelay: z.number().min(1000).max(30000).default(5000)
+  })
+  .default({
+    startupDelay: 3000,
+    readyTimeout: 120000,
+    maxConnectRetries: 3,
+    connectRetryDelay: 5000
+  });
+
+export type StartupConfig = z.infer<typeof StartupConfigSchema>;
+
 // ====== System Configuration Schema ======
 
 /**
@@ -268,7 +299,9 @@ export const SystemConfigSchema = z.object({
       port: z.number().default(7788),
       language: z.enum(['zh', 'en']).default('zh'),
       theme: z.enum(['light', 'dark', 'system']).default('system'),
-      logging: LoggingConfigSchema
+      logging: LoggingConfigSchema,
+      // Using .optional() without .default() - code should use startup ?? {defaults} for default value
+      startup: StartupConfigSchema.optional()
     })
     .default({
       host: 'localhost',
@@ -280,7 +313,14 @@ export const SystemConfigSchema = z.object({
         rotationAge: '7d',
         jsonPretty: true,
         mcpCommDebug: false,
-        apiDebug: false
+        apiDebug: false,
+        gatewayDebug: false
+      },
+      startup: {
+        startupDelay: 3000,
+        readyTimeout: 120000,
+        maxConnectRetries: 3,
+        connectRetryDelay: 5000
       }
     }),
   security: SecurityConfigSchema,

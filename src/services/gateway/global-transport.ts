@@ -8,7 +8,11 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { gateway } from './gateway.service.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
-import { stringifyForLogging, getMcpCommDebugSetting } from '@utils/json-utils.js';
+import {
+  stringifyForLogging,
+  getMcpCommDebugSetting,
+  getGatewayDebugSetting
+} from '@utils/json-utils.js';
 import { formatMcpMessageForLogging, logNotificationMessage } from '@utils/logger/log-output.js';
 
 /**
@@ -24,17 +28,19 @@ export async function createSessionTransport() {
 
   // Set up message logging (use empty string for sessionId in per-request mode)
   transport.onmessage = (message) => {
-    logger.debug(
-      `Session transport onmessage called with: ${stringifyForLogging(message)}`,
-      LOG_MODULES.GATEWAY
-    );
     try {
       if (getMcpCommDebugSetting()) {
+        logger.debug(
+          `Session transport onmessage called with: ${stringifyForLogging(message)}`,
+          LOG_MODULES.COMMUNICATION
+        );
         const logMessage = formatMcpMessageForLogging(message);
         logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       }
       logNotificationMessage(message, ''); // Empty sessionId for per-request
-      logger.debug(`Session transport onmessage completed successfully`, LOG_MODULES.GATEWAY);
+      if (getGatewayDebugSetting()) {
+        logger.debug(`Session transport onmessage completed successfully`, LOG_MODULES.GATEWAY);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(
@@ -63,10 +69,14 @@ export async function createSessionTransport() {
   }
 
   // Connect server to transport
-  logger.debug('About to connect session server to transport', LOG_MODULES.GATEWAY);
+  if (getGatewayDebugSetting()) {
+    logger.debug('About to connect session server to transport', LOG_MODULES.GATEWAY);
+  }
   try {
     await server.connect(transport);
-    logger.info('MCP session transport initialized (per-request mode)', LOG_MODULES.GATEWAY);
+    if (getGatewayDebugSetting()) {
+      logger.debug('MCP session transport initialized (per-request mode)', LOG_MODULES.GATEWAY);
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(

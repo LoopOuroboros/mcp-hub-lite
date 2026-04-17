@@ -58,7 +58,7 @@ describe('HubManagerService', () => {
     service = new HubManagerService(configManager as ConfigManager);
   });
 
-  it('should auto-connect when adding an enabled server instance', async () => {
+  it('should add server instance without auto-connect', async () => {
     // Import the mocked module
     const { resolveInstanceConfig } = await import('@config/config-migrator.js');
 
@@ -106,7 +106,8 @@ describe('HubManagerService', () => {
 
     expect(configManager.addServer).toHaveBeenCalled();
     expect(configManager.addServerInstance).toHaveBeenCalled();
-    expect(mcpConnectionManager.connect).toHaveBeenCalled();
+    // Note: addServerInstance no longer auto-connects - explicit connection via connectServerInstances is required
+    expect(mcpConnectionManager.connect).not.toHaveBeenCalled();
   });
 
   it('should NOT auto-connect when adding a disabled server instance', async () => {
