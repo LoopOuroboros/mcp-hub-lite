@@ -128,7 +128,10 @@ export class StdioTransport implements Transport {
 
         // Log stderr output (per MCP spec, stderr is not necessarily errors)
         const serverIdentifier = this._compositeKey || this._serverName || 'Unknown Server';
-        logger.serverLog('info', serverIdentifier, dataStr, { pid: this.pid });
+        logger.serverLog('info', serverIdentifier, dataStr, {
+          pid: this.pid,
+          module: LOG_MODULES.STDERR.module
+        });
 
         if (this._logStorage && this._compositeKey) {
           this._logStorage.append(this._compositeKey, 'info', dataStr);
