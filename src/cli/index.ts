@@ -16,6 +16,8 @@ import { uiCommand } from '@cli/commands/ui.js';
 import { listCommand } from '@cli/commands/list.js';
 import { restartCommand } from '@cli/commands/restart.js';
 import { toolUseCommand } from '@cli/commands/tool-use.js';
+import { installCommand } from '@cli/commands/install.js';
+import { useGuideCommand } from '@cli/commands/use-guide.js';
 
 /**
  * Check if the CLI is being executed directly (vs imported as module)
@@ -123,6 +125,8 @@ export function createCli(): Command {
   program.addCommand(listCommand);
   program.addCommand(restartCommand);
   program.addCommand(toolUseCommand);
+  program.addCommand(installCommand);
+  program.addCommand(useGuideCommand);
 
   return program;
 }

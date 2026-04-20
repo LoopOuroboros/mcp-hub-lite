@@ -300,3 +300,176 @@ export async function listServers() {
     instances: serverInstances[server.name] || []
   }));
 }
+
+/**
+ * Options for installing a new MCP server.
+ */
+export interface InstallServerOptions {
+  name: string;
+  command?: string;
+  url?: string;
+  transport: 'stdio' | 'sse' | 'streamable-http';
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  timeout: number;
+  autoStart: boolean;
+  instanceSelectionStrategy: 'random' | 'round-robin' | 'tag-match-unique';
+  description?: string;
+}
+
+/**
+ * Installs a new MCP server via the web API.
+ *
+ * This function sends a POST request to the /web/servers endpoint to add a new
+ * server configuration. If the instance selection strategy is not 'random', it
+ * sends an additional PUT request to update the strategy.
+ *
+ * @param options - Server installation options
+ * @param host - Server host address
+ * @param port - Server port number
+ * @returns Promise that resolves when installation completes
+ * @throws Error if the server already exists or the API request fails
+ *
+ * @example
+ * ```typescript
+ * await installServer({
+ *   name: 'github-mcp',
+ *   command: 'npx github-mcp',
+ *   transport: 'stdio',
+ *   env: { API_KEY: 'xxx' },
+ *   timeout: 60,
+ *   autoStart: true,
+ *   instanceSelectionStrategy: 'random'
+ * }, 'localhost', 7788);
+ * ```
+ */
+export async function installServer(
+  options: InstallServerOptions,
+  host: string,
+  port: number
+): Promise<void> {
+  // Build request payload
+  const payload = {
+    name: options.name,
+    config: {
+      type: options.transport,
+      command: options.command,
+      url: options.url,
+      args: options.args || [],
+      env: options.env || {},
+      headers: options.headers || {},
+      timeout: options.timeout * 1000,
+      enabled: options.autoStart,
+      description: options.description,
+      instanceSelectionStrategy:
+        options.instanceSelectionStrategy !== 'random'
+          ? options.instanceSelectionStrategy
+          : undefined
+    }
+  };
+
+  // Call POST /web/servers to install
+  const response = await fetch(`http://${host}:${port}/web/servers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => ({ message: response.statusText }))) as {
+      message?: string;
+    };
+    const errorMessage = errorData.message || response.statusText;
+    if (errorMessage.includes('already exists')) {
+      throw new Error(`Server "${options.name}" already exists`);
+    }
+    throw new Error(`Failed to install server: ${errorMessage}`);
+  }
+
+  // If strategy is not random, update via PUT
+  if (options.instanceSelectionStrategy !== 'random') {
+    const putResponse = await fetch(`http://${host}:${port}/web/servers/${options.name}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instanceSelectionStrategy: options.instanceSelectionStrategy })
+    });
+
+    if (!putResponse.ok) {
+      const errorData = (await putResponse
+        .json()
+        .catch(() => ({ message: putResponse.statusText }))) as {
+        message?: string;
+      };
+      throw new Error(
+        `Server installed but failed to set strategy: ${errorData.message || putResponse.statusText}`
+      );
+    }
+  }
+}
+
+/**
+ * Parses environment variable flags into a key-value object.
+ *
+ * @param envFlags - Array of environment variables in KEY=VALUE format
+ * @returns Record of environment variable key-value pairs
+ * @throws Error if the format is invalid
+ *
+ * @example
+ * ```typescript
+ * parseEnvVars(['API_KEY=xxx', 'DEBUG=true'])
+ * // Returns: { API_KEY: 'xxx', DEBUG: 'true' }
+ * ```
+ */
+export function parseEnvVars(envFlags: string[]): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const item of envFlags) {
+    const equalIndex = item.indexOf('=');
+    if (equalIndex === -1) {
+      throw new Error(`Invalid env format: ${item}, expected KEY=VALUE`);
+    }
+    const key = item.substring(0, equalIndex);
+    const value = item.substring(equalIndex + 1);
+    if (!key) {
+      throw new Error(`Invalid env format: ${item}, KEY cannot be empty`);
+    }
+    if (value === undefined) {
+      throw new Error(`Invalid env format: ${item}, VALUE cannot be empty`);
+    }
+    env[key] = value;
+  }
+  return env;
+}
+
+/**
+ * Parses HTTP header flags into a key-value object.
+ *
+ * @param headerFlags - Array of headers in "Key: Value" format
+ * @returns Record of header key-value pairs
+ * @throws Error if the format is invalid
+ *
+ * @example
+ * ```typescript
+ * parseHeaders(['Authorization: Bearer xxx', 'Content-Type: application/json'])
+ * // Returns: { Authorization: 'Bearer xxx', 'Content-Type': 'application/json' }
+ * ```
+ */
+export function parseHeaders(headerFlags: string[]): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const item of headerFlags) {
+    const colonIndex = item.indexOf(':');
+    if (colonIndex === -1) {
+      throw new Error(`Invalid header format: ${item}, expected "Key: Value"`);
+    }
+    const key = item.substring(0, colonIndex).trim();
+    const value = item.substring(colonIndex + 1).trim();
+    if (!key) {
+      throw new Error(`Invalid header format: ${item}, KEY cannot be empty`);
+    }
+    if (!value) {
+      throw new Error(`Invalid header format: ${item}, VALUE cannot be empty`);
+    }
+    headers[key] = value;
+  }
+  return headers;
+}
