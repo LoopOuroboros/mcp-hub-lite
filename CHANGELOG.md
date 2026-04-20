@@ -1,435 +1,572 @@
 # Changelog
 
-## 2026-04-17
+All notable changes to this project will be documented in this file.
 
-- **Version**: Bump version to 1.2.2
-- **Config Fix**: Correct servers sorting in config-loader
-- **Logger Refactor**: Add STDERR log module for stdio transport
-- **Gateway Feature**: Add gatewayDebug logging control
-- **Frontend Feature**: Add time unit types and conversion utilities
+## [1.2.2] - 2026-04-17
 
-## 2026-04-16
+### Gateway
 
-- **Frontend Feature**: Add Startup configuration tab to Settings page
-- **Startup Fix**: Extract ensureServerInstances() to eliminate DRY violation
-- **Connection Refactor**: Split connect() into SRP-compliant private methods
-- **Startup Refactor**: Extract startup orchestration logic into dedicated module
+- Add gatewayDebug logging control
 
-## 2026-04-15
+### Frontend
 
-- **Resource Fix**: Ensure consistent { contents: [...] } format in resource read API
-- **Docs**: Add community acknowledgment for LinuxDo
+- Add time unit types and conversion utilities
+- Add Startup configuration tab to Settings page
 
-## 2026-04-14
+### Config
 
-- **Lint Fix**: Remove unnecessary escape character in CLI entry detection
-- **Docs**: Format README files for release
-- **Version**: Bump version to 1.2.1
-- **CLI Fix**: Fix CLI entry detection for Windows/npm symlink environments
-- **CLI Refactor**: Fix command count and rename mcpToolUseCommand to toolUseCommand
-- **Config Refactor**: Change config loading logs from info to debug level
-- **Core Feature**: Add normalizeToolName for cross-format tool name matching
-- **CLI Feature**: Add tool-use command for MCP server tool operations
-- **Gateway Feature**: Implement per-request transport mode to fix connection errors
+- Correct servers sorting in config-loader
 
-## 2026-04-13
+### Startup
 
-- **Deps**: Add undici dependency for HTTP transport
-- **Frontend Fix**: Prevent runtime error when tool is undefined in groupedTools
-- **Version**: Bump version to 1.1.0
-- **Core Refactor**: Use composite key serverName-serverIndex instead of serverId
-- **Resource Feature**: Implement MCP native resource forwarding
-- **Docs**: Update search functionality description in CLAUDE.md
-- **Hub Tools Refactor**: Add non-strict mode to selectBestInstance
-- **Search Refactor**: Remove complex search module, simplify to string matching
-- **Test Refactor**: Remove evaluation tests not compliant with MCP spec
+- Extract ensureServerInstances() to eliminate DRY violation
+- Extract startup orchestration logic into dedicated module
 
-## 2026-04-12
+### Resources
 
-- **Config Refactor**: Move instance selection strategy to template
-- **Frontend Refactor**: Improve type declarations and test type safety
-- **Frontend Refactor**: Compute instance counts from server.instances directly
-- **Gateway Feature**: Restrict call_tool from invoking system tools
-- **Docs**: Compress use-guide from 13 to 7 sections
-- **Gateway Fix**: Return 400 for missing Accept header
+- Ensure consistent { contents: [...] } format in resource read API
 
-## 2026-04-10
+### Logging
 
-- **Transport Refactor**: Use official SDK StdioClientTransport
-- **Stdio Transport Refactor**: Log non-JSON-RPC stdout and unify stderr log level
-- **Frontend Fix**: Fix tools and resources not displaying in server detail
-- **Frontend Fix**: Add description field to ConfigTemplateForm
-- **Tools Fix**: Handle nested toolArgs in updateServerDescription
+- Add STDERR log module for stdio transport
 
-## 2026-04-09
+### Connection
 
-- **Security Feature**: Mask sensitive values in config change logs
-- **Frontend Fix**: Improve instance status reactivity and management
-- **i18n Fix**: Improve noToolsFound message to reflect tool aggregation
-- **Frontend Fix**: Add bottom padding to prevent save button cutoff on scroll
-- **Gateway Refactor**: Extract version and protocol version to shared utility
-- **Config Refactor**: Unify instance ID generation with content hash
+- Split connect() into SRP-compliant private methods
 
-## 2026-04-08
+### Other
 
-- **MCP Status Fix**: Prevent automatic enabled field updates on connect/disconnect
-- **Chore**: Update .gitignore to ignore .full-review directory
+- Update changelog for 2026-04-15 to 2026-04-17
+- Add LinuxDo community acknowledgment
 
-## 2026-04-07
+---
 
-- **Frontend Fix**: Fix TypeScript type errors in component event handlers
+## [1.2.0] - 2026-04-14
 
-## 2026-04-04
+### Core
 
-- **Test Refactor**: Simplify ServerStatusTags tests with mocks
-- **Config Feature**: Sort env and headers keys on config save
-- **Proxy Feature**: Add proxy configuration support for SSE and Streamable HTTP transports
+- Add normalizeToolName for cross-format tool name matching
 
-## 2026-04-03
+### CLI
 
-- **Config Feature**: Sort env and headers keys on config save
-- **Config Refactor**: Optimize updateServerInstance logging
-- **Connection Refactor**: Improve serverId handling and protocol version support
+- Add tool-use command for MCP server tool operations
+- Fix CLI entry detection for Windows/npm symlink environments
+- Fix command count and rename mcpToolUseCommand to toolUseCommand
 
-## 2026-04-02
+### Config
 
-- **Docs**: Update CLAUDE.md documentation for logging and composables
-- **Logging Refactor**: Enhance transport logging with serverId context
-- **Transports Feature**: Add LineBuffer for proper stderr line buffering
-- **Logging Refactor**: Enhance logging module and configuration change tracking
-- **Docs**: Update CLAUDE.md documentation for v1.1 config refactor
+- Change config loading logs from info to debug level
 
-## 2026-04-01
+### System Tools
 
-- **Config Refactor**: Complete v1.1 multi-instance configuration refactoring
-- **Docs**: Update CLAUDE.md files to reflect session removal
-- **Session Refactor**: Remove session persistence mechanism and use SDK native stateless mode
-- **Session Refactor**: Remove session persistence mechanism
+- Rename list_tools_in_server to list_tools
 
-## 2026-03-31
+### Documentation
 
-- **UI Fix**: Ensure log viewer area fills available container height
-- **Frontend Feature**: Add instance tab routing synchronization
+- Complete CLAUDE.md documentation for all submodules
+- Update changelog and README for v1.2 release
 
-## 2026-03-29
+### Utils
 
-- **i18n Fix**: Correct missing translation key in InstanceConfig component
+- Add unit tests for normalizeToolName function
 
-## 2026-03-28
+---
 
-- **Hub Tools Feature**: Implement instance selection strategies
+## [1.1.1] - 2026-04-14
 
-## 2026-03-27
+### Gateway
 
-- **Docs**: Update CLAUDE.md files across project modules
-- **Session Feature**: Remove cwd and project fields from session management
-- **UI Fix**: Optimize instance list display in English and hide redundant Running tag
-- **Config Fix**: Ensure server instance indexes from config load and migration
+- Implement per-request transport mode to fix connection errors
 
-## 2026-03-26
+### Frontend
 
-- **Config Feature**: Implement v1.1 instance configuration system
+- Prevent runtime error when tool is undefined in groupedTools
 
-## 2026-03-25
+---
 
-- **Config Fix**: Support string index type for server instance operations
-- **Docs**: Update CLAUDE.md files to reflect recent v1.1 config changes
-- **Config Feature**: Enhance instance management with display name and route selection
+## [1.1.0] - 2026-04-13
 
-## 2026-03-24
+### Resources
 
-- **Config Refactor**: Activate v1.1 config format with instance support
-- **Gateway Fix**: Only include tools from servers with allowedTools configured
-- **Hub Tools Fix**: Support both toolArgs and arguments for backward compatibility
+- Implement MCP native resource forwarding
 
-## 2026-03-23
+### Gateway
 
-- **Config Refactor**: Activate v1.1 config format, remove v1.0 compatibility code
-- **Config Feature**: Add empty value cleaning when saving config
+- Restrict call_tool from invoking system tools
+- Return 400 for missing Accept header
+- Extract version and protocol version to shared utility
+- Only include tools from servers with allowedTools configured
 
-## 2026-03-20
+### Security
 
-- **UI Fix**: Correct dark mode background color and refine instance UI
-- **UI Feature**: Add server instance management UI components
-- **Config Feature**: Add index and displayName to ServerInstanceConfig with reassignment API
-- **UI Feature**: Add tag management UI with TagManager component
-- **Config Feature**: Add v1.1 config schema with auto-migration support
+- Mask sensitive values in config change logs
 
-## 2026-03-19
+### Config
 
-- **i18n Fix**: Fix headers label and add button text in server config
-- **UI Feature**: Add description field support in AddServerModal
+- Sort env and headers keys on config save
+- Implement v1.1 instance configuration system
+- Enhance instance management with display name and route selection
+- Add empty value cleaning when saving config
+- Add index and displayName to ServerInstanceConfig with reassignment API
+- Add v1.1 config schema with auto-migration support
+- Move instance selection strategy to template
+- Complete v1.1 multi-instance configuration refactoring
+- Activate v1.1 config format with instance support
+- Activate v1.1 config format, remove v1.0 compatibility code
+- Ensure server instance indexes from config load and migration
+- Support string index type for server instance operations
+- Unify instance ID generation with content hash
 
-## 2026-03-17
+### Proxy
 
-- **UI Enhancement**: Update resource detail and list views with hub tools integration
-- **System Tools Refactor**: Enhance system tools handling and API endpoints
-- **Hub Tools Refactor**: Restructure core hub tools service architecture
-
-## 2026-03-15
+- Add proxy configuration support for SSE and Streamable HTTP transports
 
-- **Lint Fix**: Add fallback for missing .eslintrc-auto-import.json
-- **UI Fix**: Correct serverName prop in ServerDetail for ToolCallDialog
-- **Hub Tools Refactor**: Simplify dynamic resources list to only server metadata
+### Transport
 
-## 2026-03-09
+- Add LineBuffer for proper stderr line buffering
+- Use official SDK StdioClientTransport
+- Log non-JSON-RPC stdout and unify stderr log level
 
-- **Core Refactor**: Update core modules for session and client migration
-- **Gateway Refactor**: Clean up deprecated methods and update tool cache access
-- **Client Refactor**: Remove deprecated client tracking and stores
-- **Session Refactor**: Migrate from mcp-session-manager to session-tracker service
-- **Test**: Enable initialized notification test
-- **Style**: Improve regex formatting for caller info
-- **Session Feature**: Add capabilities support in session manager
-- **Session Refactor**: Simplify sessionId generation
-- **Gateway Feature**: Add initialized notification and capabilities handling
-- **Client Tracker Feature**: Add capabilities and project inference
-- **Session Feature**: Add capabilities field to session model
-- **UI Feature**: Add capabilities display in SessionsView
-- **Logger Feature**: Add caller information and environment variable controls
-- **Logger Fix**: Ensure JSON pretty-printing for empty capabilities messages
-- **API Refactor**: Make MCP communication debug logging conditional
-- **Feature**: Add headers support and default to streamable-http
-- **UI Fix**: Fix environment variable value input display
-
-## 2026-03-06
-
-- **System Tool Fix**: Fix system tool call validation errors when requestOptions.sessionId is null
-- **Frontend Fix**: Change system tool serverName from 'system' to 'mcp-hub-lite' for consistency
-- **Zod Schema Enhancement**: Enhance sessionId schema to accept null and transform to undefined
-- **ToolCallDialog Improvement**: Only include requestOptions when selectedInstanceId has value
-- **Version Bump**: Update package.json version to 1.0.1
-
-## 2026-03-05
-
-- **Project Initialization**: Execute full project documentation architecture initialization and update
-- **Root CLAUDE.md Update**: Add 2026-03-05 changelog entry, verify module structure diagram and navigation link integrity
-- **Module Documentation Status Check**: Confirm CLAUDE.md document status for all 20 major modules
-- **Coverage Report Verification**: Verify project scan coverage and scan status
-
-## 2026-03-04
-
-- **CLI Fix**: Ensure CLI commands exit properly after execution
-- **CLI/Logger Fix**: Fix server startup and log ANSI color issues
-- **CLI Enhancement**: Enhance status command with formatted output
-- **UI Enhancement**: Improve settings page UI and dev mode handling
-- **Logging Refactor**: Improve MCP gateway logging
-- **Logging Refactor**: Unify dev mode detection, remove devLogFile config
-- **Logging Enhancement**: Enhance stdio transport with log store integration
-
-## 2026-03-03
-
-- **Test Update**: Update tests for new log config system
-- **Logging Fix**: Use getMcpCommDebugSetting() in connection-manager
-- **Logging Refactor**: Unify logging configuration system
-- **Config Enhancement**: Extend config schema with new log options
-- **UI Enhancement**: Add new logging config options in settings
-- **Logging Refactor**: Extract and unify MCP notification message handling
-- **Logging Fix**: Improve stderr log level detection logic
-- **Logging Refactor**: Use MCP_COMM_DEBUG environment variable for communication logs
-- **Gateway Refactor**: Remove SSE connection timestamp tracking
-- **Session Enhancement**: Count expired sessions and use configured flush interval
-- **Logging Enhancement**: Filter binary image data in MCP response logs
-- **UI Styling**: Remove trailing semicolon in SettingsView style
-- **Refactor**: Improve type handling and SSE logging
-- **Documentation**: Update project documentation
-- **UI Refactor**: Implement Element Plus auto-import
-- **UI Fix**: Fix el-input-number width issue in SettingsView
-
-## 2026-03-02
-
-- **Session Enhancement**: Skip expired sessions during recovery
-- **Telemetry Removal**: Remove OpenTelemetry and telemetry features
-- **Styling**: Format codebase with prettier
-- **SSE Enhancement**: Add connection timeout config and reconnection detection
-- **Logging Enhancement**: Enhance JSON pretty-printing with newline handling
-- **Logging Styling**: Unify LOG_MODULES format as PascalCase
-- **Session Refactor**: Simplify session matching logic
-
-## 2026-03-01
-
-- **Logging Refactor**: Change log file naming to timestamp-based format
-- **Refactor**: Add LOG_MODULES context and update hub-manager service tests
-- **Session Enhancement**: Enhance sessionId extraction with header support and improved fallback logic
-- **Session Refactor**: Extract session manager to modular structure
-- **Connection Refactor**: Extract connection manager to modular structure
-
-## 2026-02-28
-
-- **Documentation**: Update CLAUDE.md with project initialization summary
-- **Logging Refactor**: Rename subModule to module, add LOG_MODULES constants
-- **Hub-Tools Refactor**: Extract hub-tools.service.ts to modular structure
-- **Gateway Refactor**: Extract gateway.service.ts to modular structure
-- **API/MCP Refactor**: Extract gateway module to separate files
-- **Config Refactor**: Split config-manager to modular structure
-- **Logging Refactor**: Add missing subModule context to log statements
-- **Logging Refactor**: Split monolithic logger to modular structure
-- **Gateway Fix**: Add missing uri field in ReadMcpResourceTool response
-
-## 2026-02-27
-
-- **Gateway Refactor**: Enhance SSE stream management and response logging
-- **Refactor**: Remove duplicate debug logging in gateway
-- **Refactor**: Resolve config-logger circular dependency with config getter pattern
-- **Logging Fix**: Use stringifyForLogging for gateway header, improve rawHeaders readability
-
-## 2026-02-26
-
-- **Refactor**: Fix ESM imports and optimize CLI startup performance
-- **Frontend Enhancement**: Add type safety for JsonSchema in frontend ToolsView
-- **Documentation**: Update docs for config path and logging
-- **Enhancement**: Enhance dev server startup logging
-- **Refactor**: Optimize logging verbosity
-- **Enhancement**: Add rawHeaders operation for session header propagation
-- **Enhancement**: Enhance session persistence and cleanup logic
-- **Enhancement**: Introduce unified system tools processor and prefix tool name support
-- **Enhancement**: Enhance session management with consistency check and request header handling
-- **Refactor**: Optimize logger options extraction
-- **Enhancement**: Improve tool call dialog and system tools display
-
-## 2026-02-25
-
-- **Enhancement**: Enhance documentation and system configuration
-- **MCP Connection Manager Refactor**: Optimize getTools/getResources logging with cache hit indicator and resource cache improvements
-- **Refactor**: Extract common stderr handling logic to reduce code duplication
-- **Enhancement**: Add server description field and resource detail improvements
-
-## 2026-02-15
-
-- **Session Persistence Feature**: Implement session state persistence to disk with dirty tracking and batch flushing
-- **Graceful Shutdown Handling**: Add graceful shutdown handler for session state flushing
-- **Session Management API**: Add session management API endpoints (list, get, delete)
-- **Session Recovery Logic**: Enhance session recovery logic with clientName matching
-- **Settings Page Enhancement**: Add time unit selector (seconds/minutes/hours/days)
-- **Logging System Improvements**: Support subModule context and tools/list response simplification
-- **Log Directory Optimization**: Move log directory to ~/.mcp-hub-lite/logs
-- **Full Check Command**: Add `npm run full:check` command for simplified complete project checking
-- **Unit Test Coverage**: Add comprehensive unit tests for session manager
-
-## 2026-02-14
-
-- **Session Persistence Implementation**: Implement session persistence and configuration management
-- **CLI Unit Tests**: Add comprehensive unit tests for CLI commands
-- **Session Timeout Configuration**: Add configurable session timeout for MCP gateway
-- **Type Safety Improvements**: Comprehensive eslint no-explicit-any fixes and type safety enhancements
-
-## 2026-02-13
-
-- **CLI Command Tests**: Add comprehensive unit tests for CLI commands
-- **Session Timeout Configuration**: Add configurable session timeout for MCP gateway
-- **Type Safety Fixes**: Comprehensive eslint no-explicit-any fixes and type safety improvements
-
-## 2026-02-11
-
-- **Frontend i18n Support**: Update server status tags and tool call dialog components with i18n support
-- **ESLint Configuration Fix**: Fix lint:log command and ESLint configuration
-- **Frontend Resource View**: Improve resource view with table layout
-- **Type System Refactor**: Establish shared type system for frontend-backend integration
-- **WebSocket Types**: Establish client and WebSocket type system
-- **Config Manager Optimization**: Prevent test pollution with lazy initialization for ConfigManager
-- **System Tools Optimization**: Enhance system tools type safety and naming
-- **MCP Resource Support**: Add MCP resource support with UI and API endpoints
-- **Client Tracking Enhancement**: Enhance client tracking and connection management
-- **Tool Call Dialog**: Improve tool call dialog with i18n and response display
-- **Search Functionality Optimization**: Implement comprehensive search functionality across MCP servers
-
-## 2026-02-10
-
-- **Fix config.test.ts Intermittent Test Failure**: Resolve "should save config to file" intermittent test failure
-- **Root Cause Analysis**: ConfigManager singleton pattern caused test state pollution and temporary file path conflicts
-- **Fix Solution**:
-  - Modify getConfigManager() to create new instances in test environment for isolation
-  - Generate unique temporary file paths for each test with timestamp and random suffix
-  - Enhance file cleanup logic with retry mechanism to handle Windows file system permissions
-- **Validation Results**: 100 sequential tests, 50 parallel tests (2 concurrency), 200 parallel tests (5 concurrency) all passed
-- **Documentation**: Add A3 problem analysis report and detailed technical fix report
-
-## 2026-01-31
-
-- **Frontend UI Enhancement**: Enhance server card and interaction
-- **Configuration Backup Optimization**: Optimize backup system with caching and compilation phase handling
-- **Tool Call Dialog**: Enhance tool call dialog with i18n and response display
-- **System Tools Simplification**: Simplify system tools API and improve type safety
-- **MCP Connection Optimization**: Optimize connection management logic
-- **Path Alias System**: Enhance path alias system with module-specific aliases
-- **Server Status Tags**: Add server status tags component with i18n support
-- **Search Functionality Optimization**: Implement comprehensive search functionality across MCP servers
-
-## 2026-01-30
-
-- **Config Manager Optimization**: Optimize backup logic and implement lazy initialization
-- **Test Coverage Optimization**: Add temporary directory to test coverage paths
-- **Logging System Refactor**: Extract common log method to eliminate code duplication
-- **Test Fix**: Fix missing logger.setLevel method and system.logging property mock configuration in runner.test.ts
-- **PID Formatting Optimization**: Increase PID formatting width to 8 characters
-- **TypeScript Fix**: Resolve TypeScript type errors in unit tests
-- **Server Optimization**: Optimize batch import with single save and concurrent startup
-- **Configuration Optimization**: Skip backup creation for default configuration
-
-## 2026-01-27
-
-- **Server Fix**: Fix auto-start not working and sidebar display issues
-- **Temporary File Cleanup**: Remove temporary files
-- **Frontend Layout Refactor**: Update App.vue with new layout structure
-- **Dependency Update**: Update package dependencies and Vite configuration
-- **Test Updates**: Update tests for new features and services
-- **Server Runtime Optimization**: Optimize server runtime and CLI commands
-- **Service Enhancement**: Add Hub Manager and Search Core services
-- **API Enhancement**: Enhance MCP gateway and web API endpoints
-- **Frontend Features**: Add tool calls store and WebSocket utilities
-- **Multi-language Support**: Add multi-language support and update UI components
-
-## 2026-01-26
-
-- **WebSocket Functionality**: Implement real-time log streaming via WebSocket
-- **Client Management**: Add client management functionality
-- **Branch Merge**: Merge branch 'feat/client-management' into 003-DEV
-
-## 2026-01-21
-
-- **Logging Optimization**: Optimize logging for tools/list responses
-- **Client Management**: Add client management functionality
-
-## 2026-02-01
-
-- **Project Summary Update**: Execute "root-level concise + module-level detailed" hybrid strategy update
-- **File Statistics**: Identify complete project structure and modules
-- **Module Coverage**: All major modules have been identified and CLAUDE.md documents created/updated
-- **Coverage Rate**: 100% module coverage, complete file scanning finished
-- **Enhance Module Structure Diagram**: Update Mermaid structure diagram, ensure all module links are correct
-- **Update Module Index**: Include all submodules
-
-### 2026-01-29
-
-- **Project Index Update**: Execute complete scan, update project documentation index
-- **File Statistics**: Identify 94 source code files (47 backend + 27 frontend + 20 tests)
-- **Module Coverage**: All 16 modules have been identified and CLAUDE.md documents created
-- **Coverage Rate**: 100% module coverage, 100% file scanning completed
-- **Enhance Module Structure Diagram**: Add missing module links (including CONTRACT module)
-- **Update Module Index**: Include all submodules
-
-### 2026-01-28
-
-- Update summary
-- Improve module structure diagram, add missing module links (including CONTRACT module)
-- Create detailed CLAUDE.md documents for src/server and src/pid modules
-- Create detailed CLAUDE.md documents for frontend/router and frontend/i18n modules
-- Create detailed CLAUDE.md documents for tests/contract module
-- Update module index, include all submodules
-- **Add Frontend Test Coverage**: Add unit tests for Dashboard component, ToolCard component, and Server Store
-- **Update Test Configuration**: Configure Vue Test Utils and JSDOM environment for frontend component testing
-- **Update Project Documentation**: Reflect improvements in frontend test status
-- **Add Server Runtime Tests**: Add complete unit test coverage for src/server/runner.ts
-- **Update Test Documentation**: Add server module test documentation in tests/unit/CLAUDE.md
-
-### 2026-01-20
-
-- Optimize HubTools call logic, replace serverName parameter with serverId in all methods, directly use server unique identifier for operations, avoiding the overhead of finding servers by name
-- Add HubToolsService documentation
-- Update project architecture documentation
-
-### 2026-01-19
-
-- Initialize project AI context documentation
-- Generate module structure diagram and index
-- Integrate architecture specifications and development processes
+### Frontend
+
+- Add instance tab routing synchronization
+- Fix tools and resources not displaying in server detail
+- Add description field to ConfigTemplateForm
+- Improve instance status reactivity and management
+- Add bottom padding to prevent save button cutoff on scroll
+- Fix TypeScript type errors in component event handlers
+- Ensure log viewer area fills available container height
+- Optimize instance list display in English and hide redundant Running tag
+- Correct dark mode background color and refine instance UI
+- Improve type declarations and test type safety
+- Compute instance counts from server.instances directly
+
+### UI Components
+
+- Add server instance management UI components
+- Add tag management UI with TagManager component
+- Add description field support in AddServerModal
+- Update resource detail and list views with hub tools integration
+
+### i18n
+
+- Improve noToolsFound message to reflect tool aggregation
+- Correct missing translation key in InstanceConfig component
+- Fix headers label and add button text in server config
+
+### Session
+
+- Remove cwd and project fields from session management
+- Remove session persistence mechanism and use SDK native stateless mode
+- Remove session persistence mechanism
+
+### System Tools
+
+- Implement instance selection strategies
+- Add update_server_description system tool
+- Support both toolArgs and arguments for backward compatibility
+- Add MCP_HUB_LITE_SERVER handling to getTool
+- listServers only returns connected servers
+- Restructure core hub tools service architecture
+- Enhance system tools handling and API endpoints
+- Add non-strict mode to selectBestInstance
+- Optimize hub tools service and API
+- Simplify system tools API and improve type safety
+
+### MCP Status
+
+- Prevent automatic enabled field updates on connect/disconnect
+
+### Connection
+
+- Improve serverId handling and protocol version support
+
+### Search
+
+- Remove complex search module, simplify to string matching
+- Simplify search logic using server-level caching
+
+### Tests
+
+- Remove evaluation tests not compliant with MCP spec
+
+### Core
+
+- Use composite key serverName-serverIndex instead of serverId
+
+### Documentation
+
+- Update search functionality description
+- Update CLAUDE.md documentation for logging and composables
+- Update CLAUDE.md documentation for v1.1 config refactor
+- Update CLAUDE.md files to reflect session removal
+- Update CLAUDE.md files across project modules
+- Update CLAUDE.md files to reflect recent v1.1 config changes
+- Update CLAUDE.md files with format improvements and new content
+
+### Use Guide
+
+- Compress use-guide from 13 to 7 sections
+
+### Tools
+
+- Handle nested toolArgs in updateServerDescription
+- Simplify ServerStatusTags tests with mocks
+- Optimize updateServerInstance logging
+
+### Lint
+
+- Add fallback for missing .eslintrc-auto-import.json
+
+### Status
+
+- Show all configured servers including disabled ones in status
+
+---
+
+## [1.0.2] - 2026-03-15
+
+### Session
+
+- Add capabilities support in session manager
+- Add capabilities field to session model
+- Simplify sessionId generation
+
+### Gateway
+
+- Add initialized notification and capabilities handling
+- Clean up deprecated methods and update tool cache access
+- Enable initialized notification test
+
+### Client
+
+- Add capabilities and project inference
+
+### UI
+
+- Add capabilities display in SessionsView
+- Correct serverName prop in ServerDetail for ToolCallDialog
+
+### System Tools
+
+- Simplify dynamic resources list to only server metadata
+
+### Core
+
+- Update core modules for session and client migration
+
+### Client Tracking
+
+- Remove deprecated client tracking and stores
+
+### Session Migration
+
+- Migrate from mcp-session-manager to session-tracker service
+
+### API
+
+- Make MCP communication debug logging conditional
+
+---
+
+## [1.0.1] - 2026-03-15
+
+### UI
+
+- Fix environment variable value input display
+
+### System Tools
+
+- Resolve system tool call validation errors
+
+---
+
+## [1.0.0] - 2026-03-15
+
+### UI
+
+- Improve dashboard and server status tags
+- Improve settings page UI and dev mode handling
+- Add new logging configuration options to settings
+- Improve resources view with table layout
+- Improve tool call dialog and system tools display
+- Enhance server card and interaction
+- Enhance tool call dialog with i18n and response display
+- Add server status tags component with i18n support
+- Update App.vue with new layout structure
+
+### CLI
+
+- Enhance status command with formatted output
+- Add comprehensive unit tests for CLI commands
+- Ensure CLI commands exit properly after execution
+- Fix server startup and log ANSI color issues
+
+### Logging
+
+- Enhance log storage integration for stdio transports
+- Filter binary image data in MCP response logs
+- Enhance JSON pretty printing with newline processing
+- Improve MCP gateway logging
+- Unify dev mode detection and remove devLogFile config
+- Unify logging configuration system
+- Extract and unify MCP notification message handling
+- Use MCP_COMM_DEBUG env var to control communication logs
+- Change log file naming to timestamp-based format
+- Add missing subModule context to log statements
+- Split monolithic logger into modular structure
+- Enhance SSE stream management and response logging
+- Extract common log method to eliminate code duplication
+- Optimize logging verbosity
+- Optimize logger options extraction
+- Optimize getTools/getResources logging with cache hit indicators and resource cache improvement
+- Improve stderr log level detection logic
+- Use getMcpCommDebugSetting() in connection-manager
+- Use stringifyForLogging for gateway headers and improve rawHeaders readability
+- Enhance development server logging and hot reload
+- Organize file structure and enhance logging
+- Optimize logging for tools/list responses
+- Update documentation for config path and logging
+
+### Config
+
+- Extend config schema with new logging options
+- Add configurable session timeout for MCP gateway
+- Simplify config-manager implementation
+- Use default config on validation failure
+- Prevent auto-creation of config file and add error logging
+- Add immediate save option to updateConfig method
+- Optimize backup system with caching and compilation phase handling
+- Optimize backup logic and implement lazy initialization
+- Skip backup creation for default config
+- Remove delayed save mechanism
+- Correct config path
+
+### Session
+
+- Count expired sessions and use config flush interval
+- Skip expired sessions during restore
+- Enhance sessionId extraction with header support and improved fallback logic
+- Enhance session persistence and cleanup logic
+- Enhance session management with consistency checks and request header handling
+- Implement comprehensive session persistence and management
+- Implement session persistence and configuration management
+- Simplify session matching logic
+- Extract session manager into modular structure
+
+### SSE
+
+- Add connection timeout config and reconnection detection
+- Remove SSE connection timestamp tracking
+- Improve type handling and SSE logging
+
+### Type System
+
+- Add type safety for JsonSchema in frontend ToolsView
+- Comprehensive eslint no-explicit-any fixes and type safety improvements
+- Establish shared type system for frontend-backend integration
+
+### System Tools
+
+- Introduce unified system tool handler and prefixed tool name support
+- Implement system tools framework with centralized constants
+
+### Documentation
+
+- Enhance documentation and system configuration
+- Add server description field and resource detail improvements
+- Update project documentation and configuration
+
+### Request Headers
+
+- Add rawHeaders manipulation for session header propagation
+
+### Tools
+
+- Add serverName field to tool model and implement server-level caching
+
+### Observability
+
+- Enhance OpenTelemetry integration and logging system
+- Add OpenTelemetry tracing support
+- Simplify tracing exporters to console and OTLP only
+- Remove OpenTelemetry and telemetry functionality
+
+### Logger
+
+- Add subModule support to logger and update WebSocket logs
+- Add LOG_MODULES context and update hub-manager service tests
+
+### Search
+
+- Implement simple search service for basic tool discovery
+- Enhance tool call dialog and tools view with search integration
+- Implement comprehensive search functionality across MCP servers
+
+### WebSocket
+
+- Add server update event listeners
+
+### Tool Views
+
+- Enhance tools view with serverName-based grouping
+- Enhance tool call dialog and tools view with search integration
+
+### Batch Operations
+
+- Optimize batch import with single save and concurrent startup
+
+### Services
+
+- Add hub manager and search core services
+
+### API
+
+- Enhance MCP gateway and web API endpoints
+
+### Client Tracking
+
+- Enhance client tracking and connection management
+
+### Frontend Store
+
+- Add tool calls store and websocket utilities
+
+### Client
+
+- Add client version display
+- Add manual save button to server list
+- Add client management functionality
+
+### i18n
+
+- Add multi-language support and update UI components
+- Add internationalization support for server management actions
+
+### Server Management
+
+- Enhance system configuration management and server management functionality
+- Enhance server management functionality, add timeout and auto-start configurations
+- Optimize server detail page status display and uptime calculation
+
+### Tool Management
+
+- Implement comprehensive tool search and management system
+
+### Tool Gateway
+
+- Implement Tools Gateway and refactor navigation
+
+### MCP Server
+
+- Add server auto-start configuration and refactor MCP gateway transport
+- Add server version information display functionality
+- Implement MCP Server log page to display complete logs
+- Add server config timeout setting functionality
+- Refactor MCP connection management and transport layer, add resource model support
+- Fix auto-start not working and sidebar display issues
+
+### Resources
+
+- Display tool and resource counts in tabs
+- Add MCP resources support with UI and API endpoints
+
+### Transport
+
+- Add Streamable HTTP transport support for Microsoft Learn MCP Server
+
+### Frontend Tools
+
+- Add remote server support and HTTP utilities
+- Save development progress with UI enhancements and new components
+- Complete frontend architecture refactoring and implement new UI components
+- Use shared types in frontend code
+- Enhance path alias system with module-specific aliases
+- Rename dashboard and header components to view suffix
+- Frontend code cleanup and improvements
+- Enhance type safety in gateway and hub tools services
+
+### Implementation Milestones
+
+- Complete MCP Hub Lite implementation with multi-server support
+- Simplify architecture and enhance CLI status command
+- Enhance CLI, add i18n, update config & cleanup
+- Implement pid management and stop/restart commands
+- Implement cli commands (start, list, status, ui)
+- Implement fault tolerance and health checks
+- Implement mcp streaming gateway with stdio support
+- Implement mcp connection and tool search
+- Complete phase 3 server management implementation
+- Complete Phase 1 & 2 (infrastructure, models, config)
+
+### Tests
+
+- Resolve config manager intermittent test failure
+- Prevent test pollution by implementing lazy initialization for ConfigManager
+- Resolve TypeScript type errors in unit tests
+- Fix runner.test.ts missing logger.setLevel method and system.logging mock config
+- Update all tests to include serverName field
+- Add comprehensive utility unit tests
+- Add comprehensive server runner unit tests
+- Add comprehensive frontend and backend test infrastructure
+- Fix lint:log command and ESLint configuration
+- Add evaluation test files
+
+### Element Plus
+
+- Implement Element Plus auto-import
+
+### Imports
+
+- Replace relative imports with path aliases
+
+### Vitest
+
+- Add temp directory to test coverage paths
+- Exclude frontend unit tests from main tsconfig
+
+### Images
+
+- Remove unused image
+
+### Index
+
+- Update project index and fix documentation typos
+- Update project AI context documentation
+
+### Debugging
+
+- Remove duplicate debug logs in gateway
+- Fix ESM imports and optimize CLI startup performance
+- Resolve config-logger circular dependency using config getter pattern
+
+### Bug Fixes
+
+- Fix el-input-number width issue in SettingsView
+- Add missing uri field in ReadMcpResourceTool response
+- Correct serverName usage in tool call dialog
+- Correct variable declaration in applyFilters
+- Correct config path in SettingsView computed properties
+- Ensure allowedTools is initialized as empty array for new servers
+- Fix tool aggregation toggle logic in frontend
+- Fix log loading issues in Dashboard and ServerDetail
+- Fix two issues with server deletion functionality
+- Fix CLI commands hanging after execution
+- Add missing PidManager import in index.ts
+- Fix missing imports in app.ts
+
+### Backend
+
+- Use shared types in backend code
+
+### Architecture
+
+- Establish shared type system for frontend-backend integration
+
+### Type Safety
+
+- Improve system tools type safety and naming
+- Optimize configuration and logging system
+- Enhance test coverage and SDK helpers
+- Improve configuration and telemetry
+- Optimize connection management logic
