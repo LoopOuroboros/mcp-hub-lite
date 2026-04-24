@@ -69,8 +69,8 @@
                 >
                   {{ server.name }}
                 </h3>
-                <el-tag v-if="server.version" size="small" class="shrink-0">
-                  {{ server.version }}
+                <el-tag v-if="server.version" size="small" class="shrink-0" :title="server.version">
+                  {{ formatServerVersion(server.version) }}
                 </el-tag>
               </div>
             </div>
@@ -302,6 +302,30 @@ function getServerOfflineCount(serverName: string) {
 function getServerTotalCount(serverName: string) {
   const server = store.servers.find((s) => s.name === serverName);
   return server?.instances?.length || 0;
+}
+
+/**
+ * Formats server version for compact display in the list view.
+ *
+ * Versions longer than 16 characters are shortened by removing the last
+ * segment separated by symbols such as '-', '_', '/', ':' or '@'. The full
+ * value is still available in the tooltip.
+ *
+ * @param {string} version - Raw server version string
+ * @returns {string} Display-friendly version string
+ */
+function formatServerVersion(version: string) {
+  const normalizedVersion = version.trim();
+  if (normalizedVersion.length <= 16) return normalizedVersion;
+
+  const separatorPattern = /[-_/\\:@#~]+/;
+  const parts = normalizedVersion.split(separatorPattern).filter(Boolean);
+
+  if (parts.length > 1) {
+    return parts.slice(0, -1).join('-');
+  }
+
+  return normalizedVersion;
 }
 
 /**
