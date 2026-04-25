@@ -276,6 +276,13 @@ export class HubToolsService {
     const { serverName, description } =
       'toolArgs' in args && args.toolArgs ? (args.toolArgs as UpdateServerDescriptionParams) : args;
 
+    // Check if trying to update the gateway itself
+    if (serverName === MCP_HUB_LITE_SERVER) {
+      throw new Error(
+        `Gateway server "${MCP_HUB_LITE_SERVER}" is not a configurable server and cannot be updated`
+      );
+    }
+
     // Validate server exists
     const existing = hubManager.getServerByName(serverName);
     if (!existing) {
