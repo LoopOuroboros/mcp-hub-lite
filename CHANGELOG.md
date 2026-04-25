@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Docs
 
+- Add "解决痛点" section to Chinese README
 - Add LinuxDo topic link to Chinese README
 
 ---
