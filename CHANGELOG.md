@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2026-04-25
+
+### Frontend
+
+- Shorten long server version display with tooltip for full version
+
+### Hub Tools
+
+- Improve error message when attempting to update gateway server
+
+### Docs
+
+- Add LinuxDo topic link to Chinese README
+
+---
+
 ## [1.2.3] - 2026-04-20
 
 ### CLI
