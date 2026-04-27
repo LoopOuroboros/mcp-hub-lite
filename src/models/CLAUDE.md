@@ -205,24 +205,6 @@ models/
 
 - `tests/unit/services/session-manager.test.ts` - 包含会话模型相关测试
 
-## 常见问题 (FAQ)
-
-### Q: 为什么使用分层错误码？
-
-A: 分层错误码（系统-安全-业务-API-MCP）便于快速定位问题类型和来源，提高调试效率。
-
-### Q: 工具状态转换规则是什么？
-
-A:
-
-```
-available -> unavailable
-available -> error
-unavailable -> available
-unavailable -> error
-error -> available
-```
-
 ## 相关文件清单
 
 | 文件路径                           | 描述         |

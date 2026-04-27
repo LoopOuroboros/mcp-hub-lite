@@ -229,16 +229,6 @@ interface ServerStatus {
 }
 ```
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加新的 API 端点？
-
-A: 在 `api/web/` 目录下创建新的路由文件，然后在 `src/app.ts` 中注册。
-
-### Q: MCP 协议如何处理流式响应？
-
-A: 使用 SSE (Server-Sent Events) 传输机制，通过 SSE 传输实现。
-
 ## 相关文件清单
 
 | 文件路径                | 描述                        |

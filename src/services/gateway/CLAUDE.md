@@ -116,26 +116,6 @@ interface ToolMapEntry {
 - **测试覆盖**: MCP 协议兼容性、多客户端并发、状态隔离
 - **测试文件**: `tests/integration/gateway/`
 
-## 常见问题 (FAQ)
-
-### Q: 为什么从全局 transport 改为 per-request transport？
-
-A: 全局 transport 导致多个客户端共享同一个状态机实例，违反了 MCP 协议的状态要求。Per-request 模式确保每个客户端有独立的状态机，解决了连接错误问题。
-
-### Q: Per-request 模式会影响性能吗？
-
-A: 不会。虽然每次请求都创建新实例，但 MCP 请求通常是短生命周期的，且 Node.js 的垃圾回收机制能高效处理这些临时对象。实际测试表明性能影响可以忽略不计。
-
-### Q: 如何调试 MCP 通信？
-
-A: 启用 `MCP_COMM_DEBUG` 环境变量：
-
-```bash
-MCP_COMM_DEBUG=true npm run dev
-```
-
-这将记录详细的 MCP 消息通信日志。
-
 ## 相关文件清单
 
 | 文件路径                                   | 描述                  |

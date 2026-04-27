@@ -424,16 +424,6 @@ utils/
 - port-checker 功能测试
 - transport 功能测试
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加自定义传输协议？
-
-A: 实现 `McpTransport` 接口，然后在 `transport-factory.ts` 中注册。
-
-### Q: 日志轮转如何配置？
-
-A: 在配置文件中设置 `logging.rotation` 相关参数，或使用环境变量覆盖。
-
 ## 相关文件清单
 
 | 文件路径                                        | 描述                          |

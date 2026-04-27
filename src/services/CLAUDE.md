@@ -306,12 +306,6 @@ enum ConnectionStatus {
 - `tests/unit/services/hub-manager-service.test.ts`
 - `tests/unit/services/gateway-logging.test.ts`
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加新的传输协议？
-
-A: 在 `utils/transports/` 目录下实现新的 Transport 类，然后在 `mcp-connection-manager.ts` 中注册。
-
 ## 相关文件清单
 
 | 文件路径                               | 描述                 |

@@ -118,32 +118,6 @@ server/
 - `tests/integration/api/gateway.test.ts` - 网关集成测试
 - `tests/server.test.ts` - 服务器基础测试
 
-## 常见问题 (FAQ)
-
-### Q: 如何调试服务器启动问题？
-
-A: 使用 `--foreground` 参数启动服务器，查看详细日志：
-
-```bash
-mcp-hub-lite start --foreground
-```
-
-### Q: 开发模式和生产模式有什么区别？
-
-A:
-
-- **开发模式**: 支持热重载，详细的开发日志，不生成 PID 文件
-- **生产模式**: 生成 PID 文件，后台运行，优化的日志级别
-
-### Q: 连接任务是如何执行的？
-
-A: 使用 fire-and-forget 模式：
-
-- 首个服务器实例立即执行连接
-- 后续实例按配置的 `startupDelay`（默认 3000ms）延迟执行
-- 连接任务异步执行，不阻塞服务器响应
-- 单个连接失败不影响其他服务器
-
 ## 相关文件清单
 
 | 文件路径               | 描述                 |

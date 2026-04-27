@@ -202,20 +202,6 @@ logger/
 - 日志格式化测试
 - 环境变量覆盖测试
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加自定义日志模块？
-
-A: 使用 `LOG_MODULES.dynamic('my-module-name')` 创建动态模块，或在 `log-modules.ts` 中添加新的模块常量。
-
-### Q: 如何控制日志级别？
-
-A: 通过环境变量 `LOG_LEVEL` 或在配置文件中设置 `system.logging.level` 字段。
-
-### Q: serverLog 和普通日志方法有什么区别？
-
-A: `serverLog` 专门用于 MCP 服务器日志，支持多行消息自动分割、serverName 标识和特定的上下文处理。
-
 ## 相关文件清单
 
 | 文件路径                  | 描述                          |

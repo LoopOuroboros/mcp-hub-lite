@@ -189,53 +189,6 @@ npm run test:backend
 npm run test:coverage
 ```
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加新的 MCP 服务器？
-
-A: 通过 Web API 或配置文件添加：
-
-```bash
-# 通过 API
-curl -X POST http://localhost:7788/web/servers \
-  -H "Content-Type: application/json" \
-  -d '{"name": "my-server", "type": "stdio", "command": "npx my-mcp-server"}'
-
-# 通过配置文件
-# 在 .mcp-hub.json 中添加 servers 配置
-```
-
-### Q: 会话管理如何工作？
-
-A: 会话状态完全在内存中管理：
-
-- 基于 sessionId 的会话隔离
-- 可配置的会话超时（默认 30 分钟）
-- 服务重启后会话重置（无持久化）
-
-### Q: 如何配置传输协议？
-
-A: 支持三种传输协议：
-
-- **stdio**: 本地进程，通过 `command` 和 `args` 配置
-- **sse**: Server-Sent Events，通过 `url` 配置
-- **streamable-http**: HTTP 流传输，通过 `url` 配置
-
-### Q: 如何启用日志轮转？
-
-A: 在配置文件中设置日志相关参数：
-
-```json
-{
-  "system": {
-    "logging": {
-      "level": "info",
-      "rotationAge": "7d"
-    }
-  }
-}
-```
-
 ## 相关文件清单
 
 | 文件路径               | 描述             |
