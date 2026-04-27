@@ -13,7 +13,8 @@ import {
   LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  UPDATE_SERVER_DESCRIPTION_TOOL
+  UPDATE_SERVER_DESCRIPTION_TOOL,
+  LIST_TAGS_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -197,6 +198,32 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       return result;
     } catch (error: unknown) {
       logger.error(`Update server description error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
+      if (error instanceof McpError) {
+        throw error;
+      } else if (error instanceof Error) {
+        throw new McpError(-32802, error.message);
+      } else {
+        throw new McpError(-32802, String(error));
+      }
+    }
+  });
+
+  // List tags
+  const ListTagsRequestSchema = z.object({
+    method: z.literal(LIST_TAGS_TOOL),
+    params: z.object({
+      serverName: z.string()
+    }),
+    id: z.union([z.string(), z.number()]),
+    jsonrpc: z.literal('2.0')
+  });
+
+  server.server.setRequestHandler(ListTagsRequestSchema, async (request) => {
+    try {
+      const result = await hubToolsService.listTags(request.params);
+      return result;
+    } catch (error: unknown) {
+      logger.error(`List tags error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
       if (error instanceof McpError) {
         throw error;
       } else if (error instanceof Error) {

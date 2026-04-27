@@ -63,7 +63,7 @@ export function generateGatewayToolsList(toolMap: Map<string, ToolMapEntry>): Ar
           continue;
         }
 
-        if (!aggregatedTools.includes(tool.name)) {
+        if (!Array.isArray(aggregatedTools) || !aggregatedTools.includes(tool.name)) {
           continue;
         }
       }

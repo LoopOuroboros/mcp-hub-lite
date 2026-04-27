@@ -5,7 +5,7 @@ import { getServerStatus } from '@cli/server.js';
  * CLI command for dynamic MCP server tool operations via API.
  *
  * This command provides a simplified CLI interface for interacting with MCP server tools,
- * supporting four actions: list-servers, list-tools, get-tool, and call-tool. It wraps
+ * supporting five actions: list-servers, list-tools, list-tags, get-tool, and call-tool. It wraps
  * the HTTP API endpoints and requires the MCP Hub Lite server to be running.
  *
  * ## Command Format
@@ -23,6 +23,7 @@ import { getServerStatus } from '@cli/server.js';
  *
  * - `list-servers` - List all connected MCP servers
  * - `list-tools` - List all tools from the specified server
+ * - `list-tags` - List all instance tags for a specific MCP server
  * - `get-tool` - Get complete schema for a specific tool (requires --tool)
  * - `call-tool` - Call a tool on the specified server (requires --tool)
  *
@@ -56,6 +57,9 @@ import { getServerStatus } from '@cli/server.js';
  *
  * # List third-party server tools
  * mcp-hub-lite tool-use list-tools --server baidu-search
+ *
+ * # List instance tags for a server
+ * mcp-hub-lite tool-use list-tags --server chrome-devtools
  *
  * # Get system tool schema
  * mcp-hub-lite tool-use get-tool --tool list_tools --server mcp-hub-lite
@@ -94,8 +98,10 @@ import { getServerStatus } from '@cli/server.js';
  * @returns {Command} The configured mcp-tool-use command instance for registration with Commander.js
  */
 export const toolUseCommand = new Command('tool-use')
-  .description('Manage MCP server tools via API (list-servers, list-tools, get-tool, call-tool)')
-  .argument('<action>', 'Action: list-servers, list-tools, get-tool, call-tool')
+  .description(
+    'Manage MCP server tools via API (list-servers, list-tools, list-tags, get-tool, call-tool)'
+  )
+  .argument('<action>', 'Action: list-servers, list-tools, list-tags, get-tool, call-tool')
   .option('--server <serverName>', 'Server name to target (omit or empty for system tools)')
   .option('--tool <toolName>', 'Tool name (required for get-tool and call-tool actions)')
   .option(
@@ -119,6 +125,9 @@ Examples:
 
   # List third-party server tools
   mcp-hub-lite tool-use list-tools --server baidu-search
+
+  # List instance tags for a server
+  mcp-hub-lite tool-use list-tags --server chrome-devtools
 
   # Get system tool schema
   mcp-hub-lite tool-use get-tool --tool list_tools
@@ -230,6 +239,27 @@ Examples:
           console.log(JSON.stringify(result, null, 2));
           break;
         }
+        case 'list-tags': {
+          if (!effectiveServer || effectiveServer === defaultServer) {
+            effectiveServer = 'mcp-hub-lite';
+          }
+          const tagsParam = options.tags ? `?tags=${encodeURIComponent(options.tags)}` : '';
+          const response = await fetch(
+            `${baseUrl}/web/hub-tools/servers/${effectiveServer}/tags${tagsParam}`,
+            {
+              headers: { Accept: 'application/json' }
+            }
+          );
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(
+              (error as { message?: string }).message || `API error: ${response.status}`
+            );
+          }
+          const result = await response.json();
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
         case 'call-tool': {
           if (!effectiveTool) {
             console.error('Error: toolName is required for call-tool action');
@@ -268,7 +298,7 @@ Examples:
         }
         default: {
           console.error(`Unknown action: ${action}`);
-          console.error('Valid actions: list-servers, list-tools, get-tool, call-tool');
+          console.error('Valid actions: list-servers, list-tools, list-tags, get-tool, call-tool');
           process.exit(1);
         }
       }

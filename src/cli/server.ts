@@ -17,6 +17,8 @@ interface ServerOptions {
 interface McpServerStatus {
   name: string;
   type: string;
+  displayName?: string;
+  tags?: Record<string, string>;
   connected: boolean;
   toolsCount: number;
   resourcesCount: number;
@@ -214,6 +216,8 @@ async function fetchRuntimeStatus(
       id: string;
       name: string;
       type: string;
+      displayName?: string;
+      tags?: Record<string, string>;
       status: {
         connected: boolean;
         error?: string;
@@ -226,6 +230,8 @@ async function fetchRuntimeStatus(
     const result: McpServerStatus[] = statusData.map((item) => ({
       name: item.name,
       type: item.type,
+      displayName: item.displayName,
+      tags: item.tags,
       connected: item.status.connected,
       toolsCount: item.status.toolsCount,
       resourcesCount: item.status.resourcesCount,

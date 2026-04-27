@@ -5,7 +5,8 @@ import {
   LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  UPDATE_SERVER_DESCRIPTION_TOOL
+  UPDATE_SERVER_DESCRIPTION_TOOL,
+  LIST_TAGS_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -122,7 +123,7 @@ export function getSystemTools(): SystemToolDefinition[] {
             required: ['serverName', 'toolName']
           },
           annotations: {
-            title: 'Get Tool Details',
+            title: 'Get Tool Schema',
             readOnlyHint: true,
             destructiveHint: false,
             idempotentHint: true,
@@ -135,7 +136,7 @@ export function getSystemTools(): SystemToolDefinition[] {
           name: toolName,
           description:
             'Call a specific tool from an external MCP server. ' +
-            'System tools (list_servers, list_tools, get_tool, update_server_description) ' +
+            'System tools (list_servers, list_tools, get_tool, list_tags, update_server_description) ' +
             'must be called directly via tools/call, not through this tool.',
           inputSchema: {
             type: 'object',
@@ -180,6 +181,26 @@ export function getSystemTools(): SystemToolDefinition[] {
           annotations: {
             title: 'Update Server Description',
             readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
+          }
+        });
+        break;
+      case LIST_TAGS_TOOL:
+        systemTools.push({
+          name: toolName,
+          description: 'List all instance tags for a specific MCP server',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              serverName: { type: 'string', description: 'Name of the MCP server' }
+            },
+            required: ['serverName']
+          },
+          annotations: {
+            title: 'List Instance Tags',
+            readOnlyHint: true,
             destructiveHint: false,
             idempotentHint: true,
             openWorldHint: false

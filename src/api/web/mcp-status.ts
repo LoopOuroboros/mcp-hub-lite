@@ -41,6 +41,8 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
         id: string;
         name: string;
         type: string;
+        displayName?: string;
+        tags?: Record<string, string>;
         status: ServerStatus;
       }> = [];
 
@@ -53,6 +55,8 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
             id: server.name,
             name: server.name,
             type: server.config.template.type,
+            displayName: undefined,
+            tags: {},
             status: {
               connected: false,
               lastCheck: Date.now(),
@@ -69,6 +73,8 @@ export async function webMcpStatusRoutes(fastify: FastifyInstance) {
               id: instance.id || '',
               name: server.name,
               type: resolvedConfig?.type || server.config.template.type,
+              displayName: instance.displayName,
+              tags: instance.tags,
               status: mcpConnectionManager.getStatus(server.name, instance.index ?? 0) || {
                 connected: false,
                 lastCheck: Date.now(),

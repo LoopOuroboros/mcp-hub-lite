@@ -6,7 +6,8 @@ import {
   ListServersParams,
   ListToolsInServerParams,
   GetToolParams,
-  CallToolParams
+  CallToolParams,
+  ListTagsParams
 } from '@models/system-tools.constants.js';
 
 // Request options interface
@@ -100,6 +101,23 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
       };
 
       const result = await hubToolsService.listToolsInServer({ serverName, requestOptions });
+      return result;
+    } catch (error) {
+      return reply.code(404).send({
+        error: 'Server not found',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // GET /web/hub-tools/servers/:serverName/tags - List all instance tags for a specific server
+  fastify.get<{
+    Params: { serverName: string };
+  }>('/web/hub-tools/servers/:serverName/tags', async (request, reply) => {
+    try {
+      const { serverName } = request.params;
+      const params: ListTagsParams = { serverName };
+      const result = await hubToolsService.listTags(params);
       return result;
     } catch (error) {
       return reply.code(404).send({
