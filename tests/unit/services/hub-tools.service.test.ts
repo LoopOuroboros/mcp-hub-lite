@@ -682,14 +682,15 @@ describe('HubToolsService', () => {
       expect(allTools).toHaveProperty('mcp-hub-lite');
       expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
 
-      // Assert system tools - should have 5 tools now
+      // Assert system tools - should have 6 tools now
       const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
       expect(systemToolNames).toContain('list_tools');
       expect(systemToolNames).toContain('get_tool');
       expect(systemToolNames).toContain('call_tool');
       expect(systemToolNames).toContain('update_server_description');
-      expect(systemToolNames).toHaveLength(5);
+      expect(systemToolNames).toContain('list_tags');
+      expect(systemToolNames).toHaveLength(6);
 
       // Assert server tools - should have only name and description
       expect(allTools['Server 1'].tools).toEqual(expectedToolSummariesServer1);
