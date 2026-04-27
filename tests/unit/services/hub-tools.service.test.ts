@@ -103,7 +103,8 @@ describe('HubToolsService', () => {
       // Assert
       expect(servers).toEqual({
         'Test Server 1': 'File system operations',
-        'Test Server 2': 'Connected MCP server: Test Server 2'
+        'Test Server 2':
+          'Test Server 2 (You can check the tool list to understand its capabilities and update the description.)'
       });
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
@@ -162,7 +163,8 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(servers).toEqual({
-        server1: 'Connected MCP server: server1'
+        server1:
+          'server1 (You can check the tool list to understand its capabilities and update the description.)'
       });
     });
 
@@ -880,7 +882,7 @@ describe('HubToolsService', () => {
         lastHeartbeat: mockInstance.lastHeartbeat,
         // @ts-expect-error - Accessing extra fields on mock
         uptime: mockInstance.uptime,
-        description: `Connected MCP server: ${serverName}`
+        description: `${serverName} (You can check the tool list to understand its capabilities and update the description.)`
       });
     });
 
