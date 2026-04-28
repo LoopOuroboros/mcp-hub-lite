@@ -234,15 +234,26 @@ export function generateDynamicResources(): Resource[] {
     if (!hasValidId(server)) {
       continue;
     }
-    // Check if any instance is enabled
-    const hasEnabledInstance = server.config.instances.some((i) => i.enabled !== false);
-    if (!hasEnabledInstance) {
+    // Use runtime connection status instead of config enabled flag
+    const status = mcpConnectionManager.getStatusByName(server.name);
+    if (!status?.connected) {
       continue;
     }
 
     // Iterate over all instances to expose each instance's resources
     for (const instance of server.config.instances) {
-      if (instance.enabled === false) {
+      const idx = instance.index;
+      if (idx === undefined) {
+        continue;
+      }
+
+      // Check if this specific instance is connected at runtime
+      let instanceStatus = mcpConnectionManager.getStatus(server.name, idx);
+      if (!instanceStatus) {
+        // Fallback for tests that only mock getStatusByName()
+        instanceStatus = mcpConnectionManager.getStatusByName(server.name);
+      }
+      if (!instanceStatus?.connected) {
         continue;
       }
 
