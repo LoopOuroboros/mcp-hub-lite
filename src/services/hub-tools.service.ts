@@ -88,32 +88,9 @@ import { InstanceSelectionStrategy } from '@models/server.model.js';
  * ```
  */
 export class HubToolsService {
-  /**
-   * Cached dynamic resource list to avoid regenerating on every request
-   */
-  private generatedResourcesCache: Resource[] | null = null;
-
+  // Cache removed - listResources() now calls generateDynamicResources() directly
   constructor() {
-    // Listen for server status change events to invalidate resource cache
-    eventBus.subscribe(EventTypes.SERVER_STATUS_CHANGE, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.SERVER_CONNECTED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.SERVER_DISCONNECTED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.RESOURCES_UPDATED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.TOOLS_UPDATED, () => {
-      this.generatedResourcesCache = null;
-    });
+    // No cache-related initialization needed
   }
 
   /**
@@ -828,13 +805,8 @@ export class HubToolsService {
    * @returns {Promise<Resource[]>} Array of MCP resource objects representing Hub resources
    */
   async listResources(): Promise<Resource[]> {
-    if (this.generatedResourcesCache) {
-      return this.generatedResourcesCache;
-    }
-
-    const resources = generateDynamicResources();
-    this.generatedResourcesCache = resources;
-    return resources;
+    // Always regenerate to ensure fresh data based on runtime status
+    return generateDynamicResources();
   }
 
   /**
