@@ -234,40 +234,63 @@ export function generateDynamicResources(): Resource[] {
     if (!hasValidId(server)) {
       continue;
     }
-    // Check if any instance is enabled
-    const hasEnabledInstance = server.config.instances.some((i) => i.enabled !== false);
-    if (!hasEnabledInstance) {
-      continue;
-    }
 
-    // Iterate over all instances to expose each instance's resources
+    let hasAnyConnectedInstance = false;
+    let firstConnectedInstanceIndex: number | undefined;
+
+    // First pass: check which instances are connected (consistent with /web/mcp/status API)
     for (const instance of server.config.instances) {
-      if (instance.enabled === false) {
+      const idx = instance.index;
+      if (idx === undefined) {
         continue;
       }
 
-      const instanceIndex = instance.index;
+      const instanceStatus = mcpConnectionManager.getStatus(server.name, idx);
+      if (instanceStatus?.connected) {
+        hasAnyConnectedInstance = true;
+        if (firstConnectedInstanceIndex === undefined) {
+          firstConnectedInstanceIndex = idx;
+        }
+      }
+    }
 
-      // Server metadata resource (one per server, not per instance)
-      if (instanceIndex === 0) {
+    // Skip server if no instances are connected
+    if (!hasAnyConnectedInstance) {
+      continue;
+    }
+
+    // Second pass: generate resources for each connected instance
+    for (const instance of server.config.instances) {
+      const idx = instance.index;
+      if (idx === undefined) {
+        continue;
+      }
+
+      const instanceStatus = mcpConnectionManager.getStatus(server.name, idx);
+      if (!instanceStatus?.connected) {
+        continue;
+      }
+
+      // Server metadata resource (one per server, using first connected instance's index)
+      // Only generate once when we hit the first connected instance
+      if (idx === firstConnectedInstanceIndex) {
         resources.push({
           uri: `hub://servers/${server.name}`,
           name: `Server: ${server.name}`,
           description: getServerDescription(server.config, server.name),
           mimeType: 'application/json',
           serverName: server.name,
-          serverIndex: instanceIndex
+          serverIndex: idx
         });
       }
 
       // Get MCP native resources and map to hub format
-      const instanceIdx = instanceIndex ?? 0;
-      const mcpResources = mcpConnectionManager.getResources(server.name, instanceIdx);
+      const mcpResources = mcpConnectionManager.getResources(server.name, idx);
       for (const res of mcpResources) {
         // Format: Resource: {ServerName} - {Index}: {Native Name}
-        const displayName = `Resource：${server.name} - ${instanceIdx}：${res.name}`;
+        const displayName = `Resource：${server.name} - ${idx}：${res.name}`;
         resources.push({
-          uri: mapMcpUriToHub(server.name, instanceIdx, res.uri),
+          uri: mapMcpUriToHub(server.name, idx, res.uri),
           name: displayName,
           description: res.description,
           mimeType: res.mimeType

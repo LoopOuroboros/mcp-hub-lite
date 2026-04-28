@@ -110,19 +110,31 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
       let maxNameLen = 'Server Name'.length;
       let maxTypeLen = 'Type'.length;
       const maxStatusLen = 'Disconnected'.length;
+      let maxDisplayNameLen = 'DisplayName'.length;
+      let maxTagsLen = 'Tags'.length;
 
       for (const server of servers) {
         maxNameLen = Math.max(maxNameLen, (server.name || '').length);
         maxTypeLen = Math.max(maxTypeLen, (server.type || '').length);
+        const displayName = server.displayName || '';
+        const tags = JSON.stringify(server.tags || {});
+        maxDisplayNameLen = Math.max(maxDisplayNameLen, displayName.length);
+        maxTagsLen = Math.max(maxTagsLen, tags.length);
       }
 
       // Simple table without complex borders
       const headerName = 'Server Name'.padEnd(maxNameLen);
       const headerType = 'Type'.padEnd(maxTypeLen);
       const headerStatus = 'Status'.padEnd(maxStatusLen);
+      const headerDisplayName = 'DisplayName'.padEnd(maxDisplayNameLen);
+      const headerTags = 'Tags'.padEnd(maxTagsLen);
 
-      console.log(`${cyan}${headerName}  ${headerType}  ${headerStatus}  Tools  Resources${reset}`);
-      console.log(`${dim}${'─'.repeat(maxNameLen + maxTypeLen + maxStatusLen + 20)}${reset}`);
+      console.log(
+        `${cyan}${headerName}  ${headerType}  ${headerStatus}  Tools  Resources  ${headerDisplayName}  ${headerTags}${reset}`
+      );
+      console.log(
+        `${dim}${'─'.repeat(maxNameLen + maxTypeLen + maxStatusLen + 26 + maxDisplayNameLen + maxTagsLen)}${reset}`
+      );
 
       for (const server of servers) {
         const name = (server.name || '').padEnd(maxNameLen);
@@ -132,8 +144,12 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
           : `${red}Disconnected${reset}`.padEnd(maxStatusLen + 9);
         const tools = server.toolsCount.toString().padStart(5);
         const resources = server.resourcesCount.toString().padStart(9);
+        const displayName = (server.displayName || '').padEnd(maxDisplayNameLen);
+        const tags = JSON.stringify(server.tags || {}).padEnd(maxTagsLen);
 
-        console.log(`${name}  ${type}  ${statusText}  ${tools}  ${resources}`);
+        console.log(
+          `${name}  ${type}  ${statusText}  ${tools}  ${resources}  ${displayName}  ${tags}`
+        );
 
         if (server.error) {
           console.log(`  ${red}Error: ${server.error}${reset}`);

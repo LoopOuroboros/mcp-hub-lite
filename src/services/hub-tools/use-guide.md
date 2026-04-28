@@ -122,6 +122,7 @@ Read a server's metadata resource to preview available tools:
 | Tool Name      | Description                             | Parameters                                             |
 | -------------- | --------------------------------------- | ------------------------------------------------------ |
 | `list_servers` | List all connected MCP servers          | None                                                   |
+| `list_tags`    | List all instance tags for a server     | `serverName`                                           |
 | `list_tools`   | List all tools from a specific server   | `serverName`, `requestOptions`                         |
 | `get_tool`     | Get detailed schema for a specific tool | `serverName`, `toolName`, `requestOptions`             |
 | `call_tool`    | Call a tool on a specific server        | `serverName`, `toolName`, `toolArgs`, `requestOptions` |
@@ -142,6 +143,106 @@ Read a server's metadata resource to preview available tools:
 | `hub://servers/{serverName}/tools`          | List all tools from server     | `application/json` | Direct access only |
 | `hub://servers/{serverName}/resources`      | List all resources from server | `application/json` | Direct access only |
 | `hub://servers/{serverName}/{index}/{path}` | MCP native resource forwarding | Varies by resource | `resources/list`   |
+
+## Multi-Instance Server: Tag-Based Selection
+
+Some servers have multiple instances selected by tags. To call a tool on a specific instance, follow these steps:
+
+### Step 1: View Available Tags
+
+Use `list_tags` to see what tags are available on a server:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "list_tags",
+    "arguments": { "serverName": "mcp-test" }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "serverName": "mcp-test",
+  "tags": ["env:production", "env:development", "region:us-east"]
+}
+```
+
+### Step 2: Call Tool with Specific Tags
+
+Pass the desired tag via `requestOptions.tags` when calling `call_tool`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "call_tool",
+    "arguments": {
+      "serverName": "mcp-test",
+      "toolName": "environmentVariableTool",
+      "toolArgs": {},
+      "requestOptions": {
+        "tags": { "env": "production" }
+      }
+    }
+  }
+}
+```
+
+### CLI Equivalent
+
+```bash
+# View available tags
+mcp-hub-lite tool-use list-tags --server mcp-test
+
+# Call tool with specific tag
+mcp-hub-lite tool-use call-tool \
+  --tool environmentVariableTool \
+  --server mcp-test \
+  --args '{}' \
+  --tags '{"env":"production"}'
+```
+
+### How Tag Selection Works
+
+- **Single match required**: `TAG_MATCH_UNIQUE` strategy selects the instance whose tags **exactly match** all provided tag key-value pairs
+- **All tags must match**: If you provide `{ "env": "production", "region": "us-east" }`, the instance must have **both** tags
+- **Exact match**: Tag values are case-sensitive
+
+### Error Cases
+
+If no instance matches the provided tags:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 99,
+  "error": {
+    "code": -32602,
+    "message": "No instance found matching tags: {\"env\":\"staging\"}"
+  }
+}
+```
+
+If multiple instances match (ambiguous):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 99,
+  "error": {
+    "code": -32602,
+    "message": "Multiple instances match tags: {\"env\":\"production\"}"
+  }
+}
+```
 
 ## Best Practices
 

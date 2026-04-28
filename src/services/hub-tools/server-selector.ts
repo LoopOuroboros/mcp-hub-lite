@@ -5,17 +5,20 @@ import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
 
 /**
- * Gets the description for a server, using a default if none is provided.
+ * Gets the description for a server, using the server name as default if none is provided.
  *
  * @param serverConfig - Server configuration object (may contain description in template)
  * @param serverName - Name of the server
- * @returns The server description or a default one
+ * @returns The server description or the server name with usage note if no description is configured
  */
 export function getServerDescription(
   serverConfig: { template?: { description?: string } } | undefined,
   serverName: string
 ): string {
-  return serverConfig?.template?.description || `Connected MCP server: ${serverName}`;
+  return (
+    serverConfig?.template?.description ||
+    `${serverName} (You can check the tool list to understand its capabilities and update the description.)`
+  );
 }
 
 /**

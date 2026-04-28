@@ -8,13 +8,14 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
-  MCP_HUB_LITE_SERVER
+  LIST_TAGS_TOOL
 } from '@models/system-tools.constants.js';
 import type {
   ListToolsInServerParams,
   GetToolParams,
   CallToolParams,
-  UpdateServerDescriptionParams
+  UpdateServerDescriptionParams,
+  ListTagsParams
 } from '@models/system-tools.constants.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 
@@ -43,29 +44,42 @@ export class SystemToolHandler {
           break;
         case LIST_TOOLS_TOOL: {
           const listToolsArgs = toolArgs as unknown as ListToolsInServerParams;
+          if (!listToolsArgs.serverName) {
+            throw new McpError(-32802, 'serverName is required');
+          }
           result = await hubToolsService.listToolsInServer(listToolsArgs);
           break;
         }
         case GET_TOOL_TOOL: {
           const getToolArgs = toolArgs as unknown as GetToolParams;
+          if (!getToolArgs.serverName) {
+            throw new McpError(-32802, 'serverName is required');
+          }
           result = await hubToolsService.getTool(getToolArgs);
           break;
         }
         case CALL_TOOL_TOOL: {
           const callToolArgs = toolArgs as unknown as CallToolParams;
-          let serverName = callToolArgs.serverName;
-          if (!serverName || serverName === 'undefined') {
-            serverName = MCP_HUB_LITE_SERVER;
+          if (!callToolArgs.serverName) {
+            throw new McpError(-32802, 'serverName is required');
           }
-          result = await hubToolsService.callTool({
-            ...callToolArgs,
-            serverName
-          });
+          result = await hubToolsService.callTool(callToolArgs);
           break;
         }
         case UPDATE_SERVER_DESCRIPTION_TOOL: {
           const updateDescArgs = toolArgs as unknown as UpdateServerDescriptionParams;
+          if (!updateDescArgs.serverName) {
+            throw new McpError(-32802, 'serverName is required');
+          }
           result = await hubToolsService.updateServerDescription(updateDescArgs);
+          break;
+        }
+        case LIST_TAGS_TOOL: {
+          const listTagsArgs = toolArgs as unknown as ListTagsParams;
+          if (!listTagsArgs.serverName) {
+            throw new McpError(-32802, 'serverName is required');
+          }
+          result = await hubToolsService.listTags(listTagsArgs);
           break;
         }
         default:

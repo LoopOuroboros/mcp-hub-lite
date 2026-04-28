@@ -14,6 +14,8 @@
  * normalizeToolName('chat_completions') // returns 'chat_completions'
  */
 export function normalizeToolName(toolName: string): string {
+  if (!toolName) return '';
+
   return (
     toolName
       // Insert underscore before uppercase letters (for camelCase handling)

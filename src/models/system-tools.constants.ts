@@ -39,13 +39,18 @@ export interface UpdateServerDescriptionParams {
   description: string;
 }
 
+export interface ListTagsParams {
+  serverName: string;
+}
+
 // Union type for system tool parameters
 export type SystemToolArgs =
   | ListServersParams
   | ListToolsInServerParams
   | GetToolParams
   | CallToolParams
-  | UpdateServerDescriptionParams;
+  | UpdateServerDescriptionParams
+  | ListTagsParams;
 
 // Individual system tool name constants
 export const LIST_SERVERS_TOOL = 'list_servers';
@@ -53,6 +58,7 @@ export const LIST_TOOLS_TOOL = 'list_tools';
 export const GET_TOOL_TOOL = 'get_tool';
 export const CALL_TOOL_TOOL = 'call_tool';
 export const UPDATE_SERVER_DESCRIPTION_TOOL = 'update_server_description';
+export const LIST_TAGS_TOOL = 'list_tags';
 
 /**
  * List of all system tool names
@@ -63,7 +69,8 @@ export const SYSTEM_TOOL_NAMES = [
   LIST_TOOLS_TOOL,
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
-  UPDATE_SERVER_DESCRIPTION_TOOL
+  UPDATE_SERVER_DESCRIPTION_TOOL,
+  LIST_TAGS_TOOL
 ] as const;
 
 /**

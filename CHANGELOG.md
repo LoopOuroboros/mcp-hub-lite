@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-04-28
+
+### Hub Tools
+
+- enhance hub-tools system with improved tool handling
+- add list_tags tool constants and update CLAUDE.md docs
+- add comprehensive use guide documentation
+- improve default server description text
+- remove stale cache in listResources
+- clarify instance filtering comment
+- fix listMcpResources returning incomplete server resources by using two-pass approach to check all instances connection status
+- align resource generation logic with /web/mcp/status API behavior
+
+### Utils
+
+- add null check to normalizeToolName
+
+---
+
 ## [1.2.4] - 2026-04-25
 
 ### Frontend

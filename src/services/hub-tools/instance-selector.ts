@@ -49,7 +49,7 @@ export class InstanceSelector {
     const instanceSelectionStrategy =
       serverConfig.template.instanceSelectionStrategy || InstanceSelectionStrategy.RANDOM;
 
-    // Filter enabled instances
+    // Filter instances - only use enabled instances
     const enabledInstances = instances.filter((instance) => instance.enabled !== false);
     if (enabledInstances.length === 0) {
       return undefined;

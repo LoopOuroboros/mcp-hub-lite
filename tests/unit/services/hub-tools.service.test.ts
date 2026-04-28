@@ -103,7 +103,8 @@ describe('HubToolsService', () => {
       // Assert
       expect(servers).toEqual({
         'Test Server 1': 'File system operations',
-        'Test Server 2': 'Connected MCP server: Test Server 2'
+        'Test Server 2':
+          'Test Server 2 (You can check the tool list to understand its capabilities and update the description.)'
       });
       expect(hubManager.getAllServers).toHaveBeenCalledTimes(1);
     });
@@ -162,7 +163,8 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(servers).toEqual({
-        server1: 'Connected MCP server: server1'
+        server1:
+          'server1 (You can check the tool list to understand its capabilities and update the description.)'
       });
     });
 
@@ -682,14 +684,15 @@ describe('HubToolsService', () => {
       expect(allTools).toHaveProperty('mcp-hub-lite');
       expect(Array.isArray(allTools['mcp-hub-lite'].tools)).toBe(true);
 
-      // Assert system tools - should have 5 tools now
+      // Assert system tools - should have 6 tools now
       const systemToolNames = allTools['mcp-hub-lite'].tools.map((t) => t.name);
       expect(systemToolNames).toContain('list_servers');
       expect(systemToolNames).toContain('list_tools');
       expect(systemToolNames).toContain('get_tool');
       expect(systemToolNames).toContain('call_tool');
       expect(systemToolNames).toContain('update_server_description');
-      expect(systemToolNames).toHaveLength(5);
+      expect(systemToolNames).toContain('list_tags');
+      expect(systemToolNames).toHaveLength(6);
 
       // Assert server tools - should have only name and description
       expect(allTools['Server 1'].tools).toEqual(expectedToolSummariesServer1);
@@ -879,7 +882,7 @@ describe('HubToolsService', () => {
         lastHeartbeat: mockInstance.lastHeartbeat,
         // @ts-expect-error - Accessing extra fields on mock
         uptime: mockInstance.uptime,
-        description: `Connected MCP server: ${serverName}`
+        description: `${serverName} (You can check the tool list to understand its capabilities and update the description.)`
       });
     });
 

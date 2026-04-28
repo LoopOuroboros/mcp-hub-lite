@@ -150,32 +150,6 @@ Transports 子模块主要被以下组件使用：
 - SSE 传输的自动重连逻辑
 - HTTP 传输的超时和错误处理
 
-## 常见问题 (FAQ)
-
-### Q: 如何添加新的传输协议？
-
-A: 实现 `Transport` 接口，然后在 `transport-factory.ts` 中注册新的传输类型。
-
-### Q: 为什么 SSE 传输不能发送消息？
-
-A: SSE (Server-Sent Events) 是单向协议，只支持服务器向客户端推送数据。如需双向通信，请使用 stdio 或 streamable-http 传输。
-
-### Q: 复合键的作用是什么？
-
-A: 复合键 (`serverName-serverIndex`) 用于支持多实例服务器架构，每个服务器实例需要独立的连接和日志标识。
-
-### Q: 如何配置代理？
-
-A: 在服务器配置中添加 `proxy` 字段：
-
-```json
-{
-  "proxy": {
-    "url": "http://proxy.example.com:8080"
-  }
-}
-```
-
 ## 相关文件清单
 
 | 文件路径                                  | 描述             |

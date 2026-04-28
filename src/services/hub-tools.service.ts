@@ -15,6 +15,7 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
+  LIST_TAGS_TOOL,
   SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
@@ -23,7 +24,8 @@ import type {
   ListToolsInServerParams,
   GetToolParams,
   CallToolParams,
-  UpdateServerDescriptionParams
+  UpdateServerDescriptionParams,
+  ListTagsParams
 } from '@models/system-tools.constants.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
 import {
@@ -34,6 +36,8 @@ import {
   generateDynamicResources,
   readResource as readResourceUtil
 } from './hub-tools/index.js';
+import { InstanceSelector } from './hub-tools/instance-selector.js';
+import { InstanceSelectionStrategy } from '@models/server.model.js';
 
 /**
  * Central service for managing system tools and MCP server interactions in the MCP Hub Lite gateway.
@@ -84,32 +88,9 @@ import {
  * ```
  */
 export class HubToolsService {
-  /**
-   * Cached dynamic resource list to avoid regenerating on every request
-   */
-  private generatedResourcesCache: Resource[] | null = null;
-
+  // Cache removed - listResources() now calls generateDynamicResources() directly
   constructor() {
-    // Listen for server status change events to invalidate resource cache
-    eventBus.subscribe(EventTypes.SERVER_STATUS_CHANGE, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.SERVER_CONNECTED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.SERVER_DISCONNECTED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.RESOURCES_UPDATED, () => {
-      this.generatedResourcesCache = null;
-    });
-
-    eventBus.subscribe(EventTypes.TOOLS_UPDATED, () => {
-      this.generatedResourcesCache = null;
-    });
+    // No cache-related initialization needed
   }
 
   /**
@@ -177,6 +158,9 @@ export class HubToolsService {
     serverName: string;
     tools: ToolSummary[];
   }> {
+    if (!args.serverName) {
+      throw new Error('serverName is required');
+    }
     // Handle MCP Hub Lite server (return system tools list)
     if (typeof args.serverName === 'string' && args.serverName === MCP_HUB_LITE_SERVER) {
       // Generate tool list using the same logic as tools/list
@@ -306,6 +290,39 @@ export class HubToolsService {
   }
 
   /**
+   * Lists all instance tags for a specific MCP server.
+   *
+   * This method retrieves all instances of the specified server and returns their tags,
+   * useful for understanding which instances are available and how to select them
+   * when using tag-match-unique instance selection strategy.
+   *
+   * @param {ListTagsParams} args - Server name
+   * @returns {Promise<{ serverName: string; instances: Array<{ index: number; id: string; tags: Record<string, string> }> }>} Instance tags information
+   * @throws {Error} If the specified server is not found
+   */
+  async listTags(args: ListTagsParams): Promise<{
+    serverName: string;
+    instances: Array<{ index: number; id: string; tags: Record<string, string> }>;
+  }> {
+    const serverConfig = hubManager.getServerByName(args.serverName);
+    if (!serverConfig) {
+      throw new Error(`Server not found: ${args.serverName}`);
+    }
+
+    const instances = hubManager.getServerInstancesByName(args.serverName);
+    const instanceTags = instances.map((instance) => ({
+      index: instance.index ?? 0,
+      id: instance.id || '',
+      tags: instance.tags || {}
+    }));
+
+    return {
+      serverName: args.serverName,
+      instances: instanceTags
+    };
+  }
+
+  /**
    * Calls a specific system tool directly with type-safe conditional return types.
    *
    * This method provides a unified entry point for all system tool calls, using TypeScript's
@@ -329,7 +346,9 @@ export class HubToolsService {
             ? CallToolParams
             : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
               ? UpdateServerDescriptionParams
-              : never
+              : T extends typeof LIST_TAGS_TOOL
+                ? ListTagsParams
+                : never
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
       ? Record<string, string>
@@ -341,7 +360,12 @@ export class HubToolsService {
             ? unknown
             : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
               ? { success: boolean; serverName: string; description: string }
-              : never
+              : T extends typeof LIST_TAGS_TOOL
+                ? {
+                    serverName: string;
+                    instances: Array<{ index: number; id: string; tags: Record<string, string> }>;
+                  }
+                : never
   > {
     logger.debug(
       `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
@@ -378,6 +402,10 @@ export class HubToolsService {
           result = await this.updateServerDescription(toolArgs as UpdateServerDescriptionParams);
           break;
         }
+        case LIST_TAGS_TOOL: {
+          result = await this.listTags(toolArgs as ListTagsParams);
+          break;
+        }
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
@@ -394,7 +422,12 @@ export class HubToolsService {
               ? unknown
               : T extends typeof UPDATE_SERVER_DESCRIPTION_TOOL
                 ? { success: boolean; serverName: string; description: string }
-                : never;
+                : T extends typeof LIST_TAGS_TOOL
+                  ? {
+                      serverName: string;
+                      instances: Array<{ index: number; id: string; tags: Record<string, string> }>;
+                    }
+                  : never;
     } catch (error) {
       logger.error(
         `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
@@ -436,15 +469,19 @@ export class HubToolsService {
       toolName = parsedTool.toolName;
     }
 
-    // Handle MCP Hub Lite server (system tool call or find tool in all servers)
-    if (!serverName || serverName === 'undefined') {
-      serverName = MCP_HUB_LITE_SERVER;
+    // Validate serverName is required
+    if (!serverName) {
+      throw new Error('serverName is required');
     }
+
+    // Handle MCP Hub Lite server (system tool call or find tool in all servers)
     if (typeof serverName === 'string' && serverName === MCP_HUB_LITE_SERVER) {
-      // System tools cannot be called via call_tool - they must be called directly
+      // System tools (except call_tool) cannot be called via call_tool - they must be called directly
+      // call_tool is the gateway tool for calling external tools, so it should be allowed
       if (
         Array.isArray(SYSTEM_TOOL_NAMES) &&
-        SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName)
+        SYSTEM_TOOL_NAMES.includes(toolName as SystemToolName) &&
+        toolName !== CALL_TOOL_TOOL
       ) {
         throw new McpError(
           -32801,
@@ -529,7 +566,45 @@ export class HubToolsService {
       );
 
       // Use selectBestInstance with non-strict mode to find an available instance
-      const fallbackServerInfo = selectBestInstance(serverName, undefined, false);
+      let fallbackServerInfo = selectBestInstance(serverName, undefined, false);
+
+      // If selectBestInstance returns undefined (e.g., TAG_MATCH_UNIQUE strategy without tags),
+      // fall back to directly selecting an enabled instance with RANDOM strategy
+      if (!fallbackServerInfo) {
+        logger.debug(
+          `selectBestInstance returned undefined for ${serverName}, trying direct instance selection with RANDOM strategy`,
+          LOG_MODULES.HUB_TOOLS
+        );
+
+        const serverConfig = hubManager.getServerByName(serverName);
+        if (serverConfig && serverConfig.instances.length > 0) {
+          const enabledInstances = serverConfig.instances.filter(
+            (instance) => instance.enabled !== false
+          );
+          if (enabledInstances.length > 0) {
+            // Use RANDOM strategy regardless of server's configured strategy
+            const selectedInstance = InstanceSelector.selectInstance(
+              serverName,
+              {
+                ...serverConfig,
+                template: {
+                  ...serverConfig.template,
+                  instanceSelectionStrategy: InstanceSelectionStrategy.RANDOM
+                }
+              },
+              undefined
+            );
+            if (selectedInstance) {
+              fallbackServerInfo = {
+                name: serverName,
+                config: serverConfig,
+                instance: selectedInstance
+              };
+            }
+          }
+        }
+      }
+
       if (!fallbackServerInfo) {
         logger.error(`Server not found: ${serverName}`, LOG_MODULES.HUB_TOOLS);
         throw new Error(`Server not found: ${serverName}`);
@@ -730,13 +805,8 @@ export class HubToolsService {
    * @returns {Promise<Resource[]>} Array of MCP resource objects representing Hub resources
    */
   async listResources(): Promise<Resource[]> {
-    if (this.generatedResourcesCache) {
-      return this.generatedResourcesCache;
-    }
-
-    const resources = generateDynamicResources();
-    this.generatedResourcesCache = resources;
-    return resources;
+    // Always regenerate to ensure fresh data based on runtime status
+    return generateDynamicResources();
   }
 
   /**
