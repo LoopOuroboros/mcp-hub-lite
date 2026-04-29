@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2026-04-29
+
+### Hub Tools
+
+- use runtime connected status for instance selection
+- clarify instance filtering comment
+- fix listMcpResources returning incomplete server resources by using two-pass approach to check all instances connection status
+
+### Utils
+
+- add null check to normalizeToolName
+
+---
+
 ## [1.2.5] - 2026-04-28
 
 ### Hub Tools
