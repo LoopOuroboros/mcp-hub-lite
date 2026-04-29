@@ -122,9 +122,9 @@ export class HubToolsService {
     const result: Record<string, string> = {};
 
     for (const server of servers.filter(hasValidId)) {
-      // Check if server is actually connected
-      const status = mcpConnectionManager.getStatusByName(server.name);
-      if (!status?.connected) {
+      // Use getConnectedIndexes for reliable multi-instance support
+      const indexes = mcpConnectionManager.getConnectedIndexes(server.name);
+      if (indexes.length === 0) {
         continue;
       }
 
@@ -183,6 +183,12 @@ export class HubToolsService {
       };
     }
 
+    // Check if server has any connected instances before trying to get tools
+    const indexes = mcpConnectionManager.getConnectedIndexes(args.serverName);
+    if (indexes.length === 0) {
+      throw new Error(`Server not found: ${args.serverName}`);
+    }
+
     // Use server name level cache to get tools directly without triggering instance selection
     // This avoids tag-match-unique errors for multi-instance servers when listing tools
     const tools = mcpConnectionManager.getToolsByServerName(args.serverName);
@@ -229,6 +235,12 @@ export class HubToolsService {
         };
       }
       return undefined;
+    }
+
+    // Check if server has any connected instances before trying to get tools
+    const indexes = mcpConnectionManager.getConnectedIndexes(args.serverName);
+    if (indexes.length === 0) {
+      throw new Error(`Server not found: ${args.serverName}`);
     }
 
     // Use server name level cache to get tools directly without triggering instance selection
@@ -578,10 +590,14 @@ export class HubToolsService {
 
         const serverConfig = hubManager.getServerByName(serverName);
         if (serverConfig && serverConfig.instances.length > 0) {
-          const enabledInstances = serverConfig.instances.filter(
-            (instance) => instance.enabled !== false
-          );
-          if (enabledInstances.length > 0) {
+          // Filter: use runtime connected status, NOT config enabled flag
+          // enabled=false means "do not auto-start" but user can manually start it
+          const connectedInstances = serverConfig.instances.filter((instance) => {
+            if (instance.index === undefined) return false;
+            const status = mcpConnectionManager.getStatus(serverName, instance.index);
+            return status?.connected;
+          });
+          if (connectedInstances.length > 0) {
             // Use RANDOM strategy regardless of server's configured strategy
             const selectedInstance = InstanceSelector.selectInstance(
               serverName,

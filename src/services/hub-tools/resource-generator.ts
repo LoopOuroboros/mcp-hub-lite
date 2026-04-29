@@ -235,27 +235,9 @@ export function generateDynamicResources(): Resource[] {
       continue;
     }
 
-    let hasAnyConnectedInstance = false;
-    let firstConnectedInstanceIndex: number | undefined;
-
-    // First pass: check which instances are connected (consistent with /web/mcp/status API)
-    for (const instance of server.config.instances) {
-      const idx = instance.index;
-      if (idx === undefined) {
-        continue;
-      }
-
-      const instanceStatus = mcpConnectionManager.getStatus(server.name, idx);
-      if (instanceStatus?.connected) {
-        hasAnyConnectedInstance = true;
-        if (firstConnectedInstanceIndex === undefined) {
-          firstConnectedInstanceIndex = idx;
-        }
-      }
-    }
-
-    // Skip server if no instances are connected
-    if (!hasAnyConnectedInstance) {
+    // Check if any instances are connected using getConnectedIndexes
+    const connectedIndexes = mcpConnectionManager.getConnectedIndexes(server.name);
+    if (connectedIndexes.length === 0) {
       continue;
     }
 
@@ -273,7 +255,7 @@ export function generateDynamicResources(): Resource[] {
 
       // Server metadata resource (one per server, using first connected instance's index)
       // Only generate once when we hit the first connected instance
-      if (idx === firstConnectedInstanceIndex) {
+      if (idx === connectedIndexes[0]) {
         resources.push({
           uri: `hub://servers/${server.name}`,
           name: `Server: ${server.name}`,

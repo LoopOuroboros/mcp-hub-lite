@@ -21,8 +21,16 @@ describe('InstanceSelector', () => {
     tags: {}
   };
 
+  // Mock statusChecker that simulates connected instances
+  const mockConnectedStatus = () => ({ connected: true });
+  const mockDisconnectedStatus = () => ({ connected: false });
+
   describe('random strategy', () => {
-    it('should select random instance from enabled instances', () => {
+    it('should select random instance from connected instances', () => {
+      // Local mock that simulates idx=2 being disconnected
+      const localMockConnectedStatus = (_name: string, idx: number) =>
+        idx === 2 ? { connected: false } : { connected: true };
+
       const config: ServerConfig = {
         template: {
           ...baseTemplate,
@@ -36,12 +44,17 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        undefined,
+        localMockConnectedStatus
+      );
       expect(selected).toBeDefined();
       expect(['1', '2']).toContain(selected!.id);
     });
 
-    it('should return undefined when no enabled instances', () => {
+    it('should return undefined when no connected instances', () => {
       const config: ServerConfig = {
         template: {
           ...baseTemplate,
@@ -54,13 +67,18 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        undefined,
+        mockDisconnectedStatus
+      );
       expect(selected).toBeUndefined();
     });
   });
 
   describe('round-robin strategy', () => {
-    it('should cycle through enabled instances', () => {
+    it('should cycle through connected instances', () => {
       const config: ServerConfig = {
         template: {
           ...baseTemplate,
@@ -74,10 +92,30 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected1 = InstanceSelector.selectInstance('test-server-rr', config);
-      const selected2 = InstanceSelector.selectInstance('test-server-rr', config);
-      const selected3 = InstanceSelector.selectInstance('test-server-rr', config);
-      const selected4 = InstanceSelector.selectInstance('test-server-rr', config);
+      const selected1 = InstanceSelector.selectInstance(
+        'test-server-rr',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
+      const selected2 = InstanceSelector.selectInstance(
+        'test-server-rr',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
+      const selected3 = InstanceSelector.selectInstance(
+        'test-server-rr',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
+      const selected4 = InstanceSelector.selectInstance(
+        'test-server-rr',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
 
       expect(selected1!.id).toBe('1');
       expect(selected2!.id).toBe('2');
@@ -101,9 +139,14 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config, {
-        tags: { env: 'prod', region: 'us' }
-      });
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        {
+          tags: { env: 'prod', region: 'us' }
+        },
+        mockConnectedStatus
+      );
 
       expect(selected).toBeDefined();
       expect(selected!.id).toBe('2');
@@ -123,9 +166,14 @@ describe('InstanceSelector', () => {
       };
 
       expect(() => {
-        InstanceSelector.selectInstance('test-server', config, {
-          tags: { env: 'staging' }
-        });
+        InstanceSelector.selectInstance(
+          'test-server',
+          config,
+          {
+            tags: { env: 'staging' }
+          },
+          mockConnectedStatus
+        );
       }).toThrow('No instance found matching tags');
     });
 
@@ -143,9 +191,14 @@ describe('InstanceSelector', () => {
       };
 
       expect(() => {
-        InstanceSelector.selectInstance('test-server', config, {
-          tags: { env: 'prod' }
-        });
+        InstanceSelector.selectInstance(
+          'test-server',
+          config,
+          {
+            tags: { env: 'prod' }
+          },
+          mockConnectedStatus
+        );
       }).toThrow('Multiple instances match tags');
     });
 
@@ -159,7 +212,12 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
       expect(selected).toBeDefined();
       expect(selected!.id).toBe('1');
     });
@@ -178,7 +236,7 @@ describe('InstanceSelector', () => {
       };
 
       expect(() => {
-        InstanceSelector.selectInstance('test-server', config);
+        InstanceSelector.selectInstance('test-server', config, undefined, mockConnectedStatus);
       }).toThrow(
         'No tags provided for tag-match-unique strategy with 2 instances. Available: [0:{}, 1:{}]. Pass matching tags to select.'
       );
@@ -196,7 +254,12 @@ describe('InstanceSelector', () => {
         tagDefinitions: []
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
       expect(selected).toBeDefined();
       expect(selected!.id).toBe('1');
     });
@@ -214,7 +277,12 @@ describe('InstanceSelector', () => {
         // No instanceSelectionStrategy field
       };
 
-      const selected = InstanceSelector.selectInstance('test-server', config);
+      const selected = InstanceSelector.selectInstance(
+        'test-server',
+        config,
+        undefined,
+        mockConnectedStatus
+      );
       expect(selected).toBeDefined();
       expect(['1', '2']).toContain(selected!.id);
     });
