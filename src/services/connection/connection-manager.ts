@@ -1240,6 +1240,30 @@ export class McpConnectionManager {
   }
 
   /**
+   * Gets all connected instance indexes for a server.
+   * @param serverName - Server name
+   * @returns Array of connected instance indexes, empty if none connected
+   */
+  public getConnectedIndexes(serverName: string): number[] {
+    // Directly iterate instances via hubManager, check each via getStatus
+    // This bypasses serverNameToCompositeKeys which may have stale/missing entries
+    // Note: We do NOT filter by instance.enabled here because:
+    // - enabled=false means "do not auto-start" (config), not "cannot be connected" (runtime)
+    // - A user can manually start an enabled=false instance, which should still appear in list_servers
+    const instances = hubManager.getServerInstancesByName(serverName);
+    const connectedIndexes: number[] = [];
+    for (const instance of instances) {
+      if (instance.index !== undefined) {
+        const status = this.getStatus(serverName, instance.index);
+        if (status?.connected) {
+          connectedIndexes.push(instance.index);
+        }
+      }
+    }
+    return connectedIndexes;
+  }
+
+  /**
    * Gets the composite key of the first connected instance for a server name.
    * This is a backward compatibility method for code that expects getServerIdByName.
    *

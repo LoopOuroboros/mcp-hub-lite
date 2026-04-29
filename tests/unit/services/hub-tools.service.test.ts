@@ -41,6 +41,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'test-server-1-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -67,6 +68,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'test-server-2-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -88,13 +90,11 @@ describe('HubToolsService', () => {
         const server = mockServers.find((s) => s.name === name);
         return server?.config;
       });
-      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
-        return {
-          connected: true,
-          lastCheck: Date.now(),
-          toolsCount: 0,
-          resourcesCount: 0
-        };
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockImplementation(() => {
+        return [0];
+      });
+      vi.mocked(mcpConnectionManager.getStatus).mockImplementation(() => {
+        return { connected: true, lastCheck: Date.now(), toolsCount: 0, resourcesCount: 0 };
       });
 
       // Act
@@ -128,6 +128,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'server1-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -149,13 +150,11 @@ describe('HubToolsService', () => {
         const server = mockServers.find((s) => s.name === name);
         return server?.config;
       });
-      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
-        return {
-          connected: true,
-          lastCheck: Date.now(),
-          toolsCount: 0,
-          resourcesCount: 0
-        };
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockImplementation(() => {
+        return [0];
+      });
+      vi.mocked(mcpConnectionManager.getStatus).mockImplementation(() => {
+        return { connected: true, lastCheck: Date.now(), toolsCount: 0, resourcesCount: 0 };
       });
 
       // Act
@@ -188,6 +187,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'filesystem-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -215,6 +215,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'time-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -236,13 +237,11 @@ describe('HubToolsService', () => {
         const server = mockServers.find((s) => s.name === name);
         return server?.config;
       });
-      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation(() => {
-        return {
-          connected: true,
-          lastCheck: Date.now(),
-          toolsCount: 0,
-          resourcesCount: 0
-        };
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockImplementation(() => {
+        return [0];
+      });
+      vi.mocked(mcpConnectionManager.getStatus).mockImplementation(() => {
+        return { connected: true, lastCheck: Date.now(), toolsCount: 0, resourcesCount: 0 };
       });
 
       // Act
@@ -275,6 +274,7 @@ describe('HubToolsService', () => {
             instances: [
               {
                 id: 'connected-server-instance',
+                index: 0,
                 enabled: true,
                 args: [],
                 env: {},
@@ -323,21 +323,14 @@ describe('HubToolsService', () => {
         const server = mockServers.find((s) => s.name === name);
         return server?.config;
       });
-      vi.mocked(mcpConnectionManager.getStatusByName).mockImplementation((name) => {
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockImplementation((name) => {
         if (name === 'Connected Server') {
-          return {
-            connected: true,
-            lastCheck: Date.now(),
-            toolsCount: 0,
-            resourcesCount: 0
-          };
+          return [0];
         }
-        return {
-          connected: false,
-          lastCheck: Date.now(),
-          toolsCount: 0,
-          resourcesCount: 0
-        };
+        return [];
+      });
+      vi.mocked(mcpConnectionManager.getStatus).mockImplementation(() => {
+        return { connected: true, lastCheck: Date.now(), toolsCount: 0, resourcesCount: 0 };
       });
 
       // Act
@@ -405,6 +398,7 @@ describe('HubToolsService', () => {
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
 
       // Act
       const result = await hubToolsService.listToolsInServer({ serverName });
@@ -420,7 +414,7 @@ describe('HubToolsService', () => {
     it('should throw error if server not found', async () => {
       // Arrange
       const serverName = 'Non-existent Server';
-      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue([]);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([]);
 
       // Act & Assert
       await expect(hubToolsService.listToolsInServer({ serverName })).rejects.toThrow(
@@ -473,6 +467,7 @@ describe('HubToolsService', () => {
         tagDefinitions: []
       });
       vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
 
       // Act
       const tool = await hubToolsService.getTool({ serverName, toolName });
@@ -517,6 +512,8 @@ describe('HubToolsService', () => {
         instances: [mockInstance],
         tagDefinitions: []
       });
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
       vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
 
       // Act
@@ -763,6 +760,7 @@ describe('HubToolsService', () => {
       vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
         { uri: 'test://resource', name: 'Test Resource' }
       ]);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
 
       // Act
       const resources = await hubToolsService.listResources();
@@ -842,6 +840,7 @@ describe('HubToolsService', () => {
         instances: [
           {
             id: 'test-instance',
+            index: 0,
             enabled: true,
             args: [],
             env: {},
@@ -891,6 +890,7 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const mockInstance = {
         id: '1',
+        index: 0,
         enabled: true,
         args: [],
         env: {},
@@ -920,6 +920,7 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const mockInstance = {
         id: '1',
+        index: 0,
         enabled: true,
         args: [],
         env: {},

@@ -1,5 +1,6 @@
 import type { ServerConfig, ServerInstance } from '@shared-models/server.model.js';
 import { InstanceSelectionStrategy } from '@models/server.model.js';
+import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 
 /**
  * Error thrown when tag-match-unique instance selection fails.
@@ -39,39 +40,54 @@ export class InstanceSelector {
 
   /**
    * Select best instance based on configured strategy
+   *
+   * @param serverName - Name of the server
+   * @param serverConfig - Server configuration
+   * @param requestOptions - Optional request options for instance selection
+   * @param statusChecker - Optional function to check instance connection status (for testing)
    */
   static selectInstance(
     serverName: string,
     serverConfig: ServerConfig,
-    requestOptions?: { sessionId?: string; tags?: Record<string, string> }
+    requestOptions?: { sessionId?: string; tags?: Record<string, string> },
+    statusChecker?: (serverName: string, index: number) => { connected?: boolean } | undefined
   ): ServerInstance | undefined {
     const { instances } = serverConfig;
     const instanceSelectionStrategy =
       serverConfig.template.instanceSelectionStrategy || InstanceSelectionStrategy.RANDOM;
 
-    // Filter instances - only use enabled instances
-    const enabledInstances = instances.filter((instance) => instance.enabled !== false);
-    if (enabledInstances.length === 0) {
+    // Use provided statusChecker or default to mcpConnectionManager.getStatus
+    const checkStatus =
+      statusChecker || ((name: string, idx: number) => mcpConnectionManager.getStatus(name, idx));
+
+    // Filter instances - use runtime connected status, NOT config enabled flag
+    // enabled=false means "do not auto-start" but user can manually start it
+    const connectedInstances = instances.filter((instance) => {
+      if (instance.index === undefined) return false;
+      const status = checkStatus(serverName, instance.index);
+      return status?.connected;
+    });
+    if (connectedInstances.length === 0) {
       return undefined;
     }
 
     // Single instance case - return directly
-    if (enabledInstances.length === 1) {
-      return enabledInstances[0];
+    if (connectedInstances.length === 1) {
+      return connectedInstances[0];
     }
 
     switch (instanceSelectionStrategy) {
       case InstanceSelectionStrategy.RANDOM:
-        return this.selectRandomInstance(enabledInstances);
+        return this.selectRandomInstance(connectedInstances);
 
       case InstanceSelectionStrategy.ROUND_ROBIN:
-        return this.selectRoundRobinInstance(serverName, enabledInstances);
+        return this.selectRoundRobinInstance(serverName, connectedInstances);
 
       case InstanceSelectionStrategy.TAG_MATCH_UNIQUE:
-        return this.selectTagMatchUniqueInstance(enabledInstances, requestOptions?.tags);
+        return this.selectTagMatchUniqueInstance(connectedInstances, requestOptions?.tags);
 
       default:
-        return enabledInstances[0]; // Fallback to first instance
+        return connectedInstances[0]; // Fallback to first instance
     }
   }
 
