@@ -128,7 +128,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1', // Explicitly use IPv4 address
     port: 5173, // Use common port number to avoid permission issues
-    strictPort: true, // Allow automatic selection of available port
+    strictPort: false, // Auto-increment port if occupied
     proxy: {
       '/api': {
         target: `http://${backendHost}:${backendPort}`,

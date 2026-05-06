@@ -71,14 +71,37 @@ async function startDevServer() {
 
     app = await buildApp();
     const config = configManager.getConfig();
+    const host = config.system.host;
+    let port = config.system.port;
+    const maxPortAttempts = 10;
 
-    // Start listening FIRST, then trigger connection tasks
-    await app.listen({
-      port: config.system.port,
-      host: config.system.host
-    });
+    // Auto-increment port if occupied (dev mode only — no hard fail)
+    for (let attempt = 0; attempt < maxPortAttempts; attempt++) {
+      try {
+        await app!.listen({ port, host });
+        break;
+      } catch (err: unknown) {
+        const error = err as NodeJS.ErrnoException;
+        if (error.code === 'EADDRINUSE' && attempt < maxPortAttempts - 1) {
+          logger.warn(
+            `Port ${port} is already in use, trying port ${port + 1}...`,
+            LOG_MODULES.DEV_SERVER
+          );
+          port++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (port !== config.system.port) {
+      logger.info(
+        `Dev server using alternate port ${port} (default ${config.system.port} was occupied)`,
+        LOG_MODULES.DEV_SERVER
+      );
+    }
     logger.info(
-      `MCP Hub Lite Dev Server running at http://${config.system.host}:${config.system.port}`,
+      `MCP Hub Lite Dev Server running at http://${host}:${port}`,
       LOG_MODULES.DEV_SERVER
     );
 
