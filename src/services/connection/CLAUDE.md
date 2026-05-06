@@ -114,6 +114,11 @@ interface ServerStatus {
 - `TOOLS_UPDATED` - 工具列表更新
 - `RESOURCES_UPDATED` - 资源列表更新
 
+**日志功能**:
+
+- `requestLoggingFromServer()` - 连接成功后向服务器发送 `logging/setLevel` 请求，使下游 MCP 服务器开始推送日志通知。SSE 传输自动跳过此步骤。
+- `handleFinalFailure()` - 启动失败时从 `logStorage` 获取最近 10 条 stderr 日志，附加到错误消息中，并将最终错误写入 logStorage（确保所有传输类型的错误在日志查看器中可见）
+
 **传输协议支持**:
 
 - **stdio**: 本地进程 MCP 服务器

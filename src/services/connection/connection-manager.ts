@@ -162,6 +162,9 @@ export class McpConnectionManager {
         // 10. Refresh resources
         await this.refreshServerResources(serverName, serverIndex, server.type);
 
+        // 11. Request log notifications from downstream server
+        await this.requestLoggingFromServer(compositeKey, client, server.type);
+
         return true;
       } catch (error) {
         lastError = await this.handleConnectionError(
@@ -478,6 +481,37 @@ export class McpConnectionManager {
   }
 
   /**
+   * Sends logging/setLevel request to downstream server to start receiving log notifications.
+   * This is a best-effort request — servers that don't support logging will silently ignore it.
+   */
+  private async requestLoggingFromServer(
+    compositeKey: string,
+    client: Client,
+    serverType: string
+  ): Promise<void> {
+    // SSE is unidirectional — cannot send requests to the server
+    if (serverType === 'sse') return;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (client as any).request(
+        { method: 'logging/setLevel', params: { level: 'info' } },
+        { timeout: 5000 }
+      );
+      logger.info(
+        `Sent logging/setLevel to server [${compositeKey}]`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+    } catch {
+      // Server may not support logging — not an error condition
+      logger.debug(
+        `Server [${compositeKey}] does not support logging/setLevel`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+    }
+  }
+
+  /**
    * Handles connection error with logging and retry delay.
    */
   private async handleConnectionError(
@@ -517,6 +551,17 @@ export class McpConnectionManager {
   ): void {
     const errorMessage = lastError?.message || 'Connection failed after all retries';
 
+    // Fetch recent error logs (stderr) to help diagnose startup failures
+    const recentErrorLogs = logStorage.getLogs(compositeKey, { level: 'error', limit: 10 });
+    const logDetail =
+      recentErrorLogs.length > 0
+        ? '\n\n--- Recent stderr output ---\n' + recentErrorLogs.map((l) => l.message).join('\n')
+        : '';
+
+    // Write connection error to logStorage so it appears in the log viewer
+    // This ensures errors from all transport types (stdio, streamable-http, sse) are visible
+    logStorage.append(compositeKey, 'error', `[CONNECTION] ${errorMessage}`);
+
     logger.error(
       `Failed to connect to server ${compositeKey} after retries:`,
       lastError,
@@ -525,7 +570,7 @@ export class McpConnectionManager {
 
     this.serverStatus.set(compositeKey, {
       connected: false,
-      error: errorMessage,
+      error: errorMessage + logDetail,
       lastCheck: Date.now(),
       toolsCount: 0,
       resourcesCount: 0
@@ -535,7 +580,7 @@ export class McpConnectionManager {
       serverName,
       serverIndex,
       status: 'error',
-      error: errorMessage,
+      error: errorMessage + logDetail,
       timestamp: Date.now()
     });
   }

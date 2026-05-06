@@ -21,6 +21,7 @@ export default {
     serverDeleted: '服务器已删除',
     logsCleared: '日志已清空',
     logsCopied: '日志已复制到剪贴板',
+    viewLogs: '查看日志',
     serverAdded: '服务器添加成功',
     configImported: '配置导入成功',
     saveSuccess: '配置保存成功',

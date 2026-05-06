@@ -374,7 +374,7 @@ interface Props {
 
 ### InstanceConfig (`InstanceConfig.vue`)
 
-**职责**: 实例配置组件，显示模板配置（只读）和实例配置覆盖（可编辑）
+**职责**: 实例配置组件，显示模板配置（只读）和实例配置覆盖（可编辑）。支持错误状态下快速跳转日志查看。
 
 **Props**:
 
@@ -383,6 +383,8 @@ interface Props {
   templateConfig: ServerConfig;
   instanceConfig: InstanceConfigOverrides;
   serverName: string;
+  instanceStatus?: string;
+  systemTagDefinitions: TagDefinition[];
 }
 ```
 
@@ -391,6 +393,10 @@ interface Props {
 ```typescript
 {
   (e: 'update', config: Partial<InstanceConfigOverrides>): void;
+  (e: 'start-instance'): void;
+  (e: 'stop-instance'): void;
+  (e: 'restart-instance'): void;
+  (e: 'view-logs'): void;  // Error state — navigate to logs tab
 }
 ```
 

@@ -99,6 +99,7 @@
                         @start-instance="startSelectedInstance"
                         @stop-instance="stopSelectedInstance"
                         @restart-instance="restartSelectedInstance"
+                        @view-logs="activeInstanceTab = 'logs'"
                       />
                     </div>
                   </el-tab-pane>
@@ -322,6 +323,17 @@ watch(
     }
   },
   { immediate: true }
+);
+
+// Fetch historical logs when switching to logs tab
+watch(
+  [activeInstanceTab, () => server.value?.name, selectedInstanceIndex],
+  ([tab, serverName, instIndex]) => {
+    if (!serverName) return;
+    if (tab === 'logs') {
+      store.fetchLogs(serverName, instIndex ?? 0);
+    }
+  }
 );
 
 function navigateBack() {

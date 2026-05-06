@@ -32,7 +32,16 @@
             {{ $t('action.restart') }}
           </el-button>
           <el-button
-            v-if="instanceStatus === 'online'"
+            v-if="instanceStatus === 'error'"
+            type="danger"
+            plain
+            :icon="WarningFilled"
+            @click="handleViewLogs"
+          >
+            {{ $t('action.viewLogs') }}
+          </el-button>
+          <el-button
+            v-else-if="instanceStatus === 'online'"
             type="warning"
             plain
             :icon="SwitchButton"
@@ -436,7 +445,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Delete, Plus, View, Refresh, SwitchButton, VideoPlay } from '@element-plus/icons-vue';
+import {
+  Delete,
+  Plus,
+  View,
+  Refresh,
+  SwitchButton,
+  VideoPlay,
+  WarningFilled
+} from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import type { ServerTemplate, TagDefinition } from '@shared-models/server.model';
 import type { InstanceConfigOverrides } from '@/types/server-detail';
@@ -475,6 +492,7 @@ interface InstanceConfigEmits {
   (e: 'start-instance'): void;
   (e: 'stop-instance'): void;
   (e: 'restart-instance'): void;
+  (e: 'view-logs'): void;
 }
 
 const props = withDefaults(defineProps<InstanceConfigProps>(), {
@@ -502,6 +520,13 @@ function handleStop() {
  */
 function handleRestart() {
   emit('restart-instance');
+}
+
+/**
+ * Handles the view logs button click for error diagnosis
+ */
+function handleViewLogs() {
+  emit('view-logs');
 }
 
 // Dialog visibility state

@@ -49,7 +49,7 @@ gateway/
 **Initialize Handler (`initialize-handler.ts`)**:
 
 - 处理 `initialize` 请求和 `initialized` 通知
-- 返回网关的协议版本、服务器信息和能力声明
+- 返回网关的协议版本、服务器信息和能力声明（包括 `tools`、`resources`、`logging`）
 - 记录客户端连接信息用于调试
 
 **Resources Handler (`resources-handler.ts`)**:
