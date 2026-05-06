@@ -25,8 +25,6 @@ import type {
   ToolCallCompletedEvent,
   ToolCallErrorEvent,
   ConfigurationUpdatedEvent,
-  ClientConnectedEvent,
-  ClientDisconnectedEvent,
   ErrorMessage
 } from '@shared-types/websocket.types';
 
@@ -53,8 +51,6 @@ export type {
   ToolCallCompletedEvent,
   ToolCallErrorEvent,
   ConfigurationUpdatedEvent,
-  ClientConnectedEvent,
-  ClientDisconnectedEvent,
   ErrorMessage
 };
 

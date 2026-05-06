@@ -108,6 +108,16 @@ export const useServerStore = defineStore('server', () => {
   const selectedServerId = ref<string | null>(null);
 
   /**
+   * Tracks in-flight start/stop operations to preserve optimistic transition states
+   * across fetchServers() calls. Keyed by instance ID.
+   */
+  const pendingOperations = ref<
+    Map<string, { status: 'starting' | 'stopping'; timestamp: number }>
+  >(new Map());
+
+  const PENDING_OP_STALE_MS = 30000;
+
+  /**
    * Computed property that returns the currently selected server
    *
    * @returns {Server|undefined} Selected server object or undefined if not found
@@ -203,7 +213,13 @@ export const useServerStore = defineStore('server', () => {
               } else if (statusInfo?.error) {
                 instStatus = 'error';
               } else {
-                instStatus = 'offline';
+                // Preserve optimistic transition states from pending operations
+                const pendingOp = pendingOperations.value.get(inst.id);
+                if (pendingOp) {
+                  instStatus = pendingOp.status;
+                } else {
+                  instStatus = 'offline';
+                }
               }
               return {
                 id: inst.id,
@@ -243,7 +259,14 @@ export const useServerStore = defineStore('server', () => {
             totalResourcesCount += statusInfo?.resourcesCount ?? 0;
           });
 
-          const status: ServerStatus = anyOnline ? 'online' : anyError ? 'error' : 'offline';
+          const anyStarting = instanceConfigs.some((inst) => inst.status === 'starting');
+          const status: ServerStatus = anyOnline
+            ? 'online'
+            : anyError
+              ? 'error'
+              : anyStarting
+                ? 'starting'
+                : 'offline';
 
           combinedServers.push({
             id: serverId,
@@ -309,6 +332,14 @@ export const useServerStore = defineStore('server', () => {
       });
 
       servers.value = combinedServers;
+
+      // Clean up stale pending operations
+      const now = Date.now();
+      for (const [id, op] of pendingOperations.value) {
+        if (now - op.timestamp > PENDING_OP_STALE_MS) {
+          pendingOperations.value.delete(id);
+        }
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
         error.value = e.message || 'Failed to fetch servers';
@@ -494,6 +525,13 @@ export const useServerStore = defineStore('server', () => {
           console.log('[startServer] Updated instance status to starting:', id);
         }
       }
+
+      // Track pending operation for UI transition state
+      const pendingInstanceId = actualServerId;
+      pendingOperations.value.set(pendingInstanceId, {
+        status: 'starting',
+        timestamp: Date.now()
+      });
 
       // Connect server (using actual instance ID)
       await http.post(`/web/mcp/servers/${actualServerId}/connect`, {});
@@ -734,6 +772,10 @@ export const useServerStore = defineStore('server', () => {
       // Update all instances to starting status for immediate UI feedback
       instancesToStart.forEach((instance) => {
         updateServerStatus(instance.id, 'starting');
+        pendingOperations.value.set(instance.id, {
+          status: 'starting',
+          timestamp: Date.now()
+        });
       });
 
       // Start each instance
@@ -902,6 +944,109 @@ export const useServerStore = defineStore('server', () => {
   }
 
   /**
+   * Recompute aggregated server status from its instances
+   */
+  function recomputeAggregatedStatus(s: Server) {
+    let anyOnline = false;
+    let anyError = false;
+    let anyStarting = false;
+
+    for (const inst of s.instances || []) {
+      if (inst.status === 'online') {
+        anyOnline = true;
+        break;
+      } else if (inst.status === 'error') {
+        anyError = true;
+      } else if (inst.status === 'starting') {
+        anyStarting = true;
+      }
+    }
+
+    if (anyOnline) {
+      s.status = 'online';
+    } else if (anyError) {
+      s.status = 'error';
+    } else if (anyStarting) {
+      s.status = 'starting';
+    } else {
+      s.status = 'offline';
+    }
+  }
+
+  /**
+   * Locally adds a server instance (no HTTP call).
+   * Used by WebSocket handler for cross-client sync.
+   */
+  function addInstanceLocal(serverName: string, instanceData: ServerInstance) {
+    const server = servers.value.find((s) => s.name === serverName);
+    if (!server?.rawV11Config) return;
+
+    if (!server.rawV11Config.instances) {
+      server.rawV11Config.instances = [];
+    }
+    server.rawV11Config.instances.push(instanceData);
+
+    server.instances = server.rawV11Config.instances.map((inst) => {
+      const existing = server.instances?.find((i) => i.id === inst.id);
+      return {
+        id: inst.id,
+        timestamp: inst.timestamp ?? Date.now(),
+        index: inst.index ?? 0,
+        displayName: inst.displayName,
+        status: (existing?.status as ServerStatus) ?? 'offline'
+      };
+    });
+
+    recomputeAggregatedStatus(server);
+  }
+
+  /**
+   * Locally updates a server instance (no HTTP call).
+   * Used by WebSocket handler for cross-client sync.
+   */
+  function updateInstanceLocal(
+    serverName: string,
+    index: number,
+    updates: Partial<ServerInstanceUpdate>
+  ) {
+    const server = servers.value.find((s) => s.name === serverName);
+    if (!server?.rawV11Config?.instances) return;
+
+    const inst = server.rawV11Config.instances.find((i) => i.index === index);
+    if (inst) {
+      Object.assign(inst, updates);
+    }
+
+    const aggInst = server.instances?.find((i) => i.index === index);
+    if (aggInst && updates.displayName) {
+      aggInst.displayName = updates.displayName;
+    }
+  }
+
+  /**
+   * Locally removes a server instance (no HTTP call).
+   * Used by WebSocket handler for cross-client sync.
+   */
+  function removeInstanceLocal(serverName: string, index: number) {
+    const server = servers.value.find((s) => s.name === serverName);
+    if (!server?.rawV11Config?.instances) return;
+
+    server.rawV11Config.instances = server.rawV11Config.instances.filter((i) => i.index !== index);
+
+    if (server.instances) {
+      server.instances = server.instances.filter((i) => i.index !== index);
+    }
+
+    if (server.rawV11Config.instances.length === 0) {
+      const idx = servers.value.indexOf(server);
+      if (idx !== -1) servers.value.splice(idx, 1);
+      return;
+    }
+
+    recomputeAggregatedStatus(server);
+  }
+
+  /**
    * Updates the status of a specific server or instance
    *
    * Directly modifies the server status in the local state without API calls.
@@ -911,6 +1056,11 @@ export const useServerStore = defineStore('server', () => {
    * @param {ServerStatus} status - New status value
    */
   function updateServerStatus(id: string, status: ServerStatus) {
+    // Clear pending operation when reaching a terminal state
+    if (status === 'online' || status === 'error' || status === 'offline') {
+      pendingOperations.value.delete(id);
+    }
+
     // First try to find by server ID
     const server = servers.value.find((s) => s.id === id);
     if (server) {
@@ -1126,6 +1276,9 @@ export const useServerStore = defineStore('server', () => {
     addServerInstance,
     updateServerInstance,
     removeServerInstance,
+    addInstanceLocal,
+    updateInstanceLocal,
+    removeInstanceLocal,
     reassignInstanceIndexes,
     startAllServerInstances,
     stopAllServerInstances,

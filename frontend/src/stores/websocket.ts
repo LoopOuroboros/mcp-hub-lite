@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ElMessage } from 'element-plus';
 import { WebSocketClient, createWebSocketClient } from '@utils/websocket';
 import type { ServerMessage } from '@utils/websocket';
 import { useServerStore } from '@stores/server';
@@ -17,8 +18,6 @@ import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 // Import specific WebSocket event types from shared types
 import type {
   ConfigurationUpdatedEvent,
-  ClientConnectedEvent,
-  ClientDisconnectedEvent,
   ServerStatusEvent,
   LogEvent,
   ToolsEvent,
@@ -26,6 +25,9 @@ import type {
   ServerAddedEvent,
   ServerUpdatedEvent,
   ServerDeletedEvent,
+  ServerInstanceAddedEvent,
+  ServerInstanceUpdatedEvent,
+  ServerInstanceDeletedEvent,
   ServerConnectedEvent,
   ServerDisconnectedEvent
 } from '@shared-types/websocket.types';
@@ -83,14 +85,15 @@ export const useWebSocketStore = defineStore('websocket', () => {
             WEB_SOCKET_EVENT_TYPES.SERVER_ADDED,
             WEB_SOCKET_EVENT_TYPES.SERVER_UPDATED,
             WEB_SOCKET_EVENT_TYPES.SERVER_DELETED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_ADDED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_UPDATED,
+            WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_DELETED,
             WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED,
             WEB_SOCKET_EVENT_TYPES.SERVER_DISCONNECTED,
             WEB_SOCKET_EVENT_TYPES.TOOL_CALL_STARTED,
             WEB_SOCKET_EVENT_TYPES.TOOL_CALL_COMPLETED,
             WEB_SOCKET_EVENT_TYPES.TOOL_CALL_ERROR,
-            WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED,
-            WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED,
-            WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED
+            WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED
           ]
         });
       },
@@ -142,6 +145,15 @@ export const useWebSocketStore = defineStore('websocket', () => {
       case WEB_SOCKET_EVENT_TYPES.SERVER_DELETED:
         handleServerDeleted(message);
         break;
+      case WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_ADDED:
+        handleServerInstanceAdded(message);
+        break;
+      case WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_UPDATED:
+        handleServerInstanceUpdated(message);
+        break;
+      case WEB_SOCKET_EVENT_TYPES.SERVER_INSTANCE_DELETED:
+        handleServerInstanceDeleted(message);
+        break;
       case WEB_SOCKET_EVENT_TYPES.SERVER_CONNECTED:
         handleServerConnected(message);
         break;
@@ -160,12 +172,6 @@ export const useWebSocketStore = defineStore('websocket', () => {
       case WEB_SOCKET_EVENT_TYPES.CONFIGURATION_UPDATED:
         handleConfigurationUpdated(message);
         break;
-      case WEB_SOCKET_EVENT_TYPES.CLIENT_CONNECTED:
-        handleClientConnected(message);
-        break;
-      case WEB_SOCKET_EVENT_TYPES.CLIENT_DISCONNECTED:
-        handleClientDisconnected(message);
-        break;
       case WEB_SOCKET_EVENT_TYPES.PONG:
         // Heartbeat response, ignore
         break;
@@ -177,14 +183,6 @@ export const useWebSocketStore = defineStore('websocket', () => {
   function handleConfigurationUpdated(message: ConfigurationUpdatedEvent): void {
     console.log('Configuration updated:', message.data);
     systemStore.fetchConfig();
-  }
-
-  function handleClientConnected(message: ClientConnectedEvent): void {
-    console.log('Client connected:', message.data);
-  }
-
-  function handleClientDisconnected(message: ClientDisconnectedEvent): void {
-    console.log('Client disconnected:', message.data);
   }
 
   function handleServerStatusChange(message: ServerStatusEvent): void {
@@ -256,6 +254,26 @@ export const useWebSocketStore = defineStore('websocket', () => {
   function handleServerDeleted(message: ServerDeletedEvent): void {
     console.log('Server deleted:', message.data);
     serverStore.fetchServers();
+  }
+
+  function handleServerInstanceAdded(message: ServerInstanceAddedEvent): void {
+    const { name, instance } = message.data;
+    serverStore.addInstanceLocal(name, instance);
+    ElMessage.info(`Server instance #${instance.index} added for ${name}`);
+  }
+
+  function handleServerInstanceUpdated(message: ServerInstanceUpdatedEvent): void {
+    const { name, index, updates } = message.data;
+    serverStore.updateInstanceLocal(name, index, updates);
+    if (updates.displayName) {
+      ElMessage.info(`Instance #${index} renamed to "${updates.displayName}"`);
+    }
+  }
+
+  function handleServerInstanceDeleted(message: ServerInstanceDeletedEvent): void {
+    const { name, index } = message.data;
+    serverStore.removeInstanceLocal(name, index);
+    ElMessage.info(`Server instance #${index} removed from ${name}`);
   }
 
   function handleServerConnected(message: ServerConnectedEvent): void {
