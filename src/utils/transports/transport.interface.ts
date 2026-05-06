@@ -24,6 +24,8 @@ export interface SseTransportConfig {
   };
 }
 
+import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
+
 /**
  * Streamable HTTP transport configuration
  */
@@ -35,6 +37,7 @@ export interface StreamableHttpTransportConfig {
   proxy?: {
     url: string;
   };
+  authProvider?: OAuthClientProvider;
 }
 
 /**
