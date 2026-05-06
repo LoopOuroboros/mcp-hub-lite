@@ -93,14 +93,15 @@ shared/
 - `ServerAddedEvent` - 服务器添加事件
 - `ServerUpdatedEvent` - 服务器更新事件
 - `ServerDeletedEvent` - 服务器删除事件
+- `ServerInstanceAddedEvent` - 服务器实例添加事件
+- `ServerInstanceUpdatedEvent` - 服务器实例更新事件
+- `ServerInstanceDeletedEvent` - 服务器实例删除事件
 - `ServerConnectedEvent` - 服务器连接事件
 - `ServerDisconnectedEvent` - 服务器断开事件
 - `ToolCallStartedEvent` - 工具调用开始事件
 - `ToolCallCompletedEvent` - 工具调用完成事件
 - `ToolCallErrorEvent` - 工具调用错误事件
 - `ConfigurationUpdatedEvent` - 配置更新事件
-- `ClientConnectedEvent` - 客户端连接事件
-- `ClientDisconnectedEvent` - 客户端断开事件
 
 **常量**:
 

@@ -31,7 +31,6 @@ Router 模块负责前端路由管理，使用 Vue Router 实现单页应用（S
 │   └── /servers/:name/resources - 服务器资源 (ServerDetail)
 ├── /tools - 工具列表 (ToolsView)
 ├── /resources - 资源列表 (ResourcesView)
-├── /sessions - 会话管理 (SessionsView)
 ├── /servers/:name/resources/detail - 资源详情 (ResourceDetailView)
 └── /settings - 系统设置 (SettingsView)
 ```
@@ -49,7 +48,6 @@ Router 模块负责前端路由管理，使用 Vue Router 实现单页应用（S
 | `/servers/:name/resources`        | server-detail-resources | ServerDetail       | 服务器资源         |
 | `/tools`                          | tools                   | ToolsView          | 工具列表           |
 | `/resources`                      | resources               | ResourcesView      | 资源列表           |
-| `/sessions`                       | sessions                | SessionsView       | 会话管理           |
 | `/servers/:name/resources/detail` | resource-detail         | ResourceDetailView | 资源详情           |
 | `/settings`                       | settings                | SettingsView       | 系统设置           |
 
@@ -76,7 +74,6 @@ router/
     ├── depends on: ../views/ToolsView.vue
     ├── depends on: ../views/ResourcesView.vue
     ├── depends on: ../views/ResourceDetailView.vue
-    ├── depends on: ../views/SessionsView.vue
     └── depends on: ../views/SettingsView.vue
 ```
 

@@ -134,27 +134,8 @@ export interface McpServer {
 
 ### 事件模型 (`event.model.ts`)
 
-**事件类型定义**:
-
-```typescript
-export enum EventTypes {
-  SERVER_ADDED = 'server:added',
-  SERVER_UPDATED = 'server:updated',
-  SERVER_DELETED = 'server:deleted',
-  SERVER_INSTANCE_ADDED = 'server:instance:added',
-  SERVER_INSTANCE_UPDATED = 'server:instance:updated',
-  SERVER_INSTANCE_DELETED = 'server:instance:deleted',
-  SERVER_CONNECTED = 'server:connected',
-  SERVER_DISCONNECTED = 'server:disconnected',
-  SERVER_STATUS_CHANGE = 'server:status:change',
-  TOOLS_UPDATED = 'tools:updated',
-  RESOURCES_UPDATED = 'resources:updated',
-  TOOL_CALL_STARTED = 'tool:call:started',
-  TOOL_CALL_COMPLETED = 'tool:call:completed',
-  TOOL_CALL_ERROR = 'tool:call:error',
-  CONFIGURATION_UPDATED = 'configuration:updated'
-}
-```
+**EventTypes 定义位置**: EventTypes 常量定义在 `src/services/event-bus.service.ts` 中。
+`event.model.ts` 仅包含事件数据的接口定义（如 `ServerAddedEventData`、`ToolCallStartedEventData` 等）。
 
 ### 系统工具常量 (`system-tools.constants.ts`)
 
