@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2026-05-09
+
+### Gateway
+
+- add OAuth browser authentication for Streamable HTTP servers
+- complete SERVER*INSTANCE*\* event pipeline with granular local WebSocket updates
+
+### Security
+
+- enforce allowedNetworks, connection limits, and timeout at runtime
+
+### Core
+
+- auto-increment port when occupied in dev mode
+- improve MCP server startup failure log visibility
+- remove dead code and unused types
+
+---
+
 ## [1.2.6] - 2026-04-29
 
 ### Hub Tools
