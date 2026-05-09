@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { getConnectionStats } from '@src/app.js';
 
 /**
  * Health Check API Routes
@@ -22,5 +23,10 @@ export async function webHealthRoutes(fastify: FastifyInstance) {
   // GET /web/health
   fastify.get('/web/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
+  });
+
+  // GET /health/connections - diagnostic endpoint for connection counters
+  fastify.get('/health/connections', async () => {
+    return getConnectionStats();
   });
 }
