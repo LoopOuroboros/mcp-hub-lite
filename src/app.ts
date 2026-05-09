@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { configManager } from '@config/config-manager.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { isIpAllowed } from '@utils/network-security.js';
+import { logger, LOG_MODULES } from '@utils/logger.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
@@ -29,6 +30,19 @@ const __dirname = path.dirname(__filename);
 // Connection tracking counters (module-scoped, shared across all requests)
 let currentConnections = 0;
 let currentConcurrentRequests = 0;
+
+const CONCURRENT_DECREMENTED = Symbol('concurrentDecremented');
+
+/** Expose connection stats for diagnostic endpoints */
+export function getConnectionStats() {
+  const cfg = configManager.getConfig().security;
+  return {
+    currentConnections,
+    currentConcurrentRequests,
+    maxConnections: cfg.maxConnections,
+    maxConcurrentConnections: cfg.maxConcurrentConnections
+  };
+}
 
 /**
  * Creates and configures a Fastify application instance for the MCP Hub Lite service.
@@ -79,6 +93,9 @@ export async function buildApp() {
     socket.on('close', () => {
       currentConnections--;
     });
+    socket.on('error', (err) => {
+      logger.debug(`Socket error (will be closed): ${err.message}`, LOG_MODULES.SERVER);
+    });
 
     if (currentConnections > config.security.maxConnections) {
       socket.destroy();
@@ -108,11 +125,46 @@ export async function buildApp() {
       return;
     }
     currentConcurrentRequests++;
+
+    // Safety net: decrement on premature connection close (e.g. SSE timeout).
+    // Prevents counter drift for hijacked long-lived connections whose
+    // onResponse hook may not fire when the socket is destroyed by timeout.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (reply.raw as any)[CONCURRENT_DECREMENTED] = false;
+    reply.raw.on('close', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!(reply.raw as any)[CONCURRENT_DECREMENTED]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (reply.raw as any)[CONCURRENT_DECREMENTED] = true;
+        currentConcurrentRequests--;
+      }
+    });
+
+    // Warn when approaching the configured limit
+    if (currentConcurrentRequests > config.security.maxConcurrentConnections * 0.8) {
+      logger.warn(
+        `High concurrent requests: ${currentConcurrentRequests}/${config.security.maxConcurrentConnections}`,
+        LOG_MODULES.SERVER
+      );
+    }
+
     done();
   });
 
-  fastify.addHook('onResponse', (_request, _reply, done) => {
-    currentConcurrentRequests = Math.max(0, currentConcurrentRequests - 1);
+  fastify.addHook('onResponse', (_request, reply, done) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(reply.raw as any)[CONCURRENT_DECREMENTED]) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (reply.raw as any)[CONCURRENT_DECREMENTED] = true;
+      currentConcurrentRequests--;
+      if (currentConcurrentRequests < 0) {
+        logger.warn(
+          'currentConcurrentRequests went negative in onResponse, resetting to 0',
+          LOG_MODULES.SERVER
+        );
+        currentConcurrentRequests = 0;
+      }
+    }
     done();
   });
 

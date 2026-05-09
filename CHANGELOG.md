@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.8] - 2026-05-09
+
+### Gateway
+
+- prevent concurrent request counter drift from SSE timeout causing 503 for new clients
+- add GET /health/connections diagnostic endpoint for connection stats
+
 ## [1.2.7] - 2026-05-09
 
 ### Gateway
