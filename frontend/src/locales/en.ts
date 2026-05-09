@@ -21,6 +21,7 @@ export default {
     serverDeleted: 'Server deleted',
     logsCleared: 'Logs cleared',
     logsCopied: 'Logs copied to clipboard',
+    viewLogs: 'View Logs',
     serverAdded: 'Server added successfully',
     configImported: 'Configuration imported successfully',
     saveSuccess: 'Configuration saved successfully',

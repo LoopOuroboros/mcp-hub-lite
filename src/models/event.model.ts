@@ -114,28 +114,11 @@ export interface LogEntryEventData {
   }>;
 }
 
-export interface LogsClearedEventData {
-  serverName: string;
-  serverIndex: number;
-}
-
 // System-related event data
 export interface ConfigurationUpdatedEventData {
   timestamp: number;
   config: unknown;
   changes?: unknown;
-}
-
-// Client-related event data
-export interface ClientConnectedEventData {
-  timestamp: number;
-  client: unknown;
-}
-
-export interface ClientDisconnectedEventData {
-  timestamp: number;
-  clientId: string;
-  client?: unknown;
 }
 
 // Union type for event data types

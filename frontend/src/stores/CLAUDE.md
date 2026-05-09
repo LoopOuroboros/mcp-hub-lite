@@ -54,6 +54,9 @@ stores/
 - `addServerInstance(serverName)` - 添加服务器实例
 - `updateServerInstance(serverName, index, updates)` - 更新服务器实例
 - `removeServerInstance(serverName, index)` - 删除服务器实例
+- `addInstanceLocal(serverName, instanceData)` - 本地添加实例（供 WebSocket 跨客户端同步）
+- `updateInstanceLocal(serverName, index, updates)` - 本地更新实例（供 WebSocket 跨客户端同步）
+- `removeInstanceLocal(serverName, index)` - 本地删除实例（供 WebSocket 跨客户端同步）
 
 **v1.1 聚合服务器模型**:
 
@@ -213,7 +216,6 @@ stores/
 - `@stores/server` - 服务器 Store
 - `@stores/tool-calls` - 工具调用 Store
 - `@stores/system` - 系统 Store
-- `@stores/session` - 会话 Store
 - `@shared-types/websocket.types` - WebSocket 类型定义
 
 ## 数据模型
@@ -300,7 +302,6 @@ stores/
 **建议测试**:
 
 - 完整的 Action 测试覆盖（startServer、stopServer、deleteServer 等）
-- Session Store 测试
 - System Store 测试
 - Tool Calls Store 测试
 - WebSocket Store 测试
@@ -315,7 +316,7 @@ A: 使用 Pinia 的 `defineStore` 创建新的状态管理文件。
 
 ### Q: 如何在组件中使用 Store？
 
-A: 使用 `useServerStore()`、`useSessionStore()` 等获取 store 实例。
+A: 使用 `useServerStore()` 等获取 store 实例。
 
 ### Q: Store 之间如何交互？
 

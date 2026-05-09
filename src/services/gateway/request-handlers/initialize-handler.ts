@@ -49,6 +49,7 @@ export function registerInitializeHandlers(server: McpServer): void {
           list: true,
           read: true
         },
+        logging: {},
         experimental: {}
       }
     };

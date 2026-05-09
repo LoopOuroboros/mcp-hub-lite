@@ -25,8 +25,6 @@ import type {
   ToolCallCompletedEvent,
   ToolCallErrorEvent,
   ConfigurationUpdatedEvent,
-  ClientConnectedEvent,
-  ClientDisconnectedEvent,
   ErrorMessage
 } from '@shared-types/websocket.types';
 
@@ -53,8 +51,6 @@ export type {
   ToolCallCompletedEvent,
   ToolCallErrorEvent,
   ConfigurationUpdatedEvent,
-  ClientConnectedEvent,
-  ClientDisconnectedEvent,
   ErrorMessage
 };
 
@@ -64,6 +60,7 @@ export class WebSocketClient {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private heartbeatInterval?: number;
+  private pendingMessages: ClientMessage[] = [];
 
   constructor(private url: string) {}
 
@@ -77,6 +74,7 @@ export class WebSocketClient {
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+      this.flushPendingMessages();
       onOpen?.();
       this.startHeartbeat();
     };
@@ -100,6 +98,17 @@ export class WebSocketClient {
   send(message: ClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+    } else {
+      this.pendingMessages.push(message);
+    }
+  }
+
+  private flushPendingMessages(): void {
+    while (this.pendingMessages.length > 0) {
+      const msg = this.pendingMessages.shift()!;
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify(msg));
+      }
     }
   }
 

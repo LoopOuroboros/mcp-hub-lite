@@ -1,6 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { TransportFactory } from '@utils/transports/transport-factory.js';
+import { UnauthorizedError, auth } from '@modelcontextprotocol/sdk/client/auth.js';
+import { StreamableHttpTransport } from '@utils/transports/streamable-http-transport.js';
 import {
   logger,
   LOG_MODULES,
@@ -122,6 +124,11 @@ export class McpConnectionManager {
     const compositeKey = getCompositeKey(serverName, serverIndex);
     const { maxRetries, baseRetryDelay } = this.getRetryConfig();
 
+    // Create OAuth provider once per-connect (shared across retries)
+    const isStreamableHttp = server.type === 'streamable-http' || server.type === 'http';
+    let oauthProvider: import('@services/mcp-oauth/index.js').McpOAuthClientProvider | null = null;
+    let oauthStarted = false;
+
     // Retry loop for connection attempts
     let lastError: Error | undefined;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -144,8 +151,28 @@ export class McpConnectionManager {
           serverInfo,
           compositeKey,
           serverName,
-          serverIndex
+          serverIndex,
+          oauthProvider ?? undefined
         );
+
+        // Capture OAuth provider from the transport (reuse across retries)
+        if (!oauthProvider && transport instanceof StreamableHttpTransport) {
+          const provider = transport.getOAuthProvider();
+          if (provider) {
+            oauthProvider =
+              provider as import('@services/mcp-oauth/index.js').McpOAuthClientProvider;
+          }
+        }
+
+        // Start OAuth callback server once before connecting
+        if (oauthProvider && !oauthStarted) {
+          await oauthProvider.startCallbackServer();
+          oauthStarted = true;
+          logger.info(
+            `OAuth callback server started for [${compositeKey}]`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
+        }
 
         // 6. Establish client connection
         const client = await this.establishClientConnection(transport);
@@ -162,8 +189,36 @@ export class McpConnectionManager {
         // 10. Refresh resources
         await this.refreshServerResources(serverName, serverIndex, server.type);
 
+        // 11. Request log notifications from downstream server
+        await this.requestLoggingFromServer(compositeKey, client, server.type);
+
         return true;
       } catch (error) {
+        // Handle OAuth flow for Streamable HTTP servers (only on first attempt)
+        if (
+          isStreamableHttp &&
+          oauthProvider &&
+          error instanceof UnauthorizedError &&
+          attempt === 1
+        ) {
+          logger.info(
+            `OAuth required for server [${compositeKey}], waiting for browser auth...`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
+          const oauthHandled = await this.handleOAuthFlow(
+            oauthProvider,
+            server.url || '',
+            compositeKey
+          );
+          if (oauthHandled) {
+            logger.info(
+              `OAuth flow completed for [${compositeKey}], retrying connection...`,
+              LOG_MODULES.CONNECTION_MANAGER
+            );
+            continue; // Retry connection — authProvider now has tokens
+          }
+        }
+
         lastError = await this.handleConnectionError(
           error,
           compositeKey,
@@ -172,6 +227,11 @@ export class McpConnectionManager {
           baseRetryDelay
         );
       }
+    }
+
+    // Clean up callback server
+    if (oauthProvider) {
+      await oauthProvider.stopCallbackServer();
     }
 
     // All retries failed
@@ -254,7 +314,8 @@ export class McpConnectionManager {
     serverInfo: { name: string; config: ServerConfig; instance: ServerInstance },
     compositeKey: string,
     serverName: string,
-    serverIndex: number
+    serverIndex: number,
+    authProvider?: import('@services/mcp-oauth/index.js').McpOAuthClientProvider
   ): { transport: Transport; pid: number | undefined } {
     const readyPatterns =
       server.type === 'stdio' ? (serverInfo.config.template.readyPatterns ?? []) : undefined;
@@ -268,7 +329,8 @@ export class McpConnectionManager {
       compositeKey,
       {
         readyPatterns,
-        readyTimeout
+        readyTimeout,
+        authProvider
       }
     );
 
@@ -478,6 +540,118 @@ export class McpConnectionManager {
   }
 
   /**
+   * Sends logging/setLevel request to downstream server to start receiving log notifications.
+   * This is a best-effort request — servers that don't support logging will silently ignore it.
+   */
+  private async requestLoggingFromServer(
+    compositeKey: string,
+    client: Client,
+    serverType: string
+  ): Promise<void> {
+    // SSE is unidirectional — cannot send requests to the server
+    if (serverType === 'sse') return;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (client as any).request(
+        { method: 'logging/setLevel', params: { level: 'info' } },
+        { timeout: 5000 }
+      );
+      logger.info(
+        `Sent logging/setLevel to server [${compositeKey}]`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+    } catch {
+      // Server may not support logging — not an error condition
+      logger.debug(
+        `Server [${compositeKey}] does not support logging/setLevel`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+    }
+  }
+
+  /**
+   * Handles the OAuth authorization flow for Streamable HTTP servers.
+   * Starts a local callback server, waits for the user to complete auth in the browser,
+   * then finishes the auth on the transport.
+   *
+   * @returns true if OAuth was handled successfully, false otherwise
+   */
+  private async handleOAuthFlow(
+    provider: import('@services/mcp-oauth/index.js').McpOAuthClientProvider,
+    serverUrl: string,
+    compositeKey: string
+  ): Promise<boolean> {
+    try {
+      const callbackServer = provider.getCallbackServer();
+      if (!callbackServer) {
+        logger.warn(`No callback server for [${compositeKey}]`, LOG_MODULES.CONNECTION_MANAGER);
+        return false;
+      }
+
+      // SDK has already called redirectToAuthorization via authProvider
+      // Wait for the auth code from the callback server
+      const authCode = await new Promise<string | null>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => {
+            callbackServer.removeAllListeners('auth-code-received');
+            resolve(null);
+          },
+          5 * 60 * 1000
+        );
+
+        callbackServer.once('auth-code-received', (code: string) => {
+          clearTimeout(timeout);
+          resolve(code);
+        });
+
+        callbackServer.once('error', (err: Error) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+      });
+
+      if (!authCode) {
+        logger.warn(
+          `OAuth flow timed out for server [${compositeKey}]`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
+        return false;
+      }
+
+      // Exchange the authorization code for tokens via SDK
+      logger.info(
+        `Exchanging OAuth code for tokens for [${compositeKey}]...`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      const result = await auth(provider, {
+        serverUrl,
+        authorizationCode: authCode
+      });
+
+      if (result === 'AUTHORIZED') {
+        logger.info(
+          `OAuth token exchange succeeded for [${compositeKey}]`,
+          LOG_MODULES.CONNECTION_MANAGER
+        );
+        return true;
+      }
+
+      logger.warn(
+        `OAuth token exchange returned ${result} for [${compositeKey}]`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      return false;
+    } catch (error) {
+      logger.error(
+        `OAuth flow error for server [${compositeKey}]: ${error instanceof Error ? error.message : String(error)}`,
+        LOG_MODULES.CONNECTION_MANAGER
+      );
+      return false;
+    }
+  }
+
+  /**
    * Handles connection error with logging and retry delay.
    */
   private async handleConnectionError(
@@ -517,6 +691,17 @@ export class McpConnectionManager {
   ): void {
     const errorMessage = lastError?.message || 'Connection failed after all retries';
 
+    // Fetch recent error logs (stderr) to help diagnose startup failures
+    const recentErrorLogs = logStorage.getLogs(compositeKey, { level: 'error', limit: 10 });
+    const logDetail =
+      recentErrorLogs.length > 0
+        ? '\n\n--- Recent stderr output ---\n' + recentErrorLogs.map((l) => l.message).join('\n')
+        : '';
+
+    // Write connection error to logStorage so it appears in the log viewer
+    // This ensures errors from all transport types (stdio, streamable-http, sse) are visible
+    logStorage.append(compositeKey, 'error', `[CONNECTION] ${errorMessage}`);
+
     logger.error(
       `Failed to connect to server ${compositeKey} after retries:`,
       lastError,
@@ -525,7 +710,7 @@ export class McpConnectionManager {
 
     this.serverStatus.set(compositeKey, {
       connected: false,
-      error: errorMessage,
+      error: errorMessage + logDetail,
       lastCheck: Date.now(),
       toolsCount: 0,
       resourcesCount: 0
@@ -535,7 +720,7 @@ export class McpConnectionManager {
       serverName,
       serverIndex,
       status: 'error',
-      error: errorMessage,
+      error: errorMessage + logDetail,
       timestamp: Date.now()
     });
   }

@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { configManager } from '@config/config-manager.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
+import { isIpAllowed } from '@utils/network-security.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
@@ -24,6 +25,10 @@ import { webSocketRoutes } from '@api/ws/events.js';
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Connection tracking counters (module-scoped, shared across all requests)
+let currentConnections = 0;
+let currentConcurrentRequests = 0;
 
 /**
  * Creates and configures a Fastify application instance for the MCP Hub Lite service.
@@ -62,6 +67,54 @@ export async function buildApp() {
   const idleTimeout = config.security.idleConnectionTimeout;
   fastify.server.keepAliveTimeout = idleTimeout;
   fastify.server.headersTimeout = idleTimeout + 5000; // headersTimeout must be longer than keepAliveTimeout
+
+  // ===== Security: per-socket timeout + maxConnections =====
+  fastify.server.on('connection', (socket) => {
+    socket.setTimeout(config.security.connectionTimeout);
+    socket.on('timeout', () => {
+      socket.destroy(new Error('Connection timeout'));
+    });
+
+    currentConnections++;
+    socket.on('close', () => {
+      currentConnections--;
+    });
+
+    if (currentConnections > config.security.maxConnections) {
+      socket.destroy();
+    }
+  });
+
+  // ===== Security: IP allowlist =====
+  fastify.addHook('onRequest', (request, reply, done) => {
+    const allowed = config.security.allowedNetworks;
+    if (allowed.length > 0 && !isIpAllowed(request.ip, allowed)) {
+      reply.code(403).send({
+        error: 'Forbidden',
+        message: `Access denied: ${request.ip} is not allowed`
+      });
+      return;
+    }
+    done();
+  });
+
+  // ===== Security: concurrent request limit =====
+  fastify.addHook('onRequest', (_request, reply, done) => {
+    if (currentConcurrentRequests >= config.security.maxConcurrentConnections) {
+      reply.code(503).send({
+        error: 'Service Unavailable',
+        message: 'Too many concurrent requests'
+      });
+      return;
+    }
+    currentConcurrentRequests++;
+    done();
+  });
+
+  fastify.addHook('onResponse', (_request, _reply, done) => {
+    currentConcurrentRequests = Math.max(0, currentConcurrentRequests - 1);
+    done();
+  });
 
   // Simple CORS for dev
   fastify.addHook('onRequest', (request, reply, done) => {

@@ -214,15 +214,9 @@ export const EventTypes = {
 
   // Log related events
   LOG_ENTRY: 'log',
-  LOGS_CLEARED: 'logs-cleared',
 
   // System related events
-  SYSTEM_HEALTH: 'system-health',
-  CONFIGURATION_UPDATED: 'configuration-updated',
-
-  // Client related events
-  CLIENT_CONNECTED: 'client-connected',
-  CLIENT_DISCONNECTED: 'client-disconnected'
+  CONFIGURATION_UPDATED: 'configuration-updated'
 } as const;
 
 // Create global event bus instance

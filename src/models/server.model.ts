@@ -1,4 +1,3 @@
-import type { ServerStatus, ServerTransport } from '@shared-types/common.types.js';
 import type {
   ServerConfig as SharedServerConfig,
   ServerTemplate as SharedServerTemplate,
@@ -34,35 +33,3 @@ export type {
 
 // Re-export shared constants (includes both value and type)
 export { InstanceSelectionStrategy } from '@shared-models/server.model.js';
-
-// ====== Legacy Backend Server Configuration (for backward compatibility) ======
-
-/**
- * @deprecated Use ServerConfig from @shared-models/server.model instead
- * Backend server configuration interface, extending shared configuration
- */
-export interface LegacyBackendServerConfig extends Omit<SharedServerConfig, 'type'> {
-  id: string;
-  name: string;
-  command: string;
-  args: string[];
-  type: ServerTransport;
-  enabled: boolean;
-}
-
-/**
- * @deprecated Use appropriate types from @shared-models/server.model instead
- * Server state interface
- */
-export interface ServerState {
-  status: ServerStatus;
-  lastCheck: number;
-  error?: string;
-  pid?: number;
-}
-
-/**
- * @deprecated Use Server from @shared-models/server.model instead
- * Backend server model interface, extending shared server model
- */
-export interface LegacyBackendServer extends LegacyBackendServerConfig, ServerState {}

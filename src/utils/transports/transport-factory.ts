@@ -4,6 +4,10 @@ import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { logStorage } from '@services/log-storage.service.js';
+import { McpOAuthClientProvider } from '@services/mcp-oauth/index.js';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import os from 'node:os';
 
 /**
  * Transport Factory - creates appropriate transport client based on server configuration
@@ -23,6 +27,7 @@ export class TransportFactory {
     options?: {
       readyPatterns?: string[];
       readyTimeout?: number;
+      authProvider?: McpOAuthClientProvider;
     }
   ): import('@modelcontextprotocol/sdk/shared/transport.js').Transport {
     const transportConfig = this.validateAndConvertConfig(server);
@@ -67,18 +72,31 @@ export class TransportFactory {
         );
 
       case 'streamable-http':
-      case 'http': // Compatibility with http type, treat as streamable-http
+      case 'http': {
+        // Compatibility with http type, treat as streamable-http
         if (!config.url) {
           throw new Error('Streamable HTTP transport requires a URL');
         }
+        // Use existing authProvider if given, otherwise create one (SDK auto-discovers OAuth)
+        const authProvider =
+          options?.authProvider ||
+          (() => {
+            const serverUrlHash = createHash('md5').update(config.url).digest('hex').slice(0, 16);
+            return new McpOAuthClientProvider({
+              serverUrlHash,
+              configDir: path.join(os.homedir(), '.mcp-hub-lite', 'oauth')
+            });
+          })();
         return new StreamableHttpTransport(
           config.url,
           config.headers,
           config.timeout,
           config.proxy,
+          authProvider,
           server.name,
           compositeKey
         );
+      }
 
       default:
         throw new Error(

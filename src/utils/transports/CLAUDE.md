@@ -41,6 +41,8 @@ transports/
 - **Python 环境优化**: 自动为 Python 相关命令设置 `PYTHONUTF8=1` 环境变量
 - **复合键支持**: 支持 `serverName-serverIndex` 复合键用于日志存储集成
 - **向后兼容**: 支持 `http` 类型自动转换为 `streamable-http`
+- **OAuth Provider 创建**: 对 Streamable HTTP 传输自动创建 `McpOAuthClientProvider`（支持 `options.authProvider` 复用）
+- **回调服务器端口**: 使用随机可用端口（`callbackPort: 0`），动态分配
 
 **支持的传输类型**:
 
@@ -112,6 +114,8 @@ transports/
 - **代理支持**: 支持通过代理服务器连接
 - **复合键支持**: 支持 serverName 和 compositeKey 用于日志上下文
 - **错误详细日志**: 提供详细的错误信息和调试日志
+- **OAuth 认证支持**: 自动创建 OAuth Provider（RFC 9728），支持浏览器弹窗认证流程
+- **authProvider 传递**: 构造函数接受可选 `authProvider` 参数，传递给 SDK 的 `StreamableHTTPClientTransport`
 
 **协议细节**:
 

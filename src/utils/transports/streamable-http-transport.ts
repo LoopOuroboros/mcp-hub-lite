@@ -2,6 +2,7 @@ import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { logger, LOG_MODULES } from '@utils/logger.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import { URL } from 'url';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
@@ -91,6 +92,7 @@ export class StreamableHttpTransport implements Transport {
     private headers: Record<string, string> = {},
     private timeout: number = 30000,
     private proxy?: { url: string },
+    private authProvider?: OAuthClientProvider,
     serverName?: string,
     compositeKey?: string
   ) {
@@ -169,6 +171,15 @@ export class StreamableHttpTransport implements Transport {
       const transportOptions: Record<string, unknown> = {
         requestInit
       };
+
+      // Pass OAuth provider if configured
+      if (this.authProvider) {
+        transportOptions.authProvider = this.authProvider;
+        logger.info(
+          this.formatLogMessage('Streamable HTTP transport configured with OAuth provider'),
+          LOG_MODULES.HTTP_TRANSPORT
+        );
+      }
 
       // Add proxy support if configured
       if (this.proxy?.url) {
@@ -269,6 +280,20 @@ export class StreamableHttpTransport implements Transport {
    * // Transport is now closed and cannot send/receive messages
    * ```
    */
+  /**
+   * Returns the OAuth provider if configured, for connection manager to handle auth flow.
+   */
+  getOAuthProvider(): OAuthClientProvider | undefined {
+    return this.authProvider;
+  }
+
+  /**
+   * Returns the underlying SDK transport for auth flow management.
+   */
+  getSdkTransport(): StreamableHTTPClientTransport | null {
+    return this.transport;
+  }
+
   async close(): Promise<void> {
     this.isClosing = true;
     if (this.transport) {

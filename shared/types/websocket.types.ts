@@ -5,6 +5,7 @@
 
 import type { Tool } from '@shared-models/tool.model';
 import type { Resource } from '@shared-models/resource.model';
+import type { ServerInstance } from '@shared-models/server.model';
 import type { LogLevel } from '@shared-types/common.types';
 
 // WebSocket event type constants
@@ -16,14 +17,15 @@ export const WEB_SOCKET_EVENT_TYPES = {
   SERVER_ADDED: 'server-added',
   SERVER_UPDATED: 'server-updated',
   SERVER_DELETED: 'server-deleted',
+  SERVER_INSTANCE_ADDED: 'server-instance-added',
+  SERVER_INSTANCE_UPDATED: 'server-instance-updated',
+  SERVER_INSTANCE_DELETED: 'server-instance-deleted',
   SERVER_CONNECTED: 'server-connected',
   SERVER_DISCONNECTED: 'server-disconnected',
   TOOL_CALL_STARTED: 'tool-call-started',
   TOOL_CALL_COMPLETED: 'tool-call-completed',
   TOOL_CALL_ERROR: 'tool-call-error',
   CONFIGURATION_UPDATED: 'configuration-updated',
-  CLIENT_CONNECTED: 'client-connected',
-  CLIENT_DISCONNECTED: 'client-disconnected',
   PONG: 'pong'
 } as const;
 
@@ -123,6 +125,31 @@ export interface ServerDeletedEvent {
   data: string;
 }
 
+export interface ServerInstanceAddedEvent {
+  type: 'server-instance-added';
+  data: {
+    name: string;
+    instance: ServerInstance;
+  };
+}
+
+export interface ServerInstanceUpdatedEvent {
+  type: 'server-instance-updated';
+  data: {
+    name: string;
+    index: number;
+    updates: Partial<ServerInstance>;
+  };
+}
+
+export interface ServerInstanceDeletedEvent {
+  type: 'server-instance-deleted';
+  data: {
+    name: string;
+    index: number;
+  };
+}
+
 export interface ServerConnectedEvent {
   type: 'server-connected';
   data: {
@@ -194,23 +221,6 @@ export interface ConfigurationUpdatedEvent {
   };
 }
 
-export interface ClientConnectedEvent {
-  type: 'client-connected';
-  data: {
-    timestamp: number;
-    client: unknown;
-  };
-}
-
-export interface ClientDisconnectedEvent {
-  type: 'client-disconnected';
-  data: {
-    timestamp: number;
-    clientId: string;
-    client?: unknown;
-  };
-}
-
 export interface ErrorMessage {
   type: 'error';
   data: {
@@ -226,6 +236,9 @@ export type ServerMessage =
   | ServerAddedEvent
   | ServerUpdatedEvent
   | ServerDeletedEvent
+  | ServerInstanceAddedEvent
+  | ServerInstanceUpdatedEvent
+  | ServerInstanceDeletedEvent
   | ServerConnectedEvent
   | ServerDisconnectedEvent
   | PongMessage
@@ -233,6 +246,4 @@ export type ServerMessage =
   | ToolCallCompletedEvent
   | ToolCallErrorEvent
   | ConfigurationUpdatedEvent
-  | ClientConnectedEvent
-  | ClientDisconnectedEvent
   | ErrorMessage;
