@@ -34,9 +34,12 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
 
     return {
       results: results.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        serverName: tool.serverName
+        tool: {
+          name: tool.name,
+          description: tool.description,
+          serverName: tool.serverName
+        },
+        score: 1
       })),
       pagination: {
         total: filtered.length,
