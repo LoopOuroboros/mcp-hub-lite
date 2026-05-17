@@ -146,6 +146,16 @@ export function registerCallToolHandler(
       return await executeSystemToolCall(systemToolName, toolArgs);
     }
 
+    // Per-request transport creates a fresh toolMap each time.
+    // If tools/list hasn't been called on this transport yet, populate on demand.
+    if (toolMap.size === 0) {
+      logger.debug(
+        'ToolMap is empty, generating gateway tools list on demand for call routing',
+        LOG_MODULES.GATEWAY
+      );
+      generateGatewayToolsList(toolMap);
+    }
+
     const target = toolMap.get(toolName);
 
     logger.debug(
