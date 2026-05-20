@@ -29,9 +29,7 @@ utils/
 ├── logger.ts                # 旧日志器（兼容用）
 ├── log-rotator.ts           # 日志轮转
 ├── json-utils.ts            # JSON 工具函数
-├── format-utils.ts          # 格式化工具
 ├── port-checker.ts          # 端口检查
-├── mcp-error-handler.ts     # MCP 错误处理
 ├── error-handler.ts         # 错误处理
 ├── tool-args-parser.ts      # 工具参数解析器
 ├── name-converter.ts        # 名称规范化工具（工具名称格式转换，支持跨格式工具名称匹配）
@@ -217,16 +215,6 @@ type ConfigGetter = () => {
 - `rawHeadersToObject()` - 将 Node.js rawHeaders 数组转换为对象
 - `stringifyRawHeadersForLogging()` - 格式化 rawHeaders 用于日志输出
 
-### FormatUtils (`format-utils.ts`)
-
-**职责**: 格式化工具函数
-
-**主要方法**:
-
-- 格式化服务器状态
-- 格式化时间戳
-- 格式化大小
-
 ### RequestContext (`request-context.ts`)
 
 **职责**: 请求上下文处理
@@ -248,15 +236,6 @@ type ConfigGetter = () => {
 
 - `isPortAvailable(port, host)` - 检查端口是否可用
 - `findAvailablePort(startPort, host)` - 查找可用端口
-
-### McpErrorHandler (`mcp-error-handler.ts`)
-
-**职责**: MCP 错误处理和转换
-
-**主要方法**:
-
-- `toMCPError(error)` - 将内部错误转换为 MCP 标准错误
-- `mapErrorCode(code)` - 映射错误码到 MCP 标准格式
 
 ### NameConverter (`name-converter.ts`)
 
@@ -396,10 +375,8 @@ utils/
 │   ├── log-context.ts    # 无依赖
 │   └── log-modules.ts    # 无依赖
 ├── json-utils.ts         # 无依赖
-├── format-utils.ts       # 无依赖
 ├── log-rotator.ts        # 无依赖
 ├── port-checker.ts        # 无依赖
-├── mcp-error-handler.ts    # 无依赖
 ├── error-handler.ts       # 无依赖
 ├── request-context.ts     # 无依赖
 ├── tool-args-parser.ts    # 无依赖

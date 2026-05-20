@@ -64,18 +64,12 @@ export default {
     searchPlaceholder: '搜索所有资源...',
     noResources: '未找到资源。请连接一些服务器以开始使用。',
     read: '读取',
-    serverTag: '服务器',
-    systemResources: '网关系统资源',
-    serverResources: '服务器资源',
-    toolResources: '工具资源',
-    dataResources: '数据资源',
     server: '服务器',
     contentPreview: '内容预览',
     preview: '预览',
     source: '源代码',
     download: '下载',
-    loadingContent: '加载内容中...',
-    noDescription: '无描述信息'
+    loadingContent: '加载内容中...'
   },
   settings: {
     title: '系统设置',
@@ -93,7 +87,6 @@ export default {
     langZh: '中文',
     logging: '日志设置',
     logLevel: '日志级别',
-    logRotation: '日志轮转',
     maxAge: '最大保留时间 (天)',
     debugOptions: '调试选项',
     jsonPretty: '日志中JSON格式化',
@@ -152,13 +145,10 @@ export default {
     noSelection: '请选择模板或实例',
     deleteConfirm: '确定要删除此服务器吗？',
     deleteInstanceConfirm: '确定要删除此实例吗？',
-    pid: '进程ID',
-    uptime: '运行时间',
+    selectInstanceTitle: '选择实例',
     selectInstanceForTool: '选择要调用工具的实例',
     selectInstanceForResource: '选择要查看资源的实例',
     selectInstancePlaceholder: '选择一个实例...',
-    confirm: '确认',
-    tabs: {},
     configTabs: {
       instances: '实例'
     },
@@ -195,15 +185,7 @@ export default {
     },
     instanceConfig: {
       title: '实例配置',
-      template: '模版配置',
-      readOnly: '只读',
-      override: '实例配置覆盖',
-      editable: '可编辑',
       fromTemplate: '来自模板',
-      noArgs: '无参数',
-      noEnv: '无环境变量',
-      noHeaders: '无请求头',
-      noTags: '无标签',
       mergedPreview: '合并后的最终配置预览',
       viewMerged: '查看合并配置'
     },
@@ -214,7 +196,6 @@ export default {
       selectInstance: '选择一个实例'
     },
     tools: {
-      title: '工具发现',
       available: '可用工具',
       details: '工具详情',
       schema: '参数 Schema (JSON)',
@@ -261,15 +242,9 @@ export default {
     importAll: '全部导入'
   },
   error: {
-    stdioCommandRequired: 'STDIO 服务器需要有效的命令',
-    sseUrlRequired: 'SSE 服务器需要有效的 URL',
-    httpUrlRequired: '可流式传输的 HTTP 服务器需要有效的 URL',
-    unsupportedTransportType: '不支持的传输类型',
     connectionFailed: '连接服务器失败',
-    invalidServerConfig: '服务器配置无效',
     addServerFailed: '添加服务器失败',
-    invalidJsonConfig: '无效的 JSON 配置',
-    saveFailed: '保存配置失败'
+    invalidJsonConfig: '无效的 JSON 配置'
   },
   tools: {
     title: 'MCP 工具网关',
@@ -277,14 +252,13 @@ export default {
     systemTools: '网关系统工具',
     aggregatedTools: '聚合服务器工具',
     noToolsFound: '未聚合工具，请在服务器选中工具进行聚合。',
-    call: '调用',
-    noDescription: '未提供描述',
     systemTag: '系统',
     online: '在线',
     offline: '离线'
   },
   toolCallDialog: {
     title: '调用工具: {toolName}',
+    instance: '实例',
     arguments: '参数 (JSON)',
     jsonPlaceholder: '{"key": "value"}',
     formatJson: '格式化 JSON',

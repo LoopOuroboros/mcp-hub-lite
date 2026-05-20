@@ -164,7 +164,6 @@ const content = ref<unknown>(null);
 const viewMode = ref('preview');
 
 const isImage = computed(() => resourceMimeType.value.startsWith('image/'));
-// const isMarkdown = computed(() => resourceMimeType.value === 'text/markdown' || resourceName.value.endsWith('.md'))
 
 const contentText = computed(() => {
   if (!content.value) return '';

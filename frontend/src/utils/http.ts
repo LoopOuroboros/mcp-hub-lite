@@ -1,10 +1,3 @@
-export interface ApiResponse<T = unknown> {
-  code?: number;
-  message?: string;
-  data?: T;
-  error?: string;
-}
-
 export class HttpError extends Error {
   status: number;
   data: unknown;

@@ -27,7 +27,6 @@ components/
 ├── ServerStatusTags.vue          # 服务器状态标签组件
 ├── InstanceCardList.vue          # 实例卡片列表组件
 ├── InstanceConfig.vue            # 实例配置组件
-└── ResourceCard.vue              # 资源卡片组件
 ```
 
 ## 组件列表

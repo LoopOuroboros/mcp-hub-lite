@@ -1,62 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import {
-  sortObjectKeys,
-  sortObjectKeysCaseInsensitive,
-  sortObjectKeysDeep,
-  sortServerConfigEnvHeaders
-} from '@utils/sort-utils.js';
+import { sortObjectKeysCaseInsensitive, sortServerConfigEnvHeaders } from '@utils/sort-utils.js';
 
 describe('sort-utils', () => {
-  describe('sortObjectKeys', () => {
-    it('should sort object keys alphabetically using localeCompare', () => {
-      const obj = {
-        zebra: 'value3',
-        apple: 'value1',
-        banana: 'value2'
-      };
-      const result = sortObjectKeys(obj);
-      expect(Object.keys(result)).toEqual(['apple', 'banana', 'zebra']);
-      expect(result).toEqual({
-        apple: 'value1',
-        banana: 'value2',
-        zebra: 'value3'
-      });
-    });
-
-    it('should return the same object if input is null or undefined', () => {
-      expect(sortObjectKeys(null as unknown as Record<string, unknown>)).toBe(null);
-      expect(sortObjectKeys(undefined as unknown as Record<string, unknown>)).toBe(undefined);
-    });
-
-    it('should return the same object if input is an array', () => {
-      const arr = [3, 1, 2];
-      expect(sortObjectKeys(arr as unknown as Record<string, unknown>)).toBe(arr);
-    });
-
-    it('should return the same object if input is not an object', () => {
-      expect(sortObjectKeys('string' as unknown as Record<string, unknown>)).toBe('string');
-      expect(sortObjectKeys(42 as unknown as Record<string, unknown>)).toBe(42);
-      expect(sortObjectKeys(true as unknown as Record<string, unknown>)).toBe(true);
-    });
-
-    it('should preserve the original object (return a new object)', () => {
-      const obj = {
-        zebra: 'value3',
-        apple: 'value1'
-      };
-      const result = sortObjectKeys(obj);
-      expect(result).not.toBe(obj);
-      expect(obj).toEqual({
-        zebra: 'value3',
-        apple: 'value1'
-      });
-    });
-
-    it('should handle empty object', () => {
-      expect(sortObjectKeys({})).toEqual({});
-    });
-  });
-
   describe('sortObjectKeysCaseInsensitive', () => {
     it('should sort object keys alphabetically, case-insensitive', () => {
       const obj = {
@@ -91,56 +36,6 @@ describe('sort-utils', () => {
       expect(sortObjectKeysCaseInsensitive(undefined as unknown as Record<string, unknown>)).toBe(
         undefined
       );
-    });
-  });
-
-  describe('sortObjectKeysDeep', () => {
-    it('should recursively sort all object keys in a nested structure', () => {
-      const obj = {
-        zebra: {
-          delta: 'value4',
-          alpha: 'value1'
-        },
-        apple: {
-          charlie: 'value3',
-          bravo: 'value2'
-        }
-      };
-      const result = sortObjectKeysDeep(obj);
-      expect(Object.keys(result)).toEqual(['apple', 'zebra']);
-      expect(Object.keys(result.apple)).toEqual(['bravo', 'charlie']);
-      expect(Object.keys(result.zebra)).toEqual(['alpha', 'delta']);
-    });
-
-    it('should handle arrays and recursively sort objects within arrays', () => {
-      const obj = {
-        items: [
-          { zebra: 'value3', apple: 'value1' },
-          { delta: 'value4', alpha: 'value1' }
-        ]
-      };
-      const result = sortObjectKeysDeep(obj);
-      expect(Array.isArray(result.items)).toBe(true);
-      expect(Object.keys(result.items[0])).toEqual(['apple', 'zebra']);
-      expect(Object.keys(result.items[1])).toEqual(['alpha', 'delta']);
-    });
-
-    it('should handle mixed types in nested structure', () => {
-      const obj = {
-        number: 42,
-        string: 'hello',
-        boolean: true,
-        array: [1, 2, 3],
-        object: {
-          nested: {
-            z: 'last',
-            a: 'first'
-          }
-        }
-      };
-      const result = sortObjectKeysDeep(obj);
-      expect(Object.keys(result)).toEqual(['array', 'boolean', 'number', 'object', 'string']);
-      expect(Object.keys(result.object.nested)).toEqual(['a', 'z']);
     });
   });
 
