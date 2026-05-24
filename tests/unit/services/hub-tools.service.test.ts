@@ -689,7 +689,8 @@ describe('HubToolsService', () => {
       expect(systemToolNames).toContain('call_tool');
       expect(systemToolNames).toContain('update_server_description');
       expect(systemToolNames).toContain('list_tags');
-      expect(systemToolNames).toHaveLength(6);
+      expect(systemToolNames).toContain('search_tools');
+      expect(systemToolNames).toHaveLength(7);
 
       // Assert server tools - should have only name and description
       expect(allTools['Server 1'].tools).toEqual(expectedToolSummariesServer1);

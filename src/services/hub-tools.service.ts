@@ -16,6 +16,7 @@ import {
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
   LIST_TAGS_TOOL,
+  SEARCH_TOOLS_TOOL,
   SYSTEM_TOOL_NAMES
 } from '@models/system-tools.constants.js';
 import type {
@@ -25,7 +26,8 @@ import type {
   GetToolParams,
   CallToolParams,
   UpdateServerDescriptionParams,
-  ListTagsParams
+  ListTagsParams,
+  SearchToolsParams
 } from '@models/system-tools.constants.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
 import {
@@ -360,7 +362,9 @@ export class HubToolsService {
               ? UpdateServerDescriptionParams
               : T extends typeof LIST_TAGS_TOOL
                 ? ListTagsParams
-                : never
+                : T extends typeof SEARCH_TOOLS_TOOL
+                  ? SearchToolsParams
+                  : never
   ): Promise<
     T extends typeof LIST_SERVERS_TOOL
       ? Record<string, string>
@@ -377,7 +381,9 @@ export class HubToolsService {
                     serverName: string;
                     instances: Array<{ index: number; id: string; tags: Record<string, string> }>;
                   }
-                : never
+                : T extends typeof SEARCH_TOOLS_TOOL
+                  ? Record<string, { description: string; tools: ToolSummary[] }>
+                  : never
   > {
     logger.debug(
       `System tool called: ${toolName}, args=${stringifyForLogging(toolArgs)}`,
@@ -418,6 +424,14 @@ export class HubToolsService {
           result = await this.listTags(toolArgs as ListTagsParams);
           break;
         }
+        case SEARCH_TOOLS_TOOL: {
+          const searchArgs = toolArgs as SearchToolsParams;
+          if (!searchArgs.query) {
+            throw new Error('query is required for search_tools');
+          }
+          result = await this.searchTools(searchArgs.query);
+          break;
+        }
         default:
           throw new Error(`System tool "${toolName}" not found`);
       }
@@ -439,7 +453,9 @@ export class HubToolsService {
                       serverName: string;
                       instances: Array<{ index: number; id: string; tags: Record<string, string> }>;
                     }
-                  : never;
+                  : T extends typeof SEARCH_TOOLS_TOOL
+                    ? Record<string, { description: string; tools: ToolSummary[] }>
+                    : never;
     } catch (error) {
       logger.error(
         `System tool FAILED: ${toolName}, error=${error instanceof Error ? error.message : String(error)}`,
@@ -809,6 +825,66 @@ export class HubToolsService {
     }
 
     return allTools;
+  }
+
+  /**
+   * Searches for tools matching the query across all connected MCP servers.
+   *
+   * Results are grouped by server name, and only servers with at least one
+   * matching tool are included. Matching is case-insensitive on tool name and description.
+   *
+   * @param {string} query - Search query string for matching tool names and descriptions
+   * @returns {Promise<Record<string, { description: string; tools: ToolSummary[] }>>}
+   * Object mapping server names to their descriptions and matching tools
+   */
+  async searchTools(
+    query: string
+  ): Promise<Record<string, { description: string; tools: ToolSummary[] }>> {
+    if (!query || typeof query !== 'string') {
+      throw new Error('query is required and must be a non-empty string');
+    }
+
+    const normalizedQuery = query.toLowerCase();
+    const servers = hubManager.getAllServers();
+    const result: Record<string, { description: string; tools: ToolSummary[] }> = {};
+
+    for (const server of servers) {
+      if (!hasValidId(server)) {
+        continue;
+      }
+
+      const indexes = mcpConnectionManager.getConnectedIndexes(server.name);
+      if (indexes.length === 0) {
+        continue;
+      }
+
+      const description = getServerDescription(server.config, server.name);
+      const tools = mcpConnectionManager.getToolsByServerName(server.name);
+      if (tools.length === 0) {
+        continue;
+      }
+
+      const matchingTools: ToolSummary[] = tools
+        .filter((tool) => {
+          const nameMatch = tool.name.toLowerCase().includes(normalizedQuery);
+          const descMatch = tool.description?.toLowerCase().includes(normalizedQuery);
+          return nameMatch || descMatch;
+        })
+        .map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          serverName: server.name
+        }));
+
+      if (matchingTools.length > 0) {
+        result[server.name] = {
+          description,
+          tools: matchingTools
+        };
+      }
+    }
+
+    return result;
   }
 
   /**

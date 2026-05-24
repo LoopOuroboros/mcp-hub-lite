@@ -14,7 +14,8 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
-  LIST_TAGS_TOOL
+  LIST_TAGS_TOOL,
+  SEARCH_TOOLS_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -224,6 +225,32 @@ export function registerSystemToolsHandlers(server: McpServer): void {
       return result;
     } catch (error: unknown) {
       logger.error(`List tags error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
+      if (error instanceof McpError) {
+        throw error;
+      } else if (error instanceof Error) {
+        throw new McpError(-32802, error.message);
+      } else {
+        throw new McpError(-32802, String(error));
+      }
+    }
+  });
+
+  // Search tools across all servers
+  const SearchToolsRequestSchema = z.object({
+    method: z.literal(SEARCH_TOOLS_TOOL),
+    params: z.object({
+      query: z.string()
+    }),
+    id: z.union([z.string(), z.number()]),
+    jsonrpc: z.literal('2.0')
+  });
+
+  server.server.setRequestHandler(SearchToolsRequestSchema, async (request) => {
+    try {
+      const result = await hubToolsService.searchTools(request.params.query);
+      return result;
+    } catch (error: unknown) {
+      logger.error(`Search tools error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
       if (error instanceof McpError) {
         throw error;
       } else if (error instanceof Error) {

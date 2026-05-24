@@ -6,7 +6,8 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
-  LIST_TAGS_TOOL
+  LIST_TAGS_TOOL,
+  SEARCH_TOOLS_TOOL
 } from '@models/system-tools.constants.js';
 
 /**
@@ -43,6 +44,7 @@ export interface SystemToolDefinition {
  * - get-tool: Get complete tool schema
  * - call-tool: Call a specific tool from a specific server
  * - update-server-description: Update the description of a specific MCP server
+ * - search-tools: Search for tools across all connected servers
  *
  * @returns {Array<{ name: string; description: string; inputSchema: JsonSchema; annotations?: ToolAnnotations }>}
  * Array of system tool configurations
@@ -200,6 +202,29 @@ export function getSystemTools(): SystemToolDefinition[] {
           },
           annotations: {
             title: 'List Instance Tags',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
+          }
+        });
+        break;
+      case SEARCH_TOOLS_TOOL:
+        systemTools.push({
+          name: toolName,
+          description: 'Search for tools across all connected MCP servers by name or description',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              query: {
+                type: 'string',
+                description: 'Search query to match against tool names and descriptions'
+              }
+            },
+            required: ['query']
+          },
+          annotations: {
+            title: 'Search Tools',
             readOnlyHint: true,
             destructiveHint: false,
             idempotentHint: true,
