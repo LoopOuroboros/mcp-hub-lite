@@ -12,6 +12,10 @@ export interface StdioTransportConfig {
 
 /**
  * SSE transport configuration
+ *
+ * Supports Legacy SSE MCP protocol (2024-11-05 spec):
+ * - Connect to SSE endpoint, listen for `endpoint` event
+ * - Send JSON-RPC messages via HTTP POST to the dynamic endpoint
  */
 export interface SseTransportConfig {
   type: 'sse';
@@ -22,6 +26,16 @@ export interface SseTransportConfig {
   proxy?: {
     url: string;
   };
+  /**
+   * Timeout (in milliseconds) for waiting for endpoint event.
+   * Default: 10000 (10 seconds)
+   */
+  endpointTimeout?: number;
+  /**
+   * Whether to enforce same-origin check for endpoint URL.
+   * Default: true
+   */
+  strictOriginCheck?: boolean;
 }
 
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';

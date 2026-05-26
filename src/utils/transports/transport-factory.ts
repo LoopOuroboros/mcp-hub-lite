@@ -68,7 +68,9 @@ export class TransportFactory {
           config.maxReconnectAttempts,
           config.proxy,
           server.name,
-          compositeKey
+          compositeKey,
+          config.endpointTimeout,
+          config.strictOriginCheck
         );
 
       case 'streamable-http':
@@ -162,7 +164,9 @@ export class TransportFactory {
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
         reconnectInterval: 3000,
         maxReconnectAttempts: 5,
-        proxy: server.proxy
+        proxy: server.proxy,
+        endpointTimeout: server.endpointTimeout,
+        strictOriginCheck: server.strictOriginCheck
       };
     } else if (type === 'streamable-http' || type === 'http') {
       return {

@@ -24,6 +24,16 @@ export interface ServerRuntimeConfig {
   proxy?: {
     url: string;
   };
+  /**
+   * SSE transport: Timeout (in milliseconds) for waiting for endpoint event.
+   * Default: 10000 (10 seconds)
+   */
+  endpointTimeout?: number;
+  /**
+   * SSE transport: Whether to enforce same-origin check for endpoint URL.
+   * Default: true
+   */
+  strictOriginCheck?: boolean;
 }
 
 // ====== v1.1 Configuration Schema (Server Template + Instance Model) ======

@@ -187,7 +187,7 @@ export class McpConnectionManager {
         this.publishConnectionEvents(serverName, serverIndex);
 
         // 10. Refresh resources
-        await this.refreshServerResources(serverName, serverIndex, server.type);
+        await this.refreshServerResources(serverName, serverIndex);
 
         // 11. Request log notifications from downstream server
         await this.requestLoggingFromServer(compositeKey, client, server.type);
@@ -510,19 +510,7 @@ export class McpConnectionManager {
   /**
    * Refreshes server tools and resources (only for bidirectional transports).
    */
-  private async refreshServerResources(
-    serverName: string,
-    serverIndex: number,
-    serverType: string
-  ): Promise<void> {
-    if (serverType === 'sse') {
-      logger.info(
-        'SSE transport is unidirectional, skipping tool/resource refresh',
-        LOG_MODULES.CONNECTION_MANAGER
-      );
-      return;
-    }
-
+  private async refreshServerResources(serverName: string, serverIndex: number): Promise<void> {
     const tools = await this.refreshTools(serverName, serverIndex);
     const resources = await this.refreshResources(serverName, serverIndex);
 
