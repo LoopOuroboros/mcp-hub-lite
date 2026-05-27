@@ -202,7 +202,9 @@ export default {
       selectHint: '请选择一个工具以查看详情',
       none: '暂无可用工具',
       aggregated: '聚合',
-      call: '调用'
+      call: '调用',
+      selectAll: '全聚合',
+      deselectAll: '零聚合'
     },
     resources: {
       none: '暂无可用资源'

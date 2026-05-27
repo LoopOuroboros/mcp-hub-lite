@@ -202,7 +202,9 @@ export default {
       selectHint: 'Select a tool to view details',
       none: 'No tools available',
       aggregated: 'Aggregated',
-      call: 'Call'
+      call: 'Call',
+      selectAll: 'Aggregate All',
+      deselectAll: 'Clear All'
     },
     resources: {
       none: 'No resources available'

@@ -197,10 +197,13 @@ function openCallDialog(tool: Tool) {
 async function fetchTools() {
   loading.value = true;
   try {
-    const res = await http.get<{ results: SearchResult[] }>(
-      `/web/search?q=${encodeURIComponent(searchQuery.value)}`
-    );
-    searchResults.value = res.results || [];
+    const res = await http.get<{
+      results: Array<{ name: string; description?: string; serverName: string }>;
+    }>(`/web/search?q=${encodeURIComponent(searchQuery.value)}`);
+    searchResults.value = (res.results || []).map((r) => ({
+      tool: { name: r.name, description: r.description, serverName: r.serverName },
+      score: 0
+    }));
   } catch (error) {
     console.error('Failed to fetch tools:', error);
   } finally {
@@ -222,7 +225,7 @@ const groupedTools = computed(() => {
     if (!result?.tool) {
       return;
     }
-    // Use tool.serverName directly for grouping (backend has already handled allowedTools filtering)
+    // Use tool.serverName directly for grouping (backend filters by aggregatedTools per server)
     const server = store.servers.find((s) => s.name === result.tool.serverName);
 
     const statusText = server?.status === 'online' ? t('tools.online') : t('tools.offline');
