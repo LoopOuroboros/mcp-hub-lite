@@ -54,7 +54,6 @@ export default {
   sidebar: {
     title: 'MCP Server Manager',
     dashboard: 'Dashboard',
-    sessions: 'Sessions',
     servers: 'MCP Servers',
     resources: 'MCP Resources',
     addServer: 'Add New Server',
@@ -65,30 +64,12 @@ export default {
     searchPlaceholder: 'Search all resources...',
     noResources: 'No resources found. Connect some servers to get started.',
     read: 'Read',
-    serverTag: 'Server',
-    systemResources: 'Gateway System Resources',
-    serverResources: 'Server Resources',
-    toolResources: 'Tool Resources',
-    dataResources: 'Data Resources',
     server: 'Server',
     contentPreview: 'Content Preview',
     preview: 'Preview',
     source: 'Source',
     download: 'Download',
-    loadingContent: 'Loading content...',
-    noDescription: 'No description available'
-  },
-  sessions: {
-    title: 'Persisted Sessions',
-    refresh: 'Refresh',
-    sessionId: 'Session ID',
-    clientName: 'Client Name',
-    clientVersion: 'Client Version',
-    protocolVersion: 'Protocol Version',
-    capabilities: 'Capabilities',
-    userAgent: 'User Agent',
-    createdAt: 'Created At',
-    lastAccessedAt: 'Last Accessed At'
+    loadingContent: 'Loading content...'
   },
   settings: {
     title: 'System Settings',
@@ -106,7 +87,6 @@ export default {
     langZh: 'Chinese',
     logging: 'Logging',
     logLevel: 'Log Level',
-    logRotation: 'Log Rotation',
     maxAge: 'Max Age (Days)',
     debugOptions: 'Debug Options',
     jsonPretty: 'Pretty JSON in logs',
@@ -120,8 +100,6 @@ export default {
     maxConnections: 'Max Connections',
     connectionTimeout: 'Connection Timeout',
     idleConnectionTimeout: 'Idle Connection Timeout',
-    sessionTimeout: 'Session Timeout',
-    sessionFlushInterval: 'Session Flush Interval',
     fetchError: 'Failed to fetch configuration',
     saveSuccess: 'Configuration saved successfully',
     saveError: 'Failed to save configuration',
@@ -167,13 +145,10 @@ export default {
     noSelection: 'Please select template or instance',
     deleteConfirm: 'Are you sure you want to delete this server?',
     deleteInstanceConfirm: 'Are you sure you want to delete this instance?',
-    pid: 'PID',
-    uptime: 'Uptime',
+    selectInstanceTitle: 'Select Instance',
     selectInstanceForTool: 'Select instance to call tool',
     selectInstanceForResource: 'Select instance to view resource',
     selectInstancePlaceholder: 'Select an instance...',
-    confirm: 'Confirm',
-    tabs: {},
     configTabs: {
       instances: 'Instances'
     },
@@ -210,15 +185,7 @@ export default {
     },
     instanceConfig: {
       title: 'Instance Configuration',
-      template: 'Template Config',
-      readOnly: 'Read-only',
-      override: 'Instance Override',
-      editable: 'Editable',
       fromTemplate: 'From template',
-      noArgs: 'No arguments',
-      noEnv: 'No environment variables',
-      noHeaders: 'No headers',
-      noTags: 'No tags',
       mergedPreview: 'Merged Final Config Preview',
       viewMerged: 'View Merged Config'
     },
@@ -229,14 +196,15 @@ export default {
       selectInstance: 'Select an instance'
     },
     tools: {
-      title: 'Tool Discovery',
       available: 'Available Tools',
       details: 'Tool Details',
       schema: 'Schema (JSON)',
       selectHint: 'Select a tool to view details',
       none: 'No tools available',
       aggregated: 'Aggregated',
-      call: 'Call'
+      call: 'Call',
+      selectAll: 'Aggregate All',
+      deselectAll: 'Clear All'
     },
     resources: {
       none: 'No resources available'
@@ -276,15 +244,9 @@ export default {
     importAll: 'Import All'
   },
   error: {
-    stdioCommandRequired: 'STDIO server requires a valid command',
-    sseUrlRequired: 'SSE server requires a valid URL',
-    httpUrlRequired: 'Streamable HTTP server requires a valid URL',
-    unsupportedTransportType: 'Unsupported transport type',
     connectionFailed: 'Failed to connect to server',
-    invalidServerConfig: 'Invalid server configuration',
     addServerFailed: 'Failed to add server',
-    invalidJsonConfig: 'Invalid JSON configuration',
-    saveFailed: 'Failed to save configuration'
+    invalidJsonConfig: 'Invalid JSON configuration'
   },
   tools: {
     title: 'MCP Tool Gateway',
@@ -292,14 +254,13 @@ export default {
     systemTools: 'Gateway System Tools',
     aggregatedTools: 'Aggregated Server Tools',
     noToolsFound: 'No aggregated tools. Select tools in servers to aggregate.',
-    call: 'Call',
-    noDescription: 'No description provided',
     systemTag: 'System',
     online: 'Online',
     offline: 'Offline'
   },
   toolCallDialog: {
     title: 'Call Tool: {toolName}',
+    instance: 'Instance',
     arguments: 'Arguments (JSON)',
     jsonPlaceholder: '{"key": "value"}',
     formatJson: 'Format JSON',

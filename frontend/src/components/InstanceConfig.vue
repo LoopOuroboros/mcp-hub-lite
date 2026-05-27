@@ -401,6 +401,28 @@
                 />
               </el-select>
             </template>
+            <template v-else-if="tagKeyMap[key] && getTagType(tagKeyMap[key]) === 'boolean'">
+              <el-switch
+                v-model="localConfig.tags![key]"
+                active-value="true"
+                inactive-value="false"
+              />
+            </template>
+            <template v-else-if="tagKeyMap[key] && getTagType(tagKeyMap[key]) === 'number'">
+              <el-input-number
+                :model-value="
+                  localConfig.tags![key] !== undefined && localConfig.tags![key] !== ''
+                    ? Number(localConfig.tags![key])
+                    : undefined
+                "
+                @update:model-value="
+                  localConfig.tags![key] =
+                    $event !== undefined && $event !== null ? String($event) : ''
+                "
+                style="flex: 1"
+                placeholder="输入数字值"
+              />
+            </template>
             <template v-else>
               <el-input
                 v-model="localConfig.tags![key]"

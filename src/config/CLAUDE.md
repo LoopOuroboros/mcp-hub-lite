@@ -14,7 +14,6 @@ config/
 ├── config.schema.ts          # 配置 Schema 定义（从 @shared-models/server.model.ts 重新导出）
 ├── config-loader.ts          # 配置加载器
 ├── config-migrator.ts        # 配置迁移器（v1.0 → v1.1）
-├── path-validator.ts         # 路径验证器（安全验证）
 ├── config-saver.ts           # 配置保存器
 ├── server-config-manager.ts  # 服务器配置管理器
 ├── config-change-logger.ts   # 配置变更记录器
@@ -202,23 +201,6 @@ interface MigrationOptions {
 }
 ```
 
-### PathValidator (`path-validator.ts`)
-
-**职责**: 路径安全验证工具，防止路径遍历攻击
-
-**主要功能**:
-
-- 配置路径安全验证
-- 路径遍历防护
-- 文件名安全检查
-- 路径规范化和清理
-
-**主要方法**:
-
-- `isValidConfigPath(configPath, allowedDirs)` - 验证路径是否在允许的目录内
-- `sanitizeConfigPath(configPath)` - 规范化和清理配置路径
-- `isSafeFilename(filename)` - 检查文件名是否安全（防止路径遍历）
-
 ### SystemConfigSchema (`config.schema.ts`)
 
 **职责**: 配置 Schema 重新导出模块 - 所有核心 Schema 现在都定义在 `@shared-models/server.model.ts`
@@ -375,10 +357,7 @@ config/
 │
 ├── config-migrator.ts
 │   ├── depends on: config.schema.ts
-│   ├── depends on: path-validator.ts
 │   └── depends on: @utils/logger.ts
-│
-├── path-validator.ts
 │
 ├── config-saver.ts
 │
@@ -499,7 +478,6 @@ export interface SecurityConfig {
 | `config/config.schema.ts`         | 配置 Schema 重新导出（仅 v1.1）       |
 | `config/config-loader.ts`         | 配置加载器（支持自动迁移）            |
 | `config/config-migrator.ts`       | 配置迁移器（v1.0 → v1.1）             |
-| `config/path-validator.ts`        | 路径安全验证器                        |
 | `config/config-saver.ts`          | 配置保存器                            |
 | `config/server-config-manager.ts` | 服务器配置管理器                      |
 | `config/config-change-logger.ts`  | 配置变更记录器                        |

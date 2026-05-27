@@ -223,7 +223,11 @@ export class HubManagerService {
 
     const instances = this.getServerInstancesByName(name);
     for (const instance of instances) {
-      await mcpConnectionManager.disconnect(name, instance.index ?? 0).catch(() => {});
+      await mcpConnectionManager
+        .disconnect(name, instance.index ?? 0)
+        .catch((err) =>
+          logger.debug(`Disconnect error during server removal: ${err}`, LOG_MODULES.HUB_MANAGER)
+        );
     }
 
     await this.configManager.removeServer(name);
@@ -239,7 +243,11 @@ export class HubManagerService {
     const instances = this.getServerInstancesByName(name);
     const instance = instances.find((inst) => inst.index === index);
     if (instance) {
-      await mcpConnectionManager.disconnect(name, instance.index ?? 0).catch(() => {});
+      await mcpConnectionManager
+        .disconnect(name, instance.index ?? 0)
+        .catch((err) =>
+          logger.debug(`Disconnect error during instance removal: ${err}`, LOG_MODULES.HUB_MANAGER)
+        );
     }
 
     await this.configManager.removeServerInstance(name, index);

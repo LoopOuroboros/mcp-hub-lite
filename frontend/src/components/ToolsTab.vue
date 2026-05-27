@@ -2,7 +2,17 @@
   <div class="h-full flex flex-col">
     <div class="flex h-full gap-4">
       <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 pr-4 overflow-y-auto">
-        <h3 class="font-bold mb-4">{{ $t('serverDetail.tools.available') }}</h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold">{{ $t('serverDetail.tools.available') }}</h3>
+          <div class="flex items-center gap-2">
+            <el-button size="small" @click="handleSelectAll">{{
+              $t('serverDetail.tools.selectAll')
+            }}</el-button>
+            <el-button size="small" @click="handleDeselectAll">{{
+              $t('serverDetail.tools.deselectAll')
+            }}</el-button>
+          </div>
+        </div>
         <div v-if="tools && tools.length > 0" class="space-y-2">
           <div
             v-for="tool in tools"
@@ -78,6 +88,7 @@ const emit = defineEmits<{
   (e: 'select-tool', tool: Tool): void;
   (e: 'update-tool-visibility', toolName: string, enabled: boolean): void;
   (e: 'call-tool', tool: Tool): void;
+  (e: 'batch-toggle-all', enabled: boolean): void;
 }>();
 
 useI18n();
@@ -104,6 +115,14 @@ function isToolAllowed(toolName: string): boolean {
 
 function handleUpdateToolVisibility(toolName: string, enabled: boolean) {
   emit('update-tool-visibility', toolName, enabled);
+}
+
+function handleSelectAll() {
+  emit('batch-toggle-all', true);
+}
+
+function handleDeselectAll() {
+  emit('batch-toggle-all', false);
 }
 
 function handleCallTool() {

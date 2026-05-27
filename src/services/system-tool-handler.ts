@@ -8,14 +8,16 @@ import {
   GET_TOOL_TOOL,
   CALL_TOOL_TOOL,
   UPDATE_SERVER_DESCRIPTION_TOOL,
-  LIST_TAGS_TOOL
+  LIST_TAGS_TOOL,
+  SEARCH_TOOLS_TOOL
 } from '@models/system-tools.constants.js';
 import type {
   ListToolsInServerParams,
   GetToolParams,
   CallToolParams,
   UpdateServerDescriptionParams,
-  ListTagsParams
+  ListTagsParams,
+  SearchToolsParams
 } from '@models/system-tools.constants.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 
@@ -80,6 +82,14 @@ export class SystemToolHandler {
             throw new McpError(-32802, 'serverName is required');
           }
           result = await hubToolsService.listTags(listTagsArgs);
+          break;
+        }
+        case SEARCH_TOOLS_TOOL: {
+          const searchArgs = toolArgs as unknown as SearchToolsParams;
+          if (!searchArgs.query) {
+            throw new McpError(-32802, 'query is required for search_tools');
+          }
+          result = await hubToolsService.searchTools(searchArgs.query);
           break;
         }
         default:

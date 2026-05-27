@@ -145,6 +145,7 @@
           :allowed-tools="server.config.aggregatedTools"
           @select-tool="selectedTool = $event"
           @update-tool-visibility="updateToolVisibility"
+          @batch-toggle-all="batchToggleAll"
           @call-tool="
             (tool) => {
               showInstanceSelectForTool = true;
@@ -388,6 +389,28 @@ const updateToolVisibility = async (toolName: string, enabled: boolean) => {
   }
 
   server.value.config.aggregatedTools = currentAggregated;
+
+  try {
+    await store.updateServer(server.value.id, {
+      config: server.value.config
+    });
+    ElMessage.success(t('action.configSaved'));
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      ElMessage.error(e.message);
+    } else {
+      ElMessage.error(String(e));
+    }
+  }
+};
+
+const batchToggleAll = async (enabled: boolean) => {
+  if (!server.value) return;
+
+  const newAggregated =
+    enabled && server.value.tools ? server.value.tools.map((t: Tool) => t.name) : [];
+
+  server.value.config.aggregatedTools = newAggregated;
 
   try {
     await store.updateServer(server.value.id, {

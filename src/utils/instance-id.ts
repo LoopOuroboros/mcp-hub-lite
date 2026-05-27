@@ -12,7 +12,7 @@ import type { ServerInstance } from '@config/config.schema.js';
  * @param obj - The object to hash
  * @returns An 8-character hex string
  */
-export function generateInstanceHash(obj: Record<string, unknown>): string {
+function generateInstanceHash(obj: Record<string, unknown>): string {
   function stableStringify(value: unknown): string {
     if (value === null || typeof value !== 'object') {
       return JSON.stringify(value);

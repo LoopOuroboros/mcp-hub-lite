@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { Logger, logWithColor } from '@utils/logger.js';
+import { Logger } from '@utils/logger.js';
 import type { LogLevel } from '@shared-types/common.types.js';
 import type { WriteStream } from 'node:fs';
 import type { LoggerWithPrivateMethods } from '@tests/types/logger-test-helpers.js';
@@ -473,38 +473,6 @@ describe('Logger', () => {
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('file line 3'));
 
     vi.restoreAllMocks();
-  });
-
-  it('should handle logWithColor function with traceId and spanId', () => {
-    // Reset logger instance to avoid interference between tests
-    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-
-    logWithColor('colored message', 'plain message', {
-      pid: 123,
-      serverName: 'test-server',
-      traceId: '1234567890abcdef1234567890abcdef',
-      spanId: 'abcdef1234567890'
-    });
-
-    expect(consoleInfoSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[TID:1234567890abcdef1234567890abcdef]')
-    );
-    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[SID:abcdef1234567890]'));
-
-    // Restore console methods
-    consoleInfoSpy.mockRestore();
-  });
-
-  it('should handle logWithColor function without context', () => {
-    // Reset logger instance to avoid interference between tests
-    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-
-    logWithColor('colored message', 'plain message');
-
-    expect(consoleInfoSpy).toHaveBeenCalled();
-
-    // Restore console methods
-    consoleInfoSpy.mockRestore();
   });
 
   describe('dev log rotation', () => {
