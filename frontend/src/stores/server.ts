@@ -255,8 +255,10 @@ export const useServerStore = defineStore('server', () => {
             } else if (statusInfo?.error) {
               anyError = true;
             }
-            totalToolsCount += statusInfo?.toolsCount ?? 0;
-            totalResourcesCount += statusInfo?.resourcesCount ?? 0;
+            const tc = statusInfo?.toolsCount ?? 0;
+            if (tc > totalToolsCount) totalToolsCount = tc;
+            const rc = statusInfo?.resourcesCount ?? 0;
+            if (rc > totalResourcesCount) totalResourcesCount = rc;
           });
 
           const anyStarting = instanceConfigs.some((inst) => inst.status === 'starting');
