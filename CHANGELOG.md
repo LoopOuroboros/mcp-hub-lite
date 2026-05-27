@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.9] - 2026-05-27
+
+### Gateway
+
+- add search_tools system tool for cross-server tool search
+- filter /web/search results by each server's aggregatedTools configuration
+
+### Frontend
+
+- fix aggregated tools page not displaying tools due to API response format mismatch
+- add batch aggregate and clear buttons to server ToolsTab
+- constrain boolean and number tag values with dedicated input controls
+
+### Core
+
+- eliminate dead code across backend and frontend
+
 ## [1.2.8] - 2026-05-09
 
 ### Gateway
