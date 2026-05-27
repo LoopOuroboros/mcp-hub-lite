@@ -30,7 +30,14 @@ import {
   registerCallToolHandler
 } from './request-handlers/index.js';
 import { getAppVersion } from '@utils/version.js';
-import { generateGatewayToolsList } from './tool-list-generator.js';
+import { eventBus, EventTypes } from '@services/event-bus.service.js';
+import { hubManager } from '@services/hub-manager.service.js';
+import {
+  generateGatewayToolsList,
+  rebuildFromScratch,
+  addToCache,
+  removeFromCache
+} from './tool-list-generator.js';
 import { formatToolArgs, formatToolResponse } from './log-formatter.js';
 import type { ToolMapEntry, GatewayTool } from './types.js';
 
@@ -42,6 +49,33 @@ export class GatewayService {
   constructor() {
     this.appVersion = getAppVersion();
     this.server = this.createServerWithHandlers();
+    this.initToolCache();
+  }
+
+  private initToolCache(): void {
+    rebuildFromScratch();
+
+    eventBus.subscribe(EventTypes.TOOLS_UPDATED, (rawData) => {
+      const data = rawData as { serverName: string };
+      const serverConfig = hubManager.getServerByName(data.serverName);
+      if (serverConfig?.template?.aggregatedTools?.length) {
+        rebuildFromScratch();
+      }
+    });
+
+    eventBus.subscribe(EventTypes.SERVER_DISCONNECTED, (rawData) => {
+      const data = rawData as { serverName: string };
+      const serverConfig = hubManager.getServerByName(data.serverName);
+      if (!serverConfig || serverConfig.template?.aggregatedTools?.length) {
+        rebuildFromScratch();
+      }
+    });
+
+    eventBus.subscribe(EventTypes.AGGREGATED_TOOLS_CHANGED, (rawData) => {
+      const data = rawData as { name: string; added: string[]; removed: string[] };
+      if (data.added.length > 0) addToCache(data.name, data.added);
+      if (data.removed.length > 0) removeFromCache(data.name, data.removed);
+    });
   }
 
   private createServerWithHandlers(): McpServer {
@@ -75,11 +109,6 @@ export class GatewayService {
     if (getGatewayDebugSetting()) {
       logger.debug('Registering handlers on MCP server', LOG_MODULES.GATEWAY_SERVICE);
     }
-    // Local toolMap for this connection
-    const toolMap = new Map<string, ToolMapEntry>();
-    if (getGatewayDebugSetting()) {
-      logger.debug('Created local toolMap for connection', LOG_MODULES.GATEWAY_SERVICE);
-    }
 
     try {
       registerInitializeHandlers(server);
@@ -112,7 +141,7 @@ export class GatewayService {
     }
 
     try {
-      registerCallToolHandler(server, toolMap);
+      registerCallToolHandler(server);
       if (getGatewayDebugSetting()) {
         logger.debug('Call tool handler registered successfully', LOG_MODULES.GATEWAY_SERVICE);
       }

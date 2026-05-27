@@ -11,7 +11,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { hubToolsService } from '@services/hub-tools.service.js';
 import { SystemToolHandler } from '@services/system-tool-handler.js';
 import { ErrorHandler } from '@utils/error-handler.js';
 import { ToolArgsParser } from '@utils/tool-args-parser.js';
@@ -21,9 +21,7 @@ import {
   MCP_HUB_LITE_SERVER
 } from '@models/system-tools.constants.js';
 import { formatToolArgs, formatToolResponse } from '../log-formatter.js';
-import { generateGatewayToolsList } from '../tool-list-generator.js';
-import type { ToolMapEntry } from '../types.js';
-
+import { getOrBuildGatewayToolMap, getOrBuildGatewayToolsList } from '../tool-list-generator.js';
 /**
  * Type guard to check if a result is a valid CallToolResult.
  *
@@ -108,14 +106,11 @@ function getSystemToolName(toolName: string): string | null {
  * @param server - MCP server instance to register handlers on
  * @param toolMap - Tool map for routing tool calls
  */
-export function registerCallToolHandler(
-  server: McpServer,
-  toolMap: Map<string, ToolMapEntry>
-): void {
+export function registerCallToolHandler(server: McpServer): void {
   // Original list tools handler (for compatibility)
 
   server.server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const gatewayTools = generateGatewayToolsList(toolMap);
+    const gatewayTools = getOrBuildGatewayToolsList();
     return {
       tools: gatewayTools
     };
@@ -127,13 +122,15 @@ export function registerCallToolHandler(
     const toolArgs: Record<string, unknown> = request.params.arguments || {};
     const systemToolName = getSystemToolName(toolName);
 
+    const gwToolMap = getOrBuildGatewayToolMap();
+
     // Log incoming tool request with full context
     logger.info(
       `Tool call REQUEST received: toolName=${toolName}, args=${formatToolArgs(toolArgs)}`,
       LOG_MODULES.GATEWAY
     );
     logger.debug(
-      `Tool context: toolMap size=${toolMap.size}, available tools=${Array.from(toolMap.keys()).slice(0, 10).join(', ')}${toolMap.size > 10 ? '...' : ''}`,
+      `Tool context: toolMap size=${gwToolMap.size}, available tools=${Array.from(gwToolMap.keys()).slice(0, 10).join(', ')}${gwToolMap.size > 10 ? '...' : ''}`,
       LOG_MODULES.GATEWAY
     );
 
@@ -146,7 +143,7 @@ export function registerCallToolHandler(
       return await executeSystemToolCall(systemToolName, toolArgs);
     }
 
-    const target = toolMap.get(toolName);
+    const target = gwToolMap.get(toolName);
 
     logger.debug(
       `Tool lookup SUCCESS: toolName=${toolName} -> serverName=${target?.serverName}, serverIndex=${target?.serverIndex}, realToolName=${target?.realToolName}`,
@@ -155,29 +152,41 @@ export function registerCallToolHandler(
 
     if (!target) {
       logger.error(
-        `Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(toolMap.keys()).join(', ')}`,
+        `Tool NOT FOUND: toolName=${toolName}, available tools=${Array.from(gwToolMap.keys()).join(', ')}`,
         LOG_MODULES.GATEWAY
       );
       throw new McpError(-32801, `Tool ${toolName} not found`);
     }
 
+    // Extract wrapped arguments (LLM provides serverName/toolName per schema guidance)
+    const wrappedArgs = toolArgs as {
+      serverName?: string;
+      toolName?: string;
+      toolArgs?: Record<string, unknown>;
+      requestOptions?: { sessionId?: string; tags?: Record<string, string> };
+    };
+    const callServerName = wrappedArgs.serverName || target.serverName;
+    const callToolName = wrappedArgs.toolName || target.realToolName;
+    const callArgs = wrappedArgs.toolArgs || {};
+    const callOptions = wrappedArgs.requestOptions || {};
+
     const startTime = Date.now();
     try {
       logger.debug(
-        `Tool call EXECUTING: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, args=${formatToolArgs(toolArgs)}`,
+        `Tool call EXECUTING: serverName=${callServerName}, toolName=${callToolName}, args=${formatToolArgs(callArgs)}`,
         LOG_MODULES.GATEWAY
       );
 
-      const result = await mcpConnectionManager.callTool(
-        target.serverName,
-        target.serverIndex,
-        target.realToolName,
-        toolArgs
-      );
+      const result = await hubToolsService.callTool({
+        serverName: callServerName,
+        toolName: callToolName,
+        toolArgs: callArgs,
+        requestOptions: callOptions
+      });
 
       const duration = Date.now() - startTime;
       logger.info(
-        `Tool call SUCCESS: serverName=${target.serverName}, serverIndex=${target.serverIndex}, realToolName=${target.realToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
+        `Tool call SUCCESS: serverName=${callServerName}, toolName=${callToolName}, duration=${duration}ms, response=${formatToolResponse(result)}`,
         LOG_MODULES.GATEWAY
       );
 
@@ -198,11 +207,7 @@ export function registerCallToolHandler(
         };
       }
     } catch (error: unknown) {
-      ErrorHandler.handleToolCallError(
-        `${target.serverName}-${target.serverIndex}`,
-        target.realToolName,
-        error
-      );
+      ErrorHandler.handleToolCallError(callServerName, callToolName, error);
     }
   });
 }

@@ -61,9 +61,19 @@ gateway/
 **Call Tool Handler (`call-tool-handler.ts`)**:
 
 - 处理工具调用请求
-- 实现工具名称前缀化（`serverName-serverIndex_toolName`）
-- 路由工具调用到对应的后端服务器
+- 通过全局缓存 `getOrBuildGatewayToolMap()` 获取路由映射（不再使用 per-request toolMap）
+- 从 wrapped args 提取 `serverName`/`toolName`/`toolArgs`/`requestOptions`
+- 统一通过 `hubToolsService.callTool()` → `InstanceSelector` 路由，确保实例选择策略一致
 - 处理系统工具调用（如 `list_servers`, `find_tools` 等）
+
+**Tool List Generator (`tool-list-generator.ts`)**:
+
+- 维护双层全局缓存（原始数据层 + 名称决议层）
+- `gatherRawToolData()` — 从全局状态采集聚合工具数据，保留 serverIndex
+- `resolveToolNames()` — 纯计算，名称碰撞决议，包装 inputSchema 为统一调用契约
+- 聚合工具 schema 包装为 `{ serverName, toolName, toolArgs, requestOptions }` 结构
+- 导出: `getOrBuildGatewayToolMap/List`, `rebuildFromScratch`, `addToCache`, `removeFromCache`
+- 事件驱动更新: `TOOLS_UPDATED`/`SERVER_DISCONNECTED` → 全量重建, `AGGREGATED_TOOLS_CHANGED` → 增量更新
 
 **System Tools Handler (`system-tools-handler.ts`)**:
 
