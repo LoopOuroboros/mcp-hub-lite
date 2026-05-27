@@ -31,7 +31,10 @@
       </div>
 
       <!-- Server Instance Selection -->
-      <div v-if="serverName && serverName !== 'mcp-hub-lite'" class="mb-4 flex items-center">
+      <div
+        v-if="serverName && serverName !== 'mcp-hub-lite' && !hideInstanceSelect"
+        class="mb-4 flex items-center"
+      >
         <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
           t('toolCallDialog.instance')
         }}</span>
@@ -185,6 +188,7 @@ const props = defineProps<{
   toolName: string;
   description?: string;
   inputSchema?: JsonSchema;
+  hideInstanceSelect?: boolean;
 }>();
 
 /**
@@ -360,7 +364,9 @@ function toggleSchemaView() {
  * @returns {string} Formatted label string
  */
 function formatInstanceLabel(instance: ServerInstance) {
-  return `${instance.id}`;
+  const idx = instance.index ?? '?';
+  const name = instance.displayName || instance.id;
+  return `#${idx} [${name}]`;
 }
 
 /**

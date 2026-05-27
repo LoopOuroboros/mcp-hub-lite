@@ -127,6 +127,7 @@
       :tool-name="selectedTool.name"
       :description="selectedTool.description"
       :input-schema="selectedTool.inputSchema"
+      :hide-instance-select="selectedTool.serverName !== 'mcp-hub-lite'"
     />
   </div>
 </template>
@@ -198,10 +199,20 @@ async function fetchTools() {
   loading.value = true;
   try {
     const res = await http.get<{
-      results: Array<{ name: string; description?: string; serverName: string }>;
+      results: Array<{
+        name: string;
+        description?: string;
+        serverName: string;
+        inputSchema?: JsonSchema;
+      }>;
     }>(`/web/search?q=${encodeURIComponent(searchQuery.value)}`);
     searchResults.value = (res.results || []).map((r) => ({
-      tool: { name: r.name, description: r.description, serverName: r.serverName },
+      tool: {
+        name: r.name,
+        description: r.description,
+        serverName: r.serverName,
+        inputSchema: r.inputSchema
+      },
       score: 0
     }));
   } catch (error) {

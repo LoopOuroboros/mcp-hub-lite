@@ -231,6 +231,11 @@ export function getOrBuildGatewayToolsList(): GatewayTool[] {
   return cachedGatewayTools!;
 }
 
+/** Lazy get — returns only aggregated external tools (excludes system tools) */
+export function getExternalGatewayTools(): GatewayTool[] {
+  return getOrBuildGatewayToolsList().filter((t) => !t.description?.startsWith('[System]'));
+}
+
 /** Full rebuild from global state — used by TOOLS_UPDATED / SERVER_DISCONNECTED */
 export function rebuildFromScratch(): void {
   const prevSize = cachedToolMap?.size ?? 0;

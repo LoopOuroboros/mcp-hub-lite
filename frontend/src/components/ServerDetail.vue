@@ -148,8 +148,8 @@
           @batch-toggle-all="batchToggleAll"
           @call-tool="
             (tool) => {
-              showInstanceSelectForTool = true;
               pendingTool = tool;
+              showCallDialog = true;
             }
           "
         />
@@ -182,14 +182,6 @@
       @save="handleSaveJsonConfig"
     />
 
-    <!-- Instance Select Dialog for Tool Call -->
-    <InstanceSelectDialog
-      v-model="showInstanceSelectForTool"
-      :instances="serverInstances"
-      :title="$t('serverDetail.selectInstanceForTool')"
-      @confirm="callToolWithInstance"
-    />
-
     <!-- Instance Select Dialog for Resource View -->
     <InstanceSelectDialog
       v-model="showInstanceSelectForResourceDialog"
@@ -200,7 +192,7 @@
 
     <!-- Tool Call Dialog -->
     <ToolCallDialog
-      v-if="pendingTool && selectedInstanceForTool !== null"
+      v-if="pendingTool"
       v-model="showCallDialog"
       :server-name="server.name"
       :tool-name="pendingTool.name"
@@ -293,14 +285,11 @@ void selectedInstance;
 void getSelectedInstanceServerId;
 
 const {
-  showInstanceSelectForTool,
-  selectedInstanceForTool,
   showCallDialog,
   pendingTool,
   showInstanceSelectForResourceDialog,
   showInstanceSelectForResource,
   selectedInstanceForResource,
-  callToolWithInstance,
   viewResourceWithInstance
 } = useToolAndResourceDialogs(server);
 // Mark as intentionally unused
