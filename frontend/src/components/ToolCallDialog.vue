@@ -32,7 +32,7 @@
 
       <!-- Server Instance Selection -->
       <div
-        v-if="serverName && serverName !== 'mcp-hub-lite' && !hideInstanceSelect"
+        v-if="serverName && serverName !== MCP_HUB_LITE_SERVER && !hideInstanceSelect"
         class="mb-4 flex items-center"
       >
         <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
@@ -155,6 +155,7 @@ import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
+import { MCP_HUB_LITE_SERVER } from '@shared-models/constants';
 import type { JsonSchema } from '@shared-models/tool.model';
 import type { ServerInstanceConfig } from '@shared-models/server.model';
 
@@ -408,7 +409,7 @@ async function handleCall() {
     showInputSchema.value = false;
 
     let response;
-    if (props.serverName && props.serverName !== 'mcp-hub-lite') {
+    if (props.serverName && props.serverName !== MCP_HUB_LITE_SERVER) {
       response = await http.post(
         `/web/hub-tools/servers/${props.serverName}/tools/${props.toolName}/call`,
         {
@@ -419,7 +420,7 @@ async function handleCall() {
         }
       );
     } else {
-      // Call system tool (either no serverName or serverName is 'mcp-hub-lite')
+      // Call system tool (either no serverName or serverName is MCP_HUB_LITE_SERVER)
       response = await http.post(`/web/hub-tools/system/${props.toolName}/call`, {
         toolArgs: args
       });

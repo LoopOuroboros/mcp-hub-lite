@@ -127,7 +127,7 @@
       :tool-name="selectedTool.name"
       :description="selectedTool.description"
       :input-schema="selectedTool.inputSchema"
-      :hide-instance-select="selectedTool.serverName !== 'mcp-hub-lite'"
+      :hide-instance-select="selectedTool.serverName !== MCP_HUB_LITE_SERVER"
     />
   </div>
 </template>
@@ -138,6 +138,7 @@ import { Search, Operation, Setting, Connection, ArrowDown } from '@element-plus
 import { http } from '@utils/http';
 import { useServerStore } from '@stores/server';
 import { useI18n } from 'vue-i18n';
+import { MCP_HUB_LITE_SERVER } from '@shared-models/constants';
 import type { Tool, JsonSchema } from '@shared-models/tool.model';
 import ToolCallDialog from '@components/ToolCallDialog.vue';
 import ToolCard from '@components/ToolCard.vue';
@@ -178,7 +179,7 @@ async function fetchSystemTools() {
     systemTools.value = tools
       .map((tool) => ({
         ...tool,
-        serverName: 'mcp-hub-lite'
+        serverName: MCP_HUB_LITE_SERVER
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {

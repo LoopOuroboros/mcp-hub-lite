@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import type { ServerConfig } from '@config/config-manager.js';
 import type { Tool } from '@shared-models/tool.model.js';
+import { MCP_HUB_LITE_SERVER } from '@shared-models/constants.js';
 
 /**
  * Filters tools by aggregatedTools configuration.
@@ -61,7 +62,7 @@ export async function webSearchRoutes(fastify: FastifyInstance) {
     const mappedResults = queryMatched.map((tool) => {
       // Extract serverName from description format "[From serverName] ..."
       const descMatch = tool.description?.match(/^\[From\s+(.+?)\]/);
-      const serverName = descMatch ? descMatch[1] : 'mcp-hub-lite';
+      const serverName = descMatch ? descMatch[1] : MCP_HUB_LITE_SERVER;
 
       return {
         name: tool.name,
