@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-05-28
+
+### Gateway
+
+- add global tool cache with event-driven incremental updates and deduplicated aggregation
+- replace custom SseTransport with SDK SSEClientTransport for bidirectional SSE communication
+- handle gateway-wrapped inputSchema in tool call flow with nested template generation
+- break circular dependency between gateway and hub-tools modules
+- split GET and POST /mcp routes, return 405 on GET
+
+### Frontend
+
+- forward instance tags from tool call dialog to backend with dedicated display row
+- show wrapped gateway inputSchema in aggregated tool dialog
+- correct resource detail navigation with hub URI and sandboxed iframe rendering
+- remove URL suffix from SSE transport tag for consistency with streamable-http
+
+### CLI
+
+- add search-tools action to tool-use command
+
+### Core
+
+- restore PID badge display for stdio server instances
+- include tag-match-unique servers in listServers output
+- remove 12 dead files, migrate 47 imports to canonical modules, drop unused dependencies
+- extract MCP_HUB_LITE_SERVER constant to shared models
+- prepend newline to stringifyForLogging for consistent log formatting
+
+### Docs
+
+- sync use guide with current system tools and error cases
+
 ## [1.2.9] - 2026-05-27
 
 ### Gateway

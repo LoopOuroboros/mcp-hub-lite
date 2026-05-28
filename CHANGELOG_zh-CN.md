@@ -2,6 +2,39 @@
 
 本文件的所有重要变更都将被记录在此。
 
+## [1.3.0] - 2026-05-28
+
+### 网关
+
+- 新增全局工具缓存，支持事件驱动的增量更新与去重聚合
+- 用 SDK SSEClientTransport 替代自定义 SseTransport，实现双向 SSE 通信
+- 处理网关包装的 inputSchema 工具调用流程，支持嵌套模板生成
+- 打破 gateway 与 hub-tools 模块间的循环依赖
+- 拆分 GET 和 POST /mcp 路由，GET 请求返回 405
+
+### 前端
+
+- 工具调用对话框支持将实例标签传递至后端，并新增独立标签展示行
+- 聚合工具对话框显示网关包装的 inputSchema
+- 修复资源详情导航，使用 hub URI 和沙箱 iframe 渲染
+- 移除 SSE 传输标签中的 URL 后缀，与 streamable-http 保持一致
+
+### CLI
+
+- tool-use 命令新增 search-tools 操作
+
+### 核心
+
+- 恢复 stdio 服务器实例的 PID 徽章显示
+- listServers 输出纳入 tag-match-unique 策略的服务器
+- 移除 12 个死文件，迁移 47 处导入至规范模块，清理未使用依赖
+- 将 MCP_HUB_LITE_SERVER 常量提取至共享模型
+- stringifyForLogging 追加前置换行符，统一日志格式
+
+### 文档
+
+- 同步使用指南，补充缺失的系统工具与错误场景
+
 ## [1.2.9] - 2026-05-27
 
 ### 网关
