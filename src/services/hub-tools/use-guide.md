@@ -119,13 +119,15 @@ Read a server's metadata resource to preview available tools:
 
 ### Available System Tools
 
-| Tool Name      | Description                             | Parameters                                             |
-| -------------- | --------------------------------------- | ------------------------------------------------------ |
-| `list_servers` | List all connected MCP servers          | None                                                   |
-| `list_tags`    | List all instance tags for a server     | `serverName`                                           |
-| `list_tools`   | List all tools from a specific server   | `serverName`, `requestOptions`                         |
-| `get_tool`     | Get detailed schema for a specific tool | `serverName`, `toolName`, `requestOptions`             |
-| `call_tool`    | Call a tool on a specific server        | `serverName`, `toolName`, `toolArgs`, `requestOptions` |
+| Tool Name                   | Description                                                              | Parameters                                             |
+| --------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `list_servers`              | List all connected MCP servers                                           | None                                                   |
+| `list_tags`                 | List all instance tags for a server                                      | `serverName`                                           |
+| `list_tools`                | List all tools from a specific server                                    | `serverName`, `requestOptions`                         |
+| `get_tool`                  | Get detailed schema for a specific tool                                  | `serverName`, `toolName`, `requestOptions`             |
+| `search_tools`              | Search for tools across all connected MCP servers by name or description | `query`                                                |
+| `call_tool`                 | Call a tool on a specific server (system tools must be called directly)  | `serverName`, `toolName`, `toolArgs`, `requestOptions` |
+| `update_server_description` | Update the description of a specific MCP server                          | `serverName`, `description`                            |
 
 ### Tool Return Data
 
@@ -217,6 +219,19 @@ mcp-hub-lite tool-use call-tool \
 - **Exact match**: Tag values are case-sensitive
 
 ### Error Cases
+
+If no tags are provided but there are multiple instances (ambiguous):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 99,
+  "error": {
+    "code": -32602,
+    "message": "No tags provided for tag-match-unique strategy with 4 instances. Available: [0:{\"Env\":\"dev\",\"TestTag\":\"111\"}, 1:{\"Env\":\"test\"}, 2:{\"Env\":\"prod\"}, 3:{\"Env\":\"dev\",\"TestTag\":\"222\"}]. Pass matching tags to select."
+  }
+}
+```
 
 If no instance matches the provided tags:
 
