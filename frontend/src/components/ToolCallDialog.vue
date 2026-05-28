@@ -300,13 +300,11 @@ watch(
 /**
  * Generates a template object based on the provided JSON schema
  *
- * Creates default values for each property based on its type:
- * - strings: empty string
- * - numbers/integers: 0
- * - booleans: false
- * - arrays: empty array
- * - objects: empty object
- * - others: null
+ * - Extracts "Must be" values from description fields (e.g. 'Must be "chrome-devtools"')
+ * - Recursively handles nested object types (toolArgs, requestOptions)
+ * - Creates default values for each property based on its type:
+ *   strings: '' (or extracted Must be value), numbers: 0, booleans: false,
+ *   arrays: [], objects: nested template, others: null
  *
  * @param {JsonSchema|undefined} schema - Input schema to generate template from
  * @returns {Record<string, unknown>} Template object with default values
@@ -320,7 +318,7 @@ function generateTemplate(schema: JsonSchema | undefined) {
     if (prop.default !== undefined) {
       template[key] = prop.default;
     } else if (prop.type === 'string') {
-      template[key] = '';
+      template[key] = extractMustBeValue(prop.description as string | undefined) ?? '';
     } else if (prop.type === 'number' || prop.type === 'integer') {
       template[key] = 0;
     } else if (prop.type === 'boolean') {
@@ -328,12 +326,22 @@ function generateTemplate(schema: JsonSchema | undefined) {
     } else if (prop.type === 'array') {
       template[key] = [];
     } else if (prop.type === 'object') {
-      template[key] = {};
+      template[key] = generateTemplate(prop);
     } else {
       template[key] = null;
     }
   }
   return template;
+}
+
+/**
+ * Extracts the value from a "Must be" description pattern.
+ * Example: 'Must be "chrome-devtools"' → 'chrome-devtools'
+ */
+function extractMustBeValue(description?: string): string | undefined {
+  if (!description) return undefined;
+  const match = description.match(/Must be "(.+?)"/);
+  return match?.[1];
 }
 
 /**

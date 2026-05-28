@@ -481,11 +481,21 @@ export class HubToolsService {
   async callTool(args: CallToolParams): Promise<unknown> {
     let { serverName, toolName } = args;
     // Support both toolArgs and arguments for backward compatibility
-    const toolArgs: Record<string, unknown> = (args.toolArgs || args.arguments || {}) as Record<
+    let toolArgs: Record<string, unknown> = (args.toolArgs || args.arguments || {}) as Record<
       string,
       unknown
     >;
-    const { requestOptions } = args;
+    let { requestOptions } = args;
+
+    // Unwrap gateway-wrapped arguments: if toolArgs itself contains a nested
+    // toolArgs property (the wrapped schema), extract the real tool arguments.
+    if (toolArgs && typeof toolArgs.toolArgs === 'object' && toolArgs.toolArgs !== null) {
+      const wrapped = toolArgs as Record<string, unknown>;
+      toolArgs = wrapped.toolArgs as Record<string, unknown>;
+      if (wrapped.requestOptions && !requestOptions) {
+        requestOptions = wrapped.requestOptions as unknown as typeof requestOptions;
+      }
+    }
     // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
     const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
     if (parsedTool) {
