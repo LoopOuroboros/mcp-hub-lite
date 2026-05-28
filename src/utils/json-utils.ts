@@ -233,9 +233,9 @@ export function stringifyForLogging(obj: unknown): string {
   const jsonPretty = getJsonPrettySetting();
   if (jsonPretty) {
     const jsonStr = JSON.stringify(obj, null, 2);
-    return processPrettyJsonForLogging(jsonStr);
+    return '\n' + processPrettyJsonForLogging(jsonStr);
   }
-  return JSON.stringify(obj);
+  return '\n' + JSON.stringify(obj);
 }
 
 /**
@@ -251,7 +251,7 @@ export function stringifyForLoggingWithReplacer(
   const jsonPretty = getJsonPrettySetting();
   if (jsonPretty) {
     const jsonStr = JSON.stringify(obj, replacer, 2);
-    return processPrettyJsonForLogging(jsonStr);
+    return '\n' + processPrettyJsonForLogging(jsonStr);
   }
-  return JSON.stringify(obj, replacer);
+  return '\n' + JSON.stringify(obj, replacer);
 }

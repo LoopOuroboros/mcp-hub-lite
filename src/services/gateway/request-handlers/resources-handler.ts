@@ -10,7 +10,6 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 
 /**
@@ -44,7 +43,7 @@ export function registerResourcesHandlers(server: McpServer): void {
           {
             uri,
             mimeType: 'application/json',
-            text: typeof content === 'string' ? content : stringifyForLogging(content)
+            text: typeof content === 'string' ? content : JSON.stringify(content, null, 2)
           }
         ]
       };

@@ -10,7 +10,6 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/index.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 import { SystemToolHandler } from '@services/system-tool-handler.js';
 import { ErrorHandler } from '@utils/error-handler.js';
@@ -56,7 +55,7 @@ async function executeSystemToolCall(
       content: [
         {
           type: 'text',
-          text: stringifyForLogging(result)
+          text: JSON.stringify(result, null, 2)
         }
       ]
     };

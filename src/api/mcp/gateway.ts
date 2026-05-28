@@ -28,14 +28,14 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       let initialLogMsg = `MCP Gateway ${request.method} ${request.url}`;
 
       // Combine headers and body into one log block
-      initialLogMsg += `\n  Request headers: ${stringifyForLogging(request.headers)}`;
+      initialLogMsg += `\nRequest headers: ${stringifyForLogging(request.headers)}`;
 
       if (request.body) {
         try {
           const preview = stringifyForLogging(request.body);
-          initialLogMsg += `\n  Body: ${preview}`;
+          initialLogMsg += `\nBody: ${preview}`;
         } catch {
-          initialLogMsg += `\n  Body: [Unserializable]`;
+          initialLogMsg += `\nBody: [Unserializable]`;
         }
       }
       logger.debug(initialLogMsg, LOG_MODULES.COMMUNICATION);
@@ -98,7 +98,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       logger.error(`Error handling MCP request: ${errorMessage}`, LOG_MODULES.GATEWAY);
       logger.error(`Full error stack: ${errorStack}`, LOG_MODULES.GATEWAY);
       logger.error(
-        `Request body that caused error: ${JSON.stringify(request.body)}`,
+        `Request body that caused error: ${stringifyForLogging(request.body)}`,
         LOG_MODULES.GATEWAY
       );
 
