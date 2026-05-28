@@ -274,6 +274,7 @@ export default {
     invalidJsonArguments: 'Invalid JSON arguments',
     executionSuccessful: 'Tool execution successful',
     executionFailed: 'Tool execution failed',
-    selectInstance: 'Select an instance'
+    selectInstance: 'Select an instance',
+    instanceTags: 'Instance Tags'
   }
 };

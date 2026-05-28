@@ -274,6 +274,7 @@ export default {
     invalidJsonArguments: '无效的 JSON 参数',
     executionSuccessful: '工具执行成功',
     executionFailed: '工具执行失败',
-    selectInstance: '选择一个实例'
+    selectInstance: '选择一个实例',
+    instanceTags: '实例标签'
   }
 };

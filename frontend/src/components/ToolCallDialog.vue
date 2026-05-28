@@ -33,25 +33,36 @@
       <!-- Server Instance Selection -->
       <div
         v-if="serverName && serverName !== MCP_HUB_LITE_SERVER && !hideInstanceSelect"
-        class="mb-4 flex items-center"
+        class="mb-4"
       >
-        <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
-          t('toolCallDialog.instance')
-        }}</span>
-        <el-select
-          v-model="selectedInstanceId"
-          :placeholder="t('toolCallDialog.selectInstance')"
-          size="small"
-          class="flex-1"
-          @change="handleInstanceChange"
+        <div class="flex items-center">
+          <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
+            t('toolCallDialog.instance')
+          }}</span>
+          <el-select
+            v-model="selectedInstanceId"
+            :placeholder="t('toolCallDialog.selectInstance')"
+            size="small"
+            class="flex-1"
+            @change="handleInstanceChange"
+          >
+            <el-option
+              v-for="instance in serverInstances"
+              :key="instance.id"
+              :label="formatInstanceLabel(instance)"
+              :value="instance.id"
+            />
+          </el-select>
+        </div>
+        <div
+          v-if="selectedInstanceTags && Object.keys(selectedInstanceTags).length > 0"
+          class="mt-1 flex items-center gap-1 flex-wrap"
         >
-          <el-option
-            v-for="instance in serverInstances"
-            :key="instance.id"
-            :label="formatInstanceLabel(instance)"
-            :value="instance.id"
-          />
-        </el-select>
+          <span class="text-xs text-gray-500">{{ t('toolCallDialog.instanceTags') }}:</span>
+          <el-tag v-for="(value, key) in selectedInstanceTags" :key="key" size="small" type="info">
+            {{ key }}={{ value }}
+          </el-tag>
+        </div>
       </div>
 
       <div class="flex-1 flex gap-4 min-h-0">
@@ -171,6 +182,7 @@ import type { ServerInstanceConfig } from '@shared-models/server.model';
 type ServerInstance = ServerInstanceConfig & {
   pid?: number;
   startTime?: number;
+  tags?: Record<string, string>;
 };
 
 /**
@@ -228,6 +240,11 @@ const loading = ref(false);
 const showInputSchema = ref(false);
 const serverInstances = ref<ServerInstance[]>([]);
 const selectedInstanceId = ref<string | null>(null);
+
+const selectedInstanceTags = computed(() => {
+  if (!selectedInstanceId.value) return undefined;
+  return serverInstances.value.find((inst) => inst.id === selectedInstanceId.value)?.tags;
+});
 
 /**
  * Computed property that formats the input schema as pretty-printed JSON
@@ -418,12 +435,22 @@ async function handleCall() {
 
     let response;
     if (props.serverName && props.serverName !== MCP_HUB_LITE_SERVER) {
+      const selectedInstance = selectedInstanceId.value
+        ? serverInstances.value.find((inst) => inst.id === selectedInstanceId.value)
+        : undefined;
+
       response = await http.post(
         `/web/hub-tools/servers/${props.serverName}/tools/${props.toolName}/call`,
         {
           toolArgs: args,
-          requestOptions: selectedInstanceId.value
-            ? { sessionId: selectedInstanceId.value }
+          requestOptions: selectedInstance
+            ? {
+                sessionId: selectedInstance.id,
+                tags:
+                  selectedInstance.tags && Object.keys(selectedInstance.tags).length > 0
+                    ? selectedInstance.tags
+                    : undefined
+              }
             : undefined
         }
       );
