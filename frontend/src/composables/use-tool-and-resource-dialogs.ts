@@ -56,11 +56,21 @@ export function useToolAndResourceDialogs(
   function viewResource(resource: Resource) {
     if (!server.value) return;
 
+    // Convert native MCP URI to hub URI if needed
+    // Server-specific resources use native URIs (e.g. "ui://tinyfish/automation")
+    // while the detail page expects hub URIs (e.g. "hub://servers/tinyfish/0/tinyfish/automation")
+    let uri = resource.uri;
+    if (!uri.startsWith('hub://')) {
+      const mcpPath = uri.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:(\/\/)?/, '');
+      const idx = resource.serverIndex ?? 0;
+      uri = `hub://servers/${server.value.name}/${idx}/${mcpPath}`;
+    }
+
     router.push({
       name: 'resource-detail',
       params: { name: server.value.name },
       query: {
-        uri: resource.uri,
+        uri,
         name: resource.name,
         mimeType: resource.mimeType
       }
@@ -98,7 +108,6 @@ export function useToolAndResourceDialogs(
   watch(showInstanceSelectForResource, (newVal) => {
     if (newVal !== null) {
       showInstanceSelectForResourceDialog.value = true;
-      showInstanceSelectForResource.value = null;
     }
   });
 

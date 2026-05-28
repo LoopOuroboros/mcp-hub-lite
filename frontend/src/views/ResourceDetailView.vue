@@ -89,6 +89,13 @@
                   class="max-w-full max-h-full object-contain rounded shadow-lg"
                 />
               </div>
+              <div v-else-if="isMcpApp" class="h-full">
+                <iframe
+                  :srcdoc="contentText"
+                  sandbox="allow-scripts allow-same-origin"
+                  class="w-full h-full border-0 rounded"
+                />
+              </div>
               <!--
                 <div v-else-if="isMarkdown" class="prose dark:prose-invert max-w-none bg-white dark:bg-[#1e1e1e] p-8 rounded shadow-sm min-h-full" v-html="renderedMarkdown"></div>
                 -->
@@ -164,6 +171,7 @@ const content = ref<unknown>(null);
 const viewMode = ref('preview');
 
 const isImage = computed(() => resourceMimeType.value.startsWith('image/'));
+const isMcpApp = computed(() => resourceMimeType.value === 'text/html;profile=mcp-app');
 
 const contentText = computed(() => {
   if (!content.value) return '';
