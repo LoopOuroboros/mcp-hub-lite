@@ -187,10 +187,10 @@ export class McpConnectionManager {
         this.publishConnectionEvents(serverName, serverIndex);
 
         // 10. Refresh resources
-        await this.refreshServerResources(serverName, serverIndex, server.type);
+        await this.refreshServerResources(serverName, serverIndex);
 
         // 11. Request log notifications from downstream server
-        await this.requestLoggingFromServer(compositeKey, client, server.type);
+        await this.requestLoggingFromServer(compositeKey, client);
 
         return true;
       } catch (error) {
@@ -510,19 +510,7 @@ export class McpConnectionManager {
   /**
    * Refreshes server tools and resources (only for bidirectional transports).
    */
-  private async refreshServerResources(
-    serverName: string,
-    serverIndex: number,
-    serverType: string
-  ): Promise<void> {
-    if (serverType === 'sse') {
-      logger.info(
-        'SSE transport is unidirectional, skipping tool/resource refresh',
-        LOG_MODULES.CONNECTION_MANAGER
-      );
-      return;
-    }
-
+  private async refreshServerResources(serverName: string, serverIndex: number): Promise<void> {
     const tools = await this.refreshTools(serverName, serverIndex);
     const resources = await this.refreshResources(serverName, serverIndex);
 
@@ -543,14 +531,7 @@ export class McpConnectionManager {
    * Sends logging/setLevel request to downstream server to start receiving log notifications.
    * This is a best-effort request — servers that don't support logging will silently ignore it.
    */
-  private async requestLoggingFromServer(
-    compositeKey: string,
-    client: Client,
-    serverType: string
-  ): Promise<void> {
-    // SSE is unidirectional — cannot send requests to the server
-    if (serverType === 'sse') return;
-
+  private async requestLoggingFromServer(compositeKey: string, client: Client): Promise<void> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (client as any).request(

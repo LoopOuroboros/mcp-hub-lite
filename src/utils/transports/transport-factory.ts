@@ -1,10 +1,11 @@
 import { StdioTransport } from './stdio-transport.js';
-import { SseTransport } from './sse-transport.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { logStorage } from '@services/log-storage.service.js';
 import { McpOAuthClientProvider } from '@services/mcp-oauth/index.js';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
@@ -57,19 +58,37 @@ export class TransportFactory {
           }
         );
 
-      case 'sse':
+      case 'sse': {
         if (!config.url) {
           throw new Error('SSE transport requires a URL');
         }
-        return new SseTransport(
-          config.url,
-          config.headers,
-          config.reconnectInterval,
-          config.maxReconnectAttempts,
-          config.proxy,
-          server.name,
-          compositeKey
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sseOpts: Record<string, any> = {};
+
+        // Headers shared between SSE GET (eventSourceInit) and POST (requestInit)
+        if (config.headers && Object.keys(config.headers).length > 0) {
+          sseOpts.requestInit = { headers: config.headers };
+          sseOpts.eventSourceInit = { headers: config.headers };
+        }
+
+        // OAuth provider
+        if (options?.authProvider) {
+          sseOpts.authProvider = options.authProvider;
+        }
+
+        // Proxy support via custom fetch
+        if (config.proxy?.url) {
+          const agent = new ProxyAgent(config.proxy.url);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          sseOpts.fetch = (input: any, init?: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const fetchOptions: any = { ...init, dispatcher: agent };
+            return undiciFetch(input, fetchOptions) as unknown as Promise<Response>;
+          };
+        }
+
+        return new SSEClientTransport(new URL(config.url), sseOpts);
+      }
 
       case 'streamable-http':
       case 'http': {
