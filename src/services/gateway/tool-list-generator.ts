@@ -5,7 +5,7 @@
 import { logger, LOG_MODULES } from '@utils/index.js';
 import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
 import { hubManager } from '@services/hub-manager.service.js';
-import { hubToolsService } from '@services/hub-tools.service.js';
+import { getSystemTools } from '@services/hub-tools/index.js';
 import { parseCompositeKey } from '@utils/composite-key.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import type { ToolMapEntry, GatewayTool } from './types.js';
@@ -106,7 +106,7 @@ function resolveToolNames(
   const usedNames = new Set<string>();
 
   // Add system tools
-  const systemTools = hubToolsService.getSystemTools();
+  const systemTools = getSystemTools();
   for (const tool of systemTools) {
     gatewayTools.push({
       name: tool.name,
