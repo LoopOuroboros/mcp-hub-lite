@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import { hubManager } from '@services/hub-manager.service.js';
 import { configManager } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';

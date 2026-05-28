@@ -177,21 +177,23 @@ mcp-hub-lite restart
 **用法**:
 
 ```bash
-mcp-hub-lite tool-use <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
+mcp-hub-lite tool-use <action> [query] [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
 ```
 
 或通过 npm 运行：
 
 ```bash
-npm run tool-use -- <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
+npm run tool-use -- <action> [query] [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
 ```
 
 **支持的 Action**:
 
 - `list-servers` - 列出所有已连接的 MCP 服务器
 - `list-tools` - 列出指定服务器的所有工具
+- `list-tags` - 列出指定服务器的所有实例标签
 - `get-tool` - 获取特定工具的完整 schema（需要 --tool）
 - `call-tool` - 调用指定服务器上的工具（需要 --tool）
+- `search-tools` - 在所有已连接服务器中搜索工具（需要 query）
 
 **选项**:
 
@@ -231,6 +233,9 @@ npm run tool-use -- call-tool --tool search --server baidu-search --args '{"quer
 
 # 多实例服务器带标签调用
 npm run tool-use -- call-tool --tool search --server baidu-search --args '{"query":"test"}' --tags '{"env":"production"}'
+
+# 搜索所有服务器中的工具
+npm run tool-use -- search-tools "weather"
 ```
 
 #### JSON 合并形式:
@@ -241,6 +246,9 @@ npm run tool-use -- call-tool --args '{"server":"baidu-search","tool":"search","
 
 # 等同于
 npm run tool-use -- call-tool --server baidu-search --tool search --args '{"query":"天气"}'
+
+# 搜索工具（JSON 合并形式）
+npm run tool-use -- search-tools --args '{"query":"weather"}'
 ```
 
 #### 本地安装验证:
@@ -262,10 +270,11 @@ npm unlink
 **功能**:
 
 - 通过 HTTP API 封装 MCP 服务器工具操作
-- 支持四种操作：list-servers、list-tools、get-tool、call-tool
+- 支持六种操作：list-servers、list-tools、list-tags、get-tool、call-tool、search-tools
 - 需要 MCP Hub Lite 服务运行
 - 支持多实例服务器的标签选择
 - 支持通过 JSON 合并方式传递全部参数
+- `search-tools` 支持在所有已连接服务器中按名称/描述搜索工具
 - `--server` 省略时默认为 `mcp-hub-lite` 系统工具
 
 ### Install 命令 (`commands/install.ts`)

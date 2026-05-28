@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { hubManager } from '@services/hub-manager.service.js';
 import { ServerTemplateSchema, ServerInstanceUpdateSchema } from '@config/config.schema.js';
 import type { ServerTemplate, ServerInstance } from '@config/config.schema.js';
-import { logger } from '@utils/logger.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { stringifyForLogging, getApiDebugSetting } from '@utils/json-utils.js';
 

@@ -8,7 +8,7 @@ import {
   LOG_MODULES,
   formatMcpMessageForLogging,
   logNotificationMessage
-} from '@utils/logger.js';
+} from '@utils/logger/index.js';
 import { getAppVersion } from '@utils/version.js';
 import { getMcpCommDebugSetting } from '@utils/json-utils.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';
@@ -146,7 +146,7 @@ export class McpConnectionManager {
         const serverInfo = this.getServerInfo(serverId);
 
         // 5. Create transport and set up callbacks
-        const { transport, pid } = this.initializeTransport(
+        const { transport } = this.initializeTransport(
           server,
           serverInfo,
           compositeKey,
@@ -177,20 +177,28 @@ export class McpConnectionManager {
         // 6. Establish client connection
         const client = await this.establishClientConnection(transport);
 
-        // 7. Register connection
+        // 7. Extract PID after transport is started
+        const pid = (() => {
+          if ('pid' in transport && typeof transport.pid === 'number') {
+            return transport.pid;
+          }
+          return undefined;
+        })();
+
+        // 8. Register connection
         this.registerConnection(compositeKey, serverName, client, transport);
 
-        // 8. Update connected status
+        // 9. Update connected status
         this.updateConnectedStatus(compositeKey, client, pid);
 
         // 9. Publish connection events
         this.publishConnectionEvents(serverName, serverIndex);
 
         // 10. Refresh resources
-        await this.refreshServerResources(serverName, serverIndex, server.type);
+        await this.refreshServerResources(serverName, serverIndex);
 
         // 11. Request log notifications from downstream server
-        await this.requestLoggingFromServer(compositeKey, client, server.type);
+        await this.requestLoggingFromServer(compositeKey, client);
 
         return true;
       } catch (error) {
@@ -316,7 +324,7 @@ export class McpConnectionManager {
     serverName: string,
     serverIndex: number,
     authProvider?: import('@services/mcp-oauth/index.js').McpOAuthClientProvider
-  ): { transport: Transport; pid: number | undefined } {
+  ): { transport: Transport } {
     const readyPatterns =
       server.type === 'stdio' ? (serverInfo.config.template.readyPatterns ?? []) : undefined;
     const readyTimeout = configManager.getConfig().system.startup?.readyTimeout ?? 120000;
@@ -415,13 +423,7 @@ export class McpConnectionManager {
       };
     }
 
-    // Get PID if available (only for stdio transport)
-    let pid: number | undefined;
-    if ('pid' in transport && typeof transport.pid === 'number') {
-      pid = transport.pid;
-    }
-
-    return { transport, pid };
+    return { transport };
   }
 
   /**
@@ -510,19 +512,7 @@ export class McpConnectionManager {
   /**
    * Refreshes server tools and resources (only for bidirectional transports).
    */
-  private async refreshServerResources(
-    serverName: string,
-    serverIndex: number,
-    serverType: string
-  ): Promise<void> {
-    if (serverType === 'sse') {
-      logger.info(
-        'SSE transport is unidirectional, skipping tool/resource refresh',
-        LOG_MODULES.CONNECTION_MANAGER
-      );
-      return;
-    }
-
+  private async refreshServerResources(serverName: string, serverIndex: number): Promise<void> {
     const tools = await this.refreshTools(serverName, serverIndex);
     const resources = await this.refreshResources(serverName, serverIndex);
 
@@ -543,14 +533,7 @@ export class McpConnectionManager {
    * Sends logging/setLevel request to downstream server to start receiving log notifications.
    * This is a best-effort request — servers that don't support logging will silently ignore it.
    */
-  private async requestLoggingFromServer(
-    compositeKey: string,
-    client: Client,
-    serverType: string
-  ): Promise<void> {
-    // SSE is unidirectional — cannot send requests to the server
-    if (serverType === 'sse') return;
-
+  private async requestLoggingFromServer(compositeKey: string, client: Client): Promise<void> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (client as any).request(

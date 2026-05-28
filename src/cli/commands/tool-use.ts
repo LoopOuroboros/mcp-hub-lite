@@ -5,18 +5,18 @@ import { getServerStatus } from '@cli/server.js';
  * CLI command for dynamic MCP server tool operations via API.
  *
  * This command provides a simplified CLI interface for interacting with MCP server tools,
- * supporting five actions: list-servers, list-tools, list-tags, get-tool, and call-tool. It wraps
+ * supporting six actions: list-servers, list-tools, list-tags, get-tool, call-tool, and search-tools. It wraps
  * the HTTP API endpoints and requires the MCP Hub Lite server to be running.
  *
  * ## Command Format
  *
  * ```
- * mcp-hub-lite tool-use <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
+ * mcp-hub-lite tool-use <action> [query] [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
  * ```
  *
  * Or via npm:
  * ```
- * npm run tool-use -- <action> [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
+ * npm run tool-use -- <action> [query] [--server <serverName>] [--tool <toolName>] [--args <json>] [--tags <json>]
  * ```
  *
  * ## Supported Actions
@@ -26,6 +26,7 @@ import { getServerStatus } from '@cli/server.js';
  * - `list-tags` - List all instance tags for a specific MCP server
  * - `get-tool` - Get complete schema for a specific tool (requires --tool)
  * - `call-tool` - Call a tool on the specified server (requires --tool)
+ * - `search-tools` - Search tools across all connected servers by name or description (requires query)
  *
  * ## Options
  *
@@ -72,6 +73,9 @@ import { getServerStatus } from '@cli/server.js';
  *
  * # Multi-instance server with tags
  * mcp-hub-lite tool-use call-tool --tool search --server baidu-search --args '{"query":"test"}' --tags '{"env":"prod"}'
+ *
+ * # Search tools across all connected servers
+ * mcp-hub-lite tool-use search-tools "weather"
  * ```
  *
  * ### JSON 合并形式 (JSON Merge):
@@ -85,6 +89,9 @@ import { getServerStatus } from '@cli/server.js';
  *
  * # Equivalent to
  * mcp-hub-lite tool-use call-tool --server baidu-search --tool search --args '{"query":"天气"}'
+ *
+ * # Search tools (JSON merge form)
+ * mcp-hub-lite tool-use search-tools --args '{"query":"weather"}'
  * ```
  *
  * ## Error Handling
@@ -99,9 +106,13 @@ import { getServerStatus } from '@cli/server.js';
  */
 export const toolUseCommand = new Command('tool-use')
   .description(
-    'Manage MCP server tools via API (list-servers, list-tools, list-tags, get-tool, call-tool)'
+    'Manage MCP server tools via API (list-servers, list-tools, list-tags, get-tool, call-tool, search-tools)'
   )
-  .argument('<action>', 'Action: list-servers, list-tools, list-tags, get-tool, call-tool')
+  .argument(
+    '<action>',
+    'Action: list-servers, list-tools, list-tags, get-tool, call-tool, search-tools'
+  )
+  .argument('[query]', 'Search query (required for search-tools action)')
   .option('--server <serverName>', 'Server name to target (omit or empty for system tools)')
   .option('--tool <toolName>', 'Tool name (required for get-tool and call-tool actions)')
   .option(
@@ -135,11 +146,17 @@ Examples:
   # Call third-party server tool
   mcp-hub-lite tool-use call-tool --tool search --server baidu-search --args '{"query":"天气"}'
 
+  # Search tools across all connected servers
+  mcp-hub-lite tool-use search-tools "weather"
+
+  # Search tools (JSON merge form)
+  mcp-hub-lite tool-use search-tools --args '{"query":"weather"}'
+
   # JSON merge form (all params in one JSON)
   mcp-hub-lite tool-use call-tool --args '{"server":"baidu-search","tool":"search","query":"天气"}'
 `
   )
-  .action(async (action, options) => {
+  .action(async (action, query, options) => {
     try {
       // Check if server is running and get connection info
       const status = await getServerStatus();
@@ -260,6 +277,35 @@ Examples:
           console.log(JSON.stringify(result, null, 2));
           break;
         }
+        case 'search-tools': {
+          let searchQuery = query;
+          if (!searchQuery && options.args) {
+            try {
+              const parsed = JSON.parse(options.args);
+              searchQuery = parsed.query || parsed.q || '';
+            } catch {
+              // ignore parse errors, fall through to validation
+            }
+          }
+          if (!searchQuery || typeof searchQuery !== 'string' || searchQuery.trim().length === 0) {
+            console.error('Error: query is required for search-tools action');
+            console.error('Usage: mcp-hub-lite tool-use search-tools <query>');
+            process.exit(1);
+          }
+          const response = await fetch(
+            `${baseUrl}/web/hub-tools/search?q=${encodeURIComponent(searchQuery.trim())}`,
+            { headers: { Accept: 'application/json' } }
+          );
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(
+              (error as { message?: string }).message || `API error: ${response.status}`
+            );
+          }
+          const result = await response.json();
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
         case 'call-tool': {
           if (!effectiveTool) {
             console.error('Error: toolName is required for call-tool action');
@@ -298,7 +344,9 @@ Examples:
         }
         default: {
           console.error(`Unknown action: ${action}`);
-          console.error('Valid actions: list-servers, list-tools, list-tags, get-tool, call-tool');
+          console.error(
+            'Valid actions: list-servers, list-tools, list-tags, get-tool, call-tool, search-tools'
+          );
           process.exit(1);
         }
       }

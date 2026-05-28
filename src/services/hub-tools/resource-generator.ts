@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
 import { hubManager } from '@services/hub-manager.service.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { ServerStatus } from '@shared-types/common.types.js';
 import { hasValidId, selectBestInstance, getServerDescription } from './server-selector.js';
@@ -18,7 +18,7 @@ const hubToMcpUriMap = new Map<string, string>();
  * Clears the Hub to MCP URI mapping.
  * Should be called before regenerating resources.
  */
-export function clearHubToMcpUriMap(): void {
+function clearHubToMcpUriMap(): void {
   hubToMcpUriMap.clear();
 }
 
@@ -164,23 +164,22 @@ The complete use guide is currently unavailable. Please check the MCP Hub Lite d
 /**
  * URI for the use guide resource.
  */
-export const USE_GUIDE_URI = 'hub://use-guide';
+const USE_GUIDE_URI = 'hub://use-guide';
 
 /**
  * Name of the use guide resource.
  */
-export const USE_GUIDE_NAME = 'MCP Hub Lite Use Guide';
+const USE_GUIDE_NAME = 'MCP Hub Lite Use Guide';
 
 /**
  * Description of the use guide resource.
  */
-export const USE_GUIDE_DESCRIPTION =
-  'Comprehensive guide to using MCP Hub Lite gateway and its features';
+const USE_GUIDE_DESCRIPTION = 'Comprehensive guide to using MCP Hub Lite gateway and its features';
 
 /**
  * MIME type for the use guide resource.
  */
-export const USE_GUIDE_MIME_TYPE = 'text/markdown';
+const USE_GUIDE_MIME_TYPE = 'text/markdown';
 
 /**
  * Server metadata resource content.

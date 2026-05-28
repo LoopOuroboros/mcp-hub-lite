@@ -19,7 +19,6 @@ src/
 ├── pid/                     # 进程 ID 管理和文件操作
 ├── server/                  # 服务器运行时和启动器
 ├── app.ts                   # Fastify 应用配置
-├── index.ts                 # CLI 入口点
 └── types/                   # 全局类型定义
 ```
 
@@ -27,7 +26,7 @@ src/
 
 ### 主入口点
 
-- **CLI 入口**: `src/index.ts` - 处理命令行参数，使用 Commander.js
+- **CLI 入口**: `src/cli/index.ts` - 处理命令行参数，使用 Commander.js
 - **后端服务入口**: `src/app.ts` - Fastify 应用配置
 - **服务器启动器**: `src/server/runner.ts` - 启动 Fastify 服务器和 MCP 网关
 
@@ -193,7 +192,7 @@ npm run test:coverage
 
 | 文件路径               | 描述             |
 | ---------------------- | ---------------- |
-| `src/index.ts`         | CLI 主入口       |
+| `src/cli/index.ts`     | CLI 主入口       |
 | `src/app.ts`           | Fastify 应用配置 |
 | `src/server/runner.ts` | 服务器启动器     |
 | `src/api/`             | API 路由模块     |

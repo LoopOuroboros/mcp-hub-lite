@@ -1,9 +1,9 @@
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
-import { logger } from '@utils/logger.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPortWithExit } from '@utils/port-checker.js';
 import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';

@@ -79,25 +79,25 @@ transports/
 - `_logStorage` - 日志存储服务集成
 - `_stderrStream` - stderr 数据流
 
-### SSE Transport (`sse-transport.ts`)
+### SSE Transport (`sse-transport.ts` → SDK `SSEClientTransport`)
 
-**职责**: Server-Sent Events 传输实现
+**职责**: Server-Sent Events 传输实现（双向通信）
 
-**适用场景**: 远程 HTTP MCP 服务器（单向通信）
+**适用场景**: 远程 SSE MCP 服务器
 
 **关键特性**:
 
-- **单向通信**: 仅支持服务器到客户端的消息流（符合 SSE 协议规范）
-- **自动重连**: 指数退避策略的自动重连机制
-- **消息解析**: 自动解析 SSE 事件数据为 JSON-RPC 消息
-- **错误处理**: 完善的错误处理和日志记录
-- **代理支持**: 支持通过代理服务器连接
-- **复合键支持**: 支持 serverName 和 compositeKey 用于日志上下文
+- **SDK 官方实现**: 使用 `@modelcontextprotocol/sdk/client/sse.js` 的 `SSEClientTransport`
+- **双向通信**: SSE GET 接收服务器推送 + HTTP POST 发送客户端请求
+- **自动端点发现**: 从 SSE `endpoint` 事件自动获取 POST URL
+- **OAuth 支持**: 通过 `authProvider` 支持认证流程
+- **代理支持**: 通过自定义 `fetch` + ProxyAgent 支持代理连接
 
-**限制说明**:
+**实现说明**:
 
-- **不支持发送消息**: SSE 是单向协议，`send()` 方法会抛出错误
-- **仅适用于通知场景**: 适合接收服务器推送的通知和更新
+- `TransportFactory` 中 `case 'sse'` 分支直接实例化 SDK `SSEClientTransport`
+- 自研 `SseTransport` 类保留在 `sse-transport.ts` 但不再被工厂引用
+- headers 同时设置到 `requestInit`（POST）和 `eventSourceInit`（SSE GET）
 
 ### Streamable HTTP Transport (`streamable-http-transport.ts`)
 

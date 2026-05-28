@@ -90,5 +90,6 @@ export type SystemToolName = (typeof SYSTEM_TOOL_NAMES)[number];
 /**
  * MCP Hub Lite server name - represents both the system tools server and the gateway server
  * This single name is used for both system tool identification and gateway server naming
+ * Re-exported from shared for consistent usage across backend and frontend
  */
-export const MCP_HUB_LITE_SERVER = 'mcp-hub-lite';
+export { MCP_HUB_LITE_SERVER } from '@shared-models/constants.js';

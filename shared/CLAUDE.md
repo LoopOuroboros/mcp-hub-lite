@@ -14,12 +14,9 @@ shared/
 │   ├── index.ts         # 统一导出
 │   ├── server.model.ts  # 服务器数据模型
 │   ├── tool.model.ts    # 工具数据模型
-│   ├── resource.model.ts # 资源数据模型
-│   └── session.model.ts # 会话数据模型（已废弃，无生产引用）
+│   └── resource.model.ts # 资源数据模型
 └── types/               # 共享类型定义
     ├── index.ts         # 统一导出
-    ├── session.types.ts # 会话相关类型（已废弃，无引用）
-    ├── session-context.types.ts # 会话上下文类型（已废弃，无引用）
     ├── common.types.ts  # 通用类型
     └── websocket.types.ts # WebSocket 类型
 ```
@@ -58,16 +55,6 @@ shared/
 - `Resource` - 资源基本信息接口
 - `ResourceContent` - 资源内容类型
 - `ResourceList` - 资源列表类型
-
-### Session Model / Types（已废弃）
-
-> ⚠️ 以下文件在会话改造后被移除且不再被任何生产代码引用：
->
-> - `shared/models/session.model.ts`
-> - `shared/types/session.types.ts`
-> - `shared/types/session-context.types.ts`
->
-> 这些文件保留仅为避免 git diff 冲突，后续清理时可安全删除。
 
 ### Common Types (`types/common.types.ts`)
 
@@ -115,26 +102,17 @@ shared/
 │   ├── index.ts
 │   │   ├── exports: server.model.ts
 │   │   ├── exports: tool.model.ts
-│   │   ├── exports: resource.model.ts
-│   │   └── exports: session.model.ts
+│   │   └── exports: resource.model.ts
 │   ├── server.model.ts
 │   │   └── depends on: zod
 │   ├── tool.model.ts
 │   │   └── depends on: zod
-│   ├── resource.model.ts
-│   │   └── depends on: zod
-│   └── session.model.ts
+│   └── resource.model.ts
 │       └── depends on: zod
 └── types/
     ├── index.ts
-    │   ├── exports: session.types.ts
-    │   ├── exports: session-context.types.ts
     │   ├── exports: common.types.ts
     │   └── exports: websocket.types.ts
-    ├── session.types.ts
-    │   └── depends on: ../models/session.model.ts
-    ├── session-context.types.ts
-    │   └── depends on: ../models/session.model.ts
     ├── common.types.ts
     │   └── no dependencies
     └── websocket.types.ts
@@ -148,7 +126,6 @@ shared/
 ### 后端导入
 
 ```typescript
-import { SessionState } from '@shared-models/session.model.js';
 import { ServerConfig } from '@shared-models/server.model.js';
 import { WebSocketEventType } from '@shared-types/websocket.types.js';
 ```
@@ -156,7 +133,6 @@ import { WebSocketEventType } from '@shared-types/websocket.types.js';
 ### 前端导入
 
 ```typescript
-import type { SessionState } from '@shared-types/session.types';
 import type { ServerConfig } from '@shared-models/server.model';
 import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 ```
@@ -165,28 +141,20 @@ import { WEB_SOCKET_EVENT_TYPES } from '@shared-types/websocket.types';
 
 ### 单元测试
 
-**状态**: 已实现
+**状态**: 待实现
 
 **测试覆盖**:
 
-- 会话模型 Zod Schema 验证
 - 类型定义验证
-
-**测试文件**:
-
-- `tests/unit/services/session-manager.test.ts` - 包含会话模型相关测试
 
 ## 相关文件清单
 
-| 文件路径                                | 描述           |
-| --------------------------------------- | -------------- |
-| `shared/models/index.ts`                | 模型统一导出   |
-| `shared/models/server.model.ts`         | 服务器数据模型 |
-| `shared/models/tool.model.ts`           | 工具数据模型   |
-| `shared/models/resource.model.ts`       | 资源数据模型   |
-| `shared/models/session.model.ts`        | 会话数据模型   |
-| `shared/types/index.ts`                 | 类型统一导出   |
-| `shared/types/session.types.ts`         | 会话相关类型   |
-| `shared/types/session-context.types.ts` | 会话上下文类型 |
-| `shared/types/common.types.ts`          | 通用类型       |
-| `shared/types/websocket.types.ts`       | WebSocket 类型 |
+| 文件路径                          | 描述           |
+| --------------------------------- | -------------- |
+| `shared/models/index.ts`          | 模型统一导出   |
+| `shared/models/server.model.ts`   | 服务器数据模型 |
+| `shared/models/tool.model.ts`     | 工具数据模型   |
+| `shared/models/resource.model.ts` | 资源数据模型   |
+| `shared/types/index.ts`           | 类型统一导出   |
+| `shared/types/common.types.ts`    | 通用类型       |
+| `shared/types/websocket.types.ts` | WebSocket 类型 |

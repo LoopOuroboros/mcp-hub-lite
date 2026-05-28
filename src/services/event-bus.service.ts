@@ -23,7 +23,7 @@
  * are unsubscribed.
  */
 
-import type { EventData } from '@models/event.model.js';
+type EventData = unknown;
 
 /**
  * Interface representing a published event with its type and associated data.
@@ -205,6 +205,7 @@ export const EventTypes = {
 
   // Tool related events
   TOOLS_UPDATED: 'tools',
+  AGGREGATED_TOOLS_CHANGED: 'aggregated-tools-changed',
   TOOL_CALL_STARTED: 'tool-call-started',
   TOOL_CALL_COMPLETED: 'tool-call-completed',
   TOOL_CALL_ERROR: 'tool-call-error',

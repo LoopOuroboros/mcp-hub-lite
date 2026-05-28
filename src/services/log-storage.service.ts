@@ -1,4 +1,4 @@
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { eventBus, EventTypes } from '@services/event-bus.service.js';
 import type { LogLevel } from '@shared-types/common.types.js';
 

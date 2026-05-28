@@ -148,19 +148,16 @@ ToolsView
 ```
 ResourcesView
 ├── Search Bar
-├── System Resources Section (mcp-hub-lite)
-│   └── ResourceCard (xN)
-└── Server Resources Section
-    └── Server Group
-        ├── Server Header
-        └── ResourceCard (xN)
+└── Flat Resource Table (el-table)
+    ├── Name Column (with Document icon)
+    ├── URI Column
+    └── MIME Type Column (el-tag)
 ```
 
 **依赖**:
 
 - `/web/resources` - 资源 API
 - `useServerStore` - 获取服务器状态
-- `ResourceCard` - 资源卡片组件
 
 ### ResourceDetailView (`ResourceDetailView.vue`)
 
@@ -217,7 +214,6 @@ views/
 │   └── uses API: /web/config
 │
 ├── ResourcesView.vue
-│   ├── depends on: ResourceCard.vue
 │   ├── depends on: useServerStore
 │   └── uses API: /web/resources
 │

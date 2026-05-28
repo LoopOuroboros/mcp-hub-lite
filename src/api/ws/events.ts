@@ -29,7 +29,7 @@ import type { FastifyInstance } from 'fastify';
 import fastifyWebSocket from '@fastify/websocket';
 import { WebSocketHandler } from './ws-handler.js';
 import { eventBus } from '@services/event-bus.service.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 
 export async function webSocketRoutes(fastify: FastifyInstance): Promise<void> {
   // Register WebSocket plugin

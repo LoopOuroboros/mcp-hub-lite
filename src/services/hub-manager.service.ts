@@ -10,8 +10,8 @@ import type {
   ServerRuntimeConfig,
   InstanceSelectionStrategy
 } from '@shared-models/server.model.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
-import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
+import { mcpConnectionManager } from './connection/index.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 
 /**
@@ -185,12 +185,28 @@ export class HubManagerService {
       return null;
     }
 
+    const oldAggregated = existing.template?.aggregatedTools ?? [];
+
     await this.configManager.updateServer(name, updates);
     logger.info(`Server updated: ${name}`, LOG_MODULES.HUB_MANAGER);
 
     const updatedServer = this.getServerByName(name) || null;
     if (updatedServer) {
       eventBus.publish(EventTypes.SERVER_UPDATED, { name, config: updatedServer });
+
+      if ('aggregatedTools' in updates) {
+        const newAggregated = (updates.aggregatedTools ?? []) as string[];
+        const oldSet = new Set(oldAggregated);
+        const newSet = new Set(newAggregated);
+        const added = newAggregated.filter((t) => !oldSet.has(t));
+        const removed = oldAggregated.filter((t) => !newSet.has(t));
+
+        eventBus.publish(EventTypes.AGGREGATED_TOOLS_CHANGED, {
+          name,
+          added,
+          removed
+        });
+      }
     }
 
     return updatedServer;

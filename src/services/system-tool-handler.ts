@@ -1,6 +1,6 @@
 import { hubToolsService } from './hub-tools.service.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import {
   SystemToolName,
   LIST_SERVERS_TOOL,

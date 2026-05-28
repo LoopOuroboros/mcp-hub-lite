@@ -1,4 +1,4 @@
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import { getCompositeKey } from '@utils/composite-key.js';
 import { normalizeToolName } from '@utils/name-converter.js';
@@ -138,11 +138,7 @@ export class ToolCache {
    * @returns Array of all tools from all servers
    */
   getAllTools(): Tool[] {
-    const allTools: Tool[] = [];
-    for (const tools of this.toolCache.values()) {
-      allTools.push(...tools);
-    }
-    return allTools;
+    return this.getAllToolsByServerName();
   }
 
   /**
@@ -202,15 +198,21 @@ export class ToolCache {
    * @param serverName - The server name to update
    */
   private updateServerNameCache(serverName: string): void {
-    const allToolsForServer: Tool[] = [];
+    const toolMap = new Map<string, Tool>();
 
     for (const [compositeKey, cachedTools] of this.toolCache.entries()) {
       const instanceServerName = this.getServerNameById(compositeKey);
       if (instanceServerName === serverName) {
-        allToolsForServer.push(...cachedTools);
+        for (const tool of cachedTools) {
+          const key = normalizeToolName(tool.name);
+          if (!toolMap.has(key)) {
+            toolMap.set(key, tool);
+          }
+        }
       }
     }
 
+    const allToolsForServer = Array.from(toolMap.values());
     if (allToolsForServer.length > 0) {
       this.serverNameToolCache.set(serverName, allToolsForServer);
     } else {

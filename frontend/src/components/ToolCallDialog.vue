@@ -31,24 +31,38 @@
       </div>
 
       <!-- Server Instance Selection -->
-      <div v-if="serverName && serverName !== 'mcp-hub-lite'" class="mb-4 flex items-center">
-        <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
-          t('toolCallDialog.instance')
-        }}</span>
-        <el-select
-          v-model="selectedInstanceId"
-          :placeholder="t('toolCallDialog.selectInstance')"
-          size="small"
-          class="flex-1"
-          @change="handleInstanceChange"
+      <div
+        v-if="serverName && serverName !== MCP_HUB_LITE_SERVER && !hideInstanceSelect"
+        class="mb-4"
+      >
+        <div class="flex items-center">
+          <span class="font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">{{
+            t('toolCallDialog.instance')
+          }}</span>
+          <el-select
+            v-model="selectedInstanceId"
+            :placeholder="t('toolCallDialog.selectInstance')"
+            size="small"
+            class="flex-1"
+            @change="handleInstanceChange"
+          >
+            <el-option
+              v-for="instance in serverInstances"
+              :key="instance.id"
+              :label="formatInstanceLabel(instance)"
+              :value="instance.id"
+            />
+          </el-select>
+        </div>
+        <div
+          v-if="selectedInstanceTags && Object.keys(selectedInstanceTags).length > 0"
+          class="mt-1 flex items-center gap-1 flex-wrap"
         >
-          <el-option
-            v-for="instance in serverInstances"
-            :key="instance.id"
-            :label="formatInstanceLabel(instance)"
-            :value="instance.id"
-          />
-        </el-select>
+          <span class="text-xs text-gray-500">{{ t('toolCallDialog.instanceTags') }}:</span>
+          <el-tag v-for="(value, key) in selectedInstanceTags" :key="key" size="small" type="info">
+            {{ key }}={{ value }}
+          </el-tag>
+        </div>
       </div>
 
       <div class="flex-1 flex gap-4 min-h-0">
@@ -152,6 +166,7 @@ import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
+import { MCP_HUB_LITE_SERVER } from '@shared-models/constants';
 import type { JsonSchema } from '@shared-models/tool.model';
 import type { ServerInstanceConfig } from '@shared-models/server.model';
 
@@ -167,6 +182,7 @@ import type { ServerInstanceConfig } from '@shared-models/server.model';
 type ServerInstance = ServerInstanceConfig & {
   pid?: number;
   startTime?: number;
+  tags?: Record<string, string>;
 };
 
 /**
@@ -185,6 +201,7 @@ const props = defineProps<{
   toolName: string;
   description?: string;
   inputSchema?: JsonSchema;
+  hideInstanceSelect?: boolean;
 }>();
 
 /**
@@ -223,6 +240,11 @@ const loading = ref(false);
 const showInputSchema = ref(false);
 const serverInstances = ref<ServerInstance[]>([]);
 const selectedInstanceId = ref<string | null>(null);
+
+const selectedInstanceTags = computed(() => {
+  if (!selectedInstanceId.value) return undefined;
+  return serverInstances.value.find((inst) => inst.id === selectedInstanceId.value)?.tags;
+});
 
 /**
  * Computed property that formats the input schema as pretty-printed JSON
@@ -295,13 +317,11 @@ watch(
 /**
  * Generates a template object based on the provided JSON schema
  *
- * Creates default values for each property based on its type:
- * - strings: empty string
- * - numbers/integers: 0
- * - booleans: false
- * - arrays: empty array
- * - objects: empty object
- * - others: null
+ * - Extracts "Must be" values from description fields (e.g. 'Must be "chrome-devtools"')
+ * - Recursively handles nested object types (toolArgs, requestOptions)
+ * - Creates default values for each property based on its type:
+ *   strings: '' (or extracted Must be value), numbers: 0, booleans: false,
+ *   arrays: [], objects: nested template, others: null
  *
  * @param {JsonSchema|undefined} schema - Input schema to generate template from
  * @returns {Record<string, unknown>} Template object with default values
@@ -315,7 +335,7 @@ function generateTemplate(schema: JsonSchema | undefined) {
     if (prop.default !== undefined) {
       template[key] = prop.default;
     } else if (prop.type === 'string') {
-      template[key] = '';
+      template[key] = extractMustBeValue(prop.description as string | undefined) ?? '';
     } else if (prop.type === 'number' || prop.type === 'integer') {
       template[key] = 0;
     } else if (prop.type === 'boolean') {
@@ -323,12 +343,22 @@ function generateTemplate(schema: JsonSchema | undefined) {
     } else if (prop.type === 'array') {
       template[key] = [];
     } else if (prop.type === 'object') {
-      template[key] = {};
+      template[key] = generateTemplate(prop);
     } else {
       template[key] = null;
     }
   }
   return template;
+}
+
+/**
+ * Extracts the value from a "Must be" description pattern.
+ * Example: 'Must be "chrome-devtools"' → 'chrome-devtools'
+ */
+function extractMustBeValue(description?: string): string | undefined {
+  if (!description) return undefined;
+  const match = description.match(/Must be "(.+?)"/);
+  return match?.[1];
 }
 
 /**
@@ -360,7 +390,9 @@ function toggleSchemaView() {
  * @returns {string} Formatted label string
  */
 function formatInstanceLabel(instance: ServerInstance) {
-  return `${instance.id}`;
+  const idx = instance.index ?? '?';
+  const name = instance.displayName || instance.id;
+  return `#${idx} [${name}]`;
 }
 
 /**
@@ -402,18 +434,28 @@ async function handleCall() {
     showInputSchema.value = false;
 
     let response;
-    if (props.serverName && props.serverName !== 'mcp-hub-lite') {
+    if (props.serverName && props.serverName !== MCP_HUB_LITE_SERVER) {
+      const selectedInstance = selectedInstanceId.value
+        ? serverInstances.value.find((inst) => inst.id === selectedInstanceId.value)
+        : undefined;
+
       response = await http.post(
         `/web/hub-tools/servers/${props.serverName}/tools/${props.toolName}/call`,
         {
           toolArgs: args,
-          requestOptions: selectedInstanceId.value
-            ? { sessionId: selectedInstanceId.value }
+          requestOptions: selectedInstance
+            ? {
+                sessionId: selectedInstance.id,
+                tags:
+                  selectedInstance.tags && Object.keys(selectedInstance.tags).length > 0
+                    ? selectedInstance.tags
+                    : undefined
+              }
             : undefined
         }
       );
     } else {
-      // Call system tool (either no serverName or serverName is 'mcp-hub-lite')
+      // Call system tool (either no serverName or serverName is MCP_HUB_LITE_SERVER)
       response = await http.post(`/web/hub-tools/system/${props.toolName}/call`, {
         toolArgs: args
       });

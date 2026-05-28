@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HubManagerService } from '@services/hub-manager.service.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import { ConfigManager, configManager } from '@config/config-manager.js';
 import type { ServerConfig, ServerInstance } from '@config/config.schema.js';
 
 // Mock resolveInstanceConfig to return a valid resolved config
 vi.mock('@config/config-migrator.js', () => ({
-  resolveInstanceConfig: vi.fn(),
-  getEnabledInstances: vi.fn()
+  resolveInstanceConfig: vi.fn()
 }));
 
 // Mock dependencies
@@ -27,14 +26,14 @@ vi.mock('@config/config-manager.js', () => ({
   }
 }));
 
-vi.mock('@services/mcp-connection-manager.js', () => ({
+vi.mock('@services/connection/index.js', () => ({
   mcpConnectionManager: {
     connect: vi.fn(),
     disconnect: vi.fn(() => Promise.resolve())
   }
 }));
 
-vi.mock('@utils/logger.js', () => ({
+vi.mock('@utils/logger/index.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

@@ -19,40 +19,36 @@ import { createSessionTransport } from '@services/gateway/global-transport.js';
  * @param fastify - Fastify instance to register routes on
  */
 export async function mcpGatewayRoutes(fastify: FastifyInstance) {
-  const handleMcpRequest = async (
+  // GET /mcp — not used, this is a Streamable HTTP server
+  fastify.get('/mcp', (_request, reply) => {
+    reply.code(405).send({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message:
+          'GET /mcp is not supported. This is a Streamable HTTP MCP server — send POST /mcp with JSON-RPC requests directly.'
+      },
+      id: null
+    });
+  });
+
+  // POST /mcp — JSON-RPC request handling
+  const handlePostRequest = async (
     request: FastifyRequest<{ Body: unknown }>,
     reply: FastifyReply
   ) => {
-    // First, log that we received the request
     if (getMcpCommDebugSetting()) {
       let initialLogMsg = `MCP Gateway ${request.method} ${request.url}`;
-
-      // Combine headers and body into one log block
-      initialLogMsg += `\n  Request headers: ${stringifyForLogging(request.headers)}`;
-
+      initialLogMsg += `\nRequest headers: ${stringifyForLogging(request.headers)}`;
       if (request.body) {
         try {
           const preview = stringifyForLogging(request.body);
-          initialLogMsg += `\n  Body: ${preview}`;
+          initialLogMsg += `\nBody: ${preview}`;
         } catch {
-          initialLogMsg += `\n  Body: [Unserializable]`;
+          initialLogMsg += `\nBody: [Unserializable]`;
         }
       }
       logger.debug(initialLogMsg, LOG_MODULES.COMMUNICATION);
-    }
-
-    // Reject GET requests without Accept: text/event-stream (health-check hook compatibility)
-    const accept = request.raw.headers['accept'] || '';
-    if (request.method === 'GET' && !accept.includes('text/event-stream')) {
-      reply.raw.writeHead(400, { 'Content-Type': 'application/json' });
-      reply.raw.end(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          error: { code: -32000, message: 'Bad Request: Accept: text/event-stream required' },
-          id: null
-        })
-      );
-      return;
     }
 
     reply.header('Content-Type', 'application/json');
@@ -82,8 +78,6 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           );
         }
       } finally {
-        // Resources will be automatically cleaned up by garbage collection
-        // since transport and server are local to this request scope
         if (getGatewayDebugSetting()) {
           logger.debug(
             `Session transport request completed, resources will be GC'd`,
@@ -98,7 +92,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
       logger.error(`Error handling MCP request: ${errorMessage}`, LOG_MODULES.GATEWAY);
       logger.error(`Full error stack: ${errorStack}`, LOG_MODULES.GATEWAY);
       logger.error(
-        `Request body that caused error: ${JSON.stringify(request.body)}`,
+        `Request body that caused error: ${stringifyForLogging(request.body)}`,
         LOG_MODULES.GATEWAY
       );
 
@@ -118,29 +112,14 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
     }
   };
 
-  // Handle root /mcp endpoint (GET for SSE, POST for messages)
-  fastify.all('/mcp', {
+  fastify.post('/mcp', {
     bodyLimit: 10 * 1024 * 1024, // 10MB limit
-    preHandler: (request, _reply, done) => {
-      // Ensure we don't parse the body for SSE (GET) requests
-      if (request.method === 'GET') {
-        request.body = null;
-      }
-      done();
-    },
-    handler: handleMcpRequest
+    handler: handlePostRequest
   });
 
-  // Handle any subpaths if client appends them
-  fastify.all('/mcp/*', {
-    bodyLimit: 10 * 1024 * 1024, // 10MB limit
-    preHandler: (request, _reply, done) => {
-      // Ensure we don't parse the body for SSE (GET) requests
-      if (request.method === 'GET') {
-        request.body = null;
-      }
-      done();
-    },
-    handler: handleMcpRequest
+  // Subpath fallback
+  fastify.post('/mcp/*', {
+    bodyLimit: 10 * 1024 * 1024,
+    handler: handlePostRequest
   });
 }

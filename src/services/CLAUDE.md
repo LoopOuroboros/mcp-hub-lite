@@ -227,6 +227,7 @@ services/
 - `SERVER_DISCONNECTED` - 服务器断开
 - `SERVER_STATUS_CHANGE` - 服务器状态变化
 - `TOOLS_UPDATED` - 工具更新
+- `AGGREGATED_TOOLS_CHANGED` - 聚合工具配置变更（含 added/removed diff）
 - `RESOURCES_UPDATED` - 资源更新
 - `TOOL_CALL_STARTED` - 工具调用开始
 - `TOOL_CALL_COMPLETED` - 工具调用完成

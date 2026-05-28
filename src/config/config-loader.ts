@@ -5,7 +5,7 @@
  */
 
 import * as fs from 'fs';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { SystemConfigSchema, isLegacyV1Config } from './config.schema.js';
 import type { SystemConfig } from './config.schema.js';
 import { migrateConfig } from './config-migrator.js';

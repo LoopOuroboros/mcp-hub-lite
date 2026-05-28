@@ -541,42 +541,6 @@ interface Props {
 - `useI18n` - 国际化支持
 - `format-utils.js` - 格式化工具函数
 
-### ResourceCard (`ResourceCard.vue`)
-
-**职责**: 资源卡片展示组件，用于显示 MCP 服务器提供的资源
-
-**Props**:
-
-```typescript
-interface Props {
-  uri: string; // 资源 URI
-  name: string; // 资源名称
-  description?: string; // 资源描述
-  serverName?: string; // 所属服务器名称
-  mimeType?: string; // 资源的 MIME 类型
-}
-```
-
-**Emits**:
-
-```typescript
-{
-  (e: 'click'): void;     // 点击卡片时触发
-  (e: 'read'): void;      // 点击读取按钮时触发
-}
-```
-
-**主要功能**:
-
-- 资源信息展示（URI、名称、描述）
-- 服务器来源标签
-- 读取资源操作按钮
-
-**依赖**:
-
-- `useI18n` - 国际化支持
-- `/web/resources/:uri` - 读取资源 API
-
 ## 依赖关系
 
 ```
@@ -615,9 +579,6 @@ components/
 │
 ├── ServerStatusTags.vue
 │   └── depends on: useI18n, format-utils.js
-│
-└── ResourceCard.vue
-    └── depends on: useI18n
 ```
 
 ## 测试与质量
@@ -643,7 +604,6 @@ components/
 - ResourcesTab 组件测试
 - JsonConfigEditor 组件测试
 - InstanceSelectDialog 组件测试
-- ResourceCard 组件测试
 - 其他组件的完整测试覆盖
 
 ## 常见问题 (FAQ)
@@ -692,4 +652,3 @@ A: ServerDetail 从一个 1300+ 行的单体组件重构为：
 | `components/ServerStatusTags.vue`          | 服务器状态标签组件 |
 | `components/InstanceCardList.vue`          | 实例卡片列表       |
 | `components/InstanceConfig.vue`            | 实例配置           |
-| `components/ResourceCard.vue`              | 资源卡片组件       |

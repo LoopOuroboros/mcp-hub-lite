@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { generateInstanceId } from '@utils/instance-id.js';
 import type { ServerInstance, ServerTemplate, SystemConfig } from './config.schema.js';
 import { isLegacyV1Config, SystemConfigSchema } from './config.schema.js';
@@ -8,15 +8,9 @@ import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { reassignServerInstanceIndexes } from './server-config-manager.js';
 
 /**
- * @deprecated Use ServerRuntimeConfig from @shared-models/server.model instead
- * Resolved server configuration with template + instance merged
- */
-export type ResolvedServerConfig = ServerRuntimeConfig;
-
-/**
  * Configuration Migration Result
  */
-export interface MigrationResult {
+interface MigrationResult {
   success: boolean;
   backupPath?: string;
   migratedConfig?: SystemConfig;
@@ -27,7 +21,7 @@ export interface MigrationResult {
 /**
  * Configuration Migrator Options
  */
-export interface MigrationOptions {
+interface MigrationOptions {
   dryRun?: boolean;
   createBackup?: boolean;
   validateAfterMigration?: boolean;
@@ -298,111 +292,6 @@ export function migrateConfig(configPath: string, options: MigrationOptions = {}
   }
 }
 
-/**
- * Performs a dry run of the migration without modifying files
- *
- * @param configPath Path to the configuration file
- * @returns Migration result with what would happen
- */
-export function dryRunMigration(configPath: string): MigrationResult {
-  return migrateConfig(configPath, {
-    dryRun: true,
-    createBackup: false,
-    validateAfterMigration: true
-  });
-}
-
-/**
- * Rolls back a migration using a backup file
- *
- * @param configPath Path to the current configuration file
- * @param backupPath Path to the backup file
- * @returns Success status and any error message
- */
-export function rollbackMigration(
-  configPath: string,
-  backupPath: string
-): {
-  success: boolean;
-  error?: string;
-} {
-  try {
-    if (!existsSync(backupPath)) {
-      return {
-        success: false,
-        error: `Backup file not found: ${backupPath}`
-      };
-    }
-
-    const backupContent = readFileSync(backupPath, 'utf8');
-
-    const dir = dirname(configPath);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-
-    writeFileSync(configPath, backupContent, 'utf8');
-
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
-}
-
-/**
- * Checks the migration status of a configuration file
- *
- * @param configPath Path to the configuration file
- * @returns Status information
- */
-export function checkMigrationStatus(configPath: string): {
-  exists: boolean;
-  version: 'v1' | 'v1.1' | 'unknown';
-  canMigrate: boolean;
-  message: string;
-} {
-  if (!existsSync(configPath)) {
-    return {
-      exists: false,
-      version: 'unknown',
-      canMigrate: false,
-      message: 'Configuration file does not exist'
-    };
-  }
-
-  try {
-    const config = loadConfigFile(configPath);
-
-    if (!isLegacyV1Config(config)) {
-      return {
-        exists: true,
-        version: 'v1.1',
-        canMigrate: false,
-        message: 'Configuration is already in v1.1 format'
-      };
-    }
-
-    return {
-      exists: true,
-      version: 'v1',
-      canMigrate: true,
-      message: 'Configuration is in v1.0 format and can be migrated'
-    };
-  } catch (error) {
-    return {
-      exists: true,
-      version: 'unknown',
-      canMigrate: false,
-      message: `Error reading configuration: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    };
-  }
-}
-
 // ====== v1.1 Configuration Helpers ======
 
 /**
@@ -448,25 +337,4 @@ export function resolveInstanceConfig(
   };
 }
 
-/**
- * Gets all enabled instances for a server
- *
- * @param serverConfig The server configuration
- * @returns Array of enabled instances with resolved configs
- */
-export function getEnabledInstances(
-  serverConfig: SystemConfig['servers'][string]
-): Array<{ instance: ServerInstance; resolved: ServerRuntimeConfig }> {
-  const result: Array<{ instance: ServerInstance; resolved: ServerRuntimeConfig }> = [];
-
-  for (const instance of serverConfig.instances) {
-    if (instance.enabled !== false) {
-      const resolved = resolveInstanceConfig(serverConfig, instance.id);
-      if (resolved) {
-        result.push({ instance, resolved });
-      }
-    }
-  }
-
-  return result;
-}
+// ====== Config Conversion Helpers ======

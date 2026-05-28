@@ -10,7 +10,6 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger } from '@utils/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
-import { stringifyForLogging } from '@utils/json-utils.js';
 import { hubToolsService } from '@services/hub-tools.service.js';
 
 /**
@@ -38,13 +37,22 @@ export function registerResourcesHandlers(server: McpServer): void {
     try {
       const { uri } = request.params;
       const content = await hubToolsService.readResource(uri);
+      // Preserve original mimeType if content is already in MCP ReadResourceResult format
+      const mcpResult =
+        content && typeof content === 'object' && 'contents' in content
+          ? (content as unknown as {
+              contents: Array<{ uri?: string; mimeType?: string; text?: string; blob?: string }>;
+            })
+          : null;
+      const mimeType = mcpResult?.contents?.[0]?.mimeType || 'application/json';
+
       // Convert to official MCP format: contents array with required uri field
       return {
         contents: [
           {
             uri,
-            mimeType: 'application/json',
-            text: typeof content === 'string' ? content : stringifyForLogging(content)
+            mimeType,
+            text: typeof content === 'string' ? content : JSON.stringify(content, null, 2)
           }
         ]
       };

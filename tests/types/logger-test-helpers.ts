@@ -3,7 +3,7 @@
  */
 
 import type { LogLevel } from '@shared-types/common.types.js';
-import type { LogContext } from '@utils/logger.js';
+import type { LogContext } from '@utils/logger/index.js';
 import type { WriteStream } from 'node:fs';
 
 // Logger with private methods exposed for testing

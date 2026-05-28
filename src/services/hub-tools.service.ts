@@ -1,10 +1,10 @@
 import { hubManager } from './hub-manager.service.js';
-import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { mcpConnectionManager } from './connection/index.js';
 import type { Tool, ToolSummary } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
-import { gateway } from './gateway.service.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { generateGatewayToolsList } from './gateway/tool-list-generator.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { normalizeToolName } from '@utils/name-converter.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
@@ -130,13 +130,6 @@ export class HubToolsService {
         continue;
       }
 
-      // Use non-strict mode for management operations to avoid tag-match-unique errors
-      const serverInfo = selectBestInstance(server.name, undefined, false);
-      if (!serverInfo) {
-        // Skip servers that can't be selected (e.g., tag-match-unique without tags)
-        continue;
-      }
-
       const description = getServerDescription(server.config, server.name);
       result[server.name] = description;
     }
@@ -170,7 +163,7 @@ export class HubToolsService {
         string,
         { serverName: string; serverIndex: number; realToolName: string }
       >();
-      const gatewayTools = gateway.generateGatewayToolsList(toolMap);
+      const gatewayTools = generateGatewayToolsList(toolMap);
 
       // Convert to ToolSummary format (without inputSchema)
       const toolSummaries: ToolSummary[] = gatewayTools.map((tool) => ({
@@ -481,11 +474,21 @@ export class HubToolsService {
   async callTool(args: CallToolParams): Promise<unknown> {
     let { serverName, toolName } = args;
     // Support both toolArgs and arguments for backward compatibility
-    const toolArgs: Record<string, unknown> = (args.toolArgs || args.arguments || {}) as Record<
+    let toolArgs: Record<string, unknown> = (args.toolArgs || args.arguments || {}) as Record<
       string,
       unknown
     >;
-    const { requestOptions } = args;
+    let { requestOptions } = args;
+
+    // Unwrap gateway-wrapped arguments: if toolArgs itself contains a nested
+    // toolArgs property (the wrapped schema), extract the real tool arguments.
+    if (toolArgs && typeof toolArgs.toolArgs === 'object' && toolArgs.toolArgs !== null) {
+      const wrapped = toolArgs as Record<string, unknown>;
+      toolArgs = wrapped.toolArgs as Record<string, unknown>;
+      if (wrapped.requestOptions && !requestOptions) {
+        requestOptions = wrapped.requestOptions as unknown as typeof requestOptions;
+      }
+    }
     // Parse prefixed tool names (like mcp__mcp-hub-lite__xxx) if applicable
     const parsedTool = ToolArgsParser.parsePrefixedToolName(toolName);
     if (parsedTool) {

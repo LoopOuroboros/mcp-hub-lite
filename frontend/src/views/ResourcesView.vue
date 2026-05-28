@@ -105,10 +105,18 @@ const flatResources = computed(() => {
   );
 });
 
+function extractServerName(uri: string): string {
+  // hub://servers/{serverName}/...
+  // hub://use-guide (no server name)
+  const parts = uri.replace('hub://', '').split('/');
+  return parts.length >= 2 ? (parts[1] ?? '') : '';
+}
+
 function viewResource(resource: Resource) {
+  const serverName: string = resource.serverName || extractServerName(resource.uri);
   router.push({
     name: 'resource-detail',
-    params: { name: resource.uri },
+    params: { name: serverName },
     query: {
       uri: resource.uri,
       name: resource.name,

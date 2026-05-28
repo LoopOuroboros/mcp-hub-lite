@@ -1,6 +1,6 @@
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import { URL } from 'url';
