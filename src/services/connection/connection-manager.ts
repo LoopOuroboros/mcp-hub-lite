@@ -146,7 +146,7 @@ export class McpConnectionManager {
         const serverInfo = this.getServerInfo(serverId);
 
         // 5. Create transport and set up callbacks
-        const { transport, pid } = this.initializeTransport(
+        const { transport } = this.initializeTransport(
           server,
           serverInfo,
           compositeKey,
@@ -177,10 +177,18 @@ export class McpConnectionManager {
         // 6. Establish client connection
         const client = await this.establishClientConnection(transport);
 
-        // 7. Register connection
+        // 7. Extract PID after transport is started
+        const pid = (() => {
+          if ('pid' in transport && typeof transport.pid === 'number') {
+            return transport.pid;
+          }
+          return undefined;
+        })();
+
+        // 8. Register connection
         this.registerConnection(compositeKey, serverName, client, transport);
 
-        // 8. Update connected status
+        // 9. Update connected status
         this.updateConnectedStatus(compositeKey, client, pid);
 
         // 9. Publish connection events
@@ -316,7 +324,7 @@ export class McpConnectionManager {
     serverName: string,
     serverIndex: number,
     authProvider?: import('@services/mcp-oauth/index.js').McpOAuthClientProvider
-  ): { transport: Transport; pid: number | undefined } {
+  ): { transport: Transport } {
     const readyPatterns =
       server.type === 'stdio' ? (serverInfo.config.template.readyPatterns ?? []) : undefined;
     const readyTimeout = configManager.getConfig().system.startup?.readyTimeout ?? 120000;
@@ -415,13 +423,7 @@ export class McpConnectionManager {
       };
     }
 
-    // Get PID if available (only for stdio transport)
-    let pid: number | undefined;
-    if ('pid' in transport && typeof transport.pid === 'number') {
-      pid = transport.pid;
-    }
-
-    return { transport, pid };
+    return { transport };
   }
 
   /**

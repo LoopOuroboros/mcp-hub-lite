@@ -226,7 +226,8 @@ export const useServerStore = defineStore('server', () => {
                 timestamp: inst.timestamp ?? Date.now(),
                 index: inst.index,
                 displayName: inst.displayName,
-                status: instStatus
+                status: instStatus,
+                pid: statusInfo?.pid
               };
             });
 
