@@ -342,6 +342,88 @@ describe('HubToolsService', () => {
       });
       expect(servers).not.toHaveProperty('Disconnected Server');
     });
+
+    it('should include tag-match-unique servers with multiple connected instances', async () => {
+      // Arrange: 4-instance server with tag-match-unique strategy, all connected
+      const mockServers = [
+        {
+          name: 'multi-instance-server',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test-command',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              description: 'Multi-instance test server',
+              tags: {}
+            },
+            instances: [
+              {
+                id: 'inst-0',
+                index: 0,
+                enabled: false,
+                args: [],
+                env: {},
+                headers: {},
+                tags: { Env: 'dev' }
+              },
+              {
+                id: 'inst-1',
+                index: 1,
+                enabled: false,
+                args: [],
+                env: {},
+                headers: {},
+                tags: { Env: 'test' }
+              },
+              {
+                id: 'inst-2',
+                index: 2,
+                enabled: false,
+                args: [],
+                env: {},
+                headers: {},
+                tags: { Env: 'prod' }
+              },
+              {
+                id: 'inst-3',
+                index: 3,
+                enabled: false,
+                args: [],
+                env: {},
+                headers: {},
+                tags: { Env: 'staging' }
+              }
+            ],
+            tagDefinitions: [],
+            instanceSelectionStrategy: 'tag-match-unique' as const
+          }
+        }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0, 1, 2, 3]);
+      vi.mocked(mcpConnectionManager.getStatus).mockReturnValue({
+        connected: true,
+        lastCheck: Date.now(),
+        toolsCount: 1,
+        resourcesCount: 0
+      });
+
+      // Act
+      const servers = await hubToolsService.listServers();
+
+      // Assert: tag-match-unique server with multiple connected instances must be included
+      expect(servers).toHaveProperty('multi-instance-server');
+      expect(servers['multi-instance-server']).toBe('Multi-instance test server');
+    });
   });
 
   describe('listToolsInServer', () => {

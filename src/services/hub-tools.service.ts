@@ -130,13 +130,6 @@ export class HubToolsService {
         continue;
       }
 
-      // Use non-strict mode for management operations to avoid tag-match-unique errors
-      const serverInfo = selectBestInstance(server.name, undefined, false);
-      if (!serverInfo) {
-        // Skip servers that can't be selected (e.g., tag-match-unique without tags)
-        continue;
-      }
-
       const description = getServerDescription(server.config, server.name);
       result[server.name] = description;
     }
