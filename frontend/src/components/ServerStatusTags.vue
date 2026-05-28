@@ -29,9 +29,7 @@
         <template v-if="props.server.config.type === 'stdio'">
           - {{ getExecutableName(props.server.config.command) }}</template
         >
-        <template v-else-if="props.server.config.type === 'sse'">
-          - {{ props.server.config.url }}</template
-        >
+        <template v-else-if="props.server.config.type === 'sse'"></template>
         <template v-else-if="props.server.config.type === 'streamable-http'"></template>
       </span>
     </div>
