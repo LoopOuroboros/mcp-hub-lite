@@ -30,7 +30,7 @@
 
 import path from 'path';
 import os from 'os';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { SystemConfigSchema, ServerInstanceSchema, ServerConfigSchema } from './config.schema.js';
 import type {
   SystemConfig,

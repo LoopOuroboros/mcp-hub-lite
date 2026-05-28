@@ -7,8 +7,8 @@
 
 import { configManager } from '@config/config-manager.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import { logger } from '@utils/logger.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
+import { logger } from '@utils/logger/index.js';
 import type { LogModule } from '@utils/logger/log-modules.js';
 
 /**

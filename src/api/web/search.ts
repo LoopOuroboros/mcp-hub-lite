@@ -1,28 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import type { ServerConfig } from '@config/config-manager.js';
-import type { Tool } from '@shared-models/tool.model.js';
 import { MCP_HUB_LITE_SERVER } from '@shared-models/constants.js';
-
-/**
- * Filters tools by aggregatedTools configuration.
- * Only includes tools from servers that have aggregatedTools configured
- * AND the tool is in that list.
- *
- * NOTE: This function is retained for backward compatibility and testing.
- * The /web/search endpoint now uses gateway cache directly.
- */
-export function filterByAggregatedTools(
-  tools: Tool[],
-  getServerConfig: (name: string) => ServerConfig | undefined
-): Tool[] {
-  return tools.filter((tool) => {
-    const serverConfig = getServerConfig(tool.serverName);
-    if (!serverConfig) return false;
-    const aggregatedTools = serverConfig.template?.aggregatedTools;
-    if (!aggregatedTools || aggregatedTools.length === 0) return false;
-    return aggregatedTools.includes(tool.name);
-  });
-}
 
 /**
  * Tool Search API Routes

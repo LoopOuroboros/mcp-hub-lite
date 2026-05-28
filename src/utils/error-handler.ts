@@ -1,5 +1,5 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { logger } from '@utils/logger.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 
 /**

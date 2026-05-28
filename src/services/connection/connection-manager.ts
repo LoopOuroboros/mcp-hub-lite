@@ -8,7 +8,7 @@ import {
   LOG_MODULES,
   formatMcpMessageForLogging,
   logNotificationMessage
-} from '@utils/logger.js';
+} from '@utils/logger/index.js';
 import { getAppVersion } from '@utils/version.js';
 import { getMcpCommDebugSetting } from '@utils/json-utils.js';
 import type { Tool, JsonSchema } from '@shared-models/tool.model.js';

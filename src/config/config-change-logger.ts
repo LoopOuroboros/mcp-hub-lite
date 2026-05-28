@@ -3,7 +3,7 @@
  * Handles comparison and logging of configuration changes.
  */
 
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import type { SystemConfig } from './config.schema.js';
 
 /**

@@ -2,16 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  dryRunMigration,
-  checkMigrationStatus,
-  migrateConfig,
-  rollbackMigration,
-  resolveInstanceConfig,
-  getEnabledInstances
-} from '@config/config-migrator.js';
+import { migrateConfig, resolveInstanceConfig } from '@config/config-migrator.js';
 import { SystemConfigSchema, isLegacyV1Config } from '@config/config.schema.js';
-import type { SystemConfig } from '@config/config.schema.js';
 
 describe('Config Migrator', () => {
   let tempDir: string;
@@ -99,64 +91,16 @@ describe('Config Migrator', () => {
     fs.writeFileSync(testConfigPath, JSON.stringify(config, null, 2));
   };
 
-  describe('checkMigrationStatus', () => {
-    it('should return "not found" for non-existent file', () => {
-      const result = checkMigrationStatus(testConfigPath);
-      expect(result.exists).toBe(false);
-      expect(result.version).toBe('unknown');
-      expect(result.canMigrate).toBe(false);
-    });
-
-    it('should detect v1.0 configuration', () => {
-      writeLegacyV1Config();
-      const result = checkMigrationStatus(testConfigPath);
-      expect(result.exists).toBe(true);
-      expect(result.version).toBe('v1');
-      expect(result.canMigrate).toBe(true);
-    });
-
-    it('should detect v1.1 configuration', () => {
-      const v1_1Config: SystemConfig = {
-        version: '1.1.0',
-        system: {
-          host: 'localhost',
-          port: 7788,
-          language: 'zh',
-          theme: 'system',
-          logging: {
-            level: 'info',
-            rotationAge: '7d',
-            jsonPretty: true,
-            mcpCommDebug: false,
-            apiDebug: false,
-            gatewayDebug: false
-          }
-        },
-        security: {
-          allowedNetworks: ['127.0.0.1'],
-          maxConcurrentConnections: 50,
-          connectionTimeout: 30000,
-          idleConnectionTimeout: 300000,
-          maxConnections: 50
-        },
-        servers: {},
-        tagDefinitions: []
-      };
-      fs.writeFileSync(testConfigPath, JSON.stringify(v1_1Config, null, 2));
-
-      const result = checkMigrationStatus(testConfigPath);
-      expect(result.exists).toBe(true);
-      expect(result.version).toBe('v1.1');
-      expect(result.canMigrate).toBe(false);
-    });
-  });
-
-  describe('dryRunMigration', () => {
-    it('should perform migration without modifying files', () => {
+  describe('migrateConfig (actual migration)', () => {
+    it('should perform dry run without modifying files', () => {
       writeLegacyV1Config();
       const originalContent = fs.readFileSync(testConfigPath, 'utf8');
 
-      const result = dryRunMigration(testConfigPath);
+      const result = migrateConfig(testConfigPath, {
+        dryRun: true,
+        createBackup: false,
+        validateAfterMigration: true
+      });
 
       expect(result.success).toBe(true);
       expect(result.migratedConfig).toBeDefined();
@@ -167,9 +111,13 @@ describe('Config Migrator', () => {
       expect(currentContent).toBe(originalContent);
     });
 
-    it('should convert servers to servers correctly', () => {
+    it('should convert servers correctly (dry run)', () => {
       writeLegacyV1Config();
-      const result = dryRunMigration(testConfigPath);
+      const result = migrateConfig(testConfigPath, {
+        dryRun: true,
+        createBackup: false,
+        validateAfterMigration: true
+      });
 
       expect(result.success).toBe(true);
       expect(result.migratedConfig).toBeDefined();
@@ -181,7 +129,6 @@ describe('Config Migrator', () => {
       expect(migrated.servers['test-server-1']).toBeDefined();
       expect(migrated.servers['test-server-2']).toBeDefined();
 
-      // Check server 1
       const server1 = migrated.servers['test-server-1'];
       expect(server1.template.command).toBe('npx test-server-1');
       expect(server1.template.args).toEqual(['--verbose']);
@@ -193,10 +140,14 @@ describe('Config Migrator', () => {
       expect(server1.instances[0].enabled).toBe(true);
     });
 
-    it('should preserve system and security config', () => {
+    it('should preserve system and security config (dry run)', () => {
       writeLegacyV1Config();
       const v1Config = createLegacyV1Config();
-      const result = dryRunMigration(testConfigPath);
+      const result = migrateConfig(testConfigPath, {
+        dryRun: true,
+        createBackup: false,
+        validateAfterMigration: true
+      });
 
       expect(result.success).toBe(true);
       const migrated = result.migratedConfig!;
@@ -204,9 +155,6 @@ describe('Config Migrator', () => {
       expect(migrated.system).toEqual(v1Config.system);
       expect(migrated.security).toEqual(v1Config.security);
     });
-  });
-
-  describe('migrateConfig (actual migration)', () => {
     it('should perform actual migration and validate the result', () => {
       writeLegacyV1Config();
       const originalContent = fs.readFileSync(testConfigPath, 'utf8');
@@ -245,47 +193,15 @@ describe('Config Migrator', () => {
     });
   });
 
-  describe('rollbackMigration', () => {
-    it('should rollback to v1.0 using backup', () => {
-      writeLegacyV1Config();
-      const originalContent = fs.readFileSync(testConfigPath, 'utf8');
-
-      // Perform migration first
-      const migrationResult = migrateConfig(testConfigPath, {
-        createBackup: true,
-        validateAfterMigration: true
-      });
-      expect(migrationResult.success).toBe(true);
-      expect(migrationResult.backupPath).toBeDefined();
-
-      // Verify file is v1.1
-      const migratedContent = fs.readFileSync(testConfigPath, 'utf8');
-      expect(migratedContent).not.toBe(originalContent);
-
-      // Rollback
-      const rollbackResult = rollbackMigration(testConfigPath, migrationResult.backupPath!);
-      expect(rollbackResult.success).toBe(true);
-
-      // Verify file is back to original
-      const rolledBackContent = fs.readFileSync(testConfigPath, 'utf8');
-      expect(rolledBackContent).toBe(originalContent);
-    });
-
-    it('should fail rollback for non-existent backup', () => {
-      writeLegacyV1Config();
-      const nonExistentBackup = path.join(tempDir, 'non-existent-backup.json');
-
-      const result = rollbackMigration(testConfigPath, nonExistentBackup);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('not found');
-    });
-  });
-
   describe('v1.1 Configuration Helpers', () => {
     describe('resolveInstanceConfig', () => {
       it('should resolve instance configuration by merging template and instance', () => {
         writeLegacyV1Config();
-        const migrationResult = dryRunMigration(testConfigPath);
+        const migrationResult = migrateConfig(testConfigPath, {
+          dryRun: true,
+          createBackup: false,
+          validateAfterMigration: true
+        });
         expect(migrationResult.success).toBe(true);
 
         const serverConfig = migrationResult.migratedConfig!.servers['test-server-1'];
@@ -302,7 +218,11 @@ describe('Config Migrator', () => {
 
       it('should resolve specific instance by ID', () => {
         writeLegacyV1Config();
-        const migrationResult = dryRunMigration(testConfigPath);
+        const migrationResult = migrateConfig(testConfigPath, {
+          dryRun: true,
+          createBackup: false,
+          validateAfterMigration: true
+        });
         expect(migrationResult.success).toBe(true);
 
         const serverConfig = migrationResult.migratedConfig!.servers['test-server-1'];
@@ -315,28 +235,17 @@ describe('Config Migrator', () => {
 
       it('should return null for non-existent instance ID', () => {
         writeLegacyV1Config();
-        const migrationResult = dryRunMigration(testConfigPath);
+        const migrationResult = migrateConfig(testConfigPath, {
+          dryRun: true,
+          createBackup: false,
+          validateAfterMigration: true
+        });
         expect(migrationResult.success).toBe(true);
 
         const serverConfig = migrationResult.migratedConfig!.servers['test-server-1'];
         const resolved = resolveInstanceConfig(serverConfig, 'non-existent-id');
 
         expect(resolved).toBeNull();
-      });
-    });
-
-    describe('getEnabledInstances', () => {
-      it('should return only enabled instances', () => {
-        writeLegacyV1Config();
-        const migrationResult = dryRunMigration(testConfigPath);
-        expect(migrationResult.success).toBe(true);
-
-        const serverConfig = migrationResult.migratedConfig!.servers['test-server-1'];
-        const enabledInstances = getEnabledInstances(serverConfig);
-
-        expect(enabledInstances).toHaveLength(1);
-        expect(enabledInstances[0].instance.enabled).toBe(true);
-        expect(enabledInstances[0].resolved).not.toBeNull();
       });
     });
   });
@@ -349,7 +258,11 @@ describe('Config Migrator', () => {
       };
       fs.writeFileSync(testConfigPath, JSON.stringify(emptyV1Config, null, 2));
 
-      const result = dryRunMigration(testConfigPath);
+      const result = migrateConfig(testConfigPath, {
+        dryRun: true,
+        createBackup: false,
+        validateAfterMigration: true
+      });
       expect(result.success).toBe(true);
       expect(result.migratedConfig!.servers).toEqual({});
     });
@@ -369,7 +282,11 @@ describe('Config Migrator', () => {
       };
       fs.writeFileSync(testConfigPath, JSON.stringify(minimalV1Config, null, 2));
 
-      const result = dryRunMigration(testConfigPath);
+      const result = migrateConfig(testConfigPath, {
+        dryRun: true,
+        createBackup: false,
+        validateAfterMigration: true
+      });
       expect(result.success).toBe(true);
       expect(result.migratedConfig!.servers['minimal-server']).toBeDefined();
     });

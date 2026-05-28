@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { configManager } from '@config/config-manager.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { isIpAllowed } from '@utils/network-security.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';

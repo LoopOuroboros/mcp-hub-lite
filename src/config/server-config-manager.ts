@@ -7,7 +7,7 @@ import { ServerTemplateSchema, ServerInstanceSchema, ServerConfigSchema } from '
 import type { ServerTemplate, ServerInstance, ServerConfig } from './config.schema.js';
 import type { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 import { convertHttpToStreamableHttp } from './type-converter.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { getObjectChanges, logObjectChangesWithTitle } from './config-change-logger.js';
 import { sortServerConfigEnvHeaders } from '@utils/sort-utils.js';
 import { generateInstanceId } from '@utils/instance-id.js';

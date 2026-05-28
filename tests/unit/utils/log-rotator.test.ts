@@ -102,26 +102,7 @@ describe('LogRotator', () => {
     expect(latest).toBeNull();
   });
 
-  it('should maintain backward compatibility with getCurrentLogFilePath', () => {
-    logRotator = new LogRotator(tempLogDir, 'mcp-hub', undefined, () => originalConfig);
-
-    // When no files exist, getCurrentLogFilePath will create a new path (but not the file)
-    const path1 = logRotator.getCurrentLogFilePath();
-    expect(path.basename(path1)).toMatch(/^mcp-hub\.\d{8}_\d{9}\.log$/);
-
-    // Actually create the file on disk
-    fs.writeFileSync(path1, 'test content 1');
-
-    // Create an older file
-    const oldFile = path.join(tempLogDir, 'mcp-hub.20260301_100000000.log');
-    fs.writeFileSync(oldFile, 'test content 2');
-
-    // When files exist, getCurrentLogFilePath should return the latest one
-    const path2 = logRotator.getCurrentLogFilePath();
-    expect(path2).toBe(path1); // Should return the newer one we just created
-  });
-
-  it('should get current log file path with custom base name', () => {
+  it('should create new log file path with custom base name', () => {
     logRotator = new LogRotator(tempLogDir, 'custom-log', undefined, () => originalConfig);
     const currentPath = logRotator.createNewLogFilePath();
 

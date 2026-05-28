@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { runServer } from '@server/runner.js';
 import { buildApp } from '@src/app.js';
 import { configManager } from '@config/config-manager.js';
-import { logger } from '@utils/logger.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { logger } from '@utils/logger/index.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPort, checkPortWithExit } from '@utils/port-checker.js';
 import type { FastifyInstance } from 'fastify';
@@ -19,8 +19,7 @@ vi.mock('@config/config-migrator.js', () => ({
     aggregatedTools: [],
     tags: {},
     enabled: true
-  })),
-  getEnabledInstances: vi.fn()
+  }))
 }));
 
 // Mock all dependencies
@@ -37,7 +36,7 @@ vi.mock('@config/config-manager.js', () => ({
   }
 }));
 
-vi.mock('@utils/logger.js', () => ({
+vi.mock('@utils/logger/index.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -50,7 +49,7 @@ vi.mock('@utils/logger.js', () => ({
   }
 }));
 
-vi.mock('@services/mcp-connection-manager.js', () => ({
+vi.mock('@services/connection/index.js', () => ({
   mcpConnectionManager: {
     connect: vi.fn(() => Promise.resolve(true)),
     disconnectAll: vi.fn()

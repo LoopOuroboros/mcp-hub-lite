@@ -1,6 +1,6 @@
 import { hubManager } from '@services/hub-manager.service.js';
 import { InstanceSelector, TagMatchUniqueError } from './instance-selector.js';
-import { logger } from '@utils/logger.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import type { RequestOptions, ServerInstanceInfo, ValidServer } from './types.js';
 

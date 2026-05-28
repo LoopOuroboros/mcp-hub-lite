@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HubToolsService } from '@services/hub-tools.service.js';
 import { hubManager } from '@services/hub-manager.service.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import type { ServerInstance } from '@config/config-manager.js';
 
 // Mock dependencies
 vi.mock('@services/hub-manager.service.js');
-vi.mock('@services/mcp-connection-manager.js');
+vi.mock('@services/connection/index.js');
 
 describe('HubToolsService', () => {
   let hubToolsService: HubToolsService;

@@ -11,7 +11,7 @@ import {
   simplifyToolsListResponse,
   hasImageContent,
   simplifyImageContent
-} from '@utils/logger.js';
+} from '@utils/logger/index.js';
 import { stringifyForLogging, getMcpCommDebugSetting } from '@utils/json-utils.js';
 
 /**

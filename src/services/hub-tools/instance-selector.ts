@@ -1,6 +1,6 @@
 import type { ServerConfig, ServerInstance } from '@shared-models/server.model.js';
 import { InstanceSelectionStrategy } from '@models/server.model.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 
 /**
  * Error thrown when tag-match-unique instance selection fails.

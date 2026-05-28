@@ -23,7 +23,7 @@
  * // Clean up PID file on shutdown
  * PidManager.removePid();
  */
-import { logger } from '@utils/logger.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { writePidFile, readPidFile, removePidFile, pidFileExists } from './file.js';
 import type { PidFileOptions } from './types.js';

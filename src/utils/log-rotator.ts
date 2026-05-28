@@ -186,25 +186,6 @@ export class LogRotator {
   }
 
   /**
-   * Gets the current log file path (backward compatibility).
-   *
-   * This method is maintained for backward compatibility. It first tries to get
-   * the latest existing log file. If none exists, it creates a new one.
-   *
-   * @returns {string} The absolute file path for the current log file.
-   * @deprecated Use createNewLogFilePath() or getLatestLogFilePath() instead
-   * @example
-   * ```typescript
-   * const rotator = new LogRotator('/var/log/mcp-hub', 'mcp-hub');
-   * const logPath = rotator.getCurrentLogFilePath();
-   * ```
-   */
-  public getCurrentLogFilePath(): string {
-    const latest = this.getLatestLogFilePath();
-    return latest ?? this.createNewLogFilePath();
-  }
-
-  /**
    * Performs log rotation by cleaning up old log files beyond the retention period.
    *
    * This method scans the configured log directory for files matching the pattern

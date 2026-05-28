@@ -10,8 +10,8 @@ import type {
   ServerRuntimeConfig,
   InstanceSelectionStrategy
 } from '@shared-models/server.model.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
-import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
+import { mcpConnectionManager } from './connection/index.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 
 /**

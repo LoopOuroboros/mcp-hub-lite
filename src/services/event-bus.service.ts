@@ -23,7 +23,7 @@
  * are unsubscribed.
  */
 
-import type { EventData } from '@models/event.model.js';
+type EventData = unknown;
 
 /**
  * Interface representing a published event with its type and associated data.

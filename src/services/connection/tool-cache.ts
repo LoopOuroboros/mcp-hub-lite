@@ -1,4 +1,4 @@
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import type { Tool } from '@shared-models/tool.model.js';
 import { getCompositeKey } from '@utils/composite-key.js';
 import { normalizeToolName } from '@utils/name-converter.js';

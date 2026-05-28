@@ -1,8 +1,8 @@
 import { buildApp } from '@src/app.js';
 import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
 import { PidManager } from '@pid/manager.js';
 import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';
 

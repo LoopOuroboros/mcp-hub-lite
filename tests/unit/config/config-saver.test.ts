@@ -6,7 +6,7 @@ import path from 'path';
 // Mock fs module
 vi.mock('fs');
 vi.mock('path');
-vi.mock('@utils/logger.js', () => ({
+vi.mock('@utils/logger/index.js', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn()

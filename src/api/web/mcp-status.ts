@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import type { ServerStatus } from '@services/mcp-connection-manager.js';
+import type { ServerStatus } from '@services/connection/index.js';
 import { hubManager } from '@services/hub-manager.service.js';
-import { mcpConnectionManager } from '@services/mcp-connection-manager.js';
-import { logger } from '@utils/logger.js';
+import { mcpConnectionManager } from '@services/connection/index.js';
+import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { resolveInstanceConfig } from '@config/config-migrator.js';
 

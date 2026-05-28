@@ -1,10 +1,10 @@
 import { hubManager } from './hub-manager.service.js';
-import { mcpConnectionManager } from './mcp-connection-manager.js';
+import { mcpConnectionManager } from './connection/index.js';
 import type { Tool, ToolSummary } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
 import { generateGatewayToolsList } from './gateway/tool-list-generator.js';
-import { logger, LOG_MODULES } from '@utils/logger.js';
+import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { normalizeToolName } from '@utils/name-converter.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
