@@ -357,7 +357,10 @@ export class McpConnectionManager {
       transport.send = async (message, options) => {
         try {
           const logMessage = formatMcpMessageForLogging(message);
-          logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.CONNECTION_MANAGER);
+          logger.debug(
+            `MCP message sent to [${compositeKey}]: ${logMessage}`,
+            LOG_MODULES.CONNECTION_MANAGER
+          );
         } catch {
           logger.debug(
             `MCP message sent: [Error formatting response]`,
