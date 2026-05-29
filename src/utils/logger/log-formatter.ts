@@ -7,6 +7,7 @@ import type { LogLevel } from '@shared-types/common.types.js';
 import { stringifyForLogging } from '../json-utils.js';
 import type { LogContext } from './log-context.js';
 import { getColorCodeForLevel, getResetColor, COLORS } from './log-colors.js';
+import { getShowTraceContextSetting } from '../json-utils.js';
 
 // PID formatting configuration
 const PID_WIDTH = 8;
@@ -322,12 +323,17 @@ export function createColoredLogMessage(
 
   let result = `${timestampColor}[${timestamp}]${resetColor} ${levelColor}[${formattedLevel}]${resetColor} ${pidColor}[${formattedPid}]${resetColor}`;
 
-  if (context?.traceId) {
-    result += ` ${traceColor}[TID:${context.traceId}]${resetColor}`;
-  }
+  if (getShowTraceContextSetting()) {
+    if (context?.sessionId) {
+      result += ` ${traceColor}[SSN:${context.sessionId}]${resetColor}`;
+    }
+    if (context?.traceId) {
+      result += ` ${traceColor}[TID:${context.traceId}]${resetColor}`;
+    }
 
-  if (context?.spanId) {
-    result += ` ${traceColor}[SID:${context.spanId}]${resetColor}`;
+    if (context?.spanId) {
+      result += ` ${traceColor}[SID:${context.spanId}]${resetColor}`;
+    }
   }
 
   result += ` ${serverColor}[${actualServerName}]${resetColor}`;
@@ -360,12 +366,17 @@ export function createLogMessage(level: LogLevel, message: string, context?: Log
 
   let result = `[${timestamp}] [${formattedLevel}] [PID:${pidStr}]`;
 
-  if (context?.traceId) {
-    result += ` [TID:${context.traceId}]`;
-  }
+  if (getShowTraceContextSetting()) {
+    if (context?.sessionId) {
+      result += ` [SSN:${context.sessionId}]`;
+    }
+    if (context?.traceId) {
+      result += ` [TID:${context.traceId}]`;
+    }
 
-  if (context?.spanId) {
-    result += ` [SID:${context.spanId}]`;
+    if (context?.spanId) {
+      result += ` [SID:${context.spanId}]`;
+    }
   }
 
   result += ` [${serverIdentifier}]`;
@@ -402,7 +413,10 @@ export function formatError(error: unknown): string {
         typeof element === 'object' &&
         element !== null &&
         !Array.isArray(element) &&
-        ('module' in element || 'traceId' in element || 'spanId' in element)
+        ('module' in element ||
+          'traceId' in element ||
+          'spanId' in element ||
+          'sessionId' in element)
       ) {
         return '';
       }

@@ -108,7 +108,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -156,7 +157,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -221,7 +223,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -288,7 +291,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -417,7 +421,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -480,7 +485,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -539,7 +545,8 @@ describe('Server Runner', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {

@@ -217,12 +217,15 @@ type ConfigGetter = () => {
 
 ### RequestContext (`request-context.ts`)
 
-**职责**: 请求上下文处理
+**职责**: 请求上下文处理，基于 AsyncLocalStorage 实现
 
 **主要方法**:
 
-- 提取和管理请求上下文
-- 会话 ID 提取和生成
+- `runWithRequestContext(context, fn)` - 在 ALS 上下文中执行异步函数
+- `getSessionIdFromContext()` - 从 ALS 读取当前 sessionId
+- `getTraceIdFromContext()` - 从 ALS 读取当前 traceId
+
+**使用方式**: Gateway 入口调用 `runWithRequestContext({ sessionId, traceId }, handler)`，Logger 内部自动读取并注入日志上下文。
 
 ### ErrorHandler (`error-handler.ts`)
 

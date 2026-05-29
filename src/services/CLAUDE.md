@@ -310,16 +310,16 @@ enum ConnectionStatus {
 
 ## 相关文件清单
 
-| 文件路径                               | 描述                 |
-| -------------------------------------- | -------------------- |
-| `services/hub-manager.service.ts`      | 服务器管理器         |
-| `services/gateway.service.ts`          | Gateway 网关服务     |
+| 文件路径                               | 描述                          |
+| -------------------------------------- | ----------------------------- |
+| `services/hub-manager.service.ts`      | 服务器管理器                  |
+| `services/gateway.service.ts`          | Gateway 网关服务              |
 | `services/gateway/global-transport.ts` | Transport 工具函数 + 会话管理 |
-| `services/mcp-connection-manager.ts`   | 连接管理器           |
-| `services/hub-tools.service.ts`        | 系统工具服务         |
-| `services/log-storage.service.ts`      | 日志存储服务         |
-| `services/event-bus.service.ts`        | 事件总线服务         |
-| `services/system-tool-handler.ts`      | 系统工具处理器       |
-| `services/gateway/`                    | Gateway 子模块       |
-| `services/connection/`                 | Connection 子模块    |
-| `services/hub-tools/`                  | Hub Tools 子模块     |
+| `services/mcp-connection-manager.ts`   | 连接管理器                    |
+| `services/hub-tools.service.ts`        | 系统工具服务                  |
+| `services/log-storage.service.ts`      | 日志存储服务                  |
+| `services/event-bus.service.ts`        | 事件总线服务                  |
+| `services/system-tool-handler.ts`      | 系统工具处理器                |
+| `services/gateway/`                    | Gateway 子模块                |
+| `services/connection/`                 | Connection 子模块             |
+| `services/hub-tools/`                  | Hub Tools 子模块              |

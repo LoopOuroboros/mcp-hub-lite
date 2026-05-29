@@ -101,6 +101,7 @@ type ConfigGetter = () => {
       mcpCommDebug: boolean;
       apiDebug: boolean;
       gatewayDebug: boolean;
+      showTraceContext?: boolean;
     };
   };
 };
@@ -222,6 +223,25 @@ export function getGatewayDebugSetting(): boolean {
     }
   }
   return getDefaultForDevMode(false);
+}
+
+/**
+ * Get the showTraceContext configuration value.
+ * Controls whether [SSN]/[TID]/[SID] trace context markers appear in log output.
+ * Defaults to true.
+ *
+ * @returns boolean indicating whether to show trace context in logs
+ */
+export function getShowTraceContextSetting(): boolean {
+  if (_configGetter) {
+    try {
+      const config = _configGetter();
+      return config.system.logging.showTraceContext ?? true;
+    } catch {
+      // Fall through to default if config getter fails
+    }
+  }
+  return true; // default enabled
 }
 
 /**

@@ -262,7 +262,8 @@ describe('Config Schema (v1.1)', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {

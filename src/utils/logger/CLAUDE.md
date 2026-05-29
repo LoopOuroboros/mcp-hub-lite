@@ -107,9 +107,10 @@ logger/
 
 **主要功能**:
 
-- 管理日志上下文信息（traceId、spanId、sessionId 等）
-- 提供上下文传递和继承机制
-- 支持异步上下文存储
+- 管理日志上下文信息（sessionId、traceId、spanId 等）
+- 支持通过 AsyncLocalStorage 自动注入 sessionId 和 traceId
+- `showTraceContext` 配置开关控制 `[SSN]`/`[TID]`/`[SID]` 是否输出
+- 空值显示为 `[SSN:-]` / `[TID:-]` 而非隐藏
 
 ### Log Modules (`log-modules.ts`)
 
@@ -180,9 +181,9 @@ logger.serverLog('info', 'my-server', 'Line 1\nLine 2\nLine 3');
 ```
 logger/
 ├── index.ts          # 无依赖
-├── logger.ts         # 无依赖
+├── logger.ts         # 依赖 request-context.ts、json-utils.ts
 ├── dev-logger.ts     # 依赖 logger.ts
-├── log-formatter.ts  # 无依赖
+├── log-formatter.ts  # 依赖 json-utils.ts
 ├── log-output.ts     # 无依赖
 ├── log-colors.ts     # 无依赖
 ├── log-context.ts    # 无依赖

@@ -93,6 +93,7 @@ export default {
     mcpCommDebug: 'Enable MCP communication debug',
     apiDebug: 'Enable API debug',
     gatewayDebug: 'Enable Gateway debug',
+    showTraceContext: 'Show trace context [SSN/TID/SID]',
     security: 'Security',
     allowedNetworks: 'Allowed Networks',
     allowedNetworksHint: 'Enter IP CIDR (e.g., 192.168.1.0/24). Press Enter to add.',

@@ -222,7 +222,8 @@ export const LoggingConfigSchema = z
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
     apiDebug: z.boolean().default(false),
-    gatewayDebug: z.boolean().default(false)
+    gatewayDebug: z.boolean().default(false),
+    showTraceContext: z.boolean().default(true)
   })
   .default({
     level: 'info',
@@ -230,7 +231,8 @@ export const LoggingConfigSchema = z
     jsonPretty: true,
     mcpCommDebug: false,
     apiDebug: false,
-    gatewayDebug: false
+    gatewayDebug: false,
+    showTraceContext: true
   });
 
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
@@ -314,7 +316,8 @@ export const SystemConfigSchema = z.object({
         jsonPretty: true,
         mcpCommDebug: false,
         apiDebug: false,
-        gatewayDebug: false
+        gatewayDebug: false,
+        showTraceContext: true
       },
       startup: {
         startupDelay: 3000,

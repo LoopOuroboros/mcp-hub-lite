@@ -128,6 +128,10 @@
                   <el-form-item :label="$t('settings.gatewayDebug')">
                     <el-switch v-model="config.system.logging.gatewayDebug" />
                   </el-form-item>
+
+                  <el-form-item :label="$t('settings.showTraceContext')">
+                    <el-switch v-model="config.system.logging.showTraceContext" />
+                  </el-form-item>
                 </template>
               </el-form>
             </div>
