@@ -21,7 +21,8 @@ api/
 │   ├── config.ts            # 配置管理 API
 │   ├── logs.ts             # 日志 API
 │   ├── hub-tools.ts         # 系统工具 API
-│   └── resources.ts          # 资源 API
+│   ├── resources.ts          # 资源 API
+│   └── sessions.ts          # 会话查询 API
 └── ws/                      # WebSocket 路由
     ├── events.ts           # WebSocket 事件处理
     └── ws-handler.ts        # WebSocket 处理器
@@ -172,6 +173,12 @@ api/
 | ---------------- | ---- | ------------ |
 | `/web/resources` | GET  | 获取资源列表 |
 
+### 会话查询 API (`api/web/sessions.ts`)
+
+| 路径            | 方法 | 描述                      |
+| --------------- | ---- | ------------------------- |
+| `/web/sessions` | GET  | 获取所有活跃 MCP 会话信息 |
+
 ### WebSocket 接口 (`api/ws/events.ts`, `api/ws/ws-handler.ts`)
 
 **功能**:
@@ -242,5 +249,6 @@ interface ServerStatus {
 | `api/web/logs.ts`       | 日志 API                    |
 | `api/web/hub-tools.ts`  | 系统工具 API                |
 | `api/web/resources.ts`  | 资源 API                    |
+| `api/web/sessions.ts`   | 会话查询 API                |
 | `api/ws/events.ts`      | WebSocket 事件处理          |
 | `api/ws/ws-handler.ts`  | WebSocket 处理器            |

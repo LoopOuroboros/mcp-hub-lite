@@ -128,9 +128,13 @@ interface SessionState {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
-  createdAt: number;
-  lastAccessedAt: number;
-  metadata: Record<string, unknown>;
+  protocolVersion?: string;
+  createdByMethod?: string;
+  lastMethod?: string;
+  createdAt: string;
+  lastAccessedAt: string;
+  isClosing: boolean;
+  activeSseCount: number;
 }
 ```
 

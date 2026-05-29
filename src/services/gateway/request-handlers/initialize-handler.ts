@@ -4,6 +4,7 @@ import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { getGatewayDebugSetting, stringifyForLogging } from '@utils/json-utils.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import { getAppVersion, getProtocolVersion } from '@utils/version.js';
+import { sessionManager } from '@services/gateway/session-manager.js';
 import {
   InitializedNotificationSchema,
   InitializeRequestSchema,
@@ -21,6 +22,12 @@ export function registerInitializeHandlers(server: McpServer): void {
       const { name, version } = request.params.clientInfo;
       const protocolVersion = request.params?.protocolVersion || getProtocolVersion();
       const clientCapabilities = request.params?.capabilities as ClientCapabilities | undefined;
+
+      sessionManager.storePendingClientMetadata(server, {
+        clientName: name,
+        clientVersion: version,
+        protocolVersion
+      });
 
       if (getGatewayDebugSetting()) {
         logger.debug(

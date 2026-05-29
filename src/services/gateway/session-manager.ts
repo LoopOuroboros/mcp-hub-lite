@@ -19,6 +19,11 @@ interface SessionState {
   lastAccessedAt: number;
   isClosing: boolean;
   activeSseCount: number;
+  clientName?: string;
+  clientVersion?: string;
+  protocolVersion?: string;
+  createdByMethod?: string;
+  lastMethod?: string;
 }
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -28,10 +33,18 @@ export class SessionManager {
   private sessions = new Map<string, SessionState>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
+  private pendingClientMetadata = new WeakMap<
+    McpServer,
+    { clientName: string; clientVersion: string; protocolVersion: string }
+  >();
+
   /**
    * Registers a newly created session.
    */
   addSession(sessionId: string, transport: StreamableHTTPServerTransport, server: McpServer): void {
+    const pendingMeta = this.pendingClientMetadata.get(server);
+    this.pendingClientMetadata.delete(server);
+
     this.sessions.set(sessionId, {
       sessionId,
       transport,
@@ -39,7 +52,12 @@ export class SessionManager {
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
       isClosing: false,
-      activeSseCount: 0
+      activeSseCount: 0,
+      clientName: pendingMeta?.clientName,
+      clientVersion: pendingMeta?.clientVersion,
+      protocolVersion: pendingMeta?.protocolVersion,
+      createdByMethod: 'POST',
+      lastMethod: 'POST'
     });
     if (getGatewayDebugSetting()) {
       logger.debug(
@@ -217,6 +235,59 @@ export class SessionManager {
   /** Returns the current session count (for diagnostics). */
   get sessionCount(): number {
     return this.sessions.size;
+  }
+
+  /**
+   * Stores client metadata against a McpServer instance so that
+   * addSession() can consume it when the session is registered later.
+   */
+  storePendingClientMetadata(
+    server: McpServer,
+    metadata: { clientName: string; clientVersion: string; protocolVersion: string }
+  ): void {
+    this.pendingClientMetadata.set(server, metadata);
+  }
+
+  /**
+   * Returns metadata for all active sessions. Does not expose internal
+   * transport or server references.
+   */
+  getAllSessions(): Array<{
+    sessionId: string;
+    clientName?: string;
+    clientVersion?: string;
+    protocolVersion?: string;
+    createdByMethod?: string;
+    lastMethod?: string;
+    createdAt: string;
+    lastAccessedAt: string;
+    isClosing: boolean;
+    activeSseCount: number;
+  }> {
+    const result: ReturnType<SessionManager['getAllSessions']> = [];
+    for (const state of this.sessions.values()) {
+      result.push({
+        sessionId: state.sessionId,
+        clientName: state.clientName,
+        clientVersion: state.clientVersion,
+        protocolVersion: state.protocolVersion,
+        createdByMethod: state.createdByMethod,
+        lastMethod: state.lastMethod,
+        createdAt: new Date(state.createdAt).toLocaleString(),
+        lastAccessedAt: new Date(state.lastAccessedAt).toLocaleString(),
+        isClosing: state.isClosing,
+        activeSseCount: state.activeSseCount
+      });
+    }
+    return result;
+  }
+
+  /** Updates the last HTTP method seen for a session. */
+  updateSessionMethod(sessionId: string, method: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.lastMethod = method;
+    }
   }
 }
 

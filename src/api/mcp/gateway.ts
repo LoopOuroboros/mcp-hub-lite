@@ -85,6 +85,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
               sendError(reply, 404, -32001, 'Session not found');
               return;
             }
+            sessionManager.updateSessionMethod(sessionId, request.method);
             // Track SSE stream to prevent stale cleanup while GET is active
             if (request.method === 'GET') {
               sessionManager.markSseOpened(sessionId);
@@ -200,6 +201,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         }
 
         try {
+          sessionManager.updateSessionMethod(sessionId, request.method);
           injectTransportTrace(session.transport, sessionId, traceId);
           await session.transport.handleRequest(
             request.raw,
