@@ -85,6 +85,7 @@ services/
 - 工具名称前缀化（服务器名称\_工具名称）
 - 工具调用路由到对应的服务器
 - MCP 错误码映射
+- **Notification Push (v1.3.1+)**: 订阅 EventBus 事件并调用 SDK 的 `sendToolListChanged()` / `sendResourceListChanged()` 推送 MCP 通知到 SSE 客户端
 
 **依赖**:
 

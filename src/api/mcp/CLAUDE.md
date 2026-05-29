@@ -22,11 +22,12 @@ mcp/
 
 **协议支持**: HTTP-Stream (通过 EventSource 实现)
 
-**架构**: **Per-Request Transport 模式**（v1.1.0+）
+**架构**: **Stateful Session Transport 模式**（v1.3.1+）
 
-- 每个 HTTP 请求创建独立的 transport/server 实例
-- 确保多客户端连接状态隔离
-- 解决 "Failed to reconnect to mcp-hub-lite" 连接错误
+- 每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对
+- SDK stateful 模式：`sessionIdGenerator` 生成 `mcp-session-id`，客户端后续请求携带该 header
+- `all('/mcp')` 统一路由：无 sessionId 的 POST 创建新会话，有 sessionId 的路由到已有会话
+- `SessionManager` 管理会话生命周期、陈旧清理和通知广播
 
 **支持的操作**:
 

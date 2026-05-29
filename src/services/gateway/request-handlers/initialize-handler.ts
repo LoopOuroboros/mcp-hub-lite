@@ -43,11 +43,13 @@ export function registerInitializeHandlers(server: McpServer): void {
       capabilities: {
         tools: {
           list: true,
-          execute: true
+          execute: true,
+          listChanged: true
         },
         resources: {
           list: true,
-          read: true
+          read: true,
+          listChanged: true
         },
         logging: {},
         experimental: {}

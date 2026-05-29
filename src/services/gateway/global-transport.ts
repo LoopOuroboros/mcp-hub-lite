@@ -1,12 +1,12 @@
 /**
- * MCP transport factory for per-request transport instances.
+ * MCP transport utilities — stateful session-based mode.
  *
- * This module provides a factory function to create isolated MCP transport and server instances
- * for each HTTP request, ensuring proper state isolation between concurrent clients.
+ * Each client session owns a StreamableHTTPServerTransport + McpServer pair.
+ * SDK's stateful mode (sessionIdGenerator) handles SSE stream setup and session management.
+ * Notifications are broadcast via SessionManager across all active sessions.
  */
 
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { gateway } from './gateway.service.js';
+import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import {
   stringifyForLogging,
@@ -16,37 +16,26 @@ import {
 import { formatMcpMessageForLogging, logNotificationMessage } from '@utils/logger/log-output.js';
 
 /**
- * Creates a new MCP transport and server instance for a single request session.
- * Each call returns isolated instances that should be cleaned up after the request completes.
- *
- * @returns {Promise<{ transport: StreamableHTTPServerTransport, server: import('@modelcontextprotocol/sdk/server/mcp.js').McpServer }>}
- *          Object containing the transport and server instances
+ * Sets up debug logging on a transport instance.
  */
-export async function createSessionTransport() {
-  const transport = new StreamableHTTPServerTransport();
-  const server = gateway.createConnectionServer();
-
-  // Set up message logging (use empty string for sessionId in per-request mode)
+export function setupTransportLogging(transport: StreamableHTTPServerTransport): void {
   transport.onmessage = (message) => {
     try {
       if (getMcpCommDebugSetting()) {
         logger.debug(
-          `Session transport onmessage called with: ${stringifyForLogging(message)}`,
+          `Transport onmessage: ${stringifyForLogging(message)}`,
           LOG_MODULES.COMMUNICATION
         );
         const logMessage = formatMcpMessageForLogging(message);
         logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       }
-      logNotificationMessage(message, ''); // Empty sessionId for per-request
+      logNotificationMessage(message, '');
       if (getGatewayDebugSetting()) {
-        logger.debug(`Session transport onmessage completed successfully`, LOG_MODULES.GATEWAY);
+        logger.debug('Transport onmessage completed', LOG_MODULES.GATEWAY);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(
-        `Error in session transport onmessage handler: ${errorMessage}`,
-        LOG_MODULES.GATEWAY
-      );
+      logger.error(`Error in transport onmessage: ${errorMessage}`, LOG_MODULES.GATEWAY);
       logger.error(
         `Message that caused error: ${stringifyForLogging(message)}`,
         LOG_MODULES.GATEWAY
@@ -54,7 +43,6 @@ export async function createSessionTransport() {
     }
   };
 
-  // Wrap send method for debug logging
   if (getMcpCommDebugSetting()) {
     const originalSend = transport.send;
     transport.send = async (message, options) => {
@@ -62,33 +50,20 @@ export async function createSessionTransport() {
         const logMessage = formatMcpMessageForLogging(message);
         logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
       } catch {
-        logger.debug(`MCP message sent: [Error formatting response]`, LOG_MODULES.COMMUNICATION);
+        logger.debug('MCP message sent: [Error formatting response]', LOG_MODULES.COMMUNICATION);
       }
       return await originalSend.call(transport, message, options);
     };
   }
+}
 
-  // Connect server to transport
+/**
+ * Initializes the global transport layer.
+ * With stateful session-based transport, this is a no-op.
+ * Kept for backward compatibility with app.ts startup sequence.
+ */
+export function initGlobalTransport(): void {
   if (getGatewayDebugSetting()) {
-    logger.debug('About to connect session server to transport', LOG_MODULES.GATEWAY);
+    logger.debug('Global transport layer initialized (stateful session mode)', LOG_MODULES.GATEWAY);
   }
-  try {
-    await server.connect(transport);
-    if (getGatewayDebugSetting()) {
-      logger.debug('MCP session transport initialized (per-request mode)', LOG_MODULES.GATEWAY);
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(
-      `Failed to connect session server to transport: ${errorMessage}`,
-      LOG_MODULES.GATEWAY
-    );
-    logger.error(
-      `Transport connection error details: ${stringifyForLogging(error)}`,
-      LOG_MODULES.GATEWAY
-    );
-    throw error;
-  }
-
-  return { transport, server };
 }

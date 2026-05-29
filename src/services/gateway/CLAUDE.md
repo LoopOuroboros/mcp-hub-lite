@@ -139,3 +139,24 @@ interface ToolMapEntry {
 | `tool-list-generator.ts`                   | 工具列表生成器        |
 | `log-formatter.ts`                         | 日志格式化工具        |
 | `types.ts`                                 | 类型定义              |
+
+## MCP Notification Push (v1.3.1+)
+
+网关支持向 MCP 客户端推送 `notifications/resources/list_changed` 和 `notifications/tools/list_changed` 通知信号（纯信号不含数据，客户端收到后自行重新请求完整列表）。
+
+### 架构变更
+
+- **Stateful Session Transport**: 采用 SDK 标准的 stateful 模式。每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对，通过 `mcp-session-id` header 标识。SDK 负责会话 ID 生成、SSE 流建立和通知格式化。
+- **SessionManager**: 管理所有活跃会话（`Map<sessionId, SessionState>`），支持会话查找、广播通知、陈旧会话清理和服务关闭。
+- **`all('/mcp')`**: Fastify 统一路由。无 `mcp-session-id` 的 POST 创建新会话；有 sessionId 的 POST/GET/DELETE 路由到已有会话 transport。
+
+### 通知触发条件
+
+网关聚合资源分两类（见 `resource-generator.ts`）：
+
+- **Category 1** `hub://servers/{name}` — 服务器元数据，按 ServerName 唯一
+- **Category 2** `hub://servers/{name}/{idx}/{mcpPath}` — 实例级 MCP 资源转发，每实例唯一路径
+
+工具按 ServerName 聚合（同 ServerName 多实例工具去重），实例数在 0↔1 边界之外的变化不改变工具列表。
+
+事件映射详见 `gateway.service.ts` 中 `initNotifications()` 方法。

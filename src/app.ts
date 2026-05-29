@@ -6,6 +6,7 @@ import { configManager } from '@config/config-manager.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { isIpAllowed } from '@utils/network-security.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
+import { initGlobalTransport } from '@services/gateway/global-transport.js';
 
 // MCP Protocol Routes
 import { mcpGatewayRoutes } from '@api/mcp/gateway.js';
@@ -179,6 +180,9 @@ export async function buildApp() {
     }
     done();
   });
+
+  // Initialize singleton MCP transport before registering routes
+  await initGlobalTransport();
 
   // Register API routes first (before static files)
   fastify.register(mcpGatewayRoutes);
