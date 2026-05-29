@@ -23,6 +23,20 @@ import { runWithRequestContext } from '@utils/request-context.js';
 
 const MCP_SESSION_ID = 'mcp-session-id';
 
+/**
+ * Inject trace context into transport so that deferred send/onmessage wrappers
+ * can read it when ALS context is lost (MCP SDK defers send() calls internally).
+ */
+function injectTransportTrace(
+  transport: StreamableHTTPServerTransport,
+  sessionId: string | undefined,
+  traceId: string
+): void {
+  const ctx = transport as unknown as Record<string, unknown>;
+  ctx._traceSessionId = sessionId || undefined;
+  ctx._traceId = traceId;
+}
+
 export async function mcpGatewayRoutes(fastify: FastifyInstance) {
   const logRequest = (request: FastifyRequest<{ Body: unknown }>) => {
     if (getMcpCommDebugSetting()) {
@@ -75,6 +89,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
             if (request.method === 'GET') {
               sessionManager.markSseOpened(sessionId);
             }
+            injectTransportTrace(session.transport, sessionId, traceId);
             await session.transport.handleRequest(
               request.raw,
               reply.raw,
@@ -110,6 +125,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
           const server = gateway.createConnectionServer();
           await server.connect(transport);
 
+          injectTransportTrace(transport, sessionId || undefined, traceId);
           await transport.handleRequest(request.raw, reply.raw, request.body);
 
           // After handleRequest completes, sessionId is available if init succeeded
@@ -184,6 +200,7 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         }
 
         try {
+          injectTransportTrace(session.transport, sessionId, traceId);
           await session.transport.handleRequest(
             request.raw,
             reply.raw,

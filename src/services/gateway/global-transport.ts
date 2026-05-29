@@ -16,18 +16,29 @@ import {
 import { formatMcpMessageForLogging, logNotificationMessage } from '@utils/logger/log-output.js';
 
 /**
+ * Build log options from trace context stored on transport.
+ * Trace context is injected by gateway.ts before handleRequest() as an ALS fallback
+ * because the MCP SDK defers send()/onmessage calls and ALS context is lost.
+ */
+function traceLogOpts(transport: StreamableHTTPServerTransport): Record<string, unknown> {
+  const ctx = transport as unknown as Record<string, unknown>;
+  const sid = ctx._traceSessionId as string | undefined;
+  const tid = ctx._traceId as string | undefined;
+  if (!sid && !tid) return LOG_MODULES.COMMUNICATION;
+  return { module: 'Communication', ...(sid && { sessionId: sid }), ...(tid && { traceId: tid }) };
+}
+
+/**
  * Sets up debug logging on a transport instance.
  */
 export function setupTransportLogging(transport: StreamableHTTPServerTransport): void {
   transport.onmessage = (message) => {
     try {
       if (getMcpCommDebugSetting()) {
-        logger.debug(
-          `Transport onmessage: ${stringifyForLogging(message)}`,
-          LOG_MODULES.COMMUNICATION
-        );
+        const opts = traceLogOpts(transport);
+        logger.debug(`Transport onmessage: ${stringifyForLogging(message)}`, opts);
         const logMessage = formatMcpMessageForLogging(message);
-        logger.debug(`MCP message received: ${logMessage}`, LOG_MODULES.COMMUNICATION);
+        logger.debug(`MCP message received: ${logMessage}`, opts);
       }
       logNotificationMessage(message, '');
       if (getGatewayDebugSetting()) {
@@ -48,7 +59,7 @@ export function setupTransportLogging(transport: StreamableHTTPServerTransport):
     transport.send = async (message, options) => {
       try {
         const logMessage = formatMcpMessageForLogging(message);
-        logger.debug(`MCP message sent: ${logMessage}`, LOG_MODULES.COMMUNICATION);
+        logger.debug(`MCP message sent: ${logMessage}`, traceLogOpts(transport));
       } catch {
         logger.debug('MCP message sent: [Error formatting response]', LOG_MODULES.COMMUNICATION);
       }

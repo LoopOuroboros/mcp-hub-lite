@@ -375,11 +375,11 @@ export function simplifyToolsListResponse(data: string): string | null {
             }
 
             if (toolsCount > 0 && resourcesCount > 0) {
-              return `Returned ${toolsCount} tools and ${resourcesCount} resources`;
+              return `Capabilities: tools ${toolsCount} entries, resources ${resourcesCount} entries`;
             } else if (toolsCount > 0) {
-              return `Returned ${toolsCount} tools`;
+              return `Capabilities: tools ${toolsCount} entries`;
             } else if (resourcesCount > 0) {
-              return `Returned ${resourcesCount} resources`;
+              return `Capabilities: resources ${resourcesCount} entries`;
             }
             // No tools or resources, don't simplify
             return null;
