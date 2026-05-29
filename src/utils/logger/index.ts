@@ -29,6 +29,8 @@ export {
   simplifyToolsListResponse,
   hasImageContent,
   simplifyImageContent,
+  hasDataUriImage,
+  simplifyDataUriImages,
   formatMcpMessageForLogging,
   isNotificationMessage,
   logNotificationMessage
