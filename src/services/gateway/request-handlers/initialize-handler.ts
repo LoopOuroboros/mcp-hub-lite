@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
-import { getGatewayDebugSetting } from '@utils/json-utils.js';
+import { getGatewayDebugSetting, stringifyForLogging } from '@utils/json-utils.js';
 import { MCP_HUB_LITE_SERVER } from '@models/system-tools.constants.js';
 import { getAppVersion, getProtocolVersion } from '@utils/version.js';
 import {
@@ -65,7 +65,7 @@ export function registerInitializeHandlers(server: McpServer): void {
     if (getGatewayDebugSetting()) {
       logger.debug('Received initialized notification from client', LOG_MODULES.GATEWAY);
       logger.debug(
-        `Initialized notification details: ${JSON.stringify(notification)}`,
+        `Initialized notification details: ${stringifyForLogging(notification)}`,
         LOG_MODULES.GATEWAY
       );
     }
@@ -81,7 +81,7 @@ export function registerInitializeHandlers(server: McpServer): void {
         LOG_MODULES.GATEWAY
       );
       logger.error(
-        `Notification that caused error: ${JSON.stringify(notification)}`,
+        `Notification that caused error: ${stringifyForLogging(notification)}`,
         LOG_MODULES.GATEWAY
       );
       throw error; // Re-throw to see if this is the source of the problem
