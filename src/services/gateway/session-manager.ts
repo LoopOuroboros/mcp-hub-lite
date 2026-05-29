@@ -121,27 +121,40 @@ export class SessionManager {
     }
   }
 
+  private pendingBroadcasts = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly BROADCAST_DEBOUNCE_MS = 3000;
+
   /**
    * Broadcasts a notification to all active sessions.
+   * Debounced: same-type notifications within BROADCAST_DEBOUNCE_MS are coalesced.
    * @param method - 'tools' for sendToolListChanged, 'resources' for sendResourceListChanged
    */
   broadcastNotification(method: 'tools' | 'resources'): void {
-    if (this.sessions.size === 0) return;
-    for (const [sessionId, state] of this.sessions) {
-      if (state.isClosing) continue;
-      try {
-        if (method === 'tools') {
-          state.server.sendToolListChanged();
-        } else {
-          state.server.sendResourceListChanged();
+    // Skip if a debounce timer for this method type is already pending
+    if (this.pendingBroadcasts.has(method)) return;
+
+    this.pendingBroadcasts.set(
+      method,
+      setTimeout(() => {
+        this.pendingBroadcasts.delete(method);
+        if (this.sessions.size === 0) return;
+        for (const [sessionId, state] of this.sessions) {
+          if (state.isClosing) continue;
+          try {
+            if (method === 'tools') {
+              state.server.sendToolListChanged();
+            } else {
+              state.server.sendResourceListChanged();
+            }
+          } catch (error) {
+            logger.debug(
+              `Failed to broadcast ${method} notification to session ${sessionId}: ${error}`,
+              LOG_MODULES.GATEWAY
+            );
+          }
         }
-      } catch (error) {
-        logger.debug(
-          `Failed to broadcast ${method} notification to session ${sessionId}: ${error}`,
-          LOG_MODULES.GATEWAY
-        );
-      }
-    }
+      }, this.BROADCAST_DEBOUNCE_MS)
+    );
   }
 
   /**
@@ -191,6 +204,10 @@ export class SessionManager {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
     }
+    for (const timer of this.pendingBroadcasts.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingBroadcasts.clear();
     for (const [id] of this.sessions) {
       this.removeSession(id);
     }

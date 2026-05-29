@@ -35,7 +35,7 @@ api/
 
 **支持的协议**: HTTP-Stream (通过 EventSource 实现)
 
-**架构**: SDK 原生无状态模式，全局共享 transport/server 实例
+**架构**: Stateful Session Transport 模式（v1.3.1+），每个客户端会话独立 transport+server 对，支持 MCP 通知推送
 
 **功能**:
 

@@ -35,6 +35,7 @@ mcp/
 - `tools/list` - 列出所有可用工具
 - `tools/call` - 调用工具
 - `resources/list` - 列出所有资源
+- `resources/templates/list` - 资源模板列表（返回空）
 - `resources/read` - 读取资源
 
 ### 调试响应包装器 (`debug-response-wrapper.ts`)
