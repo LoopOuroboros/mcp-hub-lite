@@ -194,11 +194,17 @@ export class McpConnectionManager {
         // 9. Publish connection events
         this.publishConnectionEvents(serverName, serverIndex);
 
-        // 10. Refresh resources
-        await this.refreshServerResources(serverName, serverIndex);
+        // 10. Refresh tools and resources (skip resources if server capability is absent)
+        const capabilities =
+          typeof client.getServerCapabilities === 'function'
+            ? client.getServerCapabilities()
+            : undefined;
+        await this.refreshServerResources(serverName, serverIndex, !capabilities?.resources);
 
-        // 11. Request log notifications from downstream server
-        await this.requestLoggingFromServer(compositeKey, client);
+        // 11. Request log notifications from downstream server (only if logging capability present)
+        if (capabilities?.logging) {
+          await this.requestLoggingFromServer(compositeKey, client);
+        }
 
         return true;
       } catch (error) {
@@ -514,10 +520,16 @@ export class McpConnectionManager {
 
   /**
    * Refreshes server tools and resources (only for bidirectional transports).
+   *
+   * @param skipResources - Skip resources/list request when server doesn't support resources capability
    */
-  private async refreshServerResources(serverName: string, serverIndex: number): Promise<void> {
+  private async refreshServerResources(
+    serverName: string,
+    serverIndex: number,
+    skipResources = false
+  ): Promise<void> {
     const tools = await this.refreshTools(serverName, serverIndex);
-    const resources = await this.refreshResources(serverName, serverIndex);
+    const resources = skipResources ? [] : await this.refreshResources(serverName, serverIndex);
 
     eventBus.publish(EventTypes.TOOLS_UPDATED, {
       serverName,
