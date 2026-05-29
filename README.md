@@ -25,7 +25,8 @@ MCP-HUB-LITE is an MCP server gateway designed specifically for independent deve
 - **Server Management**: Manage multiple MCP servers through a web interface
 - **Tool Search**: Search and tool discovery across all servers with aggregation
 - **Process Management**: Launch and manage MCP server processes via npx/uvx
-- **Session Management**: Native stateless session management via MCP SDK
+- **Session Management**: Stateful session management via MCP SDK, with GET SSE long-lived connections
+- **MCP Notification Push**: Push `notifications/tools/list_changed` and `notifications/resources/list_changed` to connected clients
 - **Multi-Instance Support**: Run multiple instances of the same MCP server with load balancing
 - **Instance Selection Strategies**: Support random, round-robin, and unique-by-tag selection
 - **Tag System**: Organize multiple MCP servers by environment, category, function, etc.

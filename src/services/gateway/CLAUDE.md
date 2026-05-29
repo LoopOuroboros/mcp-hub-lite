@@ -12,7 +12,8 @@ Gateway 子模块负责处理 MCP (Model Context Protocol) 网关的核心逻辑
 gateway/
 ├── index.ts                    # 统一导出
 ├── gateway.service.ts          # Gateway 服务主类
-├── global-transport.ts        # Transport 工厂函数（per-request 模式）
+├── global-transport.ts        # Transport 工具函数
+├── session-manager.ts        # 会话管理器
 ├── types.ts                   # 类型定义
 ├── log-formatter.ts           # 日志格式化工具
 ├── tool-list-generator.ts     # 工具列表生成器
@@ -26,23 +27,24 @@ gateway/
 
 ## 核心架构
 
-### Per-Request Transport 模式
+### Stateful Session Transport 模式（v1.3.1+）
 
-**重要变更**: 从 v1.1.0 开始，MCP Gateway 采用 **Per-Request Transport 模式** 替代之前的全局无状态 transport 模式。
+**重要变更**: 从 v1.3.1 开始，MCP Gateway 采用 **Stateful Session Transport 模式**，每个客户端会话拥有独立的 transport+server 对，支持 MCP 通知推送。
 
 **架构特点**:
 
-- 每个 HTTP 请求创建独立的 `StreamableHTTPServerTransport` 和 `McpServer` 实例
-- 确保多个客户端连接之间的状态完全隔离
-- 解决了 "Failed to reconnect to mcp-hub-lite" 连接错误
-- 符合 MCP 协议的最佳实践要求
+- 每个客户端会话（`mcp-session-id`）拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对
+- SDK stateful 模式：`sessionIdGenerator` 生成 session ID，客户端后续请求携带该 header
+- `SessionManager` 管理会话生命周期、通知广播（3s debounce）、SSE 引用计数、陈旧清理
+- GET /mcp 支持 SSE 长连接接收通知推送
+- 通知为纯信号（不含数据），客户端收到后自行重新请求完整列表
 
 **工作流程**:
 
-1. 客户端发送 MCP 请求到 `/mcp` 端点
-2. Gateway 路由处理器调用 `createSessionTransport()` 创建新的 transport/server 实例
-3. 请求通过新创建的 transport 实例处理
-4. 请求完成后，transport/server 实例自动被垃圾回收
+1. 客户端 POST /mcp（无 sessionId）→ 创建新 transport+server → SDK 生成 sessionId
+2. 客户端后续 POST/GET/DELETE /mcp（带 sessionId）→ SessionManager 路由到已有 transport
+3. GET /mcp → 建立 SSE 流，接收 `notifications/*/list_changed` 通知
+4. DELETE /mcp → SDK 清理会话 → SessionManager 移除
 
 ### 请求处理器
 
@@ -128,18 +130,18 @@ interface ToolMapEntry {
 
 ## 相关文件清单
 
-| 文件路径                                   | 描述                  |
-| ------------------------------------------ | --------------------- |
-| `gateway.service.ts`                       | Gateway 服务主类      |
-| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging） |
-| `session-manager.ts`                     | 会话管理器（状态管理、通知广播、SSE 跟踪、陈旧清理） |
-| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器 |
-| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表） |
-| `request-handlers/call-tool-handler.ts`    | 工具调用处理器        |
-| `request-handlers/system-tools-handler.ts` | 系统工具处理器        |
-| `tool-list-generator.ts`                   | 工具列表生成器        |
-| `log-formatter.ts`                         | 日志格式化工具        |
-| `types.ts`                                 | 类型定义              |
+| 文件路径                                   | 描述                                                 |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `gateway.service.ts`                       | Gateway 服务主类                                     |
+| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging）          |
+| `session-manager.ts`                       | 会话管理器（状态管理、通知广播、SSE 跟踪、陈旧清理） |
+| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器                                |
+| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表）           |
+| `request-handlers/call-tool-handler.ts`    | 工具调用处理器                                       |
+| `request-handlers/system-tools-handler.ts` | 系统工具处理器                                       |
+| `tool-list-generator.ts`                   | 工具列表生成器                                       |
+| `log-formatter.ts`                         | 日志格式化工具                                       |
+| `types.ts`                                 | 类型定义                                             |
 
 ## MCP Notification Push (v1.3.1+)
 

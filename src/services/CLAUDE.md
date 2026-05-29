@@ -20,7 +20,7 @@ services/
 ├── gateway/                   # Gateway 子模块
 │   ├── index.ts
 │   ├── gateway.service.ts
-│   ├── global-transport.ts   # 全局无状态 transport/server
+│   ├── global-transport.ts   # Transport 工具函数 + session-manager 会话管理
 │   ├── types.ts
 │   ├── log-formatter.ts
 │   ├── tool-list-generator.ts
@@ -126,7 +126,7 @@ services/
 
 ### GlobalTransport (`gateway/global-transport.ts`)
 
-**职责**: 全局共享无状态 MCP transport/server 实例
+**职责**: MCP transport 工具函数和会话管理（stateful session 模式，v1.3.1+）
 
 **功能特性**:
 
@@ -314,7 +314,7 @@ enum ConnectionStatus {
 | -------------------------------------- | -------------------- |
 | `services/hub-manager.service.ts`      | 服务器管理器         |
 | `services/gateway.service.ts`          | Gateway 网关服务     |
-| `services/gateway/global-transport.ts` | 全局无状态 transport |
+| `services/gateway/global-transport.ts` | Transport 工具函数 + 会话管理 |
 | `services/mcp-connection-manager.ts`   | 连接管理器           |
 | `services/hub-tools.service.ts`        | 系统工具服务         |
 | `services/log-storage.service.ts`      | 日志存储服务         |
