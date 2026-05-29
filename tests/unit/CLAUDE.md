@@ -27,6 +27,7 @@ unit/
 ├── utils/                 # 工具层单元测试
 │   ├── config.test.ts
 │   ├── logger.test.ts
+│   ├── log-output.test.ts
 │   ├── log-rotator.test.ts
 │   ├── mcp-error-handler.test.ts
 │   └── request-context.test.ts
@@ -276,6 +277,25 @@ npx vitest tests/unit/utils/config.test.ts
 npx vitest tests/unit/utils/logger.test.ts
 ```
 
+### Log Output Test (`utils/log-output.test.ts`)
+
+**被测模块**: `src/utils/logger/log-output.ts`
+
+**测试覆盖**:
+
+- `hasDataUriImage()` — data:image data URI 检测（png/jpeg/svg）
+- `simplifyDataUriImages()` — base64 负载替换为 `[Truncated]`，多 URI 处理
+- `simplifyImageContent()` — MCP image content 块替换
+- `isToolsListResponse()` — tools/list、resources/list 检测（不含 capabilities）
+- `formatMcpMessageForLogging()` — 检测链优先级：tools/list → image content → data URI → 完整 JSON
+- initialize 响应含 icons 的 data URI 截断验证
+
+**运行**:
+
+```bash
+npx vitest tests/unit/utils/log-output.test.ts
+```
+
 ### Log Rotator Test (`utils/log-rotator.test.ts`)
 
 **被测模块**: `src/utils/log-rotator.ts`
@@ -465,6 +485,8 @@ unit/
 │   │   └── tests: src/config/config-manager.ts
 │   ├── logger.test.ts
 │   │   └── tests: src/utils/logger.ts
+│   ├── log-output.test.ts
+│   │   └── tests: src/utils/logger/log-output.ts
 │   ├── log-rotator.test.ts
 │   │   └── tests: src/utils/log-rotator.ts
 │   ├── mcp-error-handler.test.ts
@@ -542,6 +564,7 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 | `unit/config/config-saver.test.ts`                      | Config Saver 空值清理测试 |
 | `unit/utils/config.test.ts`                             | 配置管理器测试            |
 | `unit/utils/logger.test.ts`                             | Logger 测试               |
+| `unit/utils/log-output.test.ts`                         | Log Output 测试           |
 | `unit/utils/log-rotator.test.ts`                        | 日志轮转测试              |
 | `unit/utils/mcp-error-handler.test.ts`                  | MCP 错误处理器测试        |
 | `unit/utils/request-context.test.ts`                    | 请求上下文测试            |

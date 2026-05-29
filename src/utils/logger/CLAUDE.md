@@ -85,11 +85,16 @@ logger/
 
 **职责**: 日志输出处理，特别是 MCP 消息格式化
 
-**主要功能**:
+**主要导出函数**:
 
-- 将日志消息格式化为 MCP 协议兼容的格式
-- 处理 MCP 通知和消息的日志记录
-- 支持 JSON 格式美化输出
+- `formatMcpMessageForLogging(message)` - 格式化 MCP 消息用于日志输出，按优先级检测：isToolsListResponse → hasImageContent → hasDataUriImage → 完整 JSON
+- `hasDataUriImage(data)` - 检测 JSON 中是否包含 `data:image/*;base64` data URI
+- `simplifyDataUriImages(data)` - 将 data URI 的 base64 负载替换为 `[Truncated]`
+- `hasImageContent(data)` - 检测 MCP `result.content[]` 中的 `type: image` 块
+- `simplifyImageContent(data)` - 将 MCP image content 的 `data` 字段替换为 `[Truncated]`
+- `isToolsListResponse(data)` - 检测是否为 `tools/list` 或 `resources/list` 响应（不含 capabilities）
+- `simplifyToolsListResponse(data)` - 将 tools/list 响应简化为计数格式
+- `isNotificationMessage(message)` / `logNotificationMessage(message, context, serverId?)` - 处理 MCP 通知消息
 
 ### Log Colors (`log-colors.ts`)
 
@@ -184,7 +189,7 @@ logger/
 ├── logger.ts         # 依赖 request-context.ts、json-utils.ts
 ├── dev-logger.ts     # 依赖 logger.ts
 ├── log-formatter.ts  # 依赖 json-utils.ts
-├── log-output.ts     # 无依赖
+├── log-output.ts     # 依赖 json-utils.ts
 ├── log-colors.ts     # 无依赖
 ├── log-context.ts    # 无依赖
 └── log-modules.ts    # 无依赖
