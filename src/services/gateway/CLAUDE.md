@@ -130,18 +130,18 @@ interface ToolMapEntry {
 
 ## 相关文件清单
 
-| 文件路径                                   | 描述                                                 |
-| ------------------------------------------ | ---------------------------------------------------- |
-| `gateway.service.ts`                       | Gateway 服务主类                                     |
-| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging）          |
-| `session-manager.ts`                       | 会话管理器（状态管理、通知广播、SSE 跟踪、陈旧清理） |
-| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器                                |
-| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表）           |
-| `request-handlers/call-tool-handler.ts`    | 工具调用处理器                                       |
-| `request-handlers/system-tools-handler.ts` | 系统工具处理器                                       |
-| `tool-list-generator.ts`                   | 工具列表生成器                                       |
-| `log-formatter.ts`                         | 日志格式化工具                                       |
-| `types.ts`                                 | 类型定义                                             |
+| 文件路径                                   | 描述                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| `gateway.service.ts`                       | Gateway 服务主类                                                    |
+| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging）                         |
+| `session-manager.ts`                       | 会话管理器（状态管理、通知广播、SSE 跟踪、PING 存活探测、陈旧清理） |
+| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器                                               |
+| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表）                          |
+| `request-handlers/call-tool-handler.ts`    | 工具调用处理器                                                      |
+| `request-handlers/system-tools-handler.ts` | 系统工具处理器                                                      |
+| `tool-list-generator.ts`                   | 工具列表生成器                                                      |
+| `log-formatter.ts`                         | 日志格式化工具                                                      |
+| `types.ts`                                 | 类型定义                                                            |
 
 ## MCP Notification Push (v1.3.1+)
 
@@ -150,7 +150,7 @@ interface ToolMapEntry {
 ### 架构变更
 
 - **Stateful Session Transport**: 采用 SDK 标准的 stateful 模式。每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对，通过 `mcp-session-id` header 标识。SDK 负责会话 ID 生成、SSE 流建立和通知格式化。
-- **SessionManager**: 管理所有活跃会话（`Map<sessionId, SessionState>`），支持会话查找、广播通知（3s debounce 去重）、SSE 活跃引用计数（防止陈旧清理误删）、服务关闭。
+- **SessionManager**: 管理所有活跃会话（`Map<sessionId, SessionState>`），支持会话查找、广播通知（3s debounce 去重）、SSE 活跃引用计数、SDK PING 存活探测（30s 冷却）、服务关闭。
 - **`all('/mcp')`**: Fastify 统一路由。无 `mcp-session-id` 的 POST 创建新会话；有 sessionId 的 POST/GET/DELETE 路由到已有会话 transport。GET 请求自动追踪 `activeSseCount`。
 
 ### 通知触发条件

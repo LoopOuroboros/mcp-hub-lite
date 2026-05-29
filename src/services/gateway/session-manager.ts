@@ -19,6 +19,8 @@ interface SessionState {
   lastAccessedAt: number;
   isClosing: boolean;
   activeSseCount: number;
+  lastPingedAt: number;
+  pingPending: boolean;
   clientName?: string;
   clientVersion?: string;
   protocolVersion?: string;
@@ -28,6 +30,8 @@ interface SessionState {
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const CLEANUP_INTERVAL_MS = 60 * 1000; // every minute
+const PING_COOLDOWN_MS = 30 * 1000; // min interval between pings
+const PING_TIMEOUT_MS = 10 * 1000; // per-ping timeout
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>();
@@ -53,6 +57,8 @@ export class SessionManager {
       lastAccessedAt: Date.now(),
       isClosing: false,
       activeSseCount: 0,
+      lastPingedAt: 0,
+      pingPending: false,
       clientName: pendingMeta?.clientName,
       clientVersion: pendingMeta?.clientVersion,
       protocolVersion: pendingMeta?.protocolVersion,
@@ -183,12 +189,46 @@ export class SessionManager {
     const staleIds: string[] = [];
     let skippedClosing = 0;
     let skippedSse = 0;
+    let pingFailed = 0;
+
     for (const [id, state] of this.sessions) {
       if (state.isClosing) {
         skippedClosing++;
         continue;
       }
+      // Ping from last cycle timed out — session is dead
+      if (state.pingPending) {
+        state.pingPending = false;
+        pingFailed++;
+        staleIds.push(id);
+        continue;
+      }
       if (state.activeSseCount > 0) {
+        if (now - state.lastPingedAt < PING_COOLDOWN_MS) {
+          skippedSse++;
+          continue;
+        }
+        state.lastPingedAt = now;
+        state.pingPending = true;
+        // Fire-and-forget concurrent ping with timeout
+        const pingWithTimeout = Promise.race([
+          state.server.server.ping(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Ping timeout')), PING_TIMEOUT_MS)
+          )
+        ]);
+        pingWithTimeout.then(
+          () => {
+            const s = this.sessions.get(id);
+            if (s) {
+              s.pingPending = false;
+              s.lastAccessedAt = Date.now();
+            }
+          },
+          () => {
+            // Keep pingPending=true so the next cycle cleans up this dead session
+          }
+        );
         skippedSse++;
         continue;
       }
@@ -196,9 +236,10 @@ export class SessionManager {
         staleIds.push(id);
       }
     }
-    if (getGatewayDebugSetting() && (staleIds.length > 0 || skippedSse > 0)) {
+
+    if (getGatewayDebugSetting() && (staleIds.length > 0 || skippedSse > 0 || pingFailed > 0)) {
       logger.debug(
-        `Stale cleanup: total=${this.sessions.size} stale=${staleIds.length} skippedClosing=${skippedClosing} skippedSse=${skippedSse}`,
+        `Stale cleanup: total=${this.sessions.size} stale=${staleIds.length} skippedClosing=${skippedClosing} skippedSse=${skippedSse} pingFailed=${pingFailed}`,
         LOG_MODULES.GATEWAY
       );
     }
