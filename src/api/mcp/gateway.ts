@@ -69,11 +69,18 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
             sendError(reply, 404, -32001, 'Session not found');
             return;
           }
+          // Track SSE stream to prevent stale cleanup while GET is active
+          if (request.method === 'GET') {
+            sessionManager.markSseOpened(sessionId);
+          }
           await session.transport.handleRequest(
             request.raw,
             reply.raw,
             request.method === 'POST' ? request.body : undefined
           );
+          if (request.method === 'GET') {
+            sessionManager.markSseClosed(sessionId);
+          }
           if (getGatewayDebugSetting()) {
             logger.debug(
               `Handled MCP ${request.method} for session ${sessionId}`,

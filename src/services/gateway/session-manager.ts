@@ -18,6 +18,7 @@ interface SessionState {
   createdAt: number;
   lastAccessedAt: number;
   isClosing: boolean;
+  activeSseCount: number;
 }
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -37,11 +38,12 @@ export class SessionManager {
       server,
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
-      isClosing: false
+      isClosing: false,
+      activeSseCount: 0
     });
     if (getGatewayDebugSetting()) {
       logger.debug(
-        `Session registered: ${sessionId} (total: ${this.sessions.size})`,
+        `Session registered: ${sessionId} (total: ${this.sessions.size}, activeSseCount: 0)`,
         LOG_MODULES.GATEWAY
       );
     }
@@ -58,6 +60,39 @@ export class SessionManager {
       return session;
     }
     return undefined;
+  }
+
+  /**
+   * Marks an SSE stream as opened for the given session.
+   * Prevents the session from being cleaned up while the stream is active.
+   */
+  markSseOpened(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session && !session.isClosing) {
+      session.activeSseCount++;
+      if (getGatewayDebugSetting()) {
+        logger.debug(
+          `Session ${sessionId} SSE opened (activeSseCount: ${session.activeSseCount})`,
+          LOG_MODULES.GATEWAY
+        );
+      }
+    }
+  }
+
+  /**
+   * Marks an SSE stream as closed for the given session.
+   */
+  markSseClosed(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.activeSseCount = Math.max(0, session.activeSseCount - 1);
+      if (getGatewayDebugSetting()) {
+        logger.debug(
+          `Session ${sessionId} SSE closed (activeSseCount: ${session.activeSseCount})`,
+          LOG_MODULES.GATEWAY
+        );
+      }
+    }
   }
 
   /**
@@ -80,7 +115,7 @@ export class SessionManager {
     this.sessions.delete(sessionId);
     if (getGatewayDebugSetting()) {
       logger.debug(
-        `Session removed: ${sessionId} (total: ${this.sessions.size})`,
+        `Session removed: ${sessionId} (total: ${this.sessions.size}, age: ${Date.now() - session.createdAt}ms, activeSseCount: ${session.activeSseCount})`,
         LOG_MODULES.GATEWAY
       );
     }
@@ -115,11 +150,26 @@ export class SessionManager {
   private cleanupStaleSessions(): void {
     const now = Date.now();
     const staleIds: string[] = [];
+    let skippedClosing = 0;
+    let skippedSse = 0;
     for (const [id, state] of this.sessions) {
-      if (state.isClosing) continue;
+      if (state.isClosing) {
+        skippedClosing++;
+        continue;
+      }
+      if (state.activeSseCount > 0) {
+        skippedSse++;
+        continue;
+      }
       if (now - state.lastAccessedAt > SESSION_TIMEOUT_MS) {
         staleIds.push(id);
       }
+    }
+    if (getGatewayDebugSetting() && (staleIds.length > 0 || skippedSse > 0)) {
+      logger.debug(
+        `Stale cleanup: total=${this.sessions.size} stale=${staleIds.length} skippedClosing=${skippedClosing} skippedSse=${skippedSse}`,
+        LOG_MODULES.GATEWAY
+      );
     }
     for (const id of staleIds) {
       logger.info(`Removing stale session: ${id}`, LOG_MODULES.GATEWAY);
