@@ -136,27 +136,29 @@ function parseHubUri(uri: string):
  */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const USE_GUIDE_PATH = join(__dirname, 'use-guide.md');
+const USE_GUIDE_PATH_ZH = join(__dirname, 'use-guide-zh.md');
+const USE_GUIDE_PATH_EN = join(__dirname, 'use-guide-en.md');
 
 /**
  * Loads the use guide content from the Markdown file.
  *
- * @returns {string} Markdown formatted use guide content
+ * @param language - Language code ('zh' for Chinese, defaults to 'en')
+ * @returns Markdown formatted use guide content
  */
-function loadUseGuideContent(): string {
+function loadUseGuideContent(language?: string): string {
+  const path = language === 'zh' ? USE_GUIDE_PATH_ZH : USE_GUIDE_PATH_EN;
   try {
-    return fs.readFileSync(USE_GUIDE_PATH, 'utf-8');
+    return fs.readFileSync(path, 'utf-8');
   } catch {
-    // Fallback in case the file can't be read
     return `# MCP Hub Lite Use Guide
 
 ## Overview
 
 MCP Hub Lite is a lightweight MCP (Model Context Protocol) gateway that acts as a unified interface between AI assistants and multiple backend MCP servers.
 
-## Note
+Use \`resources/list\` to discover servers, then \`list_tools\` / \`get_tool\` / \`call_tool\` to interact with them.
 
-The complete use guide is currently unavailable. Please check the MCP Hub Lite documentation at https://github.com/your-org/mcp-hub-lite for more information.
+The complete use guide is currently unavailable. Please check the documentation for more information.
 `;
   }
 }
@@ -311,7 +313,8 @@ export function generateDynamicResources(): Resource[] {
  * ```
  */
 export async function readResource(
-  uri: string
+  uri: string,
+  language?: string
 ): Promise<ServerMetadata | Resource[] | string | unknown> {
   // Validate URI format
   if (!uri.startsWith('hub://')) {
@@ -320,7 +323,7 @@ export async function readResource(
 
   // Check for use-guide resource first
   if (uri === USE_GUIDE_URI) {
-    return loadUseGuideContent();
+    return loadUseGuideContent(language);
   }
 
   // Parse URI

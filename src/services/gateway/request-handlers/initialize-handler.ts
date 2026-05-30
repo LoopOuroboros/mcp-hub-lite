@@ -60,7 +60,16 @@ export function registerInitializeHandlers(server: McpServer): void {
         },
         logging: {},
         experimental: {}
-      }
+      },
+      instructions:
+        'MCP Hub Lite is a lightweight MCP gateway that aggregates multiple backend MCP servers into a unified interface. ' +
+        'HOW TO USE: 1) Start with resources/list to discover available servers and the use guide. ' +
+        '2) Use list_servers to see all connected servers. ' +
+        '3) Preview a server’s tools via resources/read on hub://servers/{name}. ' +
+        '4) Use list_tools for the full tool list, get_tool when you need inputSchema, then call_tool to execute. ' +
+        '5) Use search_tools to find tools by name or description across all servers. ' +
+        'MULTI-INSTANCE SERVERS: Use list_tags to view available instance tags, then pass matching tags via requestOptions.tags when calling call_tool. ' +
+        'System tools (list_servers, list_tools, get_tool, call_tool, search_tools, list_tags, update_server_description) must be called directly, not through call_tool.'
     };
   });
 

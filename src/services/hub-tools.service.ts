@@ -1,5 +1,6 @@
 import { hubManager } from './hub-manager.service.js';
 import { mcpConnectionManager } from './connection/index.js';
+import { configManager } from '@config/config-manager.js';
 import type { Tool, ToolSummary } from '@shared-models/tool.model.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import { eventBus, EventTypes } from './event-bus.service.js';
@@ -934,7 +935,8 @@ export class HubToolsService {
     | Resource[]
     | string
   > {
-    return readResourceUtil(uri) as unknown as
+    const language = configManager.getConfig().system.language;
+    return readResourceUtil(uri, language) as unknown as
       | {
           name: string;
           status: unknown;
