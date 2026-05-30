@@ -263,13 +263,16 @@ export const useServerStore = defineStore('server', () => {
           });
 
           const anyStarting = instanceConfigs.some((inst) => inst.status === 'starting');
+          const anyStopping = instanceConfigs.some((inst) => inst.status === 'stopping');
           const status: ServerStatus = anyOnline
             ? 'online'
             : anyError
               ? 'error'
               : anyStarting
                 ? 'starting'
-                : 'offline';
+                : anyStopping
+                  ? 'stopping'
+                  : 'offline';
 
           combinedServers.push({
             id: serverId,
@@ -578,10 +581,19 @@ export const useServerStore = defineStore('server', () => {
         return;
       }
 
+      // Track pending operation for UI transition state
+      pendingOperations.value.set(id, {
+        status: 'stopping',
+        timestamp: Date.now()
+      });
+
       // Disconnect server (using instance ID)
       await http.post(`/web/mcp/servers/${id}/disconnect`, {});
       await fetchServers();
     } catch (e: unknown) {
+      // Clean up pending operation on failure
+      pendingOperations.value.delete(id);
+
       if (e instanceof Error) {
         error.value = e.message || 'Failed to stop server';
       } else {
@@ -953,6 +965,7 @@ export const useServerStore = defineStore('server', () => {
     let anyOnline = false;
     let anyError = false;
     let anyStarting = false;
+    let anyStopping = false;
 
     for (const inst of s.instances || []) {
       if (inst.status === 'online') {
@@ -962,6 +975,8 @@ export const useServerStore = defineStore('server', () => {
         anyError = true;
       } else if (inst.status === 'starting') {
         anyStarting = true;
+      } else if (inst.status === 'stopping') {
+        anyStopping = true;
       }
     }
 
@@ -971,6 +986,8 @@ export const useServerStore = defineStore('server', () => {
       s.status = 'error';
     } else if (anyStarting) {
       s.status = 'starting';
+    } else if (anyStopping) {
+      s.status = 'stopping';
     } else {
       s.status = 'offline';
     }
@@ -1061,7 +1078,17 @@ export const useServerStore = defineStore('server', () => {
   function updateServerStatus(id: string, status: ServerStatus) {
     // Clear pending operation when reaching a terminal state
     if (status === 'online' || status === 'error' || status === 'offline') {
-      pendingOperations.value.delete(id);
+      const hadDirectMatch = pendingOperations.value.delete(id);
+      // When no direct match, id is likely a serverName (from WebSocket events).
+      // Find all instances belonging to this server and clean their pending ops.
+      if (!hadDirectMatch) {
+        const parentServer = servers.value.find((s) => s.id === id) ?? findServerByInstanceId(id);
+        if (parentServer?.instances) {
+          for (const inst of parentServer.instances) {
+            pendingOperations.value.delete(inst.id);
+          }
+        }
+      }
     }
 
     // First try to find by server ID
@@ -1084,6 +1111,7 @@ export const useServerStore = defineStore('server', () => {
       let anyOnline = false;
       let anyError = false;
       let anyStarting = false;
+      let anyStopping = false;
 
       for (const inst of serverByInstance.instances || []) {
         if (inst.status === 'online') {
@@ -1093,6 +1121,8 @@ export const useServerStore = defineStore('server', () => {
           anyError = true;
         } else if (inst.status === 'starting') {
           anyStarting = true;
+        } else if (inst.status === 'stopping') {
+          anyStopping = true;
         }
       }
 
@@ -1102,6 +1132,8 @@ export const useServerStore = defineStore('server', () => {
         serverByInstance.status = 'error';
       } else if (anyStarting) {
         serverByInstance.status = 'starting';
+      } else if (anyStopping) {
+        serverByInstance.status = 'stopping';
       } else {
         serverByInstance.status = 'offline';
       }
