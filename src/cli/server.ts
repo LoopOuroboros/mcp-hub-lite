@@ -25,6 +25,16 @@ interface McpServerStatus {
   error?: string;
 }
 
+export interface SessionInfo {
+  sessionId: string;
+  clientName?: string;
+  clientVersion?: string;
+  protocolVersion?: string;
+  createdAt: string;
+  lastAccessedAt: string;
+  activeSseCount: number;
+}
+
 export interface EnhancedServerStatus {
   running: boolean;
   pid?: string;
@@ -33,6 +43,7 @@ export interface EnhancedServerStatus {
   message?: string;
   pidFilePath: string;
   mcpServers?: McpServerStatus[];
+  sessions?: SessionInfo[];
 }
 
 /**
@@ -159,6 +170,7 @@ export async function getServerStatus(pid?: string): Promise<EnhancedServerStatu
 
     // Try to fetch runtime status via HTTP API
     const mcpServers = await fetchRuntimeStatus(host, port);
+    const sessions = await fetchSessionStatus(host, port);
 
     return {
       running: true,
@@ -166,7 +178,8 @@ export async function getServerStatus(pid?: string): Promise<EnhancedServerStatu
       host,
       port,
       pidFilePath,
-      mcpServers
+      mcpServers,
+      sessions
     };
   } catch {
     return {
@@ -241,6 +254,38 @@ async function fetchRuntimeStatus(
     return result;
   } catch {
     // Silent failure - API not available, just return undefined
+    return undefined;
+  }
+}
+
+/**
+ * Fetches active session information from the running server via HTTP API.
+ *
+ * @param host - The host address to connect to
+ * @param port - The port number to connect to
+ * @returns Promise with array of session info, or undefined if API call fails
+ */
+async function fetchSessionStatus(host: string, port: number): Promise<SessionInfo[] | undefined> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 500);
+
+    const response = await fetch(`http://${host}:${port}/web/sessions`, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const data = (await response.json()) as { sessions: SessionInfo[] };
+    return data.sessions;
+  } catch {
     return undefined;
   }
 }

@@ -92,6 +92,7 @@ mcp-hub-lite status
 - 显示 MCP 集成配置
 - 列出所有管理服务器的状态（包括 disabled 服务器）
 - 按连接状态分组显示：Connected（绿色）和 Disconnected（红色）
+- 显示活跃 MCP 会话列表（含 Session ID、Client、Version、SSE 连接数）
 
 **输出示例**:
 
@@ -116,6 +117,13 @@ Server Name            Type   Status        Tools  Resources
 ──────────────────────────────────────────────────────
 desktop-commander      stdio  Disconnected      0          0
 ...
+
+Active MCP Sessions:
+════════════════════
+Session ID                              Client        Version  SSE
+─────────────────────────────────────────────────────────────────
+a1b2c3d4-e5f6-7890-abcd-ef1234567890   Claude Code   2024.0     1
+  Total: 1 active session(s)
 
 MCP Integration:
 ================
