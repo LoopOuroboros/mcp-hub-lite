@@ -444,28 +444,28 @@ unit/
 
 ## 测试覆盖目标
 
-| 模块                           | 目标覆盖率 | 当前状态   |
-| ------------------------------ | ---------- | ---------- |
-| `server/runner`                | 80%        | 已实现部分 |
-| `services/hub-manager.service` | 80%        | 部分实现   |
-| `api/web/servers`              | 80%        | 部分实现   |
-| `services/hub-tools`           | 80%        | 部分实现   |
-| `services/gateway`             | 80%        | 部分实现   |
-| `services/hub-tools/instance-selector` | 80% | 已实现 |
-| `cli/*`                        | 70%        | 已实现部分 |
-| `utils/config`                 | 80%        | 已实现     |
-| `utils/logger`                 | 80%        | 已实现     |
-| `utils/log-rotator`            | 80%        | 已实现     |
-| `utils/json-utils`             | 80%        | 已实现     |
-| `utils/name-converter`         | 80%        | 已实现     |
-| `utils/network-security`       | 80%        | 已实现     |
-| `utils/sort-utils`             | 80%        | 已实现     |
-| `utils/transport-factory`      | 80%        | 已实现     |
-| `models/*`                     | 80%        | 部分实现   |
-| `api/*`                        | 70%        | 待实现     |
-| `pid/*`                        | 70%        | 待实现     |
-| `frontend/components/*`        | 70%        | 部分实现   |
-| `frontend/stores/*`            | 70%        | 部分实现   |
+| 模块                                   | 目标覆盖率 | 当前状态   |
+| -------------------------------------- | ---------- | ---------- |
+| `server/runner`                        | 80%        | 已实现部分 |
+| `services/hub-manager.service`         | 80%        | 部分实现   |
+| `api/web/servers`                      | 80%        | 部分实现   |
+| `services/hub-tools`                   | 80%        | 部分实现   |
+| `services/gateway`                     | 80%        | 部分实现   |
+| `services/hub-tools/instance-selector` | 80%        | 已实现     |
+| `cli/*`                                | 70%        | 已实现部分 |
+| `utils/config`                         | 80%        | 已实现     |
+| `utils/logger`                         | 80%        | 已实现     |
+| `utils/log-rotator`                    | 80%        | 已实现     |
+| `utils/json-utils`                     | 80%        | 已实现     |
+| `utils/name-converter`                 | 80%        | 已实现     |
+| `utils/network-security`               | 80%        | 已实现     |
+| `utils/sort-utils`                     | 80%        | 已实现     |
+| `utils/transport-factory`              | 80%        | 已实现     |
+| `models/*`                             | 80%        | 部分实现   |
+| `api/*`                                | 70%        | 待实现     |
+| `pid/*`                                | 70%        | 待实现     |
+| `frontend/components/*`                | 70%        | 部分实现   |
+| `frontend/stores/*`                    | 70%        | 部分实现   |
 
 ## 常见问题 (FAQ)
 
@@ -491,36 +491,36 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 
 ## 相关文件清单
 
-| 文件路径                                              | 描述                          |
-| ----------------------------------------------------- | ----------------------------- |
-| `unit/server/runner.test.ts`                          | 服务器运行器测试              |
-| `unit/services/hub-manager-service.test.ts`           | Hub Manager 服务单元测试      |
-| `unit/services/hub-manager.test.ts`                   | Hub Manager API 路由测试      |
-| `unit/services/hub-tools.service.test.ts`             | Hub Tools 服务测试            |
-| `unit/services/gateway-logging.test.ts`               | Gateway 日志测试              |
-| `unit/services/gateway-session-mode.test.ts`          | Gateway 会话模式测试          |
-| `unit/services/hub-tools/instance-selector.test.ts`   | 实例选择器测试                |
-| `unit/cli/basic-cli.test.ts`                          | CLI 基础测试                  |
-| `unit/cli/cli.test.ts`                                | CLI 测试                      |
-| `unit/cli/commands.test.ts`                           | CLI 命令测试                  |
-| `unit/cli/server.test.ts`                             | CLI 服务器测试                |
-| `unit/config/config.schema.test.ts`                   | 配置 Schema 测试              |
-| `unit/config/config-migrator.test.ts`                 | 配置迁移器测试                |
-| `unit/config/config-saver.test.ts`                    | Config Saver 空值清理测试     |
-| `unit/utils/config.test.ts`                           | 配置管理器测试                |
-| `unit/utils/logger.test.ts`                           | Logger 测试                   |
-| `unit/utils/log-output.test.ts`                       | Log Output 测试               |
-| `unit/utils/log-rotator.test.ts`                      | 日志轮转测试                  |
-| `unit/utils/json-utils.test.ts`                       | JSON 工具测试                 |
-| `unit/utils/name-converter.test.ts`                   | 名称转换器测试                |
-| `unit/utils/network-security.test.ts`                 | 网络安全测试                  |
-| `unit/utils/sort-utils.test.ts`                       | 排序工具测试                  |
-| `unit/utils/transport-factory.test.ts`                | 传输工厂测试                  |
-| `unit/frontend/components/dashboard.test.ts`          | Dashboard 组件测试            |
-| `unit/frontend/components/tool-card.test.ts`          | ToolCard 组件测试             |
+| 文件路径                                                | 描述                        |
+| ------------------------------------------------------- | --------------------------- |
+| `unit/server/runner.test.ts`                            | 服务器运行器测试            |
+| `unit/services/hub-manager-service.test.ts`             | Hub Manager 服务单元测试    |
+| `unit/services/hub-manager.test.ts`                     | Hub Manager API 路由测试    |
+| `unit/services/hub-tools.service.test.ts`               | Hub Tools 服务测试          |
+| `unit/services/gateway-logging.test.ts`                 | Gateway 日志测试            |
+| `unit/services/gateway-session-mode.test.ts`            | Gateway 会话模式测试        |
+| `unit/services/hub-tools/instance-selector.test.ts`     | 实例选择器测试              |
+| `unit/cli/basic-cli.test.ts`                            | CLI 基础测试                |
+| `unit/cli/cli.test.ts`                                  | CLI 测试                    |
+| `unit/cli/commands.test.ts`                             | CLI 命令测试                |
+| `unit/cli/server.test.ts`                               | CLI 服务器测试              |
+| `unit/config/config.schema.test.ts`                     | 配置 Schema 测试            |
+| `unit/config/config-migrator.test.ts`                   | 配置迁移器测试              |
+| `unit/config/config-saver.test.ts`                      | Config Saver 空值清理测试   |
+| `unit/utils/config.test.ts`                             | 配置管理器测试              |
+| `unit/utils/logger.test.ts`                             | Logger 测试                 |
+| `unit/utils/log-output.test.ts`                         | Log Output 测试             |
+| `unit/utils/log-rotator.test.ts`                        | 日志轮转测试                |
+| `unit/utils/json-utils.test.ts`                         | JSON 工具测试               |
+| `unit/utils/name-converter.test.ts`                     | 名称转换器测试              |
+| `unit/utils/network-security.test.ts`                   | 网络安全测试                |
+| `unit/utils/sort-utils.test.ts`                         | 排序工具测试                |
+| `unit/utils/transport-factory.test.ts`                  | 传输工厂测试                |
+| `unit/frontend/components/dashboard.test.ts`            | Dashboard 组件测试          |
+| `unit/frontend/components/tool-card.test.ts`            | ToolCard 组件测试           |
 | `unit/frontend/components/server-detail-header.test.ts` | ServerDetailHeader 组件测试 |
-| `unit/frontend/components/server-status-tags.test.ts` | ServerStatusTags 组件测试     |
-| `unit/frontend/components/tool-call-dialog.test.ts`   | ToolCallDialog 组件测试       |
-| `unit/frontend/stores/server.test.ts`                 | Server Store 测试             |
-| `unit/frontend/mocks/http.mock.ts`                    | HTTP Mock                     |
-| `unit/frontend/setup.ts`                              | 前端测试设置                  |
+| `unit/frontend/components/server-status-tags.test.ts`   | ServerStatusTags 组件测试   |
+| `unit/frontend/components/tool-call-dialog.test.ts`     | ToolCallDialog 组件测试     |
+| `unit/frontend/stores/server.test.ts`                   | Server Store 测试           |
+| `unit/frontend/mocks/http.mock.ts`                      | HTTP Mock                   |
+| `unit/frontend/setup.ts`                                | 前端测试设置                |

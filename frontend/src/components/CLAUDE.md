@@ -653,4 +653,4 @@ A: ServerDetail 从一个 1300+ 行的单体组件重构为：
 | `components/ServerStatusTags.vue`          | 服务器状态标签组件 |
 | `components/InstanceCardList.vue`          | 实例卡片列表       |
 | `components/InstanceConfig.vue`            | 实例配置           |
-| `components/TagManager.vue`               | 标签管理           |
+| `components/TagManager.vue`                | 标签管理           |

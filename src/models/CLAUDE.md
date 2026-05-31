@@ -32,6 +32,7 @@ export { InstanceSelectionStrategy } from '@shared-models/server.model.js';
 定义系统内置工具的常量配置，包括：
 
 **系统工具名称常量**:
+
 - `LIST_SERVERS_TOOL` = `'list_servers'`
 - `LIST_TOOLS_TOOL` = `'list_tools'`
 - `GET_TOOL_TOOL` = `'get_tool'`
@@ -56,7 +57,7 @@ models/
 
 ## 相关文件清单
 
-| 文件路径                           | 描述             |
-| ---------------------------------- | ---------------- |
+| 文件路径                           | 描述               |
+| ---------------------------------- | ------------------ |
 | `models/server.model.ts`           | 共享模型 re-export |
 | `models/system-tools.constants.ts` | 系统工具常量定义   |
