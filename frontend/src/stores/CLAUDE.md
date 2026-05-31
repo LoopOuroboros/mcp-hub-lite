@@ -136,7 +136,7 @@ stores/
 ```typescript
 {
   requestId: string;
-  serverId: string;
+  serverIndex: number;
   serverName: string;
   toolName: string;
   startTime: number;

@@ -22,6 +22,7 @@ gateway/
     ├── resources-handler.ts
     ├── call-tool-handler.ts
     ├── initialize-handler.ts
+    ├── initialize.constants.ts
     └── system-tools-handler.ts
 ```
 

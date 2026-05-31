@@ -13,10 +13,11 @@ tests/
 ├── unit/                    # 单元测试
 │   ├── server/              # 服务器运行时测试
 │   ├── services/            # 服务测试
+│   ├── cli/                 # CLI 测试
+│   ├── config/              # 配置模块测试
 │   ├── utils/              # 工具测试
 │   └── frontend/           # 前端组件和Store测试
 ├── integration/             # 集成测试
-│   ├── api/                # API测试
 │   └── gateway/            # Gateway测试
 ├── contract/               # 契约测试
 │   └── mcp-protocol/       # MCP协议契约测试
@@ -34,11 +35,11 @@ tests/
 **覆盖范围**:
 
 - 服务器运行时 (`server/runner.test.ts`)
-- 服务层 (`services/hub-manager-service.test.ts`, `services/session-manager.test.ts`)
+- 服务层 (`services/hub-manager-service.test.ts`, `unit/services/hub-tools.service.test.ts`)
 - 工具层 (`utils/logger.test.ts`, `utils/config.test.ts`)
 - 前端组件 (`frontend/components/dashboard.test.ts`, `frontend/components/tool-card.test.ts`)
 
-**状态**: 部分实现 (15个文件)
+**状态**: 部分实现 (29个文件)
 
 ### 集成测试 (Integration Tests)
 
@@ -46,10 +47,9 @@ tests/
 
 **覆盖范围**:
 
-- API 集成 (`api/gateway.test.ts`)
 - Gateway 集成 (`gateway/fault-tolerance.test.ts`, `gateway/mcp-connection.test.ts`)
 
-**状态**: 部分实现 (3个文件)
+**状态**: 部分实现 (2个文件)
 
 ### 契约测试 (Contract Tests)
 
@@ -113,7 +113,7 @@ npm run test:summary
 
 ```bash
 # 运行测试并生成覆盖率报告
-npm run test:coverage
+npx vitest --coverage
 ```
 
 ## 测试结果查看
@@ -145,8 +145,8 @@ npm run test:frontend
 
 | 类型     | 状态     | 文件数 |
 | -------- | -------- | ------ |
-| 单元测试 | 部分实现 | 15     |
-| 集成测试 | 部分实现 | 3      |
+| 单元测试 | 部分实现 | 29     |
+| 集成测试 | 部分实现 | 2      |
 | 契约测试 | 完整实现 | 3      |
 
 ## 质量要求

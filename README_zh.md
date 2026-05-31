@@ -87,10 +87,10 @@ npm run full:check
 npm start
 
 # 查看状态
-npm run status
+mcp-hub-lite status
 
 # 打开 UI 界面
-npm run ui
+mcp-hub-lite ui
 ```
 
 服务器将在 <http://localhost:7788> 启动。
@@ -136,19 +136,19 @@ MCP-HUB-LITE 提供了一个命令行界面来管理服务。
 # 启动服务
 npm start
 # 或
-node dist/index.js start
+mcp-hub-lite start
 
 # 查看状态
-node dist/index.js status
+mcp-hub-lite status
 
 # 列出所有服务器
-node dist/index.js list
+mcp-hub-lite list
 
 # 打开 Web 界面
-node dist/index.js ui
+mcp-hub-lite ui
 
 # 帮助
-node dist/index.js --help
+mcp-hub-lite --help
 ```
 
 ### 工具使用命令
@@ -157,23 +157,18 @@ node dist/index.js --help
 
 ```bash
 # 列出系统工具（默认服务器：mcp-hub-lite）
-npm run tool-use -- list-tools
 mcp-hub-lite tool-use list-tools
 
 # 列出指定服务器的工具
-npm run tool-use -- list-tools --server baidu-search
 mcp-hub-lite tool-use list-tools --server baidu-search
 
 # 获取工具 schema
-npm run tool-use -- get-tool --tool list_tools
 mcp-hub-lite tool-use get-tool --tool list_tools
 
 # 调用系统工具
-npm run tool-use -- call-tool --tool list_tools --args '{}'
 mcp-hub-lite tool-use call-tool --tool list_tools --args '{}'
 
 # 调用服务器工具
-npm run tool-use -- call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 mcp-hub-lite tool-use call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 ```
 

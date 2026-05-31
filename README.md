@@ -78,10 +78,10 @@ npm run full:check
 npm start
 
 # Check status
-npm run status
+mcp-hub-lite status
 
 # Open UI interface
-npm run ui
+mcp-hub-lite ui
 ```
 
 The server will start at <http://localhost:7788>.
@@ -127,19 +127,19 @@ MCP-HUB-LITE provides a command-line interface for managing the service.
 # Start the service
 npm start
 # or
-node dist/index.js start
+mcp-hub-lite start
 
 # Check status
-node dist/index.js status
+mcp-hub-lite status
 
 # List all servers
-node dist/index.js list
+mcp-hub-lite list
 
 # Open web interface
-node dist/index.js ui
+mcp-hub-lite ui
 
 # Help
-node dist/index.js --help
+mcp-hub-lite --help
 ```
 
 ### Tool Use Command
@@ -148,23 +148,18 @@ The `tool-use` command provides MCP server tool operations:
 
 ```bash
 # List system tools (default server: mcp-hub-lite)
-npm run tool-use -- list-tools
 mcp-hub-lite tool-use list-tools
 
 # List tools from a specific server
-npm run tool-use -- list-tools --server baidu-search
 mcp-hub-lite tool-use list-tools --server baidu-search
 
 # Get tool schema
-npm run tool-use -- get-tool --tool list_tools
 mcp-hub-lite tool-use get-tool --tool list_tools
 
 # Call a system tool
-npm run tool-use -- call-tool --tool list_tools --args '{}'
 mcp-hub-lite tool-use call-tool --tool list_tools --args '{}'
 
 # Call a server tool
-npm run tool-use -- call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 mcp-hub-lite tool-use call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 ```
 

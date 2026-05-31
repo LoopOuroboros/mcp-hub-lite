@@ -66,7 +66,7 @@ pid/
 
 PID 模块主要被以下模块使用：
 
-- `src/index.ts` - CLI 入口，用于服务器状态管理
+- `src/cli/index.ts` - CLI 入口，用于服务器状态管理
 - `src/server/runner.ts` - 服务器启动器，用于写入 PID 文件
 
 ## 测试与质量

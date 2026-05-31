@@ -95,7 +95,7 @@ server/
 
 ## 入口与启动
 
-**CLI 入口**: `src/index.ts` 调用 server 模块的启动函数
+**CLI 入口**: `src/cli/index.ts` 调用 server 模块的启动函数
 
 **启动命令**:
 

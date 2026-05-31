@@ -48,8 +48,6 @@ export default defineConfig({
       'tests/unit/**/*.test.ts',
       'tests/integration/**/*.test.ts',
       'tests/contract/**/*.test.ts',
-      'tests/evaluation/**/*.test.ts',
-      'src/**/*.test.ts',
       'tests/temp/**/*.test.ts'
     ],
     exclude: ['tests/unit/frontend/**/*']

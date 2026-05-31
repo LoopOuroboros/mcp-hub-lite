@@ -105,7 +105,7 @@ npm run dev
 interface Server {
   id: string;
   name: string;
-  status: 'running' | 'stopped' | 'error';
+  status: 'online' | 'offline' | 'error' | 'starting' | 'stopping';
   type: 'local' | 'remote';
   config: ServerConfig;
   logs: LogEntry[];

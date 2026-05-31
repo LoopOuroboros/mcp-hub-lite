@@ -12,9 +12,8 @@ Transports 子模块负责实现 MCP (Model Context Protocol) 协议的各种传
 transports/
 ├── transport.interface.ts        # 传输协议配置接口定义
 ├── transport-factory.ts         # 传输工厂（根据配置创建对应传输实例）
-├── stdio-transport.ts           # Stdio 传输实现（含 LineBuffer）
-├── sse-transport.ts             # SSE 传输实现（支持 serverId/serverName）
-└── streamable-http-transport.ts # HTTP 流传输实现（支持 serverId/serverName）
+├── stdio-transport.ts           # Stdio 传输实现
+└── streamable-http-transport.ts # HTTP 流传输实现
 ```
 
 ## 核心组件
@@ -79,7 +78,7 @@ transports/
 - `_logStorage` - 日志存储服务集成
 - `_stderrStream` - stderr 数据流
 
-### SSE Transport (`sse-transport.ts` → SDK `SSEClientTransport`)
+### SSE Transport（SDK `SSEClientTransport`）
 
 **职责**: Server-Sent Events 传输实现（双向通信）
 
@@ -96,7 +95,6 @@ transports/
 **实现说明**:
 
 - `TransportFactory` 中 `case 'sse'` 分支直接实例化 SDK `SSEClientTransport`
-- 自研 `SseTransport` 类保留在 `sse-transport.ts` 但不再被工厂引用
 - headers 同时设置到 `requestInit`（POST）和 `eventSourceInit`（SSE GET）
 
 ### Streamable HTTP Transport (`streamable-http-transport.ts`)
@@ -128,9 +126,8 @@ transports/
 ```
 transports/
 ├── transport.interface.ts        # 无依赖
-├── transport-factory.ts         # 依赖所有具体传输实现
+├── transport-factory.ts         # 依赖 @modelcontextprotocol/sdk
 ├── stdio-transport.ts           # 依赖 @modelcontextprotocol/sdk
-├── sse-transport.ts             # 依赖 @modelcontextprotocol/sdk, eventsource
 └── streamable-http-transport.ts # 依赖 @modelcontextprotocol/sdk, undici
 ```
 
@@ -161,5 +158,4 @@ Transports 子模块主要被以下组件使用：
 | `transports/transport.interface.ts`       | 传输协议配置接口 |
 | `transports/transport-factory.ts`         | 传输工厂         |
 | `transports/stdio-transport.ts`           | Stdio 传输实现   |
-| `transports/sse-transport.ts`             | SSE 传输实现     |
 | `transports/streamable-http-transport.ts` | HTTP 流传输实现  |
