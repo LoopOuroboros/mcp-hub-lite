@@ -38,7 +38,7 @@ MCP Gateway 支持两种会话模式，通过配置和请求头灵活切换：
 
 **决策优先级**：请求头 `x-mcp-session-mode` > UA 关键词匹配 `sessionModeRules` > 默认 `defaultSessionMode`（`"stateful"`）
 
-**UA 匹配规则**（`system.gateway.sessionModeRules`）：
+**UA 匹配规则**（`system.session.sessionModeRules`）：
 
 - `stateful` 数组：匹配这些 UA 关键词（忽略大小写）→ 使用 stateful 模式
 - `stateless` 数组：匹配这些 UA 关键词（忽略大小写）→ 使用 stateless 模式

@@ -36,7 +36,7 @@ api/
 
 **支持的协议**: HTTP-Stream (通过 EventSource 实现)
 
-**架构**: 双模式会话支持（v1.3.1+），支持 stateful（会话持久化、SSE、通知推送）和 stateless（per-request transport）两种模式，通过配置 `system.gateway.sessionMode` 或请求头 `x-mcp-session-mode` 切换
+**架构**: 双模式会话支持（v1.3.1+），支持 stateful（会话持久化、SSE、通知推送）和 stateless（per-request transport）两种模式，通过配置 `system.session` 或请求头 `x-mcp-session-mode` 切换
 
 **功能**:
 

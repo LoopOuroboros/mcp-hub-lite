@@ -305,7 +305,7 @@ export const SystemConfigSchema = z.object({
       logging: LoggingConfigSchema,
       // Using .optional() without .default() - code should use startup ?? {defaults} for default value
       startup: StartupConfigSchema.optional(),
-      gateway: z
+      session: z
         .object({
           sessionModeRules: z
             .object({
@@ -338,7 +338,7 @@ export const SystemConfigSchema = z.object({
         maxConnectRetries: 3,
         connectRetryDelay: 5000
       },
-      gateway: {
+      session: {
         sessionModeRules: {
           stateful: [],
           stateless: []
@@ -353,8 +353,8 @@ export const SystemConfigSchema = z.object({
 
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
 
-/** Gateway configuration extracted from SystemConfig.system.gateway */
-export type GatewayConfig = SystemConfig['system']['gateway'];
+/** Session configuration extracted from SystemConfig.system.session */
+export type GatewayConfig = SystemConfig['system']['session'];
 
 // ====== Server Instance Config Schema ======
 

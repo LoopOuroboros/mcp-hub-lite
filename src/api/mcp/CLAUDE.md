@@ -26,7 +26,7 @@ mcp/
 
 - **stateful 模式**：每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对，SDK 通过 `sessionIdGenerator` 生成 `mcp-session-id`，`SessionManager` 管理生命周期
 - **stateless 模式**：per-request transport，每次 POST 创建新的 transport+server 对，无会话持久化，GET/DELETE 返回 405
-- 模式选择优先级：请求头 `x-mcp-session-mode` > 配置 `system.gateway.sessionMode` > 默认 `"stateful"`
+- 模式选择优先级：请求头 `x-mcp-session-mode` > UA 关键词匹配 `system.session.sessionModeRules` > 默认 `system.session.defaultSessionMode`
 
 **支持的操作**:
 

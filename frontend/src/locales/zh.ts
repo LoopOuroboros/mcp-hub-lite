@@ -26,6 +26,7 @@ export default {
     configImported: '配置导入成功',
     saveSuccess: '配置保存成功',
     copiedToClipboard: '已复制到剪贴板',
+    add: '添加',
     copyFailed: '复制到剪贴板失败',
     displayNameUpdated: '实例名称已更新',
     instanceAdded: '实例添加成功',
@@ -130,7 +131,18 @@ export default {
     maxConnectRetries: '最大重试次数',
     maxConnectRetriesHint: '连接失败时的最大重试次数',
     connectRetryDelay: '重试延迟',
-    connectRetryDelayHint: '指数退避重试的初始延迟（毫秒）'
+    connectRetryDelayHint: '指数退避重试的初始延迟（毫秒）',
+    sessionTab: '会话',
+    sessionDefaultSessionMode: '默认会话模式',
+    sessionStateful: 'Stateful（有状态）',
+    sessionStateless: 'Stateless（无状态）',
+    sessionPatternRules: 'UA 匹配规则',
+    sessionStatefulPatterns: 'Stateful UA 关键词',
+    sessionStatelessPatterns: 'Stateless UA 关键词',
+    sessionPatternsHint: '匹配 User-Agent（忽略大小写），未命中时使用默认模式',
+    sessionNoPatterns: '暂无关键词',
+    sessionPatternDeleteTitle: '删除关键词',
+    sessionPatternDeleteConfirm: '确定要删除关键词 "{pattern}" 吗？'
   },
   dashboard: {
     title: '仪表盘',

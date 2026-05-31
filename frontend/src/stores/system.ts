@@ -58,6 +58,13 @@ export interface SystemConfig {
       maxConnectRetries: number;
       connectRetryDelay: number;
     };
+    session?: {
+      sessionModeRules?: {
+        stateful?: string[];
+        stateless?: string[];
+      };
+      defaultSessionMode?: 'stateful' | 'stateless';
+    };
   };
   security: {
     allowedNetworks: string[];
@@ -92,6 +99,13 @@ export const useSystemStore = defineStore('system', () => {
         readyTimeout: 120000,
         maxConnectRetries: 3,
         connectRetryDelay: 5000
+      },
+      session: {
+        sessionModeRules: {
+          stateful: [],
+          stateless: []
+        },
+        defaultSessionMode: 'stateful'
       }
     },
     security: {

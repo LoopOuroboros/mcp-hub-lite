@@ -26,6 +26,7 @@ export default {
     configImported: 'Configuration imported successfully',
     saveSuccess: 'Configuration saved successfully',
     copiedToClipboard: 'Copied to clipboard',
+    add: 'Add',
     copyFailed: 'Failed to copy to clipboard',
     displayNameUpdated: 'Display name updated',
     instanceAdded: 'Instance added successfully',
@@ -130,7 +131,18 @@ export default {
     maxConnectRetries: 'Max Retries',
     maxConnectRetriesHint: 'Maximum connection retry attempts on failure',
     connectRetryDelay: 'Retry Delay',
-    connectRetryDelayHint: 'Initial delay for exponential backoff retry (ms)'
+    connectRetryDelayHint: 'Initial delay for exponential backoff retry (ms)',
+    sessionTab: 'Session',
+    sessionDefaultSessionMode: 'Default Session Mode',
+    sessionStateful: 'Stateful',
+    sessionStateless: 'Stateless',
+    sessionPatternRules: 'UA Pattern Rules',
+    sessionStatefulPatterns: 'Stateful UA Patterns',
+    sessionStatelessPatterns: 'Stateless UA Patterns',
+    sessionPatternsHint: 'Match User-Agent (case-insensitive), unmatched uses default mode',
+    sessionNoPatterns: 'No patterns',
+    sessionPatternDeleteTitle: 'Delete Pattern',
+    sessionPatternDeleteConfirm: 'Are you sure you want to delete pattern "{pattern}"?'
   },
   dashboard: {
     title: 'Dashboard',

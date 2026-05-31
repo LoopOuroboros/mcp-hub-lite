@@ -31,7 +31,7 @@ describe('resolveSessionMode', () => {
     test('x-mcp-session-mode: stateless overrides UA match', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: ['claude-code'], stateless: [] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -47,7 +47,7 @@ describe('resolveSessionMode', () => {
     test('x-mcp-session-mode: stateful overrides UA match', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: [], stateless: ['cherrystudio'] },
             defaultSessionMode: SESSION_MODE_STATELESS
           }
@@ -65,7 +65,7 @@ describe('resolveSessionMode', () => {
     test('matches stateless pattern (case-insensitive)', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: [], stateless: ['cherrystudio'] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -80,7 +80,7 @@ describe('resolveSessionMode', () => {
     test('matches stateless pattern with different casing in UA', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: [], stateless: ['cherrystudio'] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -93,7 +93,7 @@ describe('resolveSessionMode', () => {
     test('matches stateless pattern with different casing in rule', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: [], stateless: ['CherryStudio'] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -106,7 +106,7 @@ describe('resolveSessionMode', () => {
     test('matches stateful pattern', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: ['claude-code'], stateless: [] },
             defaultSessionMode: SESSION_MODE_STATELESS
           }
@@ -119,7 +119,7 @@ describe('resolveSessionMode', () => {
     test('stateless rules checked before stateful (stateless wins on conflict)', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: ['claude'], stateless: ['claude-code'] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -135,7 +135,7 @@ describe('resolveSessionMode', () => {
     test('no matching UA falls back to defaultSessionMode', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: ['claude-code'], stateless: ['cherrystudio'] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -148,7 +148,7 @@ describe('resolveSessionMode', () => {
     test('empty UA falls back to defaultSessionMode', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: ['claude-code'], stateless: [] },
             defaultSessionMode: SESSION_MODE_STATEFUL
           }
@@ -177,7 +177,7 @@ describe('resolveSessionMode', () => {
     test('empty stateful and stateless arrays use default', () => {
       mockGetConfig.mockReturnValue({
         system: {
-          gateway: {
+          session: {
             sessionModeRules: { stateful: [], stateless: [] },
             defaultSessionMode: SESSION_MODE_STATELESS
           }

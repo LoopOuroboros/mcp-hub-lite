@@ -42,7 +42,7 @@ export function resolveSessionMode(request: FastifyRequest): SessionMode {
   // 2. UA keyword matching (case-insensitive)
   const ua = (request.headers['user-agent'] as string) || '';
   const config = configManager.getConfig();
-  const rules = config?.system?.gateway?.sessionModeRules;
+  const rules = config?.system?.session?.sessionModeRules;
 
   if (rules && ua) {
     const uaLower = ua.toLowerCase();
@@ -55,7 +55,7 @@ export function resolveSessionMode(request: FastifyRequest): SessionMode {
   }
 
   // 3. Default fallback
-  return config?.system?.gateway?.defaultSessionMode ?? SESSION_MODE_STATEFUL;
+  return config?.system?.session?.defaultSessionMode ?? SESSION_MODE_STATEFUL;
 }
 
 /**
