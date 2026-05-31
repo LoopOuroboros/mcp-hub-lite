@@ -10,6 +10,7 @@ import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/se
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { getGatewayDebugSetting } from '@utils/json-utils.js';
+import { configManager } from '@config/config-manager.js';
 
 interface SessionState {
   sessionId: string;
@@ -28,7 +29,6 @@ interface SessionState {
   lastMethod?: string;
 }
 
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const CLEANUP_INTERVAL_MS = 60 * 1000; // every minute
 const PING_COOLDOWN_MS = 30 * 1000; // min interval between pings
 const PING_TIMEOUT_MS = 10 * 1000; // per-ping timeout
@@ -232,7 +232,7 @@ export class SessionManager {
         skippedSse++;
         continue;
       }
-      if (now - state.lastAccessedAt > SESSION_TIMEOUT_MS) {
+      if (now - state.lastAccessedAt > configManager.getConfig().security.idleConnectionTimeout) {
         staleIds.push(id);
       }
     }

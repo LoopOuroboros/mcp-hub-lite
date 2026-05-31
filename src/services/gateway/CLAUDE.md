@@ -53,7 +53,7 @@ MCP Gateway 支持两种会话模式，通过配置和请求头灵活切换：
 
 - 每个客户端会话（`mcp-session-id`）拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对
 - SDK stateful 模式：`sessionIdGenerator` 生成 session ID，客户端后续请求携带该 header
-- `SessionManager` 管理会话生命周期、通知广播（3s debounce）、SSE 引用计数、陈旧清理
+- `SessionManager` 管理会话生命周期、通知广播（3s debounce）、SSE 引用计数、陈旧清理（超时时间由 `security.idleConnectionTimeout` 配置决定）
 - GET /mcp 支持 SSE 长连接接收通知推送
 - 通知为纯信号（不含数据），客户端收到后自行重新请求完整列表
 
@@ -148,18 +148,18 @@ interface ToolMapEntry {
 
 ## 相关文件清单
 
-| 文件路径                                   | 描述                                                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| `gateway.service.ts`                       | Gateway 服务主类                                                               |
-| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging + createPerRequestTransport 双模式） |
-| `session-manager.ts`                       | 会话管理器（状态管理、通知广播、SSE 跟踪、PING 存活探测、陈旧清理）            |
-| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器                                                          |
-| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表）                                     |
-| `request-handlers/call-tool-handler.ts`    | 工具调用处理器                                                                 |
-| `request-handlers/system-tools-handler.ts` | 系统工具处理器                                                                 |
-| `tool-list-generator.ts`                   | 工具列表生成器                                                                 |
-| `log-formatter.ts`                         | 日志格式化工具                                                                 |
-| `types.ts`                                 | 类型定义                                                                       |
+| 文件路径                                   | 描述                                                                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `gateway.service.ts`                       | Gateway 服务主类                                                                                               |
+| `global-transport.ts`                      | Transport 工具函数（setupTransportLogging + createPerRequestTransport 双模式）                                 |
+| `session-manager.ts`                       | 会话管理器（状态管理、通知广播、SSE 跟踪、PING 存活探测、陈旧清理，超时参考 `security.idleConnectionTimeout`） |
+| `request-handlers/initialize-handler.ts`   | Initialize 请求处理器                                                                                          |
+| `request-handlers/resources-handler.ts`    | 资源请求处理器（含 templates/list 空列表）                                                                     |
+| `request-handlers/call-tool-handler.ts`    | 工具调用处理器                                                                                                 |
+| `request-handlers/system-tools-handler.ts` | 系统工具处理器                                                                                                 |
+| `tool-list-generator.ts`                   | 工具列表生成器                                                                                                 |
+| `log-formatter.ts`                         | 日志格式化工具                                                                                                 |
+| `types.ts`                                 | 类型定义                                                                                                       |
 
 ## MCP Notification Push (v1.3.1+)
 
