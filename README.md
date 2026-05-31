@@ -257,7 +257,7 @@ To connect your MCP client to MCP-HUB-LITE, add the following to your client's M
 }
 ```
 
-Stateful mode provides session persistence, SSE streaming, and real-time notifications. No extra headers needed — Claude Code is detected automatically by UA matching.
+Stateful mode provides session persistence, SSE streaming, and real-time notifications. UA matching is NOT automatic — it requires manually adding `"ClaudeCode"` to `system.session.sessionModeRules.stateful` in `.mcp-hub.json`. Standard MCP clients like Claude Code work with the default stateful mode without extra configuration.
 
 </details>
 
@@ -269,13 +269,18 @@ Stateful mode provides session persistence, SSE streaming, and real-time notific
   "mcpServers": {
     "mcp-hub-lite": {
       "type": "http",
-      "url": "http://localhost:7788/mcp"
+      "url": "http://localhost:7788/mcp",
+      "headers": {
+        "x-mcp-session-mode": "stateless"
+      }
     }
   }
 }
 ```
 
-CherryStudio is detected automatically by UA matching and routed to stateless mode. Stateless mode uses per-request transport — each POST creates an independent transport, no session persistence, GET returns 405.
+CherryStudio requires the `x-mcp-session-mode: stateless` header to use stateless mode. UA matching is NOT automatic — it requires manually adding `"CherryStudio"` to `system.session.sessionModeRules.stateless` in `.mcp-hub.json`. The header approach is the recommended way and takes highest priority.
+
+Stateless mode uses per-request transport — each POST creates an independent transport, no session persistence, GET returns 405.
 
 </details>
 
