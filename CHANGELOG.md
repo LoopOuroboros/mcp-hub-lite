@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-05-31
+
+### Gateway
+
+- add MCP notification push via stateful session transport with bidirectional SSE
+- add dual-mode session support (stateful/stateless) with UA pattern matching and header priority
+- add SDK PING mechanism for stale SSE session detection with 30s cooldown / 10s timeout
+- add session query API endpoint (GET /web/sessions) for monitoring active MCP sessions
+- rename session config section to 'session' and add frontend settings UI
+- use configurable idleConnectionTimeout for session cleanup instead of hardcoded value
+- add 3s debounce to broadcastNotification to prevent notification storms
+- prevent stale session cleanup for active SSE connections via reference counting
+- add missing resources/templates/list handler
+
+### Connection & Transport
+
+- skip resources/list and logging/setLevel negotiation when not supported by server
+- preserve trace context in deferred transport send/onmessage callbacks
+- add compositeKey to MCP message sent debug log for sender identification
+- use stringifyForLogging for initialized notification debug log to avoid ANSI escapes
+
+### Logging
+
+- add sessionId and traceId auto-injection to all log entries via AsyncLocalStorage
+- add data URI image truncation in log output to reduce log noise
+
+### CLI
+
+- add session info (mode, active sessions count) to status command output
+- add session mode header hint to status output
+
+### Frontend
+
+- replace el-select with custom tag list in security and session settings tabs
+- fix instance status stuck at "starting" after stop command
+
+### WebSocket
+
+- sync instance-level connection status in WebSocket event handlers for accurate real-time display
+
+### Hub Tools
+
+- add bilingual use-guide and MCP instruction resources (hub://use-guide/{lang})
+
+### Documentation
+
+- audit and fix all CLAUDE.md files to match actual code structure
+- document instance-level status sync in WebSocket event handlers
+
 ## [1.3.0] - 2026-05-28
 
 ### Gateway

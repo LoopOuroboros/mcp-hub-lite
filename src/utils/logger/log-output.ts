@@ -118,8 +118,30 @@ export function logNotificationMessage(message: unknown, context: string, server
 }
 
 /**
+ * Check if JSON string contains data:image/*;base64 data URIs.
+ * These commonly appear in serverInfo.icons[].src and other metadata fields.
+ *
+ * @param data - JSON string to check
+ * @returns true if it contains data:image data URIs
+ */
+export function hasDataUriImage(data: string): boolean {
+  return /data:image\/[^;]+;base64,/.test(data);
+}
+
+/**
+ * Simplify data URI images by replacing base64 payload with placeholder.
+ * Matches all data:image/*;base64,... patterns and truncates the payload.
+ *
+ * @param data - JSON string containing data URIs
+ * @returns JSON string with base64 payloads replaced
+ */
+export function simplifyDataUriImages(data: string): string {
+  return data.replace(/(data:image\/[^;]+;base64,)[A-Za-z0-9+/=]+/g, '$1[Truncated]');
+}
+
+/**
  * Format an MCP message for logging, with simplification for tools/list,
- * resources/list, capabilities responses, and image content.
+ * resources/list, capabilities responses, image content, and data URI images.
  *
  * @param message - The MCP message object to format
  * @returns Formatted log message string
@@ -132,13 +154,31 @@ export function formatMcpMessageForLogging(message: unknown): string {
     if (isToolsListResponse(rawJson)) {
       const simplified = simplifyToolsListResponse(rawJson);
       if (simplified === null) {
-        // Could not simplify, use pretty JSON formatting
-        logMessage = stringifyForLogging(message);
+        // Could not simplify, fall through to other checks
+        if (hasDataUriImage(rawJson)) {
+          const truncated = simplifyDataUriImages(rawJson);
+          try {
+            const parsed = JSON.parse(truncated);
+            logMessage = stringifyForLogging(parsed);
+          } catch {
+            logMessage = truncated;
+          }
+        } else {
+          logMessage = stringifyForLogging(message);
+        }
       } else {
         logMessage = simplified;
       }
     } else if (hasImageContent(rawJson)) {
       const simplified = simplifyImageContent(rawJson);
+      try {
+        const parsed = JSON.parse(simplified);
+        logMessage = stringifyForLogging(parsed);
+      } catch {
+        logMessage = simplified;
+      }
+    } else if (hasDataUriImage(rawJson)) {
+      const simplified = simplifyDataUriImages(rawJson);
       try {
         const parsed = JSON.parse(simplified);
         logMessage = stringifyForLogging(parsed);
@@ -228,7 +268,7 @@ export function simplifyImageContent(data: string): string {
               ) {
                 return {
                   ...item,
-                  data: '[BinaryImageData]'
+                  data: '[Truncated]'
                 };
               }
               return item;
@@ -282,16 +322,6 @@ export function isToolsListResponse(data: string): boolean {
           if ('resources' in result) {
             return true;
           }
-          if (
-            'capabilities' in result &&
-            typeof result.capabilities === 'object' &&
-            result.capabilities !== null
-          ) {
-            const capabilities = result.capabilities as Record<string, unknown>;
-            if ('tools' in capabilities || 'resources' in capabilities) {
-              return true;
-            }
-          }
         }
       }
     }
@@ -344,44 +374,6 @@ export function simplifyToolsListResponse(data: string): string | null {
               return `Returned ${resourcesCount} resources`;
             }
             // No resources, don't simplify
-            return null;
-          }
-
-          if (
-            'capabilities' in result &&
-            typeof result.capabilities === 'object' &&
-            result.capabilities !== null
-          ) {
-            const capabilities = result.capabilities as Record<string, unknown>;
-            let toolsCount = 0;
-            let resourcesCount = 0;
-
-            if (
-              'tools' in capabilities &&
-              typeof capabilities.tools === 'object' &&
-              capabilities.tools !== null
-            ) {
-              toolsCount = Object.keys(capabilities.tools as Record<string, unknown>).length;
-            }
-
-            if (
-              'resources' in capabilities &&
-              typeof capabilities.resources === 'object' &&
-              capabilities.resources !== null
-            ) {
-              resourcesCount = Object.keys(
-                capabilities.resources as Record<string, unknown>
-              ).length;
-            }
-
-            if (toolsCount > 0 && resourcesCount > 0) {
-              return `Returned ${toolsCount} tools and ${resourcesCount} resources`;
-            } else if (toolsCount > 0) {
-              return `Returned ${toolsCount} tools`;
-            } else if (resourcesCount > 0) {
-              return `Returned ${resourcesCount} resources`;
-            }
-            // No tools or resources, don't simplify
             return null;
           }
         }

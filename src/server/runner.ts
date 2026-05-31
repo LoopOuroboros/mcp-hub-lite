@@ -4,6 +4,7 @@ import { logger } from '@utils/logger/index.js';
 import { LOG_MODULES } from '@utils/logger/log-modules.js';
 import { setJsonPrettyConfigGetter } from '@utils/json-utils.js';
 import { mcpConnectionManager } from '@services/connection/index.js';
+import { sessionManager } from '@services/gateway/session-manager.js';
 import { PidManager } from '@pid/manager.js';
 import { checkPortWithExit } from '@utils/port-checker.js';
 import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';
@@ -68,6 +69,7 @@ export async function runServer(options: { port?: number; host?: string } = {}) 
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`, LOG_MODULES.SERVER);
       try {
+        sessionManager.shutdownAll();
         await mcpConnectionManager.disconnectAll();
         if (app) {
           await app.close();

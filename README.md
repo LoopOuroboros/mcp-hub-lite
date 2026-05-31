@@ -25,7 +25,8 @@ MCP-HUB-LITE is an MCP server gateway designed specifically for independent deve
 - **Server Management**: Manage multiple MCP servers through a web interface
 - **Tool Search**: Search and tool discovery across all servers with aggregation
 - **Process Management**: Launch and manage MCP server processes via npx/uvx
-- **Session Management**: Native stateless session management via MCP SDK
+- **Dual-Mode Session**: Stateful (session persistence, SSE, notifications) and stateless (per-request) modes, with UA / header / config priority switching
+- **MCP Notification Push**: Push `notifications/tools/list_changed` and `notifications/resources/list_changed` to connected clients
 - **Multi-Instance Support**: Run multiple instances of the same MCP server with load balancing
 - **Instance Selection Strategies**: Support random, round-robin, and unique-by-tag selection
 - **Tag System**: Organize multiple MCP servers by environment, category, function, etc.
@@ -77,10 +78,10 @@ npm run full:check
 npm start
 
 # Check status
-npm run status
+mcp-hub-lite status
 
 # Open UI interface
-npm run ui
+mcp-hub-lite ui
 ```
 
 The server will start at <http://localhost:7788>.
@@ -126,19 +127,19 @@ MCP-HUB-LITE provides a command-line interface for managing the service.
 # Start the service
 npm start
 # or
-node dist/index.js start
+mcp-hub-lite start
 
 # Check status
-node dist/index.js status
+mcp-hub-lite status
 
 # List all servers
-node dist/index.js list
+mcp-hub-lite list
 
 # Open web interface
-node dist/index.js ui
+mcp-hub-lite ui
 
 # Help
-node dist/index.js --help
+mcp-hub-lite --help
 ```
 
 ### Tool Use Command
@@ -147,23 +148,18 @@ The `tool-use` command provides MCP server tool operations:
 
 ```bash
 # List system tools (default server: mcp-hub-lite)
-npm run tool-use -- list-tools
 mcp-hub-lite tool-use list-tools
 
 # List tools from a specific server
-npm run tool-use -- list-tools --server baidu-search
 mcp-hub-lite tool-use list-tools --server baidu-search
 
 # Get tool schema
-npm run tool-use -- get-tool --tool list_tools
 mcp-hub-lite tool-use get-tool --tool list_tools
 
 # Call a system tool
-npm run tool-use -- call-tool --tool list_tools --args '{}'
 mcp-hub-lite tool-use call-tool --tool list_tools --args '{}'
 
 # Call a server tool
-npm run tool-use -- call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 mcp-hub-lite tool-use call-tool --server baidu-search --tool search --args '{"query":"hello"}'
 ```
 
@@ -175,6 +171,9 @@ MCP-HUB-LITE uses a `.mcp-hub.json` file for configuration. Configuration lookup
 2. `~/.mcp-hub-lite/config/.mcp-hub.json` (hidden folder in user home directory)
 
 ### Configuration Example
+
+<details>
+<summary>Click to expand full <code>.mcp-hub.json</code> example</summary>
 
 ```json
 {
@@ -218,6 +217,15 @@ MCP-HUB-LITE uses a `.mcp-hub.json` file for configuration. Configuration lookup
       "level": "info"
     }
   },
+  "system": {
+    "session": {
+      "defaultSessionMode": "stateful",
+      "sessionModeRules": {
+        "stateful": ["Claude"],
+        "stateless": ["CherryStudio"]
+      }
+    }
+  },
   "gateway": {
     "proxyTimeout": 30000,
     "rateLimit": {
@@ -228,6 +236,71 @@ MCP-HUB-LITE uses a `.mcp-hub.json` file for configuration. Configuration lookup
   }
 }
 ```
+
+</details>
+
+### Client Configuration
+
+To connect your MCP client to MCP-HUB-LITE, add the following to your client's MCP configuration:
+
+<details>
+<summary>Claude Code / Claude Desktop (stateful mode — default)</summary>
+
+```json
+{
+  "mcpServers": {
+    "mcp-hub-lite": {
+      "type": "http",
+      "url": "http://localhost:7788/mcp"
+    }
+  }
+}
+```
+
+Stateful mode provides session persistence, SSE streaming, and real-time notifications. No extra headers needed — Claude Code is detected automatically by UA matching.
+
+</details>
+
+<details>
+<summary>CherryStudio (stateless mode)</summary>
+
+```json
+{
+  "mcpServers": {
+    "mcp-hub-lite": {
+      "type": "http",
+      "url": "http://localhost:7788/mcp"
+    }
+  }
+}
+```
+
+CherryStudio is detected automatically by UA matching and routed to stateless mode. Stateless mode uses per-request transport — each POST creates an independent transport, no session persistence, GET returns 405.
+
+</details>
+
+<details>
+<summary>Manual session mode override</summary>
+
+Add the `x-mcp-session-mode` header to force a specific mode:
+
+```json
+{
+  "mcpServers": {
+    "mcp-hub-lite": {
+      "type": "http",
+      "url": "http://localhost:7788/mcp",
+      "headers": {
+        "x-mcp-session-mode": "stateful"
+      }
+    }
+  }
+}
+```
+
+Valid values: `"stateful"` or `"stateless"`. Header takes highest priority over UA matching and config defaults.
+
+</details>
 
 ## Usage Guide
 
@@ -264,8 +337,9 @@ MCP-HUB-LITE supports launching and managing MCP servers using your local enviro
 ```
 src/
 ├── api/              # API implementations
-│   ├── mcp-protocol/ # MCP protocol handlers
-│   └── web-api/      # Web API routes
+│   ├── mcp/          # MCP protocol handlers
+│   ├── web/          # Web API routes (includes sessions.ts)
+│   └── ws/           # WebSocket routes
 ├── models/           # Data models
 ├── services/         # Core business logic
 │   ├── gateway/      # MCP gateway service

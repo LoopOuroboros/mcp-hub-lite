@@ -164,6 +164,46 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
     displayServerList(disconnectedServers, 'MCP Servers (Disconnected):', red);
   }
 
+  // Sessions section
+  if (status.sessions !== undefined) {
+    console.log('');
+    console.log(`${yellow}👥 Active MCP Sessions:${reset}`);
+    console.log(`${dim}══════════════════════════════${reset}`);
+
+    if (status.sessions.length === 0) {
+      console.log(`${dim}  No active sessions${reset}`);
+    } else {
+      let maxSidLen = 'Session ID'.length;
+      let maxClientLen = 'Client'.length;
+      let maxVerLen = 'Version'.length;
+
+      for (const s of status.sessions) {
+        maxSidLen = Math.max(maxSidLen, (s.sessionId || '').length);
+        maxClientLen = Math.max(maxClientLen, (s.clientName || '').length);
+        const ver = s.protocolVersion || '';
+        maxVerLen = Math.max(maxVerLen, ver.length);
+      }
+
+      const headerSid = 'Session ID'.padEnd(maxSidLen);
+      const headerClient = 'Client'.padEnd(maxClientLen);
+      const headerVer = 'Version'.padEnd(maxVerLen);
+
+      console.log(`${cyan}${headerSid}  ${headerClient}  ${headerVer}  SSE${reset}`);
+      console.log(`${dim}${'─'.repeat(maxSidLen + maxClientLen + maxVerLen + 10)}${reset}`);
+
+      for (const s of status.sessions) {
+        const sid = (s.sessionId || '').padEnd(maxSidLen);
+        const client = (s.clientName || '').padEnd(maxClientLen);
+        const ver = (s.protocolVersion || '').padEnd(maxVerLen);
+        const sse = s.activeSseCount.toString().padStart(3);
+
+        console.log(`${sid}  ${client}  ${ver}  ${sse}`);
+      }
+
+      console.log(`${dim}  Total: ${status.sessions.length} active session(s)${reset}`);
+    }
+  }
+
   // MCP Client Configuration
   console.log('');
   console.log(`${yellow}🔌 MCP Client Configuration:${reset}`);
@@ -173,10 +213,17 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
   console.log(`${dim}{${reset}`);
   console.log(`${dim}  "mcpServers": {${reset}`);
   console.log(`${dim}    "mcp-hub-lite": {${reset}`);
-  console.log(`${dim}      "url": "${cyan}${mcpEndpoint}${dim}"${reset}`);
+  console.log(`${dim}      "url": "${cyan}${mcpEndpoint}${dim}",${reset}`);
+  console.log(`${dim}      "headers": {${reset}`);
+  console.log(`${dim}        "x-mcp-session-mode": "${cyan}stateful${dim}"${reset}`);
+  console.log(`${dim}      }${reset}`);
   console.log(`${dim}    }${reset}`);
   console.log(`${dim}  }${reset}`);
   console.log(`${dim}}${reset}`);
+  console.log('');
+  console.log(
+    `${dim}💡 Use ${cyan}"stateful"${dim} for session persistence / SSE, ${cyan}"stateless"${dim} for per-request mode${reset}`
+  );
 
   // Quick Commands
   console.log('');

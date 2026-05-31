@@ -28,7 +28,7 @@ views/
 **功能**:
 
 - 检测是否选择了服务器
-- 动态渲染 `Dashboard` 或 `ServerDetail` 组件
+- 动态渲染 `DashboardView` 或 `ServerDetail` 组件
 
 ### ServerDashboard (`ServerDashboard.vue`)
 
@@ -197,10 +197,10 @@ const routes = [
 ```
 views/
 ├── HomeView.vue
-│   └── depends on: Dashboard.vue, ServerDetail.vue, useServerStore
+│   └── depends on: DashboardView.vue, ServerDetail.vue, useServerStore
 │
 ├── ServerDashboard.vue
-│   └── depends on: Dashboard.vue, ServerDetail.vue, useServerStore
+│   └── depends on: DashboardView.vue, ServerDetail.vue, useServerStore
 │
 ├── ServerListView.vue
 │   └── depends on: useServerStore

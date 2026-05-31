@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { configManager } from '@config/config-manager.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { mcpConnectionManager } from '@services/connection/index.js';
+import { sessionManager } from '@services/gateway/session-manager.js';
 import { PidManager } from '@pid/manager.js';
 import { collectConnectTasks, executeConnectTasks, ensureServerInstances } from './startup.js';
 
@@ -148,6 +149,7 @@ async function startDevServer() {
 const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully...`, LOG_MODULES.DEV_SERVER);
   try {
+    sessionManager.shutdownAll();
     await mcpConnectionManager.disconnectAll();
     if (app) {
       await app.close();

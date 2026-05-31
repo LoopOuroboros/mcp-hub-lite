@@ -10,19 +10,15 @@
 
 - **MCP 协议契约验证**: 确保 MCP Hub Lite 完全符合 MCP JSON-RPC 2.0 协议规范
 - **向后兼容性测试**: 验证新版本不会破坏现有 MCP 服务器集成
-- **边界条件测试**: 测试协议边缘情况和错误处理
-- **性能基准测试**: 验证协议处理性能指标
 
 ## 测试结构
 
 ```
 contract/
-├── mcp-protocol/           # MCP 协议契约测试
-│   ├── tools-list.test.ts   # 工具列表契约测试
-│   ├── tools-call.test.ts   # 工具调用契约测试
-│   └── initialize.test.ts   # 初始化契约测试
-├── error-handling/         # 错误处理契约测试
-└── performance/            # 性能契约测试
+└── mcp-protocol/           # MCP 协议契约测试
+    ├── tools-list.test.ts   # 工具列表契约测试
+    ├── tools-call.test.ts   # 工具调用契约测试
+    └── initialize.test.ts   # 初始化契约测试
 ```
 
 ## 关键测试文件

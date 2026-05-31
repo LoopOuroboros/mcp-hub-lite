@@ -128,6 +128,10 @@
                   <el-form-item :label="$t('settings.gatewayDebug')">
                     <el-switch v-model="config.system.logging.gatewayDebug" />
                   </el-form-item>
+
+                  <el-form-item :label="$t('settings.showTraceContext')">
+                    <el-switch v-model="config.system.logging.showTraceContext" />
+                  </el-form-item>
                 </template>
               </el-form>
             </div>
@@ -149,28 +153,47 @@
                 label-width="260px"
                 v-if="config.security"
               >
-                <el-form-item :label="$t('settings.allowedNetworks')">
-                  <el-select
-                    v-model="config.security.allowedNetworks"
-                    multiple
-                    filterable
-                    allow-create
-                    default-first-option
-                    :reserve-keyword="false"
-                    placeholder="Enter IP CIDR"
-                    class="w-full"
+                <div class="mb-6">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ $t('settings.allowedNetworks') }}
+                    </h4>
+                    <el-button size="small" @click="addAllowedNetwork">
+                      ＋ {{ $t('action.add') }}
+                    </el-button>
+                  </div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <el-input
+                      v-model="allowedNetworkInput"
+                      placeholder="192.168.1.0/24"
+                      class="flex-1"
+                      size="small"
+                      @keyup.enter="addAllowedNetwork"
+                    />
+                  </div>
+                  <div
+                    class="border border-gray-200 dark:border-gray-700 rounded p-2 min-h-[36px] max-h-40 overflow-y-auto bg-gray-50 dark:bg-gray-800"
                   >
-                    <el-option
+                    <template v-if="config.security.allowedNetworks.length === 0">
+                      <span class="text-gray-400 text-sm">{{
+                        $t('settings.sessionNoPatterns')
+                      }}</span>
+                    </template>
+                    <el-tag
                       v-for="ip in config.security.allowedNetworks"
                       :key="ip"
-                      :label="ip"
-                      :value="ip"
-                    />
-                  </el-select>
+                      closable
+                      size="default"
+                      class="mr-1 mb-1"
+                      @close="removeAllowedNetwork(ip)"
+                    >
+                      {{ ip }}
+                    </el-tag>
+                  </div>
                   <div class="text-xs text-gray-500 mt-1">
                     {{ $t('settings.allowedNetworksHint') }}
                   </div>
-                </el-form-item>
+                </div>
 
                 <div class="space-y-4">
                   <!-- Maximum concurrent connections -->
@@ -345,6 +368,122 @@
               <TagManager v-model="config.tagDefinitions" />
             </div>
           </el-tab-pane>
+
+          <!-- Gateway Settings -->
+          <el-tab-pane name="gateway">
+            <template #label>
+              <span class="flex items-center gap-2">
+                <el-icon><Connection /></el-icon>
+                <span>{{ $t('settings.sessionTab') }}</span>
+              </span>
+            </template>
+
+            <div class="pt-4">
+              <el-form
+                :model="config.system.session"
+                label-position="left"
+                label-width="260px"
+                v-if="config.system.session"
+              >
+                <el-form-item :label="$t('settings.sessionDefaultSessionMode')">
+                  <el-radio-group v-model="config.system.session.defaultSessionMode">
+                    <el-radio value="stateful">{{ $t('settings.sessionStateful') }}</el-radio>
+                    <el-radio value="stateless">{{ $t('settings.sessionStateless') }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+
+                <div class="flex items-center my-4">
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100 mr-4">{{
+                    $t('settings.sessionPatternRules')
+                  }}</span>
+                  <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                </div>
+
+                <!-- Stateful UA Patterns -->
+                <div class="mb-6">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ $t('settings.sessionStatefulPatterns') }}
+                    </h4>
+                    <el-button size="small" @click="addPattern('stateful')">
+                      ＋ {{ $t('action.add') }}
+                    </el-button>
+                  </div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <el-input
+                      v-model="statefulInput"
+                      placeholder="claude-code"
+                      class="flex-1"
+                      size="small"
+                      @keyup.enter="addPattern('stateful')"
+                    />
+                  </div>
+                  <div
+                    class="border border-gray-200 dark:border-gray-700 rounded p-2 min-h-[36px] max-h-40 overflow-y-auto bg-gray-50 dark:bg-gray-800"
+                  >
+                    <template v-if="statefulPatterns.length === 0">
+                      <span class="text-gray-400 text-sm">{{
+                        $t('settings.sessionNoPatterns')
+                      }}</span>
+                    </template>
+                    <el-tag
+                      v-for="pattern in statefulPatterns"
+                      :key="pattern"
+                      closable
+                      size="default"
+                      class="mr-1 mb-1"
+                      @close="removePattern('stateful', pattern)"
+                    >
+                      {{ pattern }}
+                    </el-tag>
+                  </div>
+                </div>
+
+                <!-- Stateless UA Patterns -->
+                <div class="mb-2">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ $t('settings.sessionStatelessPatterns') }}
+                    </h4>
+                    <el-button size="small" @click="addPattern('stateless')">
+                      ＋ {{ $t('action.add') }}
+                    </el-button>
+                  </div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <el-input
+                      v-model="statelessInput"
+                      placeholder="cherrystudio"
+                      class="flex-1"
+                      size="small"
+                      @keyup.enter="addPattern('stateless')"
+                    />
+                  </div>
+                  <div
+                    class="border border-gray-200 dark:border-gray-700 rounded p-2 min-h-[36px] max-h-40 overflow-y-auto bg-gray-50 dark:bg-gray-800"
+                  >
+                    <template v-if="statelessPatterns.length === 0">
+                      <span class="text-gray-400 text-sm">{{
+                        $t('settings.sessionNoPatterns')
+                      }}</span>
+                    </template>
+                    <el-tag
+                      v-for="pattern in statelessPatterns"
+                      :key="pattern"
+                      closable
+                      size="default"
+                      class="mr-1 mb-1"
+                      @close="removePattern('stateless', pattern)"
+                    >
+                      {{ pattern }}
+                    </el-tag>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ $t('settings.sessionPatternsHint') }}
+                  </div>
+                </div>
+              </el-form>
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </div>
     </div>
@@ -353,9 +492,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Check,
+  Connection,
   Document,
   Lock,
   Setting,
@@ -522,6 +662,119 @@ useUnitConversionWatcher(idleConnectionTimeoutUnit, idleConnectionTimeoutValue);
 useUnitConversionWatcher(startupDelayUnit, startupDelayValue);
 useUnitConversionWatcher(readyTimeoutUnit, readyTimeoutValue);
 useUnitConversionWatcher(connectRetryDelayUnit, connectRetryDelayValue);
+
+// Security allowed networks
+const allowedNetworkInput = ref('');
+
+function addAllowedNetwork() {
+  const val = allowedNetworkInput.value.trim();
+  if (!val) return;
+  if (!config.value?.security) {
+    config.value.security = {
+      allowedNetworks: [],
+      maxConcurrentConnections: 50,
+      connectionTimeout: 30000,
+      idleConnectionTimeout: 300000,
+      maxConnections: 50
+    };
+  }
+  const current = config.value.security.allowedNetworks;
+  if (!current.includes(val)) {
+    config.value.security.allowedNetworks = [...current, val];
+  }
+  allowedNetworkInput.value = '';
+}
+
+async function removeAllowedNetwork(ip: string) {
+  try {
+    await ElMessageBox.confirm(
+      t('settings.allowedNetworkDeleteConfirm', { ip }),
+      t('settings.allowedNetworkDeleteTitle'),
+      {
+        confirmButtonText: t('action.confirm'),
+        cancelButtonText: t('action.cancel'),
+        type: 'warning'
+      }
+    );
+    config.value.security.allowedNetworks = config.value.security.allowedNetworks.filter(
+      (e) => e !== ip
+    );
+  } catch {
+    // user cancelled
+  }
+}
+
+// Session pattern inputs
+const statefulInput = ref('');
+const statelessInput = ref('');
+
+const statefulPatterns = computed({
+  get: () => config.value?.system?.session?.sessionModeRules?.stateful ?? [],
+  set: (val: string[]) => {
+    if (config.value?.system?.session?.sessionModeRules) {
+      config.value.system.session.sessionModeRules.stateful = val;
+    }
+  }
+});
+
+const statelessPatterns = computed({
+  get: () => config.value?.system?.session?.sessionModeRules?.stateless ?? [],
+  set: (val: string[]) => {
+    if (config.value?.system?.session?.sessionModeRules) {
+      config.value.system.session.sessionModeRules.stateless = val;
+    }
+  }
+});
+
+function ensureSessionModeRules() {
+  if (!config.value?.system?.session) {
+    config.value.system.session = {
+      sessionModeRules: { stateful: [], stateless: [] },
+      defaultSessionMode: 'stateful'
+    };
+  }
+  if (!config.value.system.session?.sessionModeRules) {
+    config.value.system.session.sessionModeRules = { stateful: [], stateless: [] };
+  }
+  if (!config.value.system.session?.sessionModeRules?.stateful) {
+    config.value.system.session.sessionModeRules.stateful = [];
+  }
+  if (!config.value.system.session?.sessionModeRules?.stateless) {
+    config.value.system.session.sessionModeRules.stateless = [];
+  }
+}
+
+function addPattern(type: 'stateful' | 'stateless') {
+  const input = type === 'stateful' ? statefulInput : statelessInput;
+  const val = input.value.trim();
+  if (!val) return;
+  ensureSessionModeRules();
+  const list = type === 'stateful' ? statefulPatterns : statelessPatterns;
+  const current = list.value;
+  if (!current.includes(val)) {
+    list.value = [...current, val];
+  }
+  input.value = '';
+}
+
+async function removePattern(type: 'stateful' | 'stateless', pattern: string) {
+  try {
+    await ElMessageBox.confirm(
+      t('settings.sessionPatternDeleteConfirm', { pattern }),
+      t('settings.sessionPatternDeleteTitle'),
+      {
+        confirmButtonText: t('action.confirm'),
+        cancelButtonText: t('action.cancel'),
+        type: 'warning'
+      }
+    );
+    ensureSessionModeRules();
+    const list = type === 'stateful' ? statefulPatterns : statelessPatterns;
+    list.value = list.value.filter((p) => p !== pattern);
+  } catch {
+    // user cancelled
+  }
+}
 
 onMounted(async () => {
   // Config is already fetched by App.vue usually

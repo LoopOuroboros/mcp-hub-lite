@@ -50,12 +50,20 @@ export interface SystemConfig {
       mcpCommDebug: boolean;
       apiDebug: boolean;
       gatewayDebug: boolean;
+      showTraceContext: boolean;
     };
     startup?: {
       startupDelay: number;
       readyTimeout: number;
       maxConnectRetries: number;
       connectRetryDelay: number;
+    };
+    session?: {
+      sessionModeRules?: {
+        stateful?: string[];
+        stateless?: string[];
+      };
+      defaultSessionMode?: 'stateful' | 'stateless';
     };
   };
   security: {
@@ -83,13 +91,21 @@ export const useSystemStore = defineStore('system', () => {
         jsonPretty: true,
         mcpCommDebug: false,
         apiDebug: false,
-        gatewayDebug: false
+        gatewayDebug: false,
+        showTraceContext: true
       },
       startup: {
         startupDelay: 3000,
         readyTimeout: 120000,
         maxConnectRetries: 3,
         connectRetryDelay: 5000
+      },
+      session: {
+        sessionModeRules: {
+          stateful: [],
+          stateless: []
+        },
+        defaultSessionMode: 'stateful'
       }
     },
     security: {

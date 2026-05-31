@@ -4,6 +4,7 @@
 
 import {
   ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ReadResourceRequestSchema,
   McpError
 } from '@modelcontextprotocol/sdk/types.js';
@@ -18,6 +19,11 @@ import { hubToolsService } from '@services/hub-tools.service.js';
  * @param server - MCP server instance to register handlers on
  */
 export function registerResourcesHandlers(server: McpServer): void {
+  // Resource templates — gateway does not use templates, return empty list
+  server.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return { resourceTemplates: [] };
+  });
+
   server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
     try {
       const resources = await hubToolsService.listResources();

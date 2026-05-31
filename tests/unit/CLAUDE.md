@@ -16,24 +16,36 @@ unit/
 │   ├── hub-manager-service.test.ts
 │   ├── hub-manager.test.ts
 │   ├── hub-tools.service.test.ts
-│   └── search/            # 搜索服务单元测试
-│       ├── search-cache.test.ts
-│       ├── search-core.service.test.ts
-│       └── search-scorer.test.ts
+│   ├── gateway-logging.test.ts
+│   ├── gateway-session-mode.test.ts
+│   └── hub-tools/         # Hub Tools 子模块测试
+│       └── instance-selector.test.ts
+├── cli/                   # CLI 单元测试
+│   ├── basic-cli.test.ts
+│   ├── cli.test.ts
+│   ├── commands.test.ts
+│   └── server.test.ts
 ├── config/                # 配置模块单元测试
-│   ├── config-loader-automatic-migration.test.ts
 │   ├── config-migrator.test.ts
+│   ├── config-saver.test.ts
 │   └── config.schema.test.ts
 ├── utils/                 # 工具层单元测试
 │   ├── config.test.ts
 │   ├── logger.test.ts
+│   ├── log-output.test.ts
 │   ├── log-rotator.test.ts
-│   ├── mcp-error-handler.test.ts
-│   └── request-context.test.ts
+│   ├── json-utils.test.ts
+│   ├── name-converter.test.ts
+│   ├── network-security.test.ts
+│   ├── sort-utils.test.ts
+│   └── transport-factory.test.ts
 └── frontend/              # 前端单元测试
     ├── components/         # 组件测试
     │   ├── dashboard.test.ts
-    │   └── tool-card.test.ts
+    │   ├── tool-card.test.ts
+    │   ├── server-detail-header.test.ts
+    │   ├── server-status-tags.test.ts
+    │   └── tool-call-dialog.test.ts
     ├── mocks/             # 测试 Mock
     │   └── http.mock.ts
     └── stores/            # Store 测试
@@ -120,54 +132,6 @@ npx vitest tests/unit/services/hub-manager.test.ts
 npx vitest tests/unit/services/hub-tools.service.test.ts
 ```
 
-### Search Cache Test (`services/search/search-cache.test.ts`)
-
-**被测模块**: `src/services/search/search-cache.ts`
-
-**测试覆盖**:
-
-- 缓存存储和检索
-- 缓存过期
-- 缓存清除
-
-**运行**:
-
-```bash
-npx vitest tests/unit/services/search/search-cache.test.ts
-```
-
-### Search Core Service Test (`services/search/search-core.service.test.ts`)
-
-**被测模块**: `src/services/search/search-core.service.ts`
-
-**测试覆盖**:
-
-- 模糊搜索功能
-- 过滤器应用
-- 分页处理
-
-**运行**:
-
-```bash
-npx vitest tests/unit/services/search/search-core.service.test.ts
-```
-
-### Search Scorer Test (`services/search/search-scorer.test.ts`)
-
-**被测模块**: `src/services/search/search-scorer.ts`
-
-**测试覆盖**:
-
-- 工具名称匹配评分
-- 工具描述匹配评分
-- 标签匹配评分
-
-**运行**:
-
-```bash
-npx vitest tests/unit/services/search/search-scorer.test.ts
-```
-
 ### Config Schema Test (`config/config.schema.test.ts`)
 
 **被测模块**: `src/config/config.schema.ts`
@@ -205,23 +169,6 @@ npx vitest tests/unit/config/config.schema.test.ts
 
 ```bash
 npx vitest tests/unit/config/config-migrator.test.ts
-```
-
-### Config Loader Automatic Migration Test (`config/config-loader-automatic-migration.test.ts`)
-
-**被测模块**: `src/config/config-loader.ts`
-
-**测试覆盖**:
-
-- 配置加载时的自动迁移
-- 迁移失败时的回退处理
-- 迁移警告记录
-- 配置加载和 Schema 验证集成
-
-**运行**:
-
-```bash
-npx vitest tests/unit/config/config-loader-automatic-migration.test.ts
 ```
 
 ### Config Saver Test (`config/config-saver.test.ts`)
@@ -276,6 +223,25 @@ npx vitest tests/unit/utils/config.test.ts
 npx vitest tests/unit/utils/logger.test.ts
 ```
 
+### Log Output Test (`utils/log-output.test.ts`)
+
+**被测模块**: `src/utils/logger/log-output.ts`
+
+**测试覆盖**:
+
+- `hasDataUriImage()` — data:image data URI 检测（png/jpeg/svg）
+- `simplifyDataUriImages()` — base64 负载替换为 `[Truncated]`，多 URI 处理
+- `simplifyImageContent()` — MCP image content 块替换
+- `isToolsListResponse()` — tools/list、resources/list 检测（不含 capabilities）
+- `formatMcpMessageForLogging()` — 检测链优先级：tools/list → image content → data URI → 完整 JSON
+- initialize 响应含 icons 的 data URI 截断验证
+
+**运行**:
+
+```bash
+npx vitest tests/unit/utils/log-output.test.ts
+```
+
 ### Log Rotator Test (`utils/log-rotator.test.ts`)
 
 **被测模块**: `src/utils/log-rotator.ts`
@@ -290,39 +256,6 @@ npx vitest tests/unit/utils/logger.test.ts
 
 ```bash
 npx vitest tests/unit/utils/log-rotator.test.ts
-```
-
-### MCP Error Handler Test (`utils/mcp-error-handler.test.ts`)
-
-**被测模块**: `src/utils/mcp-error-handler.ts`
-
-**测试覆盖**:
-
-- MCP 错误转换
-- 错误码映射
-- 错误格式标准化
-
-**运行**:
-
-```bash
-npx vitest tests/unit/utils/mcp-error-handler.test.ts
-```
-
-### Request Context Test (`utils/request-context.test.ts`)
-
-**被测模块**: `src/utils/request-context.ts`
-
-**测试覆盖**:
-
-- 异步上下文存储和检索
-- 客户端上下文管理
-- 工作目录获取
-- 上下文隔离和并发处理
-
-**运行**:
-
-```bash
-npx vitest tests/unit/utils/request-context.test.ts
 ```
 
 ### Dashboard Component Test (`frontend/components/dashboard.test.ts`)
@@ -453,30 +386,57 @@ unit/
 │   │   └── tests: src/api/web/servers.ts
 │   ├── hub-tools.service.test.ts
 │   │   └── tests: src/services/hub-tools.service.ts
-│   └── search/
-│       ├── search-cache.test.ts
-│       │   └── tests: src/services/search/search-cache.ts
-│       ├── search-core.service.test.ts
-│       │   └── tests: src/services/search/search-core.service.ts
-│       └── search-scorer.test.ts
-│           └── tests: src/services/search/search-scorer.ts
+│   ├── gateway-logging.test.ts
+│   │   └── tests: src/services/gateway/
+│   ├── gateway-session-mode.test.ts
+│   │   └── tests: src/services/gateway/session-manager.ts
+│   └── hub-tools/
+│       └── instance-selector.test.ts
+│           └── tests: src/services/hub-tools/instance-selector.ts
+├── cli/
+│   ├── basic-cli.test.ts
+│   ├── cli.test.ts
+│   ├── commands.test.ts
+│   └── server.test.ts
+│       └── tests: src/cli/
+├── config/
+│   ├── config-migrator.test.ts
+│   │   └── tests: src/config/config-migrator.ts
+│   ├── config-saver.test.ts
+│   │   └── tests: src/config/config-saver.ts
+│   └── config.schema.test.ts
+│       └── tests: src/config/config.schema.ts
 ├── utils/
 │   ├── config.test.ts
 │   │   └── tests: src/config/config-manager.ts
 │   ├── logger.test.ts
 │   │   └── tests: src/utils/logger.ts
+│   ├── log-output.test.ts
+│   │   └── tests: src/utils/logger/log-output.ts
 │   ├── log-rotator.test.ts
 │   │   └── tests: src/utils/log-rotator.ts
-│   ├── mcp-error-handler.test.ts
-│   │   └── tests: src/utils/mcp-error-handler.ts
-│   └── request-context.test.ts
-│       └── tests: src/utils/request-context.ts
+│   ├── json-utils.test.ts
+│   │   └── tests: src/utils/json-utils.ts
+│   ├── name-converter.test.ts
+│   │   └── tests: src/utils/name-converter.ts
+│   ├── network-security.test.ts
+│   │   └── tests: src/utils/network-security.ts
+│   ├── sort-utils.test.ts
+│   │   └── tests: src/utils/sort-utils.ts
+│   └── transport-factory.test.ts
+│       └── tests: src/utils/transports/transport-factory.ts
 └── frontend/
     ├── components/
     │   ├── dashboard.test.ts
     │   │   └── tests: frontend/src/components/DashboardView.vue
-    │   └── tool-card.test.ts
-    │       └── tests: frontend/src/components/ToolCard.vue
+    │   ├── tool-card.test.ts
+    │   │   └── tests: frontend/src/components/ToolCard.vue
+    │   ├── server-detail-header.test.ts
+    │   │   └── tests: frontend/src/components/ServerDetailHeader.vue
+    │   ├── server-status-tags.test.ts
+    │   │   └── tests: frontend/src/components/ServerStatusTags.vue
+    │   └── tool-call-dialog.test.ts
+    │       └── tests: frontend/src/components/ToolCallDialog.vue
     └── stores/
         └── server.test.ts
             └── tests: frontend/src/stores/server.ts
@@ -484,24 +444,28 @@ unit/
 
 ## 测试覆盖目标
 
-| 模块                           | 目标覆盖率 | 当前状态   |
-| ------------------------------ | ---------- | ---------- |
-| `server/runner`                | 80%        | 已实现部分 |
-| `services/hub-manager.service` | 80%        | 部分实现   |
-| `api/web/servers`              | 80%        | 部分实现   |
-| `services/hub-tools`           | 80%        | 部分实现   |
-| `services/search/*`            | 80%        | 已实现     |
-| `utils/config`                 | 80%        | 已实现     |
-| `utils/logger`                 | 80%        | 已实现     |
-| `utils/log-rotator`            | 80%        | 已实现     |
-| `utils/mcp-error-handler`      | 80%        | 已实现     |
-| `utils/request-context`        | 100%       | 已实现     |
-| `models/*`                     | 80%        | 待实现     |
-| `api/*`                        | 70%        | 待实现     |
-| `cli/*`                        | 70%        | 待实现     |
-| `pid/*`                        | 70%        | 待实现     |
-| `frontend/components/*`        | 70%        | 部分实现   |
-| `frontend/stores/*`            | 70%        | 部分实现   |
+| 模块                                   | 目标覆盖率 | 当前状态   |
+| -------------------------------------- | ---------- | ---------- |
+| `server/runner`                        | 80%        | 已实现部分 |
+| `services/hub-manager.service`         | 80%        | 部分实现   |
+| `api/web/servers`                      | 80%        | 部分实现   |
+| `services/hub-tools`                   | 80%        | 部分实现   |
+| `services/gateway`                     | 80%        | 部分实现   |
+| `services/hub-tools/instance-selector` | 80%        | 已实现     |
+| `cli/*`                                | 70%        | 已实现部分 |
+| `utils/config`                         | 80%        | 已实现     |
+| `utils/logger`                         | 80%        | 已实现     |
+| `utils/log-rotator`                    | 80%        | 已实现     |
+| `utils/json-utils`                     | 80%        | 已实现     |
+| `utils/name-converter`                 | 80%        | 已实现     |
+| `utils/network-security`               | 80%        | 已实现     |
+| `utils/sort-utils`                     | 80%        | 已实现     |
+| `utils/transport-factory`              | 80%        | 已实现     |
+| `models/*`                             | 80%        | 部分实现   |
+| `api/*`                                | 70%        | 待实现     |
+| `pid/*`                                | 70%        | 待实现     |
+| `frontend/components/*`                | 70%        | 部分实现   |
+| `frontend/stores/*`                    | 70%        | 部分实现   |
 
 ## 常见问题 (FAQ)
 
@@ -527,27 +491,36 @@ A: 前端测试需要使用 `vitest.frontend.config.ts` 配置文件，该文件
 
 ## 相关文件清单
 
-| 文件路径                                                | 描述                      |
-| ------------------------------------------------------- | ------------------------- |
-| `unit/server/runner.test.ts`                            | 服务器运行器测试          |
-| `unit/services/hub-manager-service.test.ts`             | Hub Manager 服务单元测试  |
-| `unit/services/hub-manager.test.ts`                     | Hub Manager API 路由测试  |
-| `unit/services/hub-tools.service.test.ts`               | Hub Tools 服务测试        |
-| `unit/services/search/search-cache.test.ts`             | 搜索缓存测试              |
-| `unit/services/search/search-core.service.test.ts`      | 搜索核心服务测试          |
-| `unit/services/search/search-scorer.test.ts`            | 搜索评分器测试            |
-| `unit/config/config.schema.test.ts`                     | 配置 Schema 测试          |
-| `unit/config/config-migrator.test.ts`                   | 配置迁移器测试            |
-| `unit/config/config-loader-automatic-migration.test.ts` | 配置加载器自动迁移测试    |
-| `unit/config/config-saver.test.ts`                      | Config Saver 空值清理测试 |
-| `unit/utils/config.test.ts`                             | 配置管理器测试            |
-| `unit/utils/logger.test.ts`                             | Logger 测试               |
-| `unit/utils/log-rotator.test.ts`                        | 日志轮转测试              |
-| `unit/utils/mcp-error-handler.test.ts`                  | MCP 错误处理器测试        |
-| `unit/utils/request-context.test.ts`                    | 请求上下文测试            |
-| `unit/frontend/components/dashboard.test.ts`            | Dashboard 组件测试        |
-| `unit/frontend/components/tool-card.test.ts`            | ToolCard 组件测试         |
-| `unit/frontend/components/server-status-tags.test.ts`   | ServerStatusTags 组件测试 |
-| `unit/frontend/stores/server.test.ts`                   | Server Store 测试         |
-| `unit/frontend/mocks/http.mock.ts`                      | HTTP Mock                 |
-| `unit/frontend/setup.ts`                                | 前端测试设置              |
+| 文件路径                                                | 描述                        |
+| ------------------------------------------------------- | --------------------------- |
+| `unit/server/runner.test.ts`                            | 服务器运行器测试            |
+| `unit/services/hub-manager-service.test.ts`             | Hub Manager 服务单元测试    |
+| `unit/services/hub-manager.test.ts`                     | Hub Manager API 路由测试    |
+| `unit/services/hub-tools.service.test.ts`               | Hub Tools 服务测试          |
+| `unit/services/gateway-logging.test.ts`                 | Gateway 日志测试            |
+| `unit/services/gateway-session-mode.test.ts`            | Gateway 会话模式测试        |
+| `unit/services/hub-tools/instance-selector.test.ts`     | 实例选择器测试              |
+| `unit/cli/basic-cli.test.ts`                            | CLI 基础测试                |
+| `unit/cli/cli.test.ts`                                  | CLI 测试                    |
+| `unit/cli/commands.test.ts`                             | CLI 命令测试                |
+| `unit/cli/server.test.ts`                               | CLI 服务器测试              |
+| `unit/config/config.schema.test.ts`                     | 配置 Schema 测试            |
+| `unit/config/config-migrator.test.ts`                   | 配置迁移器测试              |
+| `unit/config/config-saver.test.ts`                      | Config Saver 空值清理测试   |
+| `unit/utils/config.test.ts`                             | 配置管理器测试              |
+| `unit/utils/logger.test.ts`                             | Logger 测试                 |
+| `unit/utils/log-output.test.ts`                         | Log Output 测试             |
+| `unit/utils/log-rotator.test.ts`                        | 日志轮转测试                |
+| `unit/utils/json-utils.test.ts`                         | JSON 工具测试               |
+| `unit/utils/name-converter.test.ts`                     | 名称转换器测试              |
+| `unit/utils/network-security.test.ts`                   | 网络安全测试                |
+| `unit/utils/sort-utils.test.ts`                         | 排序工具测试                |
+| `unit/utils/transport-factory.test.ts`                  | 传输工厂测试                |
+| `unit/frontend/components/dashboard.test.ts`            | Dashboard 组件测试          |
+| `unit/frontend/components/tool-card.test.ts`            | ToolCard 组件测试           |
+| `unit/frontend/components/server-detail-header.test.ts` | ServerDetailHeader 组件测试 |
+| `unit/frontend/components/server-status-tags.test.ts`   | ServerStatusTags 组件测试   |
+| `unit/frontend/components/tool-call-dialog.test.ts`     | ToolCallDialog 组件测试     |
+| `unit/frontend/stores/server.test.ts`                   | Server Store 测试           |
+| `unit/frontend/mocks/http.mock.ts`                      | HTTP Mock                   |
+| `unit/frontend/setup.ts`                                | 前端测试设置                |

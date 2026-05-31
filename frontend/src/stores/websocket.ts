@@ -186,8 +186,15 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleServerStatusChange(message: ServerStatusEvent): void {
-    const { serverName, status, error } = message.data;
+    const { serverName, serverIndex, status, error } = message.data;
     serverStore.updateServerStatus(serverName, mapStatus(status));
+
+    // Sync instance-level status so UI button states reflect the real state
+    const server = serverStore.servers.find((s) => s.name === serverName);
+    const instance = server?.instances?.find((inst) => inst.index === serverIndex);
+    if (instance) {
+      instance.status = mapStatus(status);
+    }
 
     if (error) {
       console.error(`Server ${serverName} error:`, error);
@@ -277,13 +284,40 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   function handleServerConnected(message: ServerConnectedEvent): void {
-    const { serverName } = message.data;
+    const { serverName, serverIndex } = message.data;
     serverStore.updateServerStatus(serverName, 'online');
+
+    // Sync instance-level status so UI button states reflect the real state
+    const server = serverStore.servers.find((s) => s.name === serverName);
+    const instance = server?.instances?.find((inst) => inst.index === serverIndex);
+    if (instance) {
+      instance.status = 'online';
+    }
   }
 
   function handleServerDisconnected(message: ServerDisconnectedEvent): void {
-    const { serverName } = message.data;
+    const { serverName, serverIndex } = message.data;
     serverStore.updateServerStatus(serverName, 'offline');
+
+    const server = serverStore.servers.find((s) => s.name === serverName);
+    if (server?.instances) {
+      const instance = server.instances.find((inst) => inst.index === serverIndex);
+      if (instance) {
+        instance.status = 'offline';
+      }
+
+      // Recompute aggregated status — other instances may still be online
+      const anyOnline = server.instances.some((inst) => inst.status === 'online');
+      const anyError = server.instances.some((inst) => inst.status === 'error');
+      const anyStarting = server.instances.some((inst) => inst.status === 'starting');
+      const anyStopping = server.instances.some((inst) => inst.status === 'stopping');
+
+      if (anyOnline) server.status = 'online';
+      else if (anyError) server.status = 'error';
+      else if (anyStarting) server.status = 'starting';
+      else if (anyStopping) server.status = 'stopping';
+      else server.status = 'offline';
+    }
   }
 
   function mapStatus(status: string): ServerStatus {

@@ -869,10 +869,10 @@ describe('HubToolsService', () => {
 
       // Assert
       expect(typeof result).toBe('string');
-      expect(result).toContain('# MCP Hub Lite Use Guide');
-      expect(result).toContain('Getting Started');
-      expect(result).toContain('Progressive Discovery Workflow');
-      expect(result).toContain('System Tools Reference');
+      expect(result).toContain('# MCP Hub Lite');
+      expect(result).toContain('快速上手');
+      expect(result).toContain('渐进式发现工作流');
+      expect(result).toContain('系统工具参考');
     });
 
     it('should throw error for invalid URI format', async () => {

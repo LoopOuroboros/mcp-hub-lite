@@ -27,6 +27,7 @@ components/
 ├── ServerStatusTags.vue          # 服务器状态标签组件
 ├── InstanceCardList.vue          # 实例卡片列表组件
 ├── InstanceConfig.vue            # 实例配置组件
+├── TagManager.vue                # 标签管理组件
 ```
 
 ## 组件列表
@@ -539,7 +540,7 @@ interface Props {
 **依赖**:
 
 - `useI18n` - 国际化支持
-- `format-utils.js` - 格式化工具函数
+- `format-utils.ts` - 格式化工具函数
 
 ## 依赖关系
 
@@ -652,3 +653,4 @@ A: ServerDetail 从一个 1300+ 行的单体组件重构为：
 | `components/ServerStatusTags.vue`          | 服务器状态标签组件 |
 | `components/InstanceCardList.vue`          | 实例卡片列表       |
 | `components/InstanceConfig.vue`            | 实例配置           |
+| `components/TagManager.vue`                | 标签管理           |

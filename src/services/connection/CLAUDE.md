@@ -116,8 +116,16 @@ interface ServerStatus {
 
 **日志功能**:
 
-- `requestLoggingFromServer()` - 连接成功后向服务器发送 `logging/setLevel` 请求，使下游 MCP 服务器开始推送日志通知。SSE 传输自动跳过此步骤。
+- `requestLoggingFromServer()` - 连接成功后根据 capabilities 检查，仅当服务器声明 `logging` 能力时发送 `logging/setLevel` 请求
+- `refreshServerResources()` - 根据 capabilities 检查，仅当服务器声明 `resources` 能力时发送 `resources/list` 请求
 - `handleFinalFailure()` - 启动失败时从 `logStorage` 获取最近 10 条 stderr 日志，附加到错误消息中，并将最终错误写入 logStorage（确保所有传输类型的错误在日志查看器中可见）
+
+**Capability-aware 优化**:
+
+- 连接成功后通过 `client.getServerCapabilities()` 获取服务器能力声明
+- 资源刷新：`capabilities.resources` 缺失时跳过 `resources/list`，避免 `Method not found` 错误
+- 日志通知：`capabilities.logging` 缺失时跳过 `logging/setLevel`，避免 `Method not found` 错误
+- `typeof` guard 确保与测试 mock 兼容
 
 **传输协议支持**:
 

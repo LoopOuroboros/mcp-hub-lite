@@ -136,7 +136,7 @@ stores/
 ```typescript
 {
   requestId: string;
-  serverId: string;
+  serverIndex: number;
   serverName: string;
   toolName: string;
   startTime: number;
@@ -185,18 +185,21 @@ stores/
 - `disconnect()` - 断开 WebSocket
 - `fetchLogs(serverId, limit, since)` - 获取历史日志
 - `handleServerMessage(message)` - 处理服务器消息
+- `handleServerStatusChange(message)` - 处理服务器状态变更事件（同步实例级状态）
+- `handleServerConnected(message)` - 处理服务器连接事件（同步实例级状态）
+- `handleServerDisconnected(message)` - 处理服务器断开事件（同步实例级状态 + 聚合状态重算）
 
 **支持的事件类型**:
 
-- `SERVER_STATUS` - 服务器状态变化
+- `SERVER_STATUS` - 服务器状态变化（按 serverIndex 同步实例级状态）
 - `LOG` - 日志更新
 - `TOOLS` - 工具更新
 - `RESOURCES` - 资源更新
 - `SERVER_ADDED` - 服务器添加
 - `SERVER_UPDATED` - 服务器更新
 - `SERVER_DELETED` - 服务器删除
-- `SERVER_CONNECTED` - 服务器连接
-- `SERVER_DISCONNECTED` - 服务器断开
+- `SERVER_CONNECTED` - 服务器连接（按 serverIndex 同步实例级状态）
+- `SERVER_DISCONNECTED` - 服务器断开（按 serverIndex 同步实例级状态 + 聚合重算）
 - `TOOL_CALL_STARTED` - 工具调用开始
 - `TOOL_CALL_COMPLETED` - 工具调用完成
 - `TOOL_CALL_ERROR` - 工具调用错误

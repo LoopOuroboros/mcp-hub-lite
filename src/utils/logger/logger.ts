@@ -42,7 +42,12 @@ import {
   getCallerInfo,
   formatCallerInfo
 } from './log-formatter.js';
-import { setDevModeEnabled } from '../json-utils.js';
+import { setDevModeEnabled, getShowTraceContextSetting } from '../json-utils.js';
+import {
+  getTraceIdFromContext,
+  getSessionIdFromContext,
+  isInRequestContext
+} from '../request-context.js';
 
 export class Logger {
   private level: LogLevel = 'info';
@@ -149,9 +154,16 @@ export class Logger {
     // Build context object
     const context: LogContext = {
       ...(options?.module && { module: options.module }),
+      ...(options?.sessionId && { sessionId: options.sessionId }),
       ...(options?.traceId && { traceId: options.traceId }),
       ...(options?.spanId && { spanId: options.spanId })
     };
+
+    // Auto-inject trace context from ALS when showTraceContext enabled
+    if (getShowTraceContextSetting() && isInRequestContext()) {
+      if (!context.sessionId) context.sessionId = getSessionIdFromContext() || '-';
+      if (!context.traceId) context.traceId = getTraceIdFromContext() || '-';
+    }
 
     // Add caller info if enabled
     if (this.showCaller) {
@@ -276,7 +288,7 @@ export class Logger {
         typeof arg === 'object' &&
         arg !== null &&
         !Array.isArray(arg) &&
-        ('module' in arg || 'traceId' in arg || 'spanId' in arg)
+        ('module' in arg || 'sessionId' in arg || 'traceId' in arg || 'spanId' in arg)
     );
 
     if (optionsIndex !== -1) {
@@ -339,6 +351,12 @@ export class Logger {
       ...context,
       serverName
     };
+
+    // Auto-inject trace context from ALS when showTraceContext enabled
+    if (getShowTraceContextSetting() && isInRequestContext()) {
+      if (!logContext.sessionId) logContext.sessionId = getSessionIdFromContext() || '-';
+      if (!logContext.traceId) logContext.traceId = getTraceIdFromContext() || '-';
+    }
 
     // Add caller info if enabled (only once per serverLog call would be better,
     // but for consistency with multi-line logging, we add it for each line)

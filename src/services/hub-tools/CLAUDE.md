@@ -16,7 +16,8 @@ hub-tools/
 ├── instance-selector.ts       # 实例选择器
 ├── system-tool-definitions.ts # 系统工具定义
 ├── resource-generator.ts      # 动态资源生成器
-├── use-guide.md               # 用户使用指南
+├── use-guide-en.md             # 用户使用指南（英文）
+├── use-guide-zh.md             # 用户使用指南（中文）
 └── developer-guide.md         # 开发者指南（包含 MCP_HUB_LITE_SERVER 处理规范）
 ```
 

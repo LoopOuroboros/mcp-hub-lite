@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '../types/common.types';
 import type { Tool } from './tool.model';
 import type { Resource } from './resource.model';
+import { SESSION_MODE_VALUES, SESSION_MODE_STATEFUL } from './constants.js';
 
 // ====== Server Runtime Configuration (flat format, merged template + instance) ======
 
@@ -222,7 +223,8 @@ export const LoggingConfigSchema = z
     jsonPretty: z.boolean().default(true),
     mcpCommDebug: z.boolean().default(false),
     apiDebug: z.boolean().default(false),
-    gatewayDebug: z.boolean().default(false)
+    gatewayDebug: z.boolean().default(false),
+    showTraceContext: z.boolean().default(true)
   })
   .default({
     level: 'info',
@@ -230,7 +232,8 @@ export const LoggingConfigSchema = z
     jsonPretty: true,
     mcpCommDebug: false,
     apiDebug: false,
-    gatewayDebug: false
+    gatewayDebug: false,
+    showTraceContext: true
   });
 
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
@@ -301,7 +304,19 @@ export const SystemConfigSchema = z.object({
       theme: z.enum(['light', 'dark', 'system']).default('system'),
       logging: LoggingConfigSchema,
       // Using .optional() without .default() - code should use startup ?? {defaults} for default value
-      startup: StartupConfigSchema.optional()
+      startup: StartupConfigSchema.optional(),
+      session: z
+        .object({
+          sessionModeRules: z
+            .object({
+              stateful: z.array(z.string()).optional().default([]),
+              stateless: z.array(z.string()).optional().default([])
+            })
+            .optional()
+            .default({ stateful: [], stateless: [] }),
+          defaultSessionMode: z.enum(SESSION_MODE_VALUES).optional().default(SESSION_MODE_STATEFUL)
+        })
+        .optional()
     })
     .default({
       host: 'localhost',
@@ -314,13 +329,21 @@ export const SystemConfigSchema = z.object({
         jsonPretty: true,
         mcpCommDebug: false,
         apiDebug: false,
-        gatewayDebug: false
+        gatewayDebug: false,
+        showTraceContext: true
       },
       startup: {
         startupDelay: 3000,
         readyTimeout: 120000,
         maxConnectRetries: 3,
         connectRetryDelay: 5000
+      },
+      session: {
+        sessionModeRules: {
+          stateful: [],
+          stateless: []
+        },
+        defaultSessionMode: SESSION_MODE_STATEFUL
       }
     }),
   security: SecurityConfigSchema,
@@ -329,6 +352,9 @@ export const SystemConfigSchema = z.object({
 });
 
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
+
+/** Session configuration extracted from SystemConfig.system.session */
+export type GatewayConfig = SystemConfig['system']['session'];
 
 // ====== Server Instance Config Schema ======
 

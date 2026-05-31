@@ -18,8 +18,7 @@ src/
 ├── cli/                     # 命令行接口和命令处理
 ├── pid/                     # 进程 ID 管理和文件操作
 ├── server/                  # 服务器运行时和启动器
-├── app.ts                   # Fastify 应用配置
-└── types/                   # 全局类型定义
+└── app.ts                   # Fastify 应用配置
 ```
 
 ## 入口与启动
@@ -128,9 +127,13 @@ interface SessionState {
   sessionId: string;
   clientName?: string;
   clientVersion?: string;
-  createdAt: number;
-  lastAccessedAt: number;
-  metadata: Record<string, unknown>;
+  protocolVersion?: string;
+  createdByMethod?: string;
+  lastMethod?: string;
+  createdAt: string;
+  lastAccessedAt: string;
+  isClosing: boolean;
+  activeSseCount: number;
 }
 ```
 
@@ -161,9 +164,10 @@ tests/
 ├── unit/                    # 单元测试
 │   ├── server/              # 服务器运行时测试
 │   ├── services/            # 服务测试
+│   ├── cli/                 # CLI 测试
+│   ├── config/              # 配置模块测试
 │   └── utils/              # 工具测试
 ├── integration/             # 集成测试
-│   ├── api/                # API测试
 │   └── gateway/            # Gateway测试
 └── contract/               # 契约测试
     └── mcp-protocol/       # MCP协议契约测试
@@ -171,8 +175,8 @@ tests/
 
 ### 测试覆盖
 
-- **单元测试**: 部分实现 (15个文件)
-- **集成测试**: 部分实现 (3个文件)
+- **单元测试**: 部分实现 (29个文件)
+- **集成测试**: 部分实现 (2个文件)
 - **契约测试**: 完整实现 (3个文件)
 
 ### 运行测试
@@ -185,7 +189,7 @@ npm test
 npm run test:backend
 
 # 生成覆盖率报告
-npm run test:coverage
+npx vitest --coverage
 ```
 
 ## 相关文件清单

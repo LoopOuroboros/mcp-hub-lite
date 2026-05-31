@@ -13,7 +13,8 @@ composables/
 ├── useTheme.ts                         # 主题切换 composable
 ├── use-server-selection.ts            # 服务器选择和 Tab 状态管理
 ├── use-server-instances.ts            # 服务器实例操作管理
-└── use-tool-and-resource-dialogs.ts   # 工具和资源对话框管理
+├── use-tool-and-resource-dialogs.ts   # 工具和资源对话框管理
+└── use-unit-conversion.ts             # 单位换算 composable
 ```
 
 ## Composables 列表

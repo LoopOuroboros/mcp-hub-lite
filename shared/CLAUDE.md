@@ -14,7 +14,8 @@ shared/
 │   ├── index.ts         # 统一导出
 │   ├── server.model.ts  # 服务器数据模型
 │   ├── tool.model.ts    # 工具数据模型
-│   └── resource.model.ts # 资源数据模型
+│   ├── resource.model.ts # 资源数据模型
+│   └── constants.ts     # 会话模式常量
 └── types/               # 共享类型定义
     ├── index.ts         # 统一导出
     ├── common.types.ts  # 通用类型

@@ -7,6 +7,7 @@ export interface LogContext {
   pid?: number;
   serverName?: string;
   module?: string;
+  sessionId?: string;
   traceId?: string;
   spanId?: string;
   caller?: string;

@@ -74,6 +74,7 @@ router/
     ├── depends on: ../views/ToolsView.vue
     ├── depends on: ../views/ResourcesView.vue
     ├── depends on: ../views/ResourceDetailView.vue
+    ├── depends on: ../components/ServerDetail.vue
     └── depends on: ../views/SettingsView.vue
 ```
 

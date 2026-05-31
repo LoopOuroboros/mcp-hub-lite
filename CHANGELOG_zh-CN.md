@@ -2,6 +2,55 @@
 
 本文件的所有重要变更都将被记录在此。
 
+## [1.3.1] - 2026-05-31
+
+### 网关
+
+- 新增基于 stateful 会话传输的 MCP 通知推送，支持双向 SSE 通信
+- 新增双模式会话支持（stateful/stateless），通过 UA 模式匹配和请求头优先级切换
+- 新增 SDK PING 机制检测僵死 SSE 会话（30 秒冷却 / 10 秒超时）
+- 新增会话查询 API 端点（GET /web/sessions），用于监控活跃 MCP 会话
+- 将 session 配置节重命名为 'session'，并新增前端设置界面
+- 使用可配置的 idleConnectionTimeout 替代硬编码值进行会话清理
+- 通知广播增加 3 秒去抖，防止通知风暴
+- 通过 SSE 引用计数防止活跃 SSE 连接的会话被意外清理
+- 补充缺失的 resources/templates/list 处理器
+
+### 连接与传输
+
+- 当服务器不支持 resources/list 和 logging/setLevel 时跳过协商，减少不必要的请求
+- 修复延迟传输回调中 trace 上下文丢失的问题
+- MCP 消息发送日志增加 compositeKey 标识发送方
+- 初始化通知日志使用 stringifyForLogging 避免 ANSI 转义字符乱码
+
+### 日志
+
+- 通过 AsyncLocalStorage 实现 sessionId 和 traceId 自动注入所有日志条目
+- 日志输出中截断 data URI 图片内容，减少日志噪音
+
+### CLI
+
+- status 命令输出新增会话信息（模式、活跃会话数）
+- status 输出新增会话模式表头提示
+
+### 前端
+
+- 安全设置与会话设置标签页使用自定义标签列表替换 el-select 组件
+- 修复停止实例后状态卡在 "starting" 的问题
+
+### WebSocket
+
+- WebSocket 事件处理器中同步实例级连接状态，确保实时显示准确
+
+### Hub Tools
+
+- 新增双语使用指南和 MCP 指令资源（hub://use-guide/{lang}）
+
+### 文档
+
+- 审查并修正所有 CLAUDE.md 文件以匹配实际代码结构
+- 补充 WebSocket 事件处理器中实例级状态同步的文档
+
 ## [1.3.0] - 2026-05-28
 
 ### 网关

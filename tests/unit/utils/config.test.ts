@@ -97,7 +97,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -175,7 +176,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         }
       });
@@ -228,7 +230,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         }
       });
@@ -277,7 +280,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         }
       };
@@ -493,7 +497,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {
@@ -555,7 +560,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         }
       });
@@ -574,7 +580,8 @@ describe('ConfigManager', () => {
             jsonPretty: true,
             mcpCommDebug: false,
             apiDebug: false,
-            gatewayDebug: false
+            gatewayDebug: false,
+            showTraceContext: true
           }
         },
         security: {

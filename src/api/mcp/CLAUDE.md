@@ -10,7 +10,7 @@ MCP API 模块负责处理所有 MCP (Model Context Protocol) 协议相关的 HT
 
 ```typescript
 mcp/
-├── gateway.ts                 # MCP Gateway 路由处理器（Per-Request 模式）
+├── gateway.ts                 # MCP Gateway 路由处理器（Stateful + Stateless 双模式）
 └── debug-response-wrapper.ts  # 调试响应包装器
 ```
 
@@ -22,11 +22,11 @@ mcp/
 
 **协议支持**: HTTP-Stream (通过 EventSource 实现)
 
-**架构**: **Per-Request Transport 模式**（v1.1.0+）
+**架构**: **双模式会话支持**（v1.3.1+）
 
-- 每个 HTTP 请求创建独立的 transport/server 实例
-- 确保多客户端连接状态隔离
-- 解决 "Failed to reconnect to mcp-hub-lite" 连接错误
+- **stateful 模式**：每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对，SDK 通过 `sessionIdGenerator` 生成 `mcp-session-id`，`SessionManager` 管理生命周期
+- **stateless 模式**：per-request transport，每次 POST 创建新的 transport+server 对，无会话持久化，GET/DELETE 返回 405
+- 模式选择优先级：请求头 `x-mcp-session-mode` > UA 关键词匹配 `system.session.sessionModeRules` > 默认 `system.session.defaultSessionMode`
 
 **支持的操作**:
 
@@ -34,6 +34,7 @@ mcp/
 - `tools/list` - 列出所有可用工具
 - `tools/call` - 调用工具
 - `resources/list` - 列出所有资源
+- `resources/templates/list` - 资源模板列表（返回空）
 - `resources/read` - 读取资源
 
 ### 调试响应包装器 (`debug-response-wrapper.ts`)
@@ -44,7 +45,10 @@ mcp/
 ## 依赖关系
 
 - **内部依赖**:
-  - `@services/gateway/global-transport.ts` - Transport 工厂函数
+  - `@services/gateway/global-transport.ts` - Transport 工厂函数（stateful + stateless）
+  - `@services/gateway/session-manager.ts` - 会话管理器
+  - `@services/gateway/gateway.service.ts` - Gateway 服务
+  - `@config/config-manager.js` - 配置管理（读取 sessionMode）
   - `@utils/logger/` - 日志系统
   - `@utils/json-utils.ts` - JSON 工具函数
 
