@@ -153,28 +153,47 @@
                 label-width="260px"
                 v-if="config.security"
               >
-                <el-form-item :label="$t('settings.allowedNetworks')">
-                  <el-select
-                    v-model="config.security.allowedNetworks"
-                    multiple
-                    filterable
-                    allow-create
-                    default-first-option
-                    :reserve-keyword="false"
-                    placeholder="Enter IP CIDR"
-                    class="w-full"
+                <div class="mb-6">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ $t('settings.allowedNetworks') }}
+                    </h4>
+                    <el-button size="small" @click="addAllowedNetwork">
+                      ＋ {{ $t('action.add') }}
+                    </el-button>
+                  </div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <el-input
+                      v-model="allowedNetworkInput"
+                      placeholder="192.168.1.0/24"
+                      class="flex-1"
+                      size="small"
+                      @keyup.enter="addAllowedNetwork"
+                    />
+                  </div>
+                  <div
+                    class="border border-gray-200 dark:border-gray-700 rounded p-2 min-h-[36px] max-h-40 overflow-y-auto bg-gray-50 dark:bg-gray-800"
                   >
-                    <el-option
+                    <template v-if="config.security.allowedNetworks.length === 0">
+                      <span class="text-gray-400 text-sm">{{
+                        $t('settings.sessionNoPatterns')
+                      }}</span>
+                    </template>
+                    <el-tag
                       v-for="ip in config.security.allowedNetworks"
                       :key="ip"
-                      :label="ip"
-                      :value="ip"
-                    />
-                  </el-select>
+                      closable
+                      size="default"
+                      class="mr-1 mb-1"
+                      @close="removeAllowedNetwork(ip)"
+                    >
+                      {{ ip }}
+                    </el-tag>
+                  </div>
                   <div class="text-xs text-gray-500 mt-1">
                     {{ $t('settings.allowedNetworksHint') }}
                   </div>
-                </el-form-item>
+                </div>
 
                 <div class="space-y-4">
                   <!-- Maximum concurrent connections -->
@@ -643,6 +662,47 @@ useUnitConversionWatcher(idleConnectionTimeoutUnit, idleConnectionTimeoutValue);
 useUnitConversionWatcher(startupDelayUnit, startupDelayValue);
 useUnitConversionWatcher(readyTimeoutUnit, readyTimeoutValue);
 useUnitConversionWatcher(connectRetryDelayUnit, connectRetryDelayValue);
+
+// Security allowed networks
+const allowedNetworkInput = ref('');
+
+function addAllowedNetwork() {
+  const val = allowedNetworkInput.value.trim();
+  if (!val) return;
+  if (!config.value?.security) {
+    config.value.security = {
+      allowedNetworks: [],
+      maxConcurrentConnections: 50,
+      connectionTimeout: 30000,
+      idleConnectionTimeout: 300000,
+      maxConnections: 50
+    };
+  }
+  const current = config.value.security.allowedNetworks;
+  if (!current.includes(val)) {
+    config.value.security.allowedNetworks = [...current, val];
+  }
+  allowedNetworkInput.value = '';
+}
+
+async function removeAllowedNetwork(ip: string) {
+  try {
+    await ElMessageBox.confirm(
+      t('settings.allowedNetworkDeleteConfirm', { ip }),
+      t('settings.allowedNetworkDeleteTitle'),
+      {
+        confirmButtonText: t('action.confirm'),
+        cancelButtonText: t('action.cancel'),
+        type: 'warning'
+      }
+    );
+    config.value.security.allowedNetworks = config.value.security.allowedNetworks.filter(
+      (e) => e !== ip
+    );
+  } catch {
+    // user cancelled
+  }
+}
 
 // Session pattern inputs
 const statefulInput = ref('');
