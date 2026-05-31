@@ -134,10 +134,15 @@ Transport: StreamableHttp
   "mcpServers": {
     "mcp-hub-lite": {
       "type": "http",
-      "url": "http://localhost:7788/mcp"
+      "url": "http://localhost:7788/mcp",
+      "headers": {
+        "x-mcp-session-mode": "stateful"
+      }
     }
   }
 }
+
+  Use "stateful" for session persistence / SSE, "stateless" for per-request mode
 ```
 
 ### UI 命令 (`commands/ui.ts`)

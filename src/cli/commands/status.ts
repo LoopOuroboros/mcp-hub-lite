@@ -213,10 +213,17 @@ function printFormattedStatus(status: EnhancedServerStatus): void {
   console.log(`${dim}{${reset}`);
   console.log(`${dim}  "mcpServers": {${reset}`);
   console.log(`${dim}    "mcp-hub-lite": {${reset}`);
-  console.log(`${dim}      "url": "${cyan}${mcpEndpoint}${dim}"${reset}`);
+  console.log(`${dim}      "url": "${cyan}${mcpEndpoint}${dim}",${reset}`);
+  console.log(`${dim}      "headers": {${reset}`);
+  console.log(`${dim}        "x-mcp-session-mode": "${cyan}stateful${dim}"${reset}`);
+  console.log(`${dim}      }${reset}`);
   console.log(`${dim}    }${reset}`);
   console.log(`${dim}  }${reset}`);
   console.log(`${dim}}${reset}`);
+  console.log('');
+  console.log(
+    `${dim}💡 Use ${cyan}"stateful"${dim} for session persistence / SSE, ${cyan}"stateless"${dim} for per-request mode${reset}`
+  );
 
   // Quick Commands
   console.log('');
