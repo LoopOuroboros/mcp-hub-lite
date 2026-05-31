@@ -6,7 +6,7 @@
  * Notifications are broadcast via SessionManager across all active sessions.
  */
 
-import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import {
   stringifyForLogging,
@@ -14,6 +14,7 @@ import {
   getGatewayDebugSetting
 } from '@utils/json-utils.js';
 import { formatMcpMessageForLogging, logNotificationMessage } from '@utils/logger/log-output.js';
+import { gateway } from './gateway.service.js';
 
 /**
  * Build log options from trace context stored on transport.
@@ -77,4 +78,26 @@ export function initGlobalTransport(): void {
   if (getGatewayDebugSetting()) {
     logger.debug('Global transport layer initialized (stateful session mode)', LOG_MODULES.GATEWAY);
   }
+}
+
+/**
+ * Creates a new MCP transport and server instance for a single request (stateless mode).
+ * Each call returns isolated instances that should be GC'd after the request completes.
+ * This restores the v1.3.0 per-request transport pattern for clients like CherryStudio
+ * that do not properly support stateful sessions.
+ */
+export async function createPerRequestTransport(): Promise<{
+  transport: StreamableHTTPServerTransport;
+  server: import('@modelcontextprotocol/sdk/server/mcp.js').McpServer;
+}> {
+  const transport = new StreamableHTTPServerTransport();
+  const server = gateway.createConnectionServer();
+  setupTransportLogging(transport);
+  await server.connect(transport);
+
+  if (getGatewayDebugSetting()) {
+    logger.debug('MCP per-request transport initialized (stateless mode)', LOG_MODULES.GATEWAY);
+  }
+
+  return { transport, server };
 }

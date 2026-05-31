@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ServerStatus, ServerTransport, ServerType, LogLevel } from '../types/common.types';
 import type { Tool } from './tool.model';
 import type { Resource } from './resource.model';
+import { SESSION_MODE_VALUES, SESSION_MODE_STATEFUL } from './constants.js';
 
 // ====== Server Runtime Configuration (flat format, merged template + instance) ======
 
@@ -303,7 +304,19 @@ export const SystemConfigSchema = z.object({
       theme: z.enum(['light', 'dark', 'system']).default('system'),
       logging: LoggingConfigSchema,
       // Using .optional() without .default() - code should use startup ?? {defaults} for default value
-      startup: StartupConfigSchema.optional()
+      startup: StartupConfigSchema.optional(),
+      gateway: z
+        .object({
+          sessionModeRules: z
+            .object({
+              stateful: z.array(z.string()).optional().default([]),
+              stateless: z.array(z.string()).optional().default([])
+            })
+            .optional()
+            .default({ stateful: [], stateless: [] }),
+          defaultSessionMode: z.enum(SESSION_MODE_VALUES).optional().default(SESSION_MODE_STATEFUL)
+        })
+        .optional()
     })
     .default({
       host: 'localhost',
@@ -324,6 +337,13 @@ export const SystemConfigSchema = z.object({
         readyTimeout: 120000,
         maxConnectRetries: 3,
         connectRetryDelay: 5000
+      },
+      gateway: {
+        sessionModeRules: {
+          stateful: [],
+          stateless: []
+        },
+        defaultSessionMode: SESSION_MODE_STATEFUL
       }
     }),
   security: SecurityConfigSchema,
@@ -332,6 +352,9 @@ export const SystemConfigSchema = z.object({
 });
 
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
+
+/** Gateway configuration extracted from SystemConfig.system.gateway */
+export type GatewayConfig = SystemConfig['system']['gateway'];
 
 // ====== Server Instance Config Schema ======
 

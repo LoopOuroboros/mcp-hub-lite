@@ -16,12 +16,47 @@ import {
   getGatewayDebugSetting
 } from '@utils/json-utils.js';
 import { wrapReplyForDebug } from './debug-response-wrapper.js';
-import { setupTransportLogging } from '@services/gateway/global-transport.js';
+import {
+  setupTransportLogging,
+  createPerRequestTransport
+} from '@services/gateway/global-transport.js';
 import { sessionManager } from '@services/gateway/session-manager.js';
 import { gateway } from '@services/gateway/gateway.service.js';
 import { runWithRequestContext } from '@utils/request-context.js';
+import { configManager } from '@config/config-manager.js';
+import { SESSION_MODE_STATEFUL, SESSION_MODE_STATELESS } from '@shared-models/constants.js';
+import type { SessionMode } from '@shared-models/constants.js';
 
 const MCP_SESSION_ID = 'mcp-session-id';
+const MCP_SESSION_MODE = 'x-mcp-session-mode';
+
+/**
+ * Resolves the effective session mode for a request.
+ * Priority: request header > UA keyword match > default (SESSION_MODE_STATEFUL).
+ */
+export function resolveSessionMode(request: FastifyRequest): SessionMode {
+  // 1. Request header override (highest priority)
+  const header = request.headers[MCP_SESSION_MODE] as string | undefined;
+  if (header === SESSION_MODE_STATELESS || header === SESSION_MODE_STATEFUL) return header;
+
+  // 2. UA keyword matching (case-insensitive)
+  const ua = (request.headers['user-agent'] as string) || '';
+  const config = configManager.getConfig();
+  const rules = config?.system?.gateway?.sessionModeRules;
+
+  if (rules && ua) {
+    const uaLower = ua.toLowerCase();
+    for (const pattern of rules.stateless || []) {
+      if (uaLower.includes(pattern.toLowerCase())) return SESSION_MODE_STATELESS;
+    }
+    for (const pattern of rules.stateful || []) {
+      if (uaLower.includes(pattern.toLowerCase())) return SESSION_MODE_STATEFUL;
+    }
+  }
+
+  // 3. Default fallback
+  return config?.system?.gateway?.defaultSessionMode ?? SESSION_MODE_STATEFUL;
+}
 
 /**
  * Inject trace context into transport so that deferred send/onmessage wrappers
@@ -76,6 +111,40 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         reply.header('Content-Type', 'application/json');
         wrapReplyForDebug(reply, sessionId);
         reply.hijack();
+
+        const sessionMode = resolveSessionMode(request);
+
+        if (sessionMode === SESSION_MODE_STATELESS) {
+          // Stateless mode: per-request transport, no session tracking, no SSE
+          if (request.method !== 'POST') {
+            sendError(reply, 405, -32000, 'GET/DELETE not supported in stateless session mode');
+            return;
+          }
+          try {
+            const { transport } = await createPerRequestTransport();
+            injectTransportTrace(transport, undefined, traceId);
+            await transport.handleRequest(request.raw, reply.raw, request.body);
+            if (getGatewayDebugSetting()) {
+              logger.debug('Handled MCP request in stateless mode', LOG_MODULES.GATEWAY);
+            }
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            const stack = error instanceof Error ? error.stack : 'No stack available';
+            logger.error(`Stateless MCP error: ${msg}`, LOG_MODULES.GATEWAY);
+            logger.error(`Stack: ${stack}`, LOG_MODULES.GATEWAY);
+            if (!reply.raw.headersSent) {
+              reply.raw.writeHead(500, { 'Content-Type': 'application/json' });
+              reply.raw.end(
+                JSON.stringify({
+                  jsonrpc: '2.0',
+                  error: { code: -32000, message: 'Internal Server Error' },
+                  id: null
+                })
+              );
+            }
+          }
+          return;
+        }
 
         try {
           // Existing session — route to its transport
@@ -170,6 +239,25 @@ export async function mcpGatewayRoutes(fastify: FastifyInstance) {
         reply.header('Content-Type', 'application/json');
         wrapReplyForDebug(reply, sessionId);
         reply.hijack();
+
+        const sessionMode = resolveSessionMode(request);
+
+        if (sessionMode === SESSION_MODE_STATELESS) {
+          if (request.method !== 'POST') {
+            sendError(reply, 405, -32000, 'GET/DELETE not supported in stateless session mode');
+            return;
+          }
+          try {
+            const { transport } = await createPerRequestTransport();
+            injectTransportTrace(transport, undefined, traceId);
+            await transport.handleRequest(request.raw, reply.raw, request.body);
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logger.error(`Stateless MCP subpath error: ${msg}`, LOG_MODULES.GATEWAY);
+            sendError(reply, 500, -32000, 'Internal Server Error');
+          }
+          return;
+        }
 
         if (!sessionId) {
           if (!reply.raw.headersSent) {

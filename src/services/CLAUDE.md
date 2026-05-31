@@ -20,7 +20,7 @@ services/
 ├── gateway/                   # Gateway 子模块
 │   ├── index.ts
 │   ├── gateway.service.ts
-│   ├── global-transport.ts   # Transport 工具函数 + session-manager 会话管理
+│   ├── global-transport.ts   # Transport 工具函数（stateful setupLogging + stateless createPerRequestTransport）
 │   ├── types.ts
 │   ├── log-formatter.ts
 │   ├── tool-list-generator.ts
@@ -126,14 +126,16 @@ services/
 
 ### GlobalTransport (`gateway/global-transport.ts`)
 
-**职责**: MCP transport 工具函数和会话管理（stateful session 模式，v1.3.1+）
+**职责**: MCP transport 工具函数，支持双模式
 
-**功能特性**:
+**stateful 模式**：
 
-- SDK 原生无状态模式
-- 全局单一 transport/server 实例
-- 无 sessionId 隔离，所有客户端共享同一实例
-- 简化的架构设计
+- `setupTransportLogging()` — 为 transport 实例设置调试日志
+- `initGlobalTransport()` — 初始化全局 transport 层（no-op，保持向后兼容）
+
+**stateless 模式**（v1.3.1+）：
+
+- `createPerRequestTransport()` — 创建 per-request transport+server 对，用于无会话持久化的请求处理
 
 ### HubToolsService (`hub-tools.service.ts`)
 
@@ -310,16 +312,16 @@ enum ConnectionStatus {
 
 ## 相关文件清单
 
-| 文件路径                               | 描述                          |
-| -------------------------------------- | ----------------------------- |
-| `services/hub-manager.service.ts`      | 服务器管理器                  |
-| `services/gateway.service.ts`          | Gateway 网关服务              |
-| `services/gateway/global-transport.ts` | Transport 工具函数 + 会话管理 |
-| `services/mcp-connection-manager.ts`   | 连接管理器                    |
-| `services/hub-tools.service.ts`        | 系统工具服务                  |
-| `services/log-storage.service.ts`      | 日志存储服务                  |
-| `services/event-bus.service.ts`        | 事件总线服务                  |
-| `services/system-tool-handler.ts`      | 系统工具处理器                |
-| `services/gateway/`                    | Gateway 子模块                |
-| `services/connection/`                 | Connection 子模块             |
-| `services/hub-tools/`                  | Hub Tools 子模块              |
+| 文件路径                               | 描述                                              |
+| -------------------------------------- | ------------------------------------------------- |
+| `services/hub-manager.service.ts`      | 服务器管理器                                      |
+| `services/gateway.service.ts`          | Gateway 网关服务                                  |
+| `services/gateway/global-transport.ts` | Transport 工具函数（stateful + stateless 双模式） |
+| `services/mcp-connection-manager.ts`   | 连接管理器                                        |
+| `services/hub-tools.service.ts`        | 系统工具服务                                      |
+| `services/log-storage.service.ts`      | 日志存储服务                                      |
+| `services/event-bus.service.ts`        | 事件总线服务                                      |
+| `services/system-tool-handler.ts`      | 系统工具处理器                                    |
+| `services/gateway/`                    | Gateway 子模块                                    |
+| `services/connection/`                 | Connection 子模块                                 |
+| `services/hub-tools/`                  | Hub Tools 子模块                                  |

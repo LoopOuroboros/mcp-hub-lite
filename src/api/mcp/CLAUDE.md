@@ -10,7 +10,7 @@ MCP API 模块负责处理所有 MCP (Model Context Protocol) 协议相关的 HT
 
 ```typescript
 mcp/
-├── gateway.ts                 # MCP Gateway 路由处理器（Per-Request 模式）
+├── gateway.ts                 # MCP Gateway 路由处理器（Stateful + Stateless 双模式）
 └── debug-response-wrapper.ts  # 调试响应包装器
 ```
 
@@ -22,12 +22,11 @@ mcp/
 
 **协议支持**: HTTP-Stream (通过 EventSource 实现)
 
-**架构**: **Stateful Session Transport 模式**（v1.3.1+）
+**架构**: **双模式会话支持**（v1.3.1+）
 
-- 每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对
-- SDK stateful 模式：`sessionIdGenerator` 生成 `mcp-session-id`，客户端后续请求携带该 header
-- `all('/mcp')` 统一路由：无 sessionId 的 POST 创建新会话，有 sessionId 的路由到已有会话
-- `SessionManager` 管理会话生命周期、陈旧清理和通知广播
+- **stateful 模式**：每个客户端会话拥有独立的 `StreamableHTTPServerTransport` + `McpServer` 对，SDK 通过 `sessionIdGenerator` 生成 `mcp-session-id`，`SessionManager` 管理生命周期
+- **stateless 模式**：per-request transport，每次 POST 创建新的 transport+server 对，无会话持久化，GET/DELETE 返回 405
+- 模式选择优先级：请求头 `x-mcp-session-mode` > 配置 `system.gateway.sessionMode` > 默认 `"stateful"`
 
 **支持的操作**:
 
@@ -46,7 +45,10 @@ mcp/
 ## 依赖关系
 
 - **内部依赖**:
-  - `@services/gateway/global-transport.ts` - Transport 工厂函数
+  - `@services/gateway/global-transport.ts` - Transport 工厂函数（stateful + stateless）
+  - `@services/gateway/session-manager.ts` - 会话管理器
+  - `@services/gateway/gateway.service.ts` - Gateway 服务
+  - `@config/config-manager.js` - 配置管理（读取 sessionMode）
   - `@utils/logger/` - 日志系统
   - `@utils/json-utils.ts` - JSON 工具函数
 
