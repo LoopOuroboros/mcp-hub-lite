@@ -780,6 +780,358 @@ describe('HubToolsService', () => {
     });
   });
 
+  describe('searchTools', () => {
+    it('should return tools matching a single-word query', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' },
+        { name: 'writeFile', description: 'Write file contents', serverName: 'Server 1' },
+        { name: 'deleteFile', description: 'Delete files', serverName: 'Server 1' }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('file');
+
+      expect(result).toHaveProperty('Server 1');
+      expect(result['Server 1'].tools).toHaveLength(3);
+    });
+
+    it('should match multi-word query by tokenizing and using OR logic', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' },
+        { name: 'getEnv', description: 'Get environment variables', serverName: 'Server 1' },
+        { name: 'deleteFile', description: 'Delete files', serverName: 'Server 1' }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('environment variable');
+
+      expect(result).toHaveProperty('Server 1');
+      // "getEnv" has "environment" in description but "variable" is NOT in "environment" (we need "variables")
+      // Actually: "environment" is in "environment variables", and "variable" is NOT in "environment variables"
+      // But "variable" is a substring of "variables", so it matches!
+      // Both tokens match getEnv, and only "file" matches readFile (but not "environment" or "variable")
+      // Wait: readFile has "file" in name and "Read file contents" in description — no "environment" or "variable" match
+      const toolNames = result['Server 1'].tools.map((t) => t.name);
+      expect(toolNames).toContain('getEnv');
+    });
+
+    it('should sort results by match count descending', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = [
+        { name: 'envSetter', description: 'Set environment values', serverName: 'Server 1' },
+        { name: 'getEnv', description: 'Get environment variables', serverName: 'Server 1' },
+        { name: 'deleteFile', description: 'Delete environment files', serverName: 'Server 1' }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('environment variable');
+
+      expect(result).toHaveProperty('Server 1');
+      const toolNames = result['Server 1'].tools.map((t) => t.name);
+
+      // All have "environment" in description, but match count varies:
+      // getEnv: desc "Get environment variables" — tokens "environment" matches, "variable" matches "variables" → 2
+      // envSetter: desc "Set environment values" — "environment" matches, "variable" matches... "values"? No, "variable" ≠ "values". So only 1 match.
+      // deleteFile: desc "Delete environment files" — "environment" matches, "variable"? No. Only 1 match.
+      // But both have 1 match. Sort order between them is stable but unspecified.
+      expect(toolNames[0]).toBe('getEnv'); // 2 matches, should be first
+    });
+
+    it('should apply default limit of 5', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = Array.from({ length: 10 }, (_, i) => ({
+        name: `tool${i}`,
+        description: 'A file handling tool',
+        serverName: 'Server 1'
+      }));
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('file');
+
+      expect(result).toHaveProperty('Server 1');
+      expect(result['Server 1'].tools.length).toBeLessThanOrEqual(5);
+    });
+
+    it('should respect custom limit parameter', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = Array.from({ length: 10 }, (_, i) => ({
+        name: `tool${i}`,
+        description: 'A file handling tool',
+        serverName: 'Server 1'
+      }));
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('file', 3);
+
+      expect(result).toHaveProperty('Server 1');
+      expect(result['Server 1'].tools.length).toBeLessThanOrEqual(3);
+    });
+
+    it('should return empty result when no tools match', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('zzznotfound');
+
+      expect(result).toEqual({});
+    });
+
+    it('should handle extra whitespace in query', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = [
+        { name: 'readFile', description: 'Read file contents', serverName: 'Server 1' }
+      ];
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('  read   file  ');
+
+      expect(result).toHaveProperty('Server 1');
+    });
+
+    it('should cap limit at 10', async () => {
+      const mockServers = [
+        {
+          name: 'Server 1',
+          config: {
+            template: {
+              type: 'stdio' as const,
+              command: 'test',
+              args: [],
+              env: {},
+              headers: {},
+              aggregatedTools: [],
+              timeout: 30000,
+              tags: {}
+            },
+            instances: [
+              { id: '1', index: 0, enabled: true, args: [], env: {}, headers: {}, tags: {} }
+            ],
+            tagDefinitions: []
+          }
+        }
+      ];
+
+      const mockTools = Array.from({ length: 15 }, (_, i) => ({
+        name: `tool${i}`,
+        description: 'file tool',
+        serverName: 'Server 1'
+      }));
+
+      vi.mocked(hubManager.getAllServers).mockReturnValue(mockServers);
+      vi.mocked(hubManager.getServerInstancesByName).mockReturnValue(
+        mockServers[0].config.instances
+      );
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockServers[0].config);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+
+      const result = await hubToolsService.searchTools('file', 100);
+
+      expect(result['Server 1'].tools.length).toBeLessThanOrEqual(10);
+    });
+  });
+
   describe('listResources', () => {
     it('should return use-guide resource even when no servers are connected', async () => {
       // Arrange

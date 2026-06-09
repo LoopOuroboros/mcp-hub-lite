@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-06-09
+
+### Search
+
+- add tokenized multi-delimiter search in search_tools with match-count sorting and configurable result limit per server
+
+### Docs
+
+- clarify stateless mode requires header matching, UA detection is manual
+
 ## [1.3.1] - 2026-05-31
 
 ### Gateway

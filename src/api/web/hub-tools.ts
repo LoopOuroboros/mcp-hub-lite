@@ -215,14 +215,17 @@ export async function webHubToolsRoutes(fastify: FastifyInstance) {
   });
 
   // GET /web/hub-tools/search - Search tools across all connected servers
-  fastify.get<{ Querystring: { q: string } }>('/web/hub-tools/search', async (request, reply) => {
-    const { q } = request.query;
-    if (!q || typeof q !== 'string' || q.trim().length === 0) {
-      return reply.code(400).send({
-        error: 'Bad Request',
-        message: 'Query parameter "q" is required'
-      });
+  fastify.get<{ Querystring: { q: string; limit?: number } }>(
+    '/web/hub-tools/search',
+    async (request, reply) => {
+      const { q, limit } = request.query;
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'Query parameter "q" is required'
+        });
+      }
+      return hubToolsService.searchTools(q.trim(), limit);
     }
-    return hubToolsService.searchTools(q.trim());
-  });
+  );
 }

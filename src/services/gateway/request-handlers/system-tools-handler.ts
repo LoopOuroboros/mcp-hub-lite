@@ -239,7 +239,8 @@ export function registerSystemToolsHandlers(server: McpServer): void {
   const SearchToolsRequestSchema = z.object({
     method: z.literal(SEARCH_TOOLS_TOOL),
     params: z.object({
-      query: z.string()
+      query: z.string(),
+      limit: z.number().int().min(1).max(10).optional()
     }),
     id: z.union([z.string(), z.number()]),
     jsonrpc: z.literal('2.0')
@@ -247,7 +248,7 @@ export function registerSystemToolsHandlers(server: McpServer): void {
 
   server.server.setRequestHandler(SearchToolsRequestSchema, async (request) => {
     try {
-      const result = await hubToolsService.searchTools(request.params.query);
+      const result = await hubToolsService.searchTools(request.params.query, request.params.limit);
       return result;
     } catch (error: unknown) {
       logger.error(`Search tools error:`, error, LOG_MODULES.SYSTEM_TOOLS_HANDLER);
