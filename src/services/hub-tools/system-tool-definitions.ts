@@ -219,6 +219,13 @@ export function getSystemTools(): SystemToolDefinition[] {
               query: {
                 type: 'string',
                 description: 'Search query to match against tool names and descriptions'
+              },
+              limit: {
+                type: 'integer',
+                description: 'Maximum number of results to return per server (1-10, default 5)',
+                minimum: 1,
+                maximum: 10,
+                default: 5
               }
             },
             required: ['query']

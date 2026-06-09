@@ -8,6 +8,7 @@ import { generateGatewayToolsList } from './gateway/tool-list-generator.js';
 import { logger, LOG_MODULES } from '@utils/logger/index.js';
 import { stringifyForLogging } from '@utils/json-utils.js';
 import { normalizeToolName } from '@utils/name-converter.js';
+import { countMatchingTokens } from '@utils/search-matcher.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   MCP_HUB_LITE_SERVER,
@@ -842,13 +843,15 @@ export class HubToolsService {
    * Object mapping server names to their descriptions and matching tools
    */
   async searchTools(
-    query: string
+    query: string,
+    limit: number = 5
   ): Promise<Record<string, { description: string; tools: ToolSummary[] }>> {
     if (!query || typeof query !== 'string') {
       throw new Error('query is required and must be a non-empty string');
     }
 
-    const normalizedQuery = query.toLowerCase();
+    const effectiveLimit = Math.min(Math.max(1, limit), 10);
+
     const servers = hubManager.getAllServers();
     const result: Record<string, { description: string; tools: ToolSummary[] }> = {};
 
@@ -868,22 +871,27 @@ export class HubToolsService {
         continue;
       }
 
-      const matchingTools: ToolSummary[] = tools
-        .filter((tool) => {
-          const nameMatch = tool.name.toLowerCase().includes(normalizedQuery);
-          const descMatch = tool.description?.toLowerCase().includes(normalizedQuery);
-          return nameMatch || descMatch;
+      const scored = tools
+        .map((tool) => {
+          const matchCount = countMatchingTokens(query, [tool.name, tool.description || '']);
+          return {
+            tool,
+            matchCount,
+            summary: {
+              name: tool.name,
+              description: tool.description,
+              serverName: server.name
+            }
+          };
         })
-        .map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          serverName: server.name
-        }));
+        .filter((item) => item.matchCount > 0)
+        .sort((a, b) => b.matchCount - a.matchCount)
+        .slice(0, effectiveLimit);
 
-      if (matchingTools.length > 0) {
+      if (scored.length > 0) {
         result[server.name] = {
           description,
-          tools: matchingTools
+          tools: scored.map((item) => item.summary)
         };
       }
     }

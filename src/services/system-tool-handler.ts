@@ -89,7 +89,7 @@ export class SystemToolHandler {
           if (!searchArgs.query) {
             throw new McpError(-32802, 'query is required for search_tools');
           }
-          result = await hubToolsService.searchTools(searchArgs.query);
+          result = await hubToolsService.searchTools(searchArgs.query, searchArgs.limit);
           break;
         }
         default:

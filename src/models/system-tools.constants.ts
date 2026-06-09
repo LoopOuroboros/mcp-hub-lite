@@ -45,6 +45,7 @@ export interface ListTagsParams {
 
 export interface SearchToolsParams {
   query: string;
+  limit?: number;
 }
 
 // Union type for system tool parameters
