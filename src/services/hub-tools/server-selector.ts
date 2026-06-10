@@ -91,24 +91,20 @@ export function hasValidId(server: unknown): server is ValidServer {
  */
 export function selectBestInstance(
   serverName: string,
-  requestOptions?: RequestOptions,
-  strictMode: boolean = true
+  requestOptions?: RequestOptions
 ): ServerInstanceInfo | undefined {
-  // Get all instances of the server
   const instances = hubManager.getServerInstancesByName(serverName);
 
   if (instances.length === 0) {
     return undefined;
   }
 
-  // Get server configuration
   const serverConfig = hubManager.getServerByName(serverName);
   if (!serverConfig) {
     return undefined;
   }
 
   try {
-    // Use the new instance selector
     const selectedInstance = InstanceSelector.selectInstance(
       serverName,
       serverConfig,
@@ -125,13 +121,11 @@ export function selectBestInstance(
       instance: selectedInstance
     };
   } catch (error) {
-    // In strict mode, re-throw tag matching errors to maintain correct semantics
-    if (strictMode && error instanceof TagMatchUniqueError) {
-      // Re-throw with server context added to message
+    // Re-throw tag matching errors with server context
+    if (error instanceof TagMatchUniqueError) {
       throw new Error(`[${serverName}] ${error.message}`);
     }
 
-    // Handle other errors or non-strict mode gracefully
     logger.error(
       `Instance selection failed for server ${serverName}:`,
       error,

@@ -50,7 +50,7 @@ hub-tools/
 **主要功能**:
 
 - `hasValidId(server)` - 检查服务器是否有有效的 ID
-- `selectBestInstance(serverName, requestOptions?, strictMode?)` - **仅用于 `callTool`** 的实例级操作（2 处：核心选择 + L1 fallback）。server 级只读操作应使用 `getConnectedIndexes()` + `getToolsByServerName()` 模式，不经过实例选择。gateway 模式已移除，`callTool` 不再接受 `serverName="mcp-hub-lite"` 自动搜索外部工具
+- `selectBestInstance(serverName, requestOptions?)` - **仅用于 `callTool`**（1 处：核心实例选择）。`strictMode` 参数已移除，TagMatchUniqueError 始终抛出。server 级只读操作应使用 `getConnectedIndexes()` + `getToolsByServerName()` 模式，不经过实例选择
 - `getServerDescription(serverConfig, serverName)` - 获取服务器描述（使用默认描述当配置中没有提供时）
 
 **关键特性**:

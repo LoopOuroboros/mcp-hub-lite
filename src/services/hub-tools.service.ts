@@ -555,7 +555,7 @@ export class HubToolsService {
     }
     let actualToolName: string | undefined = matchedTool.name;
 
-    const serverInfo = selectBestInstance(serverName, requestOptions, true);
+    const serverInfo = selectBestInstance(serverName, requestOptions);
     const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     if (!serverInfo) {
