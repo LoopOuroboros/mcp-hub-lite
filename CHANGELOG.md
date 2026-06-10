@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2026-06-10
+
+### Hub
+
+- fix tag-match-unique error when reading server-level resources
+- return per-instance tags array instead of merged object
+- remove dead strictMode parameter from server-selector
+- remove L1 fallback in call-tool, route directly to RANDOM
+- remove gateway mode in call-tool, simplify tool validation
+
+### Docs
+
+- update hub-tools CLAUDE.md with current architecture
+
 ## [1.3.2] - 2026-06-09
 
 ### Search
