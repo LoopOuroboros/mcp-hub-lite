@@ -50,7 +50,7 @@ hub-tools/
 **主要功能**:
 
 - `hasValidId(server)` - 检查服务器是否有有效的 ID
-- `selectBestInstance(serverName, requestOptions?, strictMode?)` - **仅用于 `callTool`** 的实例级操作。server 级只读操作（listTools、getTool、searchTools）应使用 `getConnectedIndexes()` + `getToolsByServerName()` 模式，不经过实例选择
+- `selectBestInstance(serverName, requestOptions?, strictMode?)` - **仅用于 `callTool`** 的实例级操作（2 处：核心选择 + L1 fallback）。server 级只读操作应使用 `getConnectedIndexes()` + `getToolsByServerName()` 模式，不经过实例选择。gateway 模式已移除，`callTool` 不再接受 `serverName="mcp-hub-lite"` 自动搜索外部工具
 - `getServerDescription(serverConfig, serverName)` - 获取服务器描述（使用默认描述当配置中没有提供时）
 
 **关键特性**:
@@ -126,13 +126,13 @@ hub-tools/
 
 **聚合策略**:
 
-| 字段 | 来源 |
-|------|------|
-| tools/toolsCount | `getToolsByServerName()`（已去重） |
-| resourcesCount | `getResourcesByName()` |
-| tags | 按实例分列的数组 `Array<Record<string, string>>` |
-| lastHeartbeat | max(各实例 lastCheck) |
-| uptime | min(各实例 startTime) |
+| 字段             | 来源                                             |
+| ---------------- | ------------------------------------------------ |
+| tools/toolsCount | `getToolsByServerName()`（已去重）               |
+| resourcesCount   | `getResourcesByName()`                           |
+| tags             | 按实例分列的数组 `Array<Record<string, string>>` |
+| lastHeartbeat    | max(各实例 lastCheck)                            |
+| uptime           | min(各实例 startTime)                            |
 
 ### Use Guide (`use-guide.md`)
 
@@ -238,7 +238,7 @@ Hub Tools 子模块主要被以下组件使用：
 | `hub-tools/instance-selector.ts`       | 实例选择器                   |
 | `hub-tools/system-tool-definitions.ts` | 系统工具定义                 |
 | `hub-tools/resource-generator.ts`      | 动态资源生成器               |
-| `hub-tools/server-metadata-cache.ts`   | Server 级元数据聚合缓存       |
+| `hub-tools/server-metadata-cache.ts`   | Server 级元数据聚合缓存      |
 | `hub-tools/use-guide.md`               | 用户使用指南                 |
 | `hub-tools/developer-guide.md`         | 开发者指南                   |
 | `../hub-tools.service.ts`              | 主服务类（使用此模块）       |

@@ -145,7 +145,8 @@ export function getSystemTools(): SystemToolDefinition[] {
             properties: {
               serverName: {
                 type: 'string',
-                description: 'Name of the MCP server (must be an external server, not mcp-hub-lite)'
+                description:
+                  'Name of the target MCP server. Use the exact server name from list_servers results. If you already know the server name (e.g., from previous list_tools or search_tools calls), call directly without re-searching.'
               },
               toolName: { type: 'string', description: 'Name of the tool to call' },
               toolArgs: { type: 'object', description: 'Arguments to pass to the tool' },

@@ -524,45 +524,16 @@ export class HubToolsService {
         );
       }
 
-      // Not a system tool - find it in all connected servers
-      logger.info(
-        `Looking for tool '${toolName}' in all connected servers (gateway mode)`,
-        LOG_MODULES.HUB_TOOLS
+      // Not a system tool — reject with actionable guidance
+      // The aggregated gateway tools (wrapped by tool-list-generator) already hardcode
+      // the correct serverName, so this path should only be hit when LLM manually fills
+      // "mcp-hub-lite" incorrectly. Guide them to use search_tools instead.
+      throw new McpError(
+        -32602,
+        `Cannot call external tool '${toolName}' with serverName "mcp-hub-lite". ` +
+          `Use 'search_tools' to find which server provides this tool, ` +
+          `then call it with the correct serverName.`
       );
-
-      // Find all servers that have this tool
-      const matchingServers: string[] = [];
-      const servers = hubManager.getAllServers();
-
-      for (const server of servers) {
-        if (!hasValidId(server)) {
-          continue;
-        }
-
-        const serverInfo = selectBestInstance(server.name, requestOptions, true);
-        if (serverInfo && (serverInfo.instance.id as string)) {
-          const instanceIndex = serverInfo.instance.index as number;
-          const tools = mcpConnectionManager.getTools(server.name, instanceIndex);
-          if (tools.some((tool) => normalizeToolName(tool.name) === normalizeToolName(toolName))) {
-            matchingServers.push(server.name);
-          }
-        }
-      }
-
-      if (matchingServers.length === 0) {
-        logger.error(`Tool '${toolName}' not found in any connected server`, LOG_MODULES.HUB_TOOLS);
-        throw new Error(`Tool '${toolName}' not found`);
-      }
-
-      if (matchingServers.length > 1) {
-        logger.warn(
-          `Tool '${toolName}' found in multiple servers: ${matchingServers.join(', ')}. Using first match.`,
-          LOG_MODULES.HUB_TOOLS
-        );
-      }
-
-      // Use the first matching server
-      serverName = matchingServers[0];
     }
 
     logger.debug(
@@ -570,24 +541,18 @@ export class HubToolsService {
       LOG_MODULES.HUB_TOOLS
     );
 
-    // Validate tool exists before doing strict instance selection
-    // Use strictMode=false to get serverInfo without triggering tag-match-unique errors
-    const validationServerInfo = selectBestInstance(serverName, requestOptions, false);
-    let actualToolName: string | undefined;
-    if (validationServerInfo && validationServerInfo.instance.id) {
-      const instanceIndex = validationServerInfo.instance.index as number;
-      const tools = mcpConnectionManager.getTools(serverName, instanceIndex);
-      const matchedTool = tools.find(
-        (tool) => normalizeToolName(tool.name) === normalizeToolName(toolName)
+    // Validate tool exists using server-name-level aggregation (no instance selection needed)
+    const aggregatedTools = mcpConnectionManager.getToolsByServerName(serverName);
+    const matchedTool = aggregatedTools.find(
+      (tool) => normalizeToolName(tool.name) === normalizeToolName(toolName)
+    );
+    if (!matchedTool) {
+      throw new Error(
+        `Tool '${toolName}' not found in server '${serverName}'. ` +
+          `Use list_tools(serverName: "${serverName}") to see available tools.`
       );
-      if (!matchedTool) {
-        throw new Error(
-          `Tool '${toolName}' not found in server '${serverName}'. ` +
-            `Use list_tools(serverName: "${serverName}") to see available tools.`
-        );
-      }
-      actualToolName = matchedTool.name;
     }
+    let actualToolName: string | undefined = matchedTool.name;
 
     const serverInfo = selectBestInstance(serverName, requestOptions, true);
     const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
