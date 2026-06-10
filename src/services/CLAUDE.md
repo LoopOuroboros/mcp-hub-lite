@@ -182,7 +182,8 @@ services/
 
 - `index.ts` - 统一导出模块
 - `types.ts` - 类型定义
-- `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance, getServerDescription）
+- `server-selector.ts` - 服务器选择器（hasValidId, selectBestInstance [仅 callTool], getServerDescription）
+- `server-metadata-cache.ts` - Server 级元数据聚合缓存（事件驱动，跨实例聚合，供 readResource 使用）
 - `instance-selector.ts` - 实例选择器（支持随机、轮询、标签匹配唯一三种策略）
 - `system-tool-definitions.ts` - 系统工具定义（getSystemTools）
 - `resource-generator.ts` - 动态资源生成（generateDynamicResources, readResource）

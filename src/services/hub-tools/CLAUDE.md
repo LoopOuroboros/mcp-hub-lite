@@ -50,14 +50,14 @@ hub-tools/
 **主要功能**:
 
 - `hasValidId(server)` - 检查服务器是否有有效的 ID
-- `selectBestInstance(serverName, requestOptions)` - 选择最佳服务器实例
+- `selectBestInstance(serverName, requestOptions?)` - **仅用于 `callTool`**（1 处：核心实例选择）。`strictMode` 参数已移除，TagMatchUniqueError 始终抛出。server 级只读操作应使用 `getConnectedIndexes()` + `getToolsByServerName()` 模式，不经过实例选择
 - `getServerDescription(serverConfig, serverName)` - 获取服务器描述（使用默认描述当配置中没有提供时）
 
 **关键特性**:
 
-- 支持通过 `requestOptions.sessionId` 或 `requestOptions.tags` 进行实例选择
-- 提供通用的服务器描述获取逻辑，避免重复代码
-- 与实例选择器集成，支持多实例服务器的智能选择
+- `selectBestInstance` 仅用于需要落到具体实例的操作（`callTool`），不应用于 server 级只读操作
+- server 级只读操作使用 `getConnectedIndexes()` 检查连接状态 + `getToolsByServerName()` / `getResourcesByName()` 聚合数据
+- 支持通过 `requestOptions.tags` 进行实例级标签匹配（tag-match-unique 策略）
 
 ### Instance Selector (`instance-selector.ts`)
 
@@ -100,19 +100,39 @@ hub-tools/
 
 ### Resource Generator (`resource-generator.ts`)
 
-**职责**: 动态生成 MCP 资源列表和内容读取
+**职责**: 动态生成 MCP 资源列表和内容读取。`readResource` 对 `hub://servers/{name}` 和 list 请求通过 `ServerMetadataCache` 读取聚合缓存，**不经过 `selectBestInstance`**。
 
 **主要功能**:
 
-- `generateDynamicResources()` - 生成动态资源列表，仅保留服务器元数据
-- `readResource(uri)` - 读取特定资源的内容
+- `generateDynamicResources()` - 生成动态资源列表，仅保留服务器元数据和原生资源转发
+- `readResource(uri)` - 读取特定资源的内容，server 级请求走 `ServerMetadataCache.get()`
 
 **资源 URI 格式**:
 
 - `hub://use-guide` - 使用指南
-- `hub://servers/{serverName}` - 服务器元数据
-- `hub://servers/{serverName}/tools` - 服务器工具列表
-- `hub://servers/{serverName}/resources` - 服务器资源列表
+- `hub://servers/{serverName}` - 服务器元数据（走 `ServerMetadataCache`，跨实例聚合）
+- `hub://servers/{serverName}/{instanceIndex}/{mcpPath}` - 原生 MCP 资源转发
+
+### Server Metadata Cache (`server-metadata-cache.ts`)
+
+**职责**: 事件驱动的 server 级元数据聚合缓存。`readResource` 读取 `hub://servers/{name}` 时从这里获取数据，完全绕过实例选择。
+
+**主要方法**:
+
+- `initialize()` - 订阅 EventBus 事件（SERVER_CONNECTED/DISCONNECTED、TOOLS_UPDATED、RESOURCES_UPDATED）
+- `get(serverName)` - 延迟构建 + 返回缓存的聚合元数据（`ServerMetadata`）
+- `refresh(serverName)` - 强制重建指定 server 的元数据
+- `buildMetadata(serverName)` - 核心聚合逻辑：跨所有已连接实例聚合 tools/resources/tags/heartbeat/uptime
+
+**聚合策略**:
+
+| 字段             | 来源                                             |
+| ---------------- | ------------------------------------------------ |
+| tools/toolsCount | `getToolsByServerName()`（已去重）               |
+| resourcesCount   | `getResourcesByName()`                           |
+| tags             | 按实例分列的数组 `Array<Record<string, string>>` |
+| lastHeartbeat    | max(各实例 lastCheck)                            |
+| uptime           | min(各实例 startTime)                            |
 
 ### Use Guide (`use-guide.md`)
 
@@ -146,7 +166,14 @@ async someMethod(args: SomeParams): Promise<SomeResult> {
     return systemToolResult;
   }
 
-  // Regular MCP server handling
+  // For server-level read operations (listTools, getTool, searchTools):
+  // use getConnectedIndexes() + getToolsByServerName() — no instance selection needed
+  const indexes = mcpConnectionManager.getConnectedIndexes(args.serverName);
+  if (indexes.length === 0) throw new Error(`Server not found: ${args.serverName}`);
+  const tools = mcpConnectionManager.getToolsByServerName(args.serverName);
+
+  // For instance-level operations (callTool only):
+  // use selectBestInstance() to pick a specific instance
   const serverInfo = selectBestInstance(args.serverName, args.requestOptions);
   // ... rest of the implementation
 }
@@ -165,7 +192,9 @@ hub-tools/
 ├── system-tool-definitions.ts
 │   └── depends on: @models/system-tools.constants.ts
 ├── resource-generator.ts
-│   └── depends on: server-selector.ts, system-tool-definitions.ts
+│   └── depends on: server-selector.ts, server-metadata-cache.ts
+├── server-metadata-cache.ts
+│   └── depends on: hub-manager.service.ts, connection-manager, event-bus.service.ts, server-selector.ts
 └── guides
     └── documentation only
 ```
@@ -209,6 +238,7 @@ Hub Tools 子模块主要被以下组件使用：
 | `hub-tools/instance-selector.ts`       | 实例选择器                   |
 | `hub-tools/system-tool-definitions.ts` | 系统工具定义                 |
 | `hub-tools/resource-generator.ts`      | 动态资源生成器               |
+| `hub-tools/server-metadata-cache.ts`   | Server 级元数据聚合缓存      |
 | `hub-tools/use-guide.md`               | 用户使用指南                 |
 | `hub-tools/developer-guide.md`         | 开发者指南                   |
 | `../hub-tools.service.ts`              | 主服务类（使用此模块）       |

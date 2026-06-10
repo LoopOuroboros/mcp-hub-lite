@@ -80,6 +80,7 @@ async getTool(args: GetToolParams): Promise<Tool | undefined> {
 3. **Add `serverName` field** - When returning system tools, add the `serverName: MCP_HUB_LITE_SERVER` field to match the `Tool` interface
 
 4. **Don't use `selectBestInstance()`** - For `mcp-hub-lite`, don't try to find a server instance - it doesn't exist as a connected server
+5. **No gateway auto-routing** - `call_tool` no longer auto-searches all servers when `serverName="mcp-hub-lite"`. Non-system-tool calls with `mcp-hub-lite` now return an error guiding the user to use `search_tools`/`list_tools` first.
 
 ## Adding New System Tools
 
@@ -127,8 +128,9 @@ When making changes to HubToolsService, always test:
 
 1. **Forgetting the special case** - Always check for `MCP_HUB_LITE_SERVER` first
 2. **Using `selectBestInstance()` for system tools** - This will fail with "Server not found"
-3. **Missing `serverName` field** - System tools need this field to match the `Tool` interface
-4. **Not testing both cases** - Always test both system tools and regular MCP server tools
+3. **Relying on gateway auto-routing** - `call_tool(serverName="mcp-hub-lite", ...)` no longer auto-searches all servers. Use `search_tools` + `call_tool` for the correct discovery workflow.
+4. **Missing `serverName` field** - System tools need this field to match the `Tool` interface
+5. **Not testing both cases** - Always test both system tools and regular MCP server tools
 
 ## Related Files
 

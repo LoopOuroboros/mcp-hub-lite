@@ -2,6 +2,20 @@
 
 本文件的所有重要变更都将被记录在此。
 
+## [1.3.3] - 2026-06-10
+
+### 中枢
+
+- 修复读取服务器级别资源时的 tag-match-unique 错误
+- 返回每个实例的 tags 数组，而非合并后的对象
+- 移除 server-selector 中无用的 strictMode 参数
+- 移除 call-tool 中的 L1 回退逻辑，直接路由到 RANDOM
+- 移除 call-tool 中的 gateway 模式，简化工具校验逻辑
+
+### 文档
+
+- 更新 hub-tools CLAUDE.md 以反映当前架构
+
 ## [1.3.2] - 2026-06-09
 
 ### 搜索
