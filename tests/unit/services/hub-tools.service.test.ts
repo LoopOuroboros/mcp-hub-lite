@@ -1321,7 +1321,7 @@ describe('HubToolsService', () => {
         toolsCount: 1,
         tools: { testTool: 'Test tool description' },
         resourcesCount: 1,
-        tags: { env: 'test' },
+        tags: [{ env: 'test' }],
         // @ts-expect-error - Accessing extra fields on mock
         lastHeartbeat: mockInstance.lastHeartbeat,
         // @ts-expect-error - Accessing extra fields on mock

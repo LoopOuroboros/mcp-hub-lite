@@ -102,14 +102,12 @@ class ServerMetadataCache {
     // Aggregate resources across all instances
     const resources = mcpConnectionManager.getResourcesByName(serverName) || [];
 
-    // Merge tags from all connected instances (later instance wins on conflict)
-    const tags: Record<string, string> = {};
+    // Collect tags from all connected instances
+    const tags: Array<Record<string, string>> = [];
     const instances = hubManager.getServerInstancesByName(serverName);
     for (const instance of instances) {
       if (instance.index !== undefined && connectedIndexes.includes(instance.index)) {
-        if (instance.tags && typeof instance.tags === 'object') {
-          Object.assign(tags, instance.tags);
-        }
+        tags.push(instance.tags || {});
       }
     }
 

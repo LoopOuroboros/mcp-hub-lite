@@ -193,7 +193,7 @@ export interface ServerMetadata {
   toolsCount: number;
   tools: Record<string, string>;
   resourcesCount: number;
-  tags: Record<string, string>;
+  tags: Array<Record<string, string>>;
   lastHeartbeat: number;
   uptime: number;
   description: string;
