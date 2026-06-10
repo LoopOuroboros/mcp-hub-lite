@@ -41,6 +41,7 @@ import {
   readResource as readResourceUtil,
   serverMetadataCache
 } from './hub-tools/index.js';
+import type { ServerInstanceInfo } from './hub-tools/index.js';
 import { InstanceSelector } from './hub-tools/instance-selector.js';
 import { InstanceSelectionStrategy } from '@models/server.model.js';
 
@@ -564,46 +565,35 @@ export class HubToolsService {
         LOG_MODULES.HUB_TOOLS
       );
 
-      // Use selectBestInstance with non-strict mode to find an available instance
-      let fallbackServerInfo = selectBestInstance(serverName, undefined, false);
-
-      // If selectBestInstance returns undefined (e.g., TAG_MATCH_UNIQUE strategy without tags),
-      // fall back to directly selecting an enabled instance with RANDOM strategy
-      if (!fallbackServerInfo) {
-        logger.debug(
-          `selectBestInstance returned undefined for ${serverName}, trying direct instance selection with RANDOM strategy`,
-          LOG_MODULES.HUB_TOOLS
-        );
-
-        const serverConfig = hubManager.getServerByName(serverName);
-        if (serverConfig && serverConfig.instances.length > 0) {
-          // Filter: use runtime connected status, NOT config enabled flag
-          // enabled=false means "do not auto-start" but user can manually start it
-          const connectedInstances = serverConfig.instances.filter((instance) => {
-            if (instance.index === undefined) return false;
-            const status = mcpConnectionManager.getStatus(serverName, instance.index);
-            return status?.connected;
-          });
-          if (connectedInstances.length > 0) {
-            // Use RANDOM strategy regardless of server's configured strategy
-            const selectedInstance = InstanceSelector.selectInstance(
-              serverName,
-              {
-                ...serverConfig,
-                template: {
-                  ...serverConfig.template,
-                  instanceSelectionStrategy: InstanceSelectionStrategy.RANDOM
-                }
-              },
-              undefined
-            );
-            if (selectedInstance) {
-              fallbackServerInfo = {
-                name: serverName,
-                config: serverConfig,
-                instance: selectedInstance
-              };
-            }
+      // Fallback: force RANDOM strategy on any connected instance
+      // (selectBestInstance may fail for TAG_MATCH_UNIQUE without tags)
+      let fallbackServerInfo: ServerInstanceInfo | undefined;
+      const serverConfig = hubManager.getServerByName(serverName);
+      if (serverConfig && serverConfig.instances.length > 0) {
+        // Filter: use runtime connected status, NOT config enabled flag
+        const connectedInstances = serverConfig.instances.filter((instance) => {
+          if (instance.index === undefined) return false;
+          const status = mcpConnectionManager.getStatus(serverName, instance.index);
+          return status?.connected;
+        });
+        if (connectedInstances.length > 0) {
+          const selectedInstance = InstanceSelector.selectInstance(
+            serverName,
+            {
+              ...serverConfig,
+              template: {
+                ...serverConfig.template,
+                instanceSelectionStrategy: InstanceSelectionStrategy.RANDOM
+              }
+            },
+            undefined
+          );
+          if (selectedInstance) {
+            fallbackServerInfo = {
+              name: serverName,
+              config: serverConfig,
+              instance: selectedInstance
+            };
           }
         }
       }
