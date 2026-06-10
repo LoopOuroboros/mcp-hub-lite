@@ -38,7 +38,8 @@ import {
   getServerDescription,
   getSystemTools,
   generateDynamicResources,
-  readResource as readResourceUtil
+  readResource as readResourceUtil,
+  serverMetadataCache
 } from './hub-tools/index.js';
 import { InstanceSelector } from './hub-tools/instance-selector.js';
 import { InstanceSelectionStrategy } from '@models/server.model.js';
@@ -94,7 +95,7 @@ import { InstanceSelectionStrategy } from '@models/server.model.js';
 export class HubToolsService {
   // Cache removed - listResources() now calls generateDynamicResources() directly
   constructor() {
-    // No cache-related initialization needed
+    serverMetadataCache.initialize();
   }
 
   /**

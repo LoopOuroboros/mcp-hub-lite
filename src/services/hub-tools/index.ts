@@ -8,3 +8,4 @@ export { getSystemTools } from './system-tool-definitions.js';
 export type { ToolAnnotations, SystemToolDefinition } from './system-tool-definitions.js';
 export { generateDynamicResources, readResource } from './resource-generator.js';
 export type { ServerMetadata } from './resource-generator.js';
+export { serverMetadataCache } from './server-metadata-cache.js';

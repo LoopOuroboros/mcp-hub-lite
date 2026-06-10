@@ -5,7 +5,8 @@ import { hubManager } from '@services/hub-manager.service.js';
 import { mcpConnectionManager } from '@services/connection/index.js';
 import type { Resource } from '@shared-models/resource.model.js';
 import type { ServerStatus } from '@shared-types/common.types.js';
-import { hasValidId, selectBestInstance, getServerDescription } from './server-selector.js';
+import { hasValidId, getServerDescription } from './server-selector.js';
+import { serverMetadataCache } from './server-metadata-cache.js';
 
 /**
  * Maps Hub URI to original MCP URI for resource forwarding.
@@ -351,47 +352,24 @@ export async function readResource(
   if (instanceIndex === undefined) {
     // Handle list requests first
     if (listType) {
-      // Use selectBestInstance to get an instance for the list
-      const serverInfo = selectBestInstance(serverName);
-      if (!serverInfo) {
+      // Read from aggregated cache for server-level list queries
+      const metadata = serverMetadataCache.get(serverName);
+      if (!metadata) {
         throw new Error(`Server not found or not connected: ${serverName}`);
       }
-      const instanceIndex = serverInfo.instance.index as number;
-
       if (listType === 'tools') {
-        return mcpConnectionManager.getTools(serverName, instanceIndex) as unknown as Resource[];
+        return mcpConnectionManager.getToolsByServerName(serverName) as unknown as Resource[];
       } else {
-        return mcpConnectionManager.getResources(serverName, instanceIndex);
+        return mcpConnectionManager.getResourcesByName(serverName);
       }
     }
 
-    // Server metadata request - use selectBestInstance to get runtime properties
-    const serverInfo = selectBestInstance(serverName);
-    if (!serverInfo) {
+    // Server metadata request — read from aggregated cache (no instance selection needed)
+    const metadata = serverMetadataCache.get(serverName);
+    if (!metadata) {
       throw new Error(`Server not found or not connected: ${serverName}`);
     }
-
-    const instanceIndex = serverInfo.instance.index as number;
-    const tools = mcpConnectionManager.getTools(serverName, instanceIndex);
-    const resources = mcpConnectionManager.getResources(serverName, instanceIndex);
-
-    // Build tool name to description map
-    const toolsMap: Record<string, string> = {};
-    for (const tool of tools) {
-      toolsMap[tool.name as string] = (tool.description as string) || '';
-    }
-
-    return {
-      name: serverName,
-      status: serverInfo.instance.status as ServerStatus,
-      toolsCount: tools.length,
-      tools: toolsMap,
-      resourcesCount: resources.length,
-      tags: serverInfo.instance.tags || {},
-      lastHeartbeat: serverInfo.instance.lastHeartbeat as number,
-      uptime: serverInfo.instance.uptime as number,
-      description: getServerDescription(serverConfig, serverName)
-    };
+    return metadata;
   }
 
   // MCP native resource forwarding: hub://servers/{name}/{instanceIndex}/{mcpPath}

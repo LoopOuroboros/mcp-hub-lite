@@ -1238,11 +1238,12 @@ describe('HubToolsService', () => {
 
     it('should throw error for non-existent server', async () => {
       // Arrange
+      vi.mocked(hubManager.getServerByName).mockReturnValue(undefined);
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([]);
 
       // Act & Assert
       await expect(hubToolsService.readResource('hub://servers/NonExistent')).rejects.toThrow(
-        'Server not found or not connected'
+        'Server not found'
       );
     });
 
@@ -1251,6 +1252,7 @@ describe('HubToolsService', () => {
       const serverName = 'Test Server';
       const mockInstance = {
         id: 'test-instance',
+        index: 0,
         enabled: true,
         args: [],
         env: {},
@@ -1293,13 +1295,21 @@ describe('HubToolsService', () => {
         { name: 'testTool', description: 'Test tool description', serverName: 'test-server' }
       ];
 
+      const mockResources = [{ uri: 'test://resource', name: 'Test Resource' }];
+
       // @ts-expect-error - Mocking for test purposes with extra fields
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
       vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
-      vi.mocked(mcpConnectionManager.getResources).mockReturnValue([
-        { uri: 'test://resource', name: 'Test Resource' }
-      ]);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
+      vi.mocked(mcpConnectionManager.getResourcesByName).mockReturnValue(mockResources);
+      vi.mocked(mcpConnectionManager.getStatus).mockReturnValue({
+        connected: true,
+        lastCheck: (mockInstance as { lastHeartbeat: number }).lastHeartbeat,
+        startTime: (mockInstance as { uptime: number }).uptime,
+        toolsCount: 1,
+        resourcesCount: 1
+      });
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}`);
@@ -1339,9 +1349,33 @@ describe('HubToolsService', () => {
       } as unknown;
       const mockTools = [{ name: 'testTool', description: 'Test tool', serverName: 'test-server' }];
 
+      const mockConfig = {
+        template: {
+          type: 'stdio' as const,
+          command: '',
+          args: [],
+          env: {},
+          headers: {},
+          aggregatedTools: [],
+          timeout: 30000
+        },
+        instances: [mockInstance],
+        tagDefinitions: []
+      };
+
       // @ts-expect-error - Mocking for test purposes with extra fields
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
-      vi.mocked(mcpConnectionManager.getTools).mockReturnValue(mockTools);
+      // @ts-expect-error - Mock config with simplified mock instance
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getStatus).mockReturnValue({
+        connected: true,
+        lastCheck: (mockInstance as { lastHeartbeat: number }).lastHeartbeat,
+        startTime: (mockInstance as { uptime: number }).uptime,
+        toolsCount: 1,
+        resourcesCount: 0
+      });
+      vi.mocked(mcpConnectionManager.getToolsByServerName).mockReturnValue(mockTools);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}/tools`);
@@ -1368,10 +1402,33 @@ describe('HubToolsService', () => {
         uptime: 1000
       } as unknown;
       const mockResources = [{ uri: 'test://resource', name: 'Test Resource' }];
+      const mockConfig = {
+        template: {
+          type: 'stdio' as const,
+          command: '',
+          args: [],
+          env: {},
+          headers: {},
+          aggregatedTools: [],
+          timeout: 30000
+        },
+        instances: [mockInstance],
+        tagDefinitions: []
+      };
 
       // @ts-expect-error - Mocking for test purposes with extra fields
       vi.mocked(hubManager.getServerInstancesByName).mockReturnValue([mockInstance]);
-      vi.mocked(mcpConnectionManager.getResources).mockReturnValue(mockResources);
+      // @ts-expect-error - Mock config with simplified mock instance
+      vi.mocked(hubManager.getServerByName).mockReturnValue(mockConfig);
+      vi.mocked(mcpConnectionManager.getConnectedIndexes).mockReturnValue([0]);
+      vi.mocked(mcpConnectionManager.getStatus).mockReturnValue({
+        connected: true,
+        lastCheck: (mockInstance as { lastHeartbeat: number }).lastHeartbeat,
+        startTime: (mockInstance as { uptime: number }).uptime,
+        toolsCount: 0,
+        resourcesCount: 1
+      });
+      vi.mocked(mcpConnectionManager.getResourcesByName).mockReturnValue(mockResources);
 
       // Act
       const result = await hubToolsService.readResource(`hub://servers/${serverName}/resources`);
