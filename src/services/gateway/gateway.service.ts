@@ -56,8 +56,6 @@ export class GatewayService {
   }
 
   private initToolCache(): void {
-    rebuildFromScratch();
-
     eventBus.subscribe(EventTypes.TOOLS_UPDATED, (rawData) => {
       const data = rawData as { serverName: string };
       const serverConfig = hubManager.getServerByName(data.serverName);

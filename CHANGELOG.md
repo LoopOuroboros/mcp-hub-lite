@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2026-06-12
+
+### Gateway
+
+- remove eager tool cache rebuild from constructor to prevent spurious log output during CLI start/stop commands
+
 ## [1.3.3] - 2026-06-10
 
 ### Hub
