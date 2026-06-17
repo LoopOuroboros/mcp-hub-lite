@@ -10,25 +10,41 @@
           <el-radio value="stdio">{{ $t('serverDetail.config.transportStdio') }}</el-radio>
           <el-radio value="sse">{{ $t('serverDetail.config.transportSse') }}</el-radio>
           <el-radio value="streamable-http">{{ $t('serverDetail.config.transportHttp') }}</el-radio>
+          <el-radio value="streamable-http-local">{{
+            $t('serverDetail.config.transportStreamableHttpLocal')
+          }}</el-radio>
         </el-radio-group>
       </div>
 
-      <!-- Command / URL -->
-      <div v-if="localConfig.template.type === 'stdio'" class="px-4">
+      <!-- Command (stdio + streamable-http-local) -->
+      <div
+        v-if="
+          localConfig.template.type === 'stdio' ||
+          localConfig.template.type === 'streamable-http-local'
+        "
+        class="px-4"
+      >
         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.executable')
         }}</label>
         <el-input v-model="localConfig.template.command" />
       </div>
-      <div v-else class="px-4">
+      <!-- URL (non-stdio: sse, streamable-http, streamable-http-local) -->
+      <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
           $t('serverDetail.config.url')
         }}</label>
         <el-input v-model="localConfig.template.url" />
       </div>
 
-      <!-- Arguments (stdio only) -->
-      <div v-if="localConfig.template.type === 'stdio'" class="px-4">
+      <!-- Arguments (stdio + streamable-http-local) -->
+      <div
+        v-if="
+          localConfig.template.type === 'stdio' ||
+          localConfig.template.type === 'streamable-http-local'
+        "
+        class="px-4"
+      >
         <div class="flex items-center justify-between mb-2">
           <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">{{
             $t('serverDetail.config.args')

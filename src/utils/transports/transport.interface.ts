@@ -41,9 +41,28 @@ export interface StreamableHttpTransportConfig {
 }
 
 /**
+ * Streamable HTTP Local transport configuration
+ * Local process launched with command, connected via StreamableHTTP URL
+ */
+export interface StreamableHttpLocalTransportConfig {
+  type: 'streamable-http-local';
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url: string;
+  headers?: Record<string, string>;
+  timeout?: number;
+  proxy?: {
+    url: string;
+  };
+  authProvider?: OAuthClientProvider;
+}
+
+/**
  * Generic server configuration
  */
 export type ServerTransportConfig =
   | StdioTransportConfig
   | SseTransportConfig
-  | StreamableHttpTransportConfig;
+  | StreamableHttpTransportConfig
+  | StreamableHttpLocalTransportConfig;

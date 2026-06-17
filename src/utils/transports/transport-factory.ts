@@ -1,6 +1,7 @@
 import { StdioTransport } from './stdio-transport.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHttpTransport } from './streamable-http-transport.js';
+import { StreamableHttpLocalTransport } from './streamable-http-local-transport.js';
 import { ServerTransportConfig } from './transport.interface.js';
 import type { ServerRuntimeConfig } from '@shared-models/server.model.js';
 import { logStorage } from '@services/log-storage.service.js';
@@ -117,6 +118,39 @@ export class TransportFactory {
         );
       }
 
+      case 'streamable-http-local': {
+        if (!config.command) {
+          throw new Error('Streamable HTTP Local transport requires a command');
+        }
+        if (!config.url) {
+          throw new Error('Streamable HTTP Local transport requires a URL');
+        }
+        const localAuthProvider =
+          options?.authProvider ||
+          (() => {
+            const serverUrlHash = createHash('md5').update(config.url).digest('hex').slice(0, 16);
+            return new McpOAuthClientProvider({
+              serverUrlHash,
+              configDir: path.join(os.homedir(), '.mcp-hub-lite', 'oauth')
+            });
+          })();
+        return new StreamableHttpLocalTransport(
+          config.command,
+          config.args || [],
+          config.env,
+          config.url,
+          config.headers,
+          config.timeout,
+          config.proxy,
+          localAuthProvider,
+          server.name,
+          compositeKey,
+          options?.readyPatterns,
+          options?.readyTimeout ?? 120000,
+          compositeKey ? logStorage : undefined
+        );
+      }
+
       default:
         throw new Error(
           `Unsupported transport type: ${(config as ServerTransportConfig).type || 'undefined'}`
@@ -188,6 +222,20 @@ export class TransportFactory {
         type: 'streamable-http', // Unified conversion to streamable-http
         url: server.url || '',
         headers: server.headers || server.env, // Prefer headers, fallback to env for backward compatibility
+        timeout: server.timeout || 30000,
+        proxy: server.proxy
+      };
+    } else if (type === 'streamable-http-local') {
+      return {
+        type: 'streamable-http-local',
+        command: server.command || '',
+        args: server.args || [],
+        env: {
+          ...this.buildSystemEnv(server.command), // System environment variables
+          ...(server.env || {}) // User-defined environment variables
+        },
+        url: server.url || '',
+        headers: server.headers || {},
         timeout: server.timeout || 30000,
         proxy: server.proxy
       };
