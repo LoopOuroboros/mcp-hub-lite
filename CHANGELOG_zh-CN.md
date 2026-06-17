@@ -2,6 +2,22 @@
 
 本文件的所有重要变更都将被记录在此。
 
+## [1.4.0] - 2026-06-17
+
+### 传输
+
+- 新增 streamable-http-local 传输类型，支持本地进程 + HTTP 流通信
+
+### 前端
+
+- WebSocket server-connected 事件触发时刷新版本号显示
+- streamable-http-local 表单中将 URL 字段移至可执行文件输入框上方
+
+### 文档
+
+- 更新 CLAUDE.md 以反映 streamable-http-local 传输
+- 对齐 utils CLAUDE.md 文件中的表格列宽
+
 ## [1.3.4] - 2026-06-12
 
 ### 网关
