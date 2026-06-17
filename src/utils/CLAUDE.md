@@ -81,6 +81,7 @@ utils/
 - `HTTP_TRANSPORT` - HTTP 传输
 - `STDIO_TRANSPORT` - Stdio 传输
 - `SSE_TRANSPORT` - SSE 传输
+- `STREAMABLE_HTTP_LOCAL_TRANSPORT` - 本地进程 + HTTP 流传输
 - `PID_MANAGER` - PID 管理器
 - `SERVER_API` - 服务器 API
 - `MCP_STATUS` - MCP 状态
@@ -347,6 +348,35 @@ export interface McpTransport {
 - 可配置的请求超时
 - 自定义 HTTP 头支持
 
+### ProcessLauncher (`process-launcher.ts`)
+
+**职责**: 纯进程生命周期管理，零 MCP 协议依赖。用于本地启动 MCP 服务器的子进程管理。
+
+**主要方法**:
+
+- `launch(config)` - spawn 子进程，返回 `{ pid, stderr, stop() }` 句柄
+- `waitForReady(stderr, patterns, timeout)` - 监听 stderr，匹配就绪模式后 resolve
+- `waitForPort(host, port, timeout)` - TCP 端口探测，每 200ms 重试直到连接成功
+
+**适用场景**: `streamable-http-local` 传输类型的进程管理，也可独立用于其他需要本地进程启动的场景。
+
+### Streamable HTTP Local Transport (`transports/streamable-http-local-transport.ts`)
+
+**职责**: 混合传输实现——本地启动进程（委托 ProcessLauncher）+ 通过 HTTP 建立 MCP 连接（委托 SDK StreamableHTTPClientTransport）。
+
+**启动时序**:
+
+```
+Phase 1: ProcessLauncher.launch() → waitForReady() → waitForPort() → delay 5s
+Phase 2: new StreamableHTTPClientTransport(url) → transport.start()
+```
+
+**关键特性**:
+
+- 实现 SDK Transport 接口，与 StdioTransport / StreamableHttpTransport 并列
+- 内部委托 ProcessLauncher 管理进程，委托 SDK transport 管理 MCP 通信
+- ConnectionManager 通过独立 `connectLocalHttp()` 方法编排（不经过 `connect()`）
+
 ### Transport Factory (`transports/transport-factory.ts`)
 
 **职责**: 根据配置创建对应的 Transport 实例
@@ -356,6 +386,7 @@ export interface McpTransport {
 - `stdio` - 标准 I/O 传输
 - `sse` - SSE 传输
 - `streamable-http` - HTTP 流传输
+- `streamable-http-local` - 本地进程 + HTTP 流传输
 
 **serverId/serverName 传递**:
 
@@ -382,11 +413,13 @@ utils/
 ├── request-context.ts     # 无依赖
 ├── tool-args-parser.ts    # 无依赖
 ├── name-converter.ts       # 无依赖
+├── process-launcher.ts     # 依赖 node:child_process, node:net
 └── transports/
     ├── transport.interface.ts      # 无依赖
     ├── transport-factory.ts      # 依赖 @modelcontextprotocol/sdk
     ├── stdio-transport.ts      # 依赖 @modelcontextprotocol/sdk
-    └── streamable-http-transport.ts  # 依赖 @modelcontextprotocol/sdk
+    ├── streamable-http-transport.ts  # 依赖 @modelcontextprotocol/sdk
+    └── streamable-http-local-transport.ts  # 依赖 @modelcontextprotocol/sdk, process-launcher.ts
 ```
 
 ## 测试与质量
@@ -431,3 +464,5 @@ utils/
 | `utils/transports/transport.interface.ts`       | 传输接口                      |
 | `utils/transports/transport-factory.ts`         | 传输工厂                      |
 | `utils/transports/streamable-http-transport.ts` | HTTP 流传输                   |
+| `utils/transports/streamable-http-local-transport.ts` | 本地进程 + HTTP 流传输        |
+| `utils/process-launcher.ts`                     | 进程启动器（纯进程管理）       |
