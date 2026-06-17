@@ -48,7 +48,8 @@ export const TransportType = {
   STDIO: 'stdio',
   SSE: 'sse',
   STREAMABLE_HTTP: 'streamable-http',
-  HTTP: 'http'
+  HTTP: 'http',
+  STREAMABLE_HTTP_LOCAL: 'streamable-http-local'
 } as const;
 
 export type TransportType = (typeof TransportType)[keyof typeof TransportType];
@@ -175,7 +176,8 @@ export const ServerTemplateSchema = ServerEnvConfigSchema.extend({
       TransportType.STDIO,
       TransportType.SSE,
       TransportType.STREAMABLE_HTTP,
-      TransportType.HTTP
+      TransportType.HTTP,
+      TransportType.STREAMABLE_HTTP_LOCAL
     ])
     .default(TransportType.STDIO),
   timeout: z.number().default(60000),

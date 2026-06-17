@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-06-17
+
+### Transport
+
+- add streamable-http-local transport type for local process + HTTP stream communication
+
+### Frontend
+
+- refresh version display when server-connected event fires via WebSocket
+- reorder URL field above executable input in streamable-http-local forms
+
+### Docs
+
+- update CLAUDE.md for streamable-http-local transport
+- align table column widths in utils CLAUDE.md files
+
 ## [1.3.4] - 2026-06-12
 
 ### Gateway

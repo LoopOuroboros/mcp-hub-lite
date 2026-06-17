@@ -125,7 +125,10 @@ export class McpConnectionManager {
     const { maxRetries, baseRetryDelay } = this.getRetryConfig();
 
     // Create OAuth provider once per-connect (shared across retries)
-    const isStreamableHttp = server.type === 'streamable-http' || server.type === 'http';
+    const isStreamableHttp =
+      server.type === 'streamable-http' ||
+      server.type === 'http' ||
+      server.type === 'streamable-http-local';
     let oauthProvider: import('@services/mcp-oauth/index.js').McpOAuthClientProvider | null = null;
     let oauthStarted = false;
 
@@ -254,6 +257,74 @@ export class McpConnectionManager {
   }
 
   /**
+   * Connects to a streamable-http-local MCP server.
+   *
+   * This method handles the unique lifecycle of locally-launched HTTP servers:
+   * the transport internally delegates process management to ProcessLauncher
+   * (spawn → waitForReady → HTTP connect), and ConnectionManager treats it
+   * as a distinct connection path from connect().
+   */
+  public async connectLocalHttp(
+    serverName: string,
+    serverIndex: number,
+    server: ServerRuntimeConfig & Partial<ServerInstanceConfig>
+  ): Promise<boolean> {
+    const serverId = server.id || 'unknown';
+    const compositeKey = getCompositeKey(serverName, serverIndex);
+    const { maxRetries, baseRetryDelay } = this.getRetryConfig();
+
+    let lastError: Error | undefined;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        this.validateServerConfig(server);
+        this.logConnectionAttempt(compositeKey, attempt, maxRetries);
+        this.initializeServerStatus(compositeKey);
+
+        const serverInfo = this.getServerInfo(serverId);
+
+        const { transport } = this.initializeTransport(
+          server,
+          serverInfo,
+          compositeKey,
+          serverName,
+          serverIndex
+        );
+
+        const client = await this.establishClientConnection(transport);
+
+        const pid =
+          'pid' in transport && typeof transport.pid === 'number' ? transport.pid : undefined;
+        this.registerConnection(compositeKey, serverName, client, transport);
+        this.updateConnectedStatus(compositeKey, client, pid);
+        this.publishConnectionEvents(serverName, serverIndex);
+
+        const capabilities =
+          typeof client.getServerCapabilities === 'function'
+            ? client.getServerCapabilities()
+            : undefined;
+        await this.refreshServerResources(serverName, serverIndex, !capabilities?.resources);
+
+        if (capabilities?.logging) {
+          await this.requestLoggingFromServer(compositeKey, client);
+        }
+
+        return true;
+      } catch (error) {
+        lastError = await this.handleConnectionError(
+          error,
+          compositeKey,
+          attempt,
+          maxRetries,
+          baseRetryDelay
+        );
+      }
+    }
+
+    this.handleFinalFailure(compositeKey, serverName, serverIndex, lastError);
+    return false;
+  }
+
+  /**
    * Gets retry configuration from system settings.
    */
   private getRetryConfig(): { maxRetries: number; baseRetryDelay: number } {
@@ -272,6 +343,15 @@ export class McpConnectionManager {
 
     if (server.type === 'stdio' && (!server.command || server.command.trim() === '')) {
       throw new Error('STDIO server requires a valid command');
+    }
+
+    if (server.type === 'streamable-http-local') {
+      if (!server.command || server.command.trim() === '') {
+        throw new Error('Streamable HTTP Local server requires a valid command');
+      }
+      if (!server.url || server.url.trim() === '') {
+        throw new Error('Streamable HTTP Local server requires a valid URL');
+      }
     }
 
     if (
@@ -332,7 +412,9 @@ export class McpConnectionManager {
     authProvider?: import('@services/mcp-oauth/index.js').McpOAuthClientProvider
   ): { transport: Transport } {
     const readyPatterns =
-      server.type === 'stdio' ? (serverInfo.config.template.readyPatterns ?? []) : undefined;
+      server.type === 'stdio' || server.type === 'streamable-http-local'
+        ? (serverInfo.config.template.readyPatterns ?? [])
+        : undefined;
     const readyTimeout = configManager.getConfig().system.startup?.readyTimeout ?? 120000;
 
     const transport = TransportFactory.createTransport(

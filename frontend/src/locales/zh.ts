@@ -175,6 +175,7 @@ export default {
       transportStdio: '标准输入/输出 (stdio)',
       transportSse: '服务器发送事件 (sse)',
       transportHttp: '可流式传输的http (streamableHttp)',
+      transportStreamableHttpLocal: '本地进程 + HTTP (streamable-http-local)',
       executable: '可执行文件',
       args: '参数',
       url: '服务地址',

@@ -13,7 +13,8 @@ transports/
 ├── transport.interface.ts        # 传输协议配置接口定义
 ├── transport-factory.ts         # 传输工厂（根据配置创建对应传输实例）
 ├── stdio-transport.ts           # Stdio 传输实现
-└── streamable-http-transport.ts # HTTP 流传输实现
+├── streamable-http-transport.ts # HTTP 流传输实现
+└── streamable-http-local-transport.ts # 本地进程 + HTTP 流传输实现
 ```
 
 ## 核心组件
@@ -121,14 +122,36 @@ transports/
 - **入站消息**: 通过 HTTP GET 请求使用 Server-Sent Events (SSE) 接收流式响应
 - **内容类型**: 自动设置 `Content-Type: application/json`
 
+### Streamable HTTP Local Transport (`streamable-http-local-transport.ts`)
+
+**职责**: 混合传输实现——通过 ProcessLauncher 本地启动进程（零 MCP 依赖），再通过 HTTP 建立 MCP 连接。与 StdioTransport / StreamableHttpTransport 并列实现 Transport 接口。
+
+**适用场景**: 通过 uvx/npx --http 后台启动的 MCP 服务器
+
+**启动时序**:
+
+```
+Phase 1: ProcessLauncher.launch() → waitForReady() → waitForPort() → delay 5s
+Phase 2: new StreamableHTTPClientTransport(url) → transport.start()
+```
+
+**关键特性**:
+
+- **Phase 1 进程管理**: 委托 `ProcessLauncher`（`src/utils/process-launcher.ts`），纯 Node.js child_process，零 MCP SDK 依赖
+- **Phase 2 MCP 连接**: 委托 SDK `StreamableHTTPClientTransport`
+- **端口探测**: `waitForPort()` 确保 HTTP 端口就绪后再建立连接
+- **5s 启动延迟**: 端口就绪后等待 5s 让服务端完成初始化
+- **日志集成**: stderr 同时写入 logStorage 和转发到 ConnectionManager 回调
+
 ## 依赖关系
 
 ```
 transports/
 ├── transport.interface.ts        # 无依赖
-├── transport-factory.ts         # 依赖 @modelcontextprotocol/sdk
+├── transport-factory.ts         # 依赖 @modelcontextprotocol/sdk, utils/process-launcher.ts
 ├── stdio-transport.ts           # 依赖 @modelcontextprotocol/sdk
-└── streamable-http-transport.ts # 依赖 @modelcontextprotocol/sdk, undici
+├── streamable-http-transport.ts # 依赖 @modelcontextprotocol/sdk, undici
+└── streamable-http-local-transport.ts # 依赖 @modelcontextprotocol/sdk, undici, utils/process-launcher.ts
 ```
 
 ## 集成方式
@@ -153,9 +176,10 @@ Transports 子模块主要被以下组件使用：
 
 ## 相关文件清单
 
-| 文件路径                                  | 描述             |
-| ----------------------------------------- | ---------------- |
-| `transports/transport.interface.ts`       | 传输协议配置接口 |
-| `transports/transport-factory.ts`         | 传输工厂         |
-| `transports/stdio-transport.ts`           | Stdio 传输实现   |
-| `transports/streamable-http-transport.ts` | HTTP 流传输实现  |
+| 文件路径                                        | 描述                       |
+| ----------------------------------------------- | -------------------------- |
+| `transports/transport.interface.ts`             | 传输协议配置接口           |
+| `transports/transport-factory.ts`               | 传输工厂                   |
+| `transports/stdio-transport.ts`                 | Stdio 传输实现             |
+| `transports/streamable-http-transport.ts`       | HTTP 流传输实现            |
+| `transports/streamable-http-local-transport.ts` | 本地进程 + HTTP 流传输实现 |

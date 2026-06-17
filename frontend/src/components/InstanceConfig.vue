@@ -77,31 +77,40 @@
         </div>
       </div>
 
-      <!-- Command / URL (from template, read-only) -->
-      <div class="px-4">
-        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-          {{
-            templateConfig.type === 'stdio'
-              ? $t('serverDetail.config.executable')
-              : $t('serverDetail.config.url')
-          }}
-        </label>
+      <!-- URL (non-stdio: from template, read-only) -->
+      <div v-if="templateConfig.type !== 'stdio'" class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('serverDetail.config.url')
+        }}</label>
         <div class="flex gap-2 items-start">
-          <el-input
-            :model-value="
-              templateConfig.type === 'stdio' ? templateConfig.command : templateConfig.url
-            "
-            disabled
-            class="flex-1"
-          />
+          <el-input :model-value="templateConfig.url" disabled class="flex-1" />
           <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
             {{ $t('serverDetail.instanceConfig.fromTemplate') }}
           </span>
         </div>
       </div>
 
-      <!-- Arguments (stdio only) -->
-      <div v-if="templateConfig.type === 'stdio'" class="px-4">
+      <!-- Command (stdio + streamable-http-local: from template, read-only) -->
+      <div
+        v-if="templateConfig.type === 'stdio' || templateConfig.type === 'streamable-http-local'"
+        class="px-4"
+      >
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('serverDetail.config.executable')
+        }}</label>
+        <div class="flex gap-2 items-start">
+          <el-input :model-value="templateConfig.command" disabled class="flex-1" />
+          <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Arguments (stdio + streamable-http-local) -->
+      <div
+        v-if="templateConfig.type === 'stdio' || templateConfig.type === 'streamable-http-local'"
+        class="px-4"
+      >
         <div class="flex items-center justify-between mb-2">
           <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
             {{ $t('serverDetail.config.args') }}
@@ -689,6 +698,8 @@ function getTransportLabel(type: string): string {
       return t('serverDetail.config.transportSse');
     case 'streamable-http':
       return t('serverDetail.config.transportHttp');
+    case 'streamable-http-local':
+      return t('serverDetail.config.transportStreamableHttpLocal');
     default:
       return type;
   }

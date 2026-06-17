@@ -1,7 +1,86 @@
 import { describe, it, expect } from 'vitest';
 import { TransportFactory } from '../../../src/utils/transports/transport-factory.js';
+import { StreamableHttpLocalTransport } from '../../../src/utils/transports/streamable-http-local-transport.js';
 
 describe('TransportFactory', () => {
+  describe('validateAndConvertConfig', () => {
+    it('should convert streamable-http-local type correctly', () => {
+      const config = TransportFactory['validateAndConvertConfig']({
+        type: 'streamable-http-local',
+        command: 'uvx',
+        args: ['my-server', '--http', '--port', '3333'],
+        url: 'http://localhost:3333/mcp',
+        env: { NODE_ENV: 'test' },
+        headers: { Authorization: 'Bearer test' },
+        timeout: 15000,
+        proxy: { url: 'http://proxy:8080' },
+        name: 'test-server'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any;
+
+      expect(config.type).toBe('streamable-http-local');
+      expect(config.command).toBe('uvx');
+      expect(config.args).toEqual(['my-server', '--http', '--port', '3333']);
+      expect(config.url).toBe('http://localhost:3333/mcp');
+      expect(config.env?.NODE_ENV).toBe('test');
+      expect(config.headers?.Authorization).toBe('Bearer test');
+      expect(config.timeout).toBe(15000);
+      expect(config.proxy).toEqual({ url: 'http://proxy:8080' });
+    });
+
+    it('should use defaults when fields are missing', () => {
+      const config = TransportFactory['validateAndConvertConfig']({
+        type: 'streamable-http-local' as const,
+        name: 'minimal-server'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any;
+
+      expect(config.type).toBe('streamable-http-local');
+      expect(config.command).toBe('');
+      expect(config.args).toEqual([]);
+      expect(config.url).toBe('');
+      expect(config.timeout).toBe(30000);
+    });
+  });
+
+  describe('createTransport', () => {
+    it('should throw when command is missing for streamable-http-local', () => {
+      expect(() =>
+        TransportFactory.createTransport(
+          {
+            type: 'streamable-http-local' as const,
+            url: 'http://localhost:3333/mcp',
+            name: 'test'
+          },
+          'test-0'
+        )
+      ).toThrow('Streamable HTTP Local transport requires a command');
+    });
+
+    it('should throw when url is missing for streamable-http-local', () => {
+      expect(() =>
+        TransportFactory.createTransport(
+          { type: 'streamable-http-local' as const, command: 'uvx', name: 'test' },
+          'test-0'
+        )
+      ).toThrow('Streamable HTTP Local transport requires a URL');
+    });
+
+    it('should create StreamableHttpLocalTransport for streamable-http-local type', () => {
+      const transport = TransportFactory.createTransport(
+        {
+          type: 'streamable-http-local' as const,
+          command: 'uvx',
+          url: 'http://localhost:3333/mcp',
+          name: 'test-server'
+        },
+        'test-0'
+      );
+
+      expect(transport).toBeInstanceOf(StreamableHttpLocalTransport);
+    });
+  });
+
   describe('isPythonCommand', () => {
     it('should detect python commands', () => {
       expect(TransportFactory['isPythonCommand']('python')).toBe(true);

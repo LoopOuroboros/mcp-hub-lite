@@ -49,6 +49,20 @@
             <div class="font-bold mb-1">Streamable HTTP</div>
             <div class="text-xs text-gray-400">({{ $t('serverDetail.config.transportHttp') }})</div>
           </div>
+          <div
+            class="flex-1 p-4 border rounded-lg cursor-pointer text-center transition-all"
+            :class="
+              form.transport === 'streamable-http-local'
+                ? 'border-blue-500 bg-blue-900/20'
+                : 'border-gray-600 hover:border-gray-500'
+            "
+            @click="form.transport = 'streamable-http-local'"
+          >
+            <div class="font-bold mb-1">Local HTTP</div>
+            <div class="text-xs text-gray-400">
+              ({{ $t('serverDetail.config.transportStreamableHttpLocal') }})
+            </div>
+          </div>
         </div>
       </el-form-item>
 
@@ -65,7 +79,13 @@
         />
       </el-form-item>
 
-      <template v-if="form.transport === 'stdio'">
+      <template v-if="form.transport !== 'stdio'">
+        <el-form-item :label="$t('serverDetail.config.url')">
+          <el-input v-model="form.url" :placeholder="$t('addServer.urlPlaceholder')" />
+        </el-form-item>
+      </template>
+
+      <template v-if="form.transport === 'stdio' || form.transport === 'streamable-http-local'">
         <el-form-item :label="$t('serverDetail.config.executable')">
           <el-input v-model="form.command" :placeholder="$t('addServer.executablePlaceholder')" />
         </el-form-item>
@@ -84,12 +104,6 @@
               >
             </div>
           </div>
-        </el-form-item>
-      </template>
-
-      <template v-else>
-        <el-form-item :label="$t('serverDetail.config.url')">
-          <el-input v-model="form.url" :placeholder="$t('addServer.urlPlaceholder')" />
         </el-form-item>
       </template>
 
@@ -339,7 +353,7 @@ const importResult = ref({
 });
 
 const form = ref({
-  transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http',
+  transport: 'stdio' as 'stdio' | 'sse' | 'streamable-http' | 'streamable-http-local',
   name: '',
   description: '',
   command: '',
@@ -372,7 +386,12 @@ function importJson() {
       form.value.name = nameToUse;
     }
 
-    if (configToUse.command) {
+    if (configToUse.type === 'streamable-http-local') {
+      form.value.transport = 'streamable-http-local';
+      form.value.command = configToUse.command || '';
+      form.value.args = configToUse.args || [];
+      form.value.url = configToUse.url || '';
+    } else if (configToUse.command) {
       form.value.transport = 'stdio';
       form.value.command = configToUse.command;
       form.value.args = configToUse.args || [];
@@ -533,7 +552,10 @@ async function createServer() {
     await store.addServer({
       name: form.value.name || 'Unnamed Server',
       status: 'offline',
-      type: form.value.transport === 'stdio' ? 'local' : 'remote',
+      type:
+        form.value.transport === 'stdio' || form.value.transport === 'streamable-http-local'
+          ? 'local'
+          : 'remote',
       config: {
         type: form.value.transport,
         command: form.value.command,

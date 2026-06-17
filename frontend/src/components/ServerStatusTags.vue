@@ -31,6 +31,9 @@
         >
         <template v-else-if="props.server.config.type === 'sse'"></template>
         <template v-else-if="props.server.config.type === 'streamable-http'"></template>
+        <template v-else-if="props.server.config.type === 'streamable-http-local'">
+          - {{ getExecutableName(props.server.config.command) }}</template
+        >
       </span>
     </div>
   </div>

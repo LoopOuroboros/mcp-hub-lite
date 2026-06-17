@@ -69,7 +69,8 @@ interface ServerStatus {
 
 #### 连接相关
 
-- `connect(serverName, serverIndex, server)` - 连接到 MCP 服务器
+- `connect(serverName, serverIndex, server)` - 连接到 MCP 服务器（stdio/sse/streamable-http）
+- `connectLocalHttp(serverName, serverIndex, server)` - 连接本地 HTTP MCP 服务器（streamable-http-local 专用，Phase 1 进程启动 + Phase 2 HTTP 连接独立编排）
 - `disconnect(serverName, serverIndex)` - 断开服务器连接
 - `disconnectAll()` - 断开所有服务器连接
 
@@ -132,6 +133,7 @@ interface ServerStatus {
 - **stdio**: 本地进程 MCP 服务器
 - **SSE**: Server-Sent Events 远程服务器（单向）
 - **streamable-http/http**: HTTP 流传输远程服务器（双向）
+- **streamable-http-local**: 本地进程 + HTTP 流传输（通过 `connectLocalHttp()` 方法独立编排）
 
 **特殊处理**:
 

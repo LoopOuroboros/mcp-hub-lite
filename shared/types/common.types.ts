@@ -4,7 +4,12 @@
 export type ServerStatus = 'online' | 'offline' | 'error' | 'starting' | 'stopping';
 
 // Server transport protocol type
-export type ServerTransport = 'stdio' | 'sse' | 'streamable-http' | 'http';
+export type ServerTransport =
+  | 'stdio'
+  | 'sse'
+  | 'streamable-http'
+  | 'http'
+  | 'streamable-http-local';
 
 // Server type
 export type ServerType = 'local' | 'remote';

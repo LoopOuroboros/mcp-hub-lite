@@ -65,10 +65,18 @@ export class HubManagerService {
             const resolvedConfig = this.getResolvedServerConfig(name, instance.id);
             if (resolvedConfig) {
               try {
-                await mcpConnectionManager.connect(name, instance.index ?? 0, {
-                  ...resolvedConfig,
-                  id: instance.id
-                });
+                const isLocalHttp = resolvedConfig.type === 'streamable-http-local';
+                if (isLocalHttp) {
+                  await mcpConnectionManager.connectLocalHttp(name, instance.index ?? 0, {
+                    ...resolvedConfig,
+                    id: instance.id
+                  });
+                } else {
+                  await mcpConnectionManager.connect(name, instance.index ?? 0, {
+                    ...resolvedConfig,
+                    id: instance.id
+                  });
+                }
               } catch (error) {
                 logger.error(
                   `Failed to connect server instance for ${name}:`,

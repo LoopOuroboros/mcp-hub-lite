@@ -71,6 +71,7 @@ export const LOG_MODULES = {
   HTTP_TRANSPORT: { module: 'HTTPTransport' } satisfies LogOptions,
   STDIO_TRANSPORT: { module: 'StdioTransport' } satisfies LogOptions,
   SSE_TRANSPORT: { module: 'SSETransport' } satisfies LogOptions,
+  STREAMABLE_HTTP_LOCAL_TRANSPORT: { module: 'StreamableHttpLocalTransport' } satisfies LogOptions,
 
   // PID management
   PID_MANAGER: { module: 'PIDManager' } satisfies LogOptions,

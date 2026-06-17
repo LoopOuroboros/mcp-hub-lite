@@ -175,6 +175,7 @@ export default {
       transportStdio: 'Standard Input/Output (stdio)',
       transportSse: 'Server-Sent Events (sse)',
       transportHttp: 'Streamable HTTP (streamableHttp)',
+      transportStreamableHttpLocal: 'Local Process + HTTP (streamable-http-local)',
       executable: 'Executable',
       args: 'Arguments',
       url: 'URL',
