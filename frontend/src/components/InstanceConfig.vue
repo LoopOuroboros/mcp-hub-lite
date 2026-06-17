@@ -77,6 +77,19 @@
         </div>
       </div>
 
+      <!-- URL (non-stdio: from template, read-only) -->
+      <div v-if="templateConfig.type !== 'stdio'" class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('serverDetail.config.url')
+        }}</label>
+        <div class="flex gap-2 items-start">
+          <el-input :model-value="templateConfig.url" disabled class="flex-1" />
+          <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
+            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
+          </span>
+        </div>
+      </div>
+
       <!-- Command (stdio + streamable-http-local: from template, read-only) -->
       <div
         v-if="templateConfig.type === 'stdio' || templateConfig.type === 'streamable-http-local'"
@@ -87,19 +100,6 @@
         }}</label>
         <div class="flex gap-2 items-start">
           <el-input :model-value="templateConfig.command" disabled class="flex-1" />
-          <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
-            {{ $t('serverDetail.instanceConfig.fromTemplate') }}
-          </span>
-        </div>
-      </div>
-
-      <!-- URL (non-stdio: from template, read-only) -->
-      <div v-if="templateConfig.type !== 'stdio'" class="px-4">
-        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
-          $t('serverDetail.config.url')
-        }}</label>
-        <div class="flex gap-2 items-start">
-          <el-input :model-value="templateConfig.url" disabled class="flex-1" />
           <span class="text-xs text-gray-500 dark:text-gray-400 pt-2 whitespace-nowrap">
             {{ $t('serverDetail.instanceConfig.fromTemplate') }}
           </span>

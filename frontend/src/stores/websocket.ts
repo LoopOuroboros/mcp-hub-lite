@@ -293,6 +293,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
     if (instance) {
       instance.status = 'online';
     }
+
+    // Refresh full server data including version
+    serverStore.fetchServers();
   }
 
   function handleServerDisconnected(message: ServerDisconnectedEvent): void {

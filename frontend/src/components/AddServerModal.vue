@@ -79,6 +79,12 @@
         />
       </el-form-item>
 
+      <template v-if="form.transport !== 'stdio'">
+        <el-form-item :label="$t('serverDetail.config.url')">
+          <el-input v-model="form.url" :placeholder="$t('addServer.urlPlaceholder')" />
+        </el-form-item>
+      </template>
+
       <template v-if="form.transport === 'stdio' || form.transport === 'streamable-http-local'">
         <el-form-item :label="$t('serverDetail.config.executable')">
           <el-input v-model="form.command" :placeholder="$t('addServer.executablePlaceholder')" />
@@ -98,12 +104,6 @@
               >
             </div>
           </div>
-        </el-form-item>
-      </template>
-
-      <template v-if="form.transport !== 'stdio'">
-        <el-form-item :label="$t('serverDetail.config.url')">
-          <el-input v-model="form.url" :placeholder="$t('addServer.urlPlaceholder')" />
         </el-form-item>
       </template>
 

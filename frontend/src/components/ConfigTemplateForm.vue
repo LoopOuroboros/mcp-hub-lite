@@ -16,6 +16,13 @@
         </el-radio-group>
       </div>
 
+      <!-- URL (non-stdio: sse, streamable-http, streamable-http-local) -->
+      <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
+        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
+          $t('serverDetail.config.url')
+        }}</label>
+        <el-input v-model="localConfig.template.url" />
+      </div>
       <!-- Command (stdio + streamable-http-local) -->
       <div
         v-if="
@@ -28,13 +35,6 @@
           $t('serverDetail.config.executable')
         }}</label>
         <el-input v-model="localConfig.template.command" />
-      </div>
-      <!-- URL (non-stdio: sse, streamable-http, streamable-http-local) -->
-      <div v-if="localConfig.template.type !== 'stdio'" class="px-4">
-        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{{
-          $t('serverDetail.config.url')
-        }}</label>
-        <el-input v-model="localConfig.template.url" />
       </div>
 
       <!-- Arguments (stdio + streamable-http-local) -->
