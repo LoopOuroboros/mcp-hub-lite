@@ -176,10 +176,10 @@ Transports 子模块主要被以下组件使用：
 
 ## 相关文件清单
 
-| 文件路径                                  | 描述             |
-| ----------------------------------------- | ---------------- |
-| `transports/transport.interface.ts`       | 传输协议配置接口 |
-| `transports/transport-factory.ts`         | 传输工厂         |
-| `transports/stdio-transport.ts`           | Stdio 传输实现   |
-| `transports/streamable-http-transport.ts` | HTTP 流传输实现  |
+| 文件路径                                        | 描述                       |
+| ----------------------------------------------- | -------------------------- |
+| `transports/transport.interface.ts`             | 传输协议配置接口           |
+| `transports/transport-factory.ts`               | 传输工厂                   |
+| `transports/stdio-transport.ts`                 | Stdio 传输实现             |
+| `transports/streamable-http-transport.ts`       | HTTP 流传输实现            |
 | `transports/streamable-http-local-transport.ts` | 本地进程 + HTTP 流传输实现 |

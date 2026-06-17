@@ -436,33 +436,33 @@ utils/
 
 ## 相关文件清单
 
-| 文件路径                                        | 描述                          |
-| ----------------------------------------------- | ----------------------------- |
-| `utils/index.ts`                                | 统一导出                      |
-| `utils/logger/`                                 | 日志模块目录                  |
-| `utils/logger/index.ts`                         | 日志模块导出                  |
-| `utils/logger/logger.ts`                        | 主日志器（含 serverLog 方法） |
-| `utils/logger/dev-logger.ts`                    | 开发模式日志                  |
-| `utils/logger/log-formatter.ts`                 | 日志格式化                    |
-| `utils/logger/log-output.ts`                    | 日志输出处理                  |
-| `utils/logger/log-colors.ts`                    | 日志颜色                      |
-| `utils/logger/log-context.ts`                   | 日志上下文                    |
-| `utils/logger/log-modules.ts`                   | 日志模块定义                  |
-| `utils/json-utils.ts`                           | JSON 工具                     |
-| `utils/log-rotator.ts`                          | 日志轮转                      |
-| `utils/port-checker.ts`                         | 端口检查                      |
-| `utils/error-handler.ts`                        | 错误处理                      |
-| `utils/request-context.ts`                      | 请求上下文                    |
-| `utils/tool-args-parser.ts`                     | 工具参数解析                  |
-| `utils/name-converter.ts`                       | 名称规范化工具                |
-| `utils/composite-key.ts`                        | 复合键工具                    |
-| `utils/instance-id.ts`                          | 实例 ID 工具                  |
-| `utils/network-security.ts`                     | 网络安全工具                  |
-| `utils/sort-utils.ts`                           | 排序工具                      |
-| `utils/version.ts`                              | 版本信息                      |
-| `utils/transports/stdio-transport.ts`           | Stdio 传输                    |
-| `utils/transports/transport.interface.ts`       | 传输接口                      |
-| `utils/transports/transport-factory.ts`         | 传输工厂                      |
-| `utils/transports/streamable-http-transport.ts` | HTTP 流传输                   |
+| 文件路径                                              | 描述                          |
+| ----------------------------------------------------- | ----------------------------- |
+| `utils/index.ts`                                      | 统一导出                      |
+| `utils/logger/`                                       | 日志模块目录                  |
+| `utils/logger/index.ts`                               | 日志模块导出                  |
+| `utils/logger/logger.ts`                              | 主日志器（含 serverLog 方法） |
+| `utils/logger/dev-logger.ts`                          | 开发模式日志                  |
+| `utils/logger/log-formatter.ts`                       | 日志格式化                    |
+| `utils/logger/log-output.ts`                          | 日志输出处理                  |
+| `utils/logger/log-colors.ts`                          | 日志颜色                      |
+| `utils/logger/log-context.ts`                         | 日志上下文                    |
+| `utils/logger/log-modules.ts`                         | 日志模块定义                  |
+| `utils/json-utils.ts`                                 | JSON 工具                     |
+| `utils/log-rotator.ts`                                | 日志轮转                      |
+| `utils/port-checker.ts`                               | 端口检查                      |
+| `utils/error-handler.ts`                              | 错误处理                      |
+| `utils/request-context.ts`                            | 请求上下文                    |
+| `utils/tool-args-parser.ts`                           | 工具参数解析                  |
+| `utils/name-converter.ts`                             | 名称规范化工具                |
+| `utils/composite-key.ts`                              | 复合键工具                    |
+| `utils/instance-id.ts`                                | 实例 ID 工具                  |
+| `utils/network-security.ts`                           | 网络安全工具                  |
+| `utils/sort-utils.ts`                                 | 排序工具                      |
+| `utils/version.ts`                                    | 版本信息                      |
+| `utils/transports/stdio-transport.ts`                 | Stdio 传输                    |
+| `utils/transports/transport.interface.ts`             | 传输接口                      |
+| `utils/transports/transport-factory.ts`               | 传输工厂                      |
+| `utils/transports/streamable-http-transport.ts`       | HTTP 流传输                   |
 | `utils/transports/streamable-http-local-transport.ts` | 本地进程 + HTTP 流传输        |
-| `utils/process-launcher.ts`                     | 进程启动器（纯进程管理）       |
+| `utils/process-launcher.ts`                           | 进程启动器（纯进程管理）      |
